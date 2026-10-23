@@ -10,4 +10,4 @@ rust-version.workspace = true
 [dependencies]
 serde.workspace = true
 serde_json.workspace = true
-indexmap = "2"
+indexmap = { version = "2", features = ["serde"] }

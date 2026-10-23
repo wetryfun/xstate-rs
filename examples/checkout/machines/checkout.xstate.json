@@ -1,0 +1,392 @@
+{
+  "machine": {
+    "id": "checkout",
+    "initial": "cart",
+    "context": {
+      "status": "open",
+      "lines": []
+    },
+    "states": {
+      "cart": {
+        "on": {
+          "cart.add": {
+            "actions": [
+              {
+                "type": "audit"
+              }
+            ]
+          },
+          "payment.method": {
+            "actions": [
+              {
+                "type": "audit"
+              }
+            ]
+          },
+          "checkout": [
+            {
+              "target": "paying",
+              "guard": {
+                "type": "withinLimit",
+                "params": {
+                  "max": 1000
+                }
+              }
+            },
+            {
+              "actions": [
+                {
+                  "type": "notify",
+                  "params": {
+                    "channel": "email",
+                    "template": "over-limit"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "paying": {
+        "entry": [
+          {
+            "type": "@xstate.assign",
+            "context": {
+              "status": "paying"
+            }
+          }
+        ],
+        "invoke": {
+          "src": "chargeCard",
+          "timeout": "5s",
+          "onTimeout": {
+            "target": "retrying"
+          },
+          "onDone": {
+            "target": "paid"
+          },
+          "onError": [
+            {
+              "target": "retrying",
+              "guard": {
+                "type": "retryable"
+              }
+            },
+            {
+              "target": "failed"
+            }
+          ]
+        },
+        "on": {
+          "cancel": {
+            "target": "failed"
+          }
+        }
+      },
+      "retrying": {
+        "entry": [
+          {
+            "type": "@xstate.assign",
+            "context": {
+              "status": "retrying"
+            }
+          }
+        ],
+        "after": {
+          "backoff": {
+            "actions": [
+              {
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "retry"
+                }
+              }
+            ]
+          }
+        },
+        "on": {
+          "retry": {
+            "target": "paying"
+          },
+          "cancel": {
+            "target": "failed"
+          }
+        }
+      },
+      "paid": {
+        "type": "final",
+        "entry": [
+          {
+            "type": "@xstate.assign",
+            "context": {
+              "status": "paid"
+            }
+          },
+          {
+            "type": "notify",
+            "params": {
+              "channel": "sms",
+              "template": "paid"
+            }
+          },
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "order.paid",
+              "channel": "sms"
+            }
+          }
+        ],
+        "output": {
+          "paid": true
+        }
+      },
+      "failed": {
+        "type": "final",
+        "entry": [
+          {
+            "type": "@xstate.assign",
+            "context": {
+              "status": "failed"
+            }
+          },
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "order.failed"
+            }
+          }
+        ],
+        "output": {
+          "paid": false
+        }
+      }
+    },
+    "internalEvents": [
+      "retry"
+    ]
+  },
+  "schemas": {
+    "context": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "paying",
+            "retrying",
+            "paid",
+            "failed"
+          ]
+        },
+        "lines": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "sku": {
+                "type": "string"
+              },
+              "quantity": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "sku",
+              "quantity"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "coupon": {
+          "description": "A coupon code, once one is applied.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "lines"
+      ],
+      "additionalProperties": false
+    },
+    "output": {
+      "type": "object",
+      "properties": {
+        "paid": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "paid"
+      ],
+      "additionalProperties": false
+    },
+    "events": {
+      "cart.add": {
+        "type": "object",
+        "properties": {
+          "line": {
+            "type": "object",
+            "properties": {
+              "sku": {
+                "type": "string"
+              },
+              "quantity": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "sku",
+              "quantity"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "line"
+        ],
+        "additionalProperties": false
+      },
+      "checkout": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "total"
+        ],
+        "additionalProperties": false
+      },
+      "payment.method": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "card"
+                  },
+                  "last4": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "last4"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "const": "invoice"
+                  },
+                  "reference": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "method"
+        ],
+        "additionalProperties": false
+      },
+      "cancel": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    "internalEvents": {
+      "retry": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    "emitted": {
+      "order.paid": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "email",
+              "sms"
+            ]
+          }
+        },
+        "required": [
+          "channel"
+        ],
+        "additionalProperties": false
+      },
+      "order.failed": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    },
+    "actions": {
+      "notify": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "channel": {
+              "type": "string",
+              "enum": [
+                "email",
+                "sms"
+              ]
+            },
+            "template": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "channel",
+            "template"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "audit": {}
+    },
+    "guards": {
+      "withinLimit": {
+        "params": {
+          "type": "object",
+          "properties": {
+            "max": {
+              "type": "number"
+            }
+          },
+          "required": [
+            "max"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "retryable": {}
+    }
+  }
+}

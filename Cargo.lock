@@ -3,6 +3,15 @@
 version = 3
 
 [[package]]
+name = "checkout-example"
+version = "0.0.0"
+dependencies = [
+ "serde_json",
+ "xstate-codegen",
+ "xstate-rt",
+]
+
+[[package]]
 name = "equivalent"
 version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -28,6 +37,8 @@ checksum = "cc4e190f5d26ca7051642629da2c52fc03bde85a03197c99408dcd291734c855"
 dependencies = [
  "equivalent",
  "hashbrown",
+ "serde",
+ "serde_core",
 ]
 
 [[package]]
@@ -121,6 +132,14 @@ name = "unicode-ident"
 version = "1.0.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2c754d6c33795a1c324727428e5a7dedb5b06195f9890bdbcba760d3e246563"
+
+[[package]]
+name = "xstate-codegen"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "xstate-rt",
+]
 
 [[package]]
 name = "xstate-rt"

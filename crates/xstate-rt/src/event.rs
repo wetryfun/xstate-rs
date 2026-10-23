@@ -17,14 +17,19 @@ pub trait EventType: Clone + Serialize + DeserializeOwned + 'static {
     /// transitions that declare `matches`.
     fn field(&self, key: &str) -> Option<Value> {
         match serde_json::to_value(self) {
-            Ok(Value::Object(mut map)) => map.remove(key),
+            Ok(Value::Object(mut map)) => map.remove(key).map(|mut v| {
+                js_numbers(&mut v);
+                v
+            }),
             _ => None,
         }
     }
 
     /// The JSON form of the event, `{ "type": ..., ...payload }`.
     fn to_json(&self) -> Value {
-        serde_json::to_value(self).unwrap_or(Value::Null)
+        let mut v = serde_json::to_value(self).unwrap_or(Value::Null);
+        js_numbers(&mut v);
+        v
     }
 
     /// Converts a JSON event into `Self`, handing the value back when it does
@@ -34,6 +39,23 @@ pub trait EventType: Clone + Serialize + DeserializeOwned + 'static {
             Ok(event) => Ok(event),
             Err(_) => Err(value),
         }
+    }
+}
+
+/// Rewrites whole-number floats as integers, as JavaScript's JSON does: a
+/// Rust `f64` field holding `1.0` becomes `1`, as XState would write it.
+pub fn js_numbers(value: &mut Value) {
+    const MAX_SAFE: f64 = 9_007_199_254_740_991.0;
+    match value {
+        Value::Number(n) if n.is_f64() => {
+            let f = n.as_f64().unwrap_or(f64::NAN);
+            if f.fract() == 0.0 && f.abs() <= MAX_SAFE {
+                *value = Value::from(f as i64);
+            }
+        }
+        Value::Array(items) => items.iter_mut().for_each(js_numbers),
+        Value::Object(map) => map.values_mut().for_each(js_numbers),
+        _ => {}
     }
 }
 
@@ -169,5 +191,12 @@ mod tests {
         assert!(!matches_descriptor("b.a", "a.*"));
         assert!(!matches_descriptor("a.b.c", "a.*.c"));
         assert!(!matches_descriptor("ab", "a*"));
+    }
+
+    #[test]
+    fn numbers_as_javascript_writes_them() {
+        let mut v = serde_json::json!({ "a": 1.0, "b": [2.5, -0.0, 3.0], "c": 7 });
+        js_numbers(&mut v);
+        assert_eq!(v.to_string(), r#"{"a":1,"b":[2.5,0,3],"c":7}"#);
     }
 }

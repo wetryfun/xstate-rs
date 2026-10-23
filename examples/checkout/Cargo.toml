@@ -1,0 +1,15 @@
+[package]
+name = "checkout-example"
+version = "0.0.0"
+description = "A checkout machine authored in TypeScript and run with generated Rust types"
+publish = false
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+xstate-rt = { path = "../../crates/xstate-rt" }
+serde_json.workspace = true
+
+[build-dependencies]
+xstate-codegen = { path = "../../crates/xstate-codegen" }

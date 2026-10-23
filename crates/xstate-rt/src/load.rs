@@ -2,6 +2,7 @@
 //! XState v6 `machineToJSON` / `machineConfigToJSON`) into a [`Machine`].
 
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use serde::de::DeserializeOwned;
 use serde_json::{json, Map, Value};
@@ -174,10 +175,54 @@ struct Loader<'j, 'r, C, E> {
     delays: Vec<crate::registry::DelayFn<C, E>>,
     named_delays: HashMap<String, DelaySpec>,
     raise_events: Vec<Ev<E>>,
+    /// When set, missing implementations are recorded here and replaced by
+    /// stubs instead of failing the load (see [`references`]).
+    refs: Option<References>,
+}
+
+/// A name the definition references without defining it, with the JSON path
+/// of the reference and its `params`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Reference {
+    pub name: String,
+    pub path: String,
+    pub params: Option<Value>,
+}
+
+/// Every guard, action, delay and actor source a definition needs from the
+/// host, in document order. Names defined in the JSON itself and built-ins
+/// are not included.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct References {
+    pub guards: Vec<Reference>,
+    pub actions: Vec<Reference>,
+    pub delays: Vec<Reference>,
+    pub actors: Vec<Reference>,
+}
+
+/// Validates a definition as [`load`] does and lists the implementations it
+/// needs, with the runtime's own name resolution.
+pub(crate) fn references(json: &Value) -> Result<References> {
+    let registry: Registry<Value, Value> = Registry::new();
+    let (_, refs) = load_inner(json, &registry, MachineOptions::default(), Some(References::default()))?;
+    Ok(refs.unwrap_or_default())
 }
 
 /// Compiles a machine definition against a registry of implementations.
 pub(crate) fn load<C, E>(json: &Value, registry: &Registry<C, E>, options: MachineOptions) -> Result<Machine<C, E>>
+where
+    C: DeserializeOwned,
+    E: EventType,
+{
+    load_inner(json, registry, options, None).map(|(m, _)| m)
+}
+
+fn load_inner<C, E>(
+    json: &Value,
+    registry: &Registry<C, E>,
+    options: MachineOptions,
+    refs: Option<References>,
+) -> Result<(Machine<C, E>, Option<References>)>
 where
     C: DeserializeOwned,
     E: EventType,
@@ -201,6 +246,7 @@ where
         delays: Vec::new(),
         named_delays: HashMap::new(),
         raise_events: Vec::new(),
+        refs,
     };
     loader.check_machine_keys()?;
     loader.load_named_delays()?;
@@ -255,7 +301,8 @@ where
     let tree_transitions =
         loader.transition_sources.iter().map(|&source| TreeTransition { source, domain: DomainHint::None }).collect();
 
-    Ok(Machine {
+    let refs = loader.refs;
+    let machine = Machine {
         id: loader.machine_id,
         version,
         tree: Tree::new(tree_nodes, tree_transitions),
@@ -271,7 +318,8 @@ where
         initial_context,
         output: root_json.get("output").cloned(),
         options,
-    })
+    };
+    Ok((machine, refs))
 }
 
 fn opt_str<'a>(obj: &'a Map<String, Value>, key: &str, path: &str) -> Result<Option<&'a str>> {
@@ -683,9 +731,10 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                 let tpath = child_path(&path, "timeout");
                 let delay = match timeout {
                     Value::Number(n) => n.as_f64().and_then(ms_to_u64).map(DelaySpec::Fixed),
-                    Value::String(s) => {
-                        self.named_delay(s).or_else(|| parse_duration_ms(s).and_then(ms_to_u64).map(DelaySpec::Fixed))
-                    }
+                    Value::String(s) => self
+                        .named_delay(s)
+                        .or_else(|| parse_duration_ms(s).and_then(ms_to_u64).map(DelaySpec::Fixed))
+                        .or_else(|| self.stub_delay(s, &tpath)),
                     _ => None,
                 }
                 .ok_or_else(|| {
@@ -746,11 +795,36 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             let event_delay = if ms.fract() == 0.0 { Value::from(ms as u64) } else { Value::from(ms) };
             return Ok((event_delay, DelaySpec::Fixed(spec)));
         }
-        let spec = self.named_delay(key).or_else(|| parse_duration_ms(key).and_then(ms_to_u64).map(DelaySpec::Fixed));
+        let spec = self
+            .named_delay(key)
+            .or_else(|| parse_duration_ms(key).and_then(ms_to_u64).map(DelaySpec::Fixed))
+            .or_else(|| self.stub_delay(key, path));
         match spec {
             Some(spec) => Ok((Value::String(key.to_owned()), spec)),
             None => Err(err(K::MissingImplementation, path, format!("missing delay source \"{key}\""))),
         }
+    }
+
+    /// Records a missing reference when collecting [`References`]; returns
+    /// whether the caller should continue with a stub.
+    fn record(
+        &mut self,
+        kind: fn(&mut References) -> &mut Vec<Reference>,
+        name: &str,
+        path: &str,
+        params: Option<&Value>,
+    ) -> bool {
+        match &mut self.refs {
+            Some(refs) => {
+                kind(refs).push(Reference { name: name.to_owned(), path: path.to_owned(), params: params.cloned() });
+                true
+            }
+            None => false,
+        }
+    }
+
+    fn stub_delay(&mut self, name: &str, path: &str) -> Option<DelaySpec> {
+        self.record(|r| &mut r.delays, name, path, None).then_some(DelaySpec::Fixed(0))
     }
 
     fn named_delay(&mut self, name: &str) -> Option<DelaySpec> {
@@ -787,10 +861,19 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
         }
         let src = opt_str(obj, "src", path)?
             .ok_or_else(|| invalid(&child_path(path, "src"), "an invoke needs a string `src`"))?;
-        let logic =
-            self.registry.actors.iter().find(|(name, _)| name == src).map(|(_, l)| l.clone()).ok_or_else(|| {
-                err(K::MissingImplementation, &child_path(path, "src"), format!("missing actor source \"{src}\""))
-            })?;
+        let logic = match self.registry.actors.iter().find(|(name, _)| name == src) {
+            Some((_, l)) => l.clone(),
+            None if self.record(|r| &mut r.actors, src, &child_path(path, "src"), obj.get("input")) => {
+                Arc::new(crate::step::async_logic(None, None).expect("no timeout")) as Arc<dyn crate::system::Logic>
+            }
+            None => {
+                return Err(err(
+                    K::MissingImplementation,
+                    &child_path(path, "src"),
+                    format!("missing actor source \"{src}\""),
+                ))
+            }
+        };
         let id = match opt_str(obj, "id", path)? {
             Some(id) => id.to_owned(),
             None => format!("{}:{index}", self.nodes[node as usize].id),
@@ -1025,6 +1108,10 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                 if ty.starts_with("@xstate.") {
                     return Err(err(K::Unsupported, path, format!("unknown built-in guard \"{ty}\"")));
                 }
+                if self.record(|r| &mut r.guards, ty, path, obj.get("params")) {
+                    self.guards.push(Box::new(|_| false));
+                    return Ok(Guard::Custom(self.guards.len() as u32 - 1));
+                }
                 Err(err(K::MissingImplementation, path, format!("missing guard source \"{ty}\"")))
             }
         }
@@ -1122,14 +1209,17 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                     stack.pop();
                     return Ok(());
                 }
-                let factory =
-                    self.registry.actions.get(ty).ok_or_else(|| {
-                        err(K::MissingImplementation, path, format!("missing action source \"{ty}\""))
-                    })?;
-                let params = obj.get("params").unwrap_or(&Value::Null);
-                let f = factory(params).map_err(|m| {
-                    err(K::InvalidParams, &child_path(path, "params"), format!("invalid params for action '{ty}': {m}"))
-                })?;
+                let f = match self.registry.actions.get(ty) {
+                    Some(factory) => factory(obj.get("params").unwrap_or(&Value::Null)).map_err(|m| {
+                        err(
+                            K::InvalidParams,
+                            &child_path(path, "params"),
+                            format!("invalid params for action '{ty}': {m}"),
+                        )
+                    })?,
+                    None if self.record(|r| &mut r.actions, ty, path, obj.get("params")) => Arc::new(|| {}),
+                    None => return Err(err(K::MissingImplementation, path, format!("missing action source \"{ty}\""))),
+                };
                 self.actions.push(CustomAction { name: ty.to_owned(), params: obj.get("params").cloned(), exec: f });
                 out.push(Action::Custom(self.actions.len() as u32 - 1));
             }

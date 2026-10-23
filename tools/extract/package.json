@@ -1,0 +1,11 @@
+{
+  "name": "xstate-rs-extract",
+  "private": true,
+  "type": "module",
+  "description": "Extracts MachineJSON and JSON Schemas from TypeScript machine modules for xstate-codegen",
+  "bin": { "xstate-rs-extract": "./extract.mjs" },
+  "dependencies": {
+    "xstate": "6.0.0-alpha.70",
+    "zod": "4.6.7"
+  }
+}

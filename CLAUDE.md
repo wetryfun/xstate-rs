@@ -41,15 +41,15 @@ flowchart TD
   USER --> SVC[Deployment adapters: native service, WASI component, Redpanda]
 ```
 
-Workspace crates (`xstate-rt` and `xstate-wasm` exist so far):
+Workspace crates (`xstate-rt`, `xstate-wasm` and `xstate-codegen` exist so far):
 
 - `xstate-rt`: the core. `core.rs` is the structural statechart algorithm behind a `Host` trait; the native host (`interp.rs`) parses `MachineJSON`, compiles it, and runs it. Later also the actor runtime. Generic, with nothing machine-specific.
 - `xstate-wasm`: exposes `core.rs` to JavaScript over a plain integer wasm ABI, so XState's own runtime can use it (see Testing strategy).
-- `xstate-codegen`: build-time generator. Reads `machine.json` plus JSON Schemas and emits typed Rust (context, events, params, the implementation trait, and the `Machine` trait impl).
+- `xstate-codegen`: build-time generator. Reads a `<name>.xstate.json` bundle (definition plus JSON Schemas) and emits typed Rust (context, events, params, the implementation trait, and the registry wiring).
 - `xstate-wasi`: a WASI component adapter exposing the runtime through WIT.
 - `xstate-redpanda`: the co-located, partition-sharded service.
 
-Other directories: `fixtures/` (shared differential fixtures), `tools/differential/` (the JS side of differential testing).
+Other directories: `fixtures/` (shared differential fixtures), `tools/differential/` (the JS side of differential testing), `tools/extract/` (the TS extract script), `examples/checkout/` (a machine authored in TS, run through codegen).
 
 ## Core runtime design (`xstate-rt`)
 
@@ -130,13 +130,16 @@ Persistence is XState's `SystemSnapshot` JSON (`System::to_json` / `System::from
 
 ## Codegen (milestone 3)
 
-Every machine that targets Rust must provide Zod schemas, including `schemas.actions` and `schemas.guards` for params. The pipeline:
+Every machine that targets Rust provides Zod schemas, including `schemas.actions` and `schemas.guards` for params. The pipeline (example: `examples/checkout`):
 
-1. A TS extract script imports each machine module, which exports a `MachineJSON` definition and its Zod schemas. It converts schemas with Zod 4's JSON Schema converter and writes `machine.json` and the schema files.
-2. A lint fails the build on any `@code` / `@expr` node, or on any referenced guard, action, actor, or delay without a schema entry.
-3. `build.rs` generates types (via typify or a custom generator) and a per-machine trait, for example `CheckoutImpl` with methods like `guard_has_access(&self, args, &HasAccessParams) -> bool`. It also generates the registry wiring that maps names to typed trait calls, and an `EventType` impl whose `event_type` is a `match` (no serialization).
+1. **Author** a TS module exporting `machine` (a `MachineJSON` value; `createMachine` rejects object-form guards in v6, so JSON-portable machines are written as data) and `schemas` (`context`, `input`, `output`, `events`, `internalEvents`, `emitted`, `actions: { name: { params? } }`, `guards: { name: { params? } }`; other keys are errors).
+2. **Extract:** `node tools/extract/extract.mjs <module.ts>` (Node 22 strips the types; `zod` and `xstate` resolve to the tool's pinned copies) converts the schemas with `z.toJSONSchema` (output mode, unrepresentable types throw), rejects `@code` / `@expr`, adds `internalEvents` from the schema, validates the definition with XState's own `machineFromJSON` (stub sources added for each "Missing ... source" it reports), and writes `<module>.xstate.json` = `{ machine, schemas }`. Commit the bundle; `--check` fails when it is stale.
+3. **Generate:** `xstate_codegen::Builder::new().machine("…/checkout.xstate.json").build()` in `build.rs` writes `$OUT_DIR/xstate/checkout.rs`; `xstate_rt::include_machine!("checkout")` includes it in a module. Before emitting, it lints: the definition must load (`Machine::references`, the runtime's own resolution, which lists every guard, action, delay and actor the host must supply with JSON paths and params); every referenced guard and action needs a `schemas.guards` / `schemas.actions` entry and its params must validate; handled (`on` keys other than wildcards and `xstate.*`), raised and emitted event types must be declared and static payloads validate; the initial context, transition `context` and `@xstate.assign` patches, and the root output (or root final states' outputs) validate. Unused schema entries are `cargo:warning`s.
+4. **Emitted module:** `Context`, `Event` (serde enum tagged by `type`, public and internal events, `EventType::event_type` is a `match`), `Emitted`, `Input`, `Output`, `<Name>Params`; trait `<MachineId>Impl` with `guard_*(&self, &GuardArgs<Context, Event>[, &Params]) -> bool`, `action_*(&self[, &Params])`, `delay_*(&self, &Context, &Ev<Event>) -> u64` (only for delays not defined in JSON; delays and actors have fixed signatures, so they need no schema entry), `actor_*(&self) -> Arc<dyn Logic>`; `registry(Arc<impl>)`, `machine(Arc<impl>)`, `ID`, `DEFINITION`, `type Actor`. Generated code refers to `xstate_rt::__codegen` (serde, serde_json, IndexMap re-exports), so user crates depend only on `xstate-rt`.
 
-Mapping rules to enforce: `z.number()` is `f64` unless `.int()` (then `i64`); `x?: T` is `Option<T>`; discriminated unions become tagged enums. Reject intersections, generics, branded types, and untagged unions with a clear error.
+Mapping rules (custom generator in `crates/xstate-codegen/src/types.rs`, no typify): `number` is `f64`, `integer` (`.int()`) is `i64`, `boolean` is `bool`, `string` is `String`; string `enum` / `const` become unit enums; optional properties are `Option<T>` with `skip_serializing_if` (an optional nullable field is a single `Option`, so `null` and absent are not distinguished); `T | null` is `Option<T>`; arrays are `Vec`, `prefixItems` tuples; records are `IndexMap<String, T>`; objects with properties are structs (snake_case fields with `rename`, keywords as raw identifiers, `description` as docs, `default` via a generated serde default); discriminated unions (`oneOf`/`anyOf` of objects sharing a required string `const` key) are internally tagged enums; `{}` / `unknown` is `serde_json::Value`. Types are named by path (`Context` + `Lines` + `Item`); `.meta({ id })` names a shared type once; recursive references are boxed. Rejected with the schema path: `allOf` (intersections), untagged unions, non-string enums and literals, `not` / `if` / `patternProperties`. Branded types are type-only in Zod 4 and cannot be detected; they erase to their base type.
+
+**Decision: numbers are written as JavaScript writes them.** A Rust `f64` holding `1.0` serializes as `1.0`, which JS writes as `1` (and `serde_json` compares unequal to `1`). The runtime normalizes whole-number floats to integers (`xstate_rt::js_numbers`) wherever typed values become JSON: event `to_json` / `field` defaults, context merges and snapshot data. `matches` already compares numbers numerically.
 
 ## Deployment targets
 
@@ -168,7 +171,7 @@ When v6 behavior is uncertain, add a fixture before choosing semantics.
 
 1. ~~`xstate-rt` core: parsing, validation, compilation, interpreter, built-in actions, registry, host-driven timers, persist and restore, unit tests.~~ Done, with the differential harness (originally milestone 4) started early. ~~XState-true core shared with XState's JS runtime; XState's core test suite passes on it.~~
 2. ~~Actor runtime: invoke, system, done and error propagation, timeouts.~~ Done as a port of XState's pure system API, with system differential fixtures. Still open: `spawn` / `sendTo` from JSON actions (no JSON-portable form in alpha.70), listeners and subscriptions.
-3. Codegen pipeline and the TS extract script.
+3. ~~Codegen pipeline and the TS extract script.~~ Done (`tools/extract`, `xstate-codegen`, `examples/checkout`). Open: typed `ActorRef<Child>` handles from `schemas.children`.
 4. Differential test harness: ~~extend fixtures to actors~~; add generated random event sequences.
 5. WASI component adapter.
 6. Redpanda co-located service with benchmarks.

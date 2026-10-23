@@ -10,6 +10,8 @@ The statechart algorithm is a port of XState's own (`crates/xstate-rt/src/core.r
 
 Milestone 2 (actors) is a port of XState's pure system API: `invoke` of machines and async logic, `onDone` / `onError` / `onSnapshot`, state and invoke `timeout` / `onTimeout`, the `systemId` registry, stop cascades, and whole-system snapshots in XState's format. Behavior is checked against XState itself with shared fixtures, at machine and at system level.
 
+Milestone 3 (codegen) turns a machine authored in TypeScript with Zod schemas into typed Rust: `tools/extract/extract.mjs` writes a `<name>.xstate.json` bundle, and `xstate-codegen` (from `build.rs`) generates context, event and params types plus an implementation trait. See [`examples/checkout`](examples/checkout).
+
 Not yet supported (rejected at load time with the JSON path): choice and route states, state and transition `input`, and any `@code` / `@expr`.
 
 ## Example
@@ -54,7 +56,25 @@ actor.send(json!({ "type": "next" }), 1200)?;
 assert_eq!(actor.value(), json!("red"));
 ```
 
-Typed contexts and events work the same way: any `C: Serialize + DeserializeOwned + Clone` and any serde event enum implementing `EventType`.
+Typed contexts and events work the same way: any `C: Serialize + DeserializeOwned + Clone` and any serde event enum implementing `EventType`. Codegen writes those types for you:
+
+```rust
+// build.rs
+xstate_codegen::Builder::new().machine("machines/checkout.xstate.json").build().unwrap();
+
+// src/lib.rs
+pub mod checkout { xstate_rt::include_machine!("checkout"); }
+
+impl checkout::CheckoutImpl for Shop {
+    fn guard_within_limit(&self, args: &GuardArgs<'_, Context, Event>, p: &WithinLimitParams) -> bool {
+        matches!(args.event, Ev::User(Event::Checkout { total }) if *total <= p.max)
+    }
+    // ... one method per action, delay and actor the machine references
+}
+
+let mut actor = checkout::Actor::start(Arc::new(checkout::machine(shop)?), 0)?;
+actor.send(Event::Checkout { total: 120.0 }, 10)?;
+```
 
 ## Development
 
@@ -64,6 +84,8 @@ tools/xstate-suite/run.sh        # XState's own test suite on the Rust core (nee
 cargo clippy --all-targets
 cd tools/differential && npm install && npm run generate   # regenerate expected traces from XState
 node tools/differential/generate-system.mjs                 # regenerate system-level traces
+cd tools/extract && npm install                             # once, for the extract script
+node tools/extract/extract.mjs examples/checkout/machines/*.ts   # re-extract bundles (--check to verify)
 ```
 
 See [CLAUDE.md](CLAUDE.md) for the design, the verified v6 semantics, and the roadmap.

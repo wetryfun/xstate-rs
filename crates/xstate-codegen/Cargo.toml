@@ -1,0 +1,12 @@
+[package]
+name = "xstate-codegen"
+version = "0.1.0"
+description = "Build-time generator of typed Rust modules for XState v6 machine bundles"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde_json.workspace = true
+xstate-rt = { path = "../xstate-rt" }

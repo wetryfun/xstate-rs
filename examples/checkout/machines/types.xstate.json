@@ -1,0 +1,257 @@
+{
+  "machine": {
+    "id": "types",
+    "initial": "idle",
+    "context": {
+      "prices": {
+        "a": {
+          "amount": 100,
+          "currency": "SEK"
+        }
+      },
+      "total": {
+        "amount": 0,
+        "currency": "SEK"
+      },
+      "point": [
+        1,
+        2
+      ],
+      "note": null,
+      "type": "basic",
+      "tree": {
+        "name": "root",
+        "children": [
+          {
+            "name": "leaf",
+            "children": []
+          }
+        ]
+      },
+      "anything": {
+        "free": [
+          "form"
+        ]
+      },
+      "flags": [],
+      "kind": "demo"
+    },
+    "states": {
+      "idle": {
+        "on": {
+          "set": {
+            "target": "done",
+            "guard": {
+              "type": "atLeast",
+              "params": 2
+            },
+            "actions": [
+              {
+                "type": "record",
+                "params": [
+                  "a",
+                  "b"
+                ]
+              }
+            ]
+          }
+        }
+      },
+      "done": {
+        "type": "final",
+        "output": "finished"
+      }
+    }
+  },
+  "schemas": {
+    "context": {
+      "type": "object",
+      "properties": {
+        "prices": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/Money"
+          }
+        },
+        "total": {
+          "$ref": "#/$defs/Money"
+        },
+        "point": {
+          "type": "array",
+          "prefixItems": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "items": false,
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "type": {
+          "default": "basic",
+          "type": "string"
+        },
+        "tree": {
+          "$ref": "#/$defs/__schema0"
+        },
+        "anything": {},
+        "flags": {
+          "type": "array",
+          "items": {
+            "type": "boolean"
+          }
+        },
+        "kind": {
+          "type": "string",
+          "const": "demo"
+        }
+      },
+      "required": [
+        "prices",
+        "total",
+        "point",
+        "note",
+        "type",
+        "tree",
+        "anything",
+        "flags",
+        "kind"
+      ],
+      "additionalProperties": false,
+      "$defs": {
+        "Money": {
+          "type": "object",
+          "properties": {
+            "amount": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            "currency": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "amount",
+            "currency"
+          ],
+          "additionalProperties": false
+        },
+        "__schema0": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "children": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/__schema0"
+              }
+            }
+          },
+          "required": [
+            "name",
+            "children"
+          ],
+          "additionalProperties": false
+        }
+      }
+    },
+    "input": {
+      "type": "object",
+      "properties": {
+        "seed": {
+          "anyOf": [
+            {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "output": {
+      "type": "string"
+    },
+    "events": {
+      "set": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "op": {
+                    "type": "string",
+                    "const": "add"
+                  },
+                  "by": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "op",
+                  "by"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "op": {
+                    "type": "string",
+                    "const": "reset"
+                  }
+                },
+                "required": [
+                  "op"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "actions": {
+      "record": {
+        "params": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "guards": {
+      "atLeast": {
+        "params": {
+          "type": "number"
+        }
+      }
+    }
+  }
+}

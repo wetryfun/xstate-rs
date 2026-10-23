@@ -238,7 +238,10 @@ where
 {
     fn context_object(&self) -> Result<Map<String, Value>, SystemError> {
         match serde_json::to_value(&self.st.context) {
-            Ok(Value::Object(map)) => Ok(map),
+            Ok(Value::Object(mut map)) => {
+                map.values_mut().for_each(crate::event::js_numbers);
+                Ok(map)
+            }
             Ok(_) => Ok(Map::new()),
             Err(e) => Err(SystemError::Failed(format!("invalid context: {e}"))),
         }
@@ -947,7 +950,9 @@ where
         if let Some(e) = &st.error {
             m.insert("error".into(), e.clone());
         }
-        m.insert("context".into(), serde_json::to_value(&st.context).unwrap_or(Value::Null));
+        let mut context = serde_json::to_value(&st.context).unwrap_or(Value::Null);
+        crate::event::js_numbers(&mut context);
+        m.insert("context".into(), context);
         m.insert("value".into(), self.state_value(&st.nodes));
         m.insert("children".into(), Value::Object(st.children.iter().map(|(k, r)| (k.clone(), r.to_json())).collect()));
         m.insert("timers".into(), Value::Array(st.timers.iter().map(LogicalTimer::to_data).collect()));
