@@ -799,7 +799,11 @@ impl ser::Serializer for FieldLookup {
     fn serialize_str(self, v: &str) -> Result<Self::Ok, Error> {
         let fields = self.msg.fields;
         let start = self.start.min(fields.len());
-        let found = (start..fields.len()).chain(0..start).find(|&i| fields[i].key == v);
+        // Length and first byte first: most candidates differ there, which
+        // saves a `memcmp` call each.
+        let first = v.as_bytes().first();
+        let same = |k: &str| k.len() == v.len() && k.as_bytes().first() == first && k == v;
+        let found = (start..fields.len()).chain(0..start).find(|&i| same(fields[i].key));
         Ok(found)
     }
     fn serialize_unit_variant(self, _: &'static str, _: u32, v: &'static str) -> Result<Self::Ok, Error> {
