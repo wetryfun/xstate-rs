@@ -1,0 +1,67 @@
+[
+  {
+    "label": "start",
+    "value": "handshake",
+    "context": {
+      "sessionId": "s1",
+      "user": "anonymous",
+      "received": 0
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 0",
+    "value": "handshake",
+    "context": {
+      "sessionId": "s1",
+      "user": "anonymous",
+      "received": 0
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 1",
+    "value": "closing",
+    "context": {
+      "sessionId": "s1",
+      "user": "anonymous",
+      "received": 0
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "dropConnection",
+        "reason": "heartbeat timeout"
+      }
+    ]
+  },
+  {
+    "label": "step 2",
+    "value": "closing",
+    "context": {
+      "sessionId": "s1",
+      "user": "anonymous",
+      "received": 0
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 3",
+    "value": "closed",
+    "context": {
+      "sessionId": "s1",
+      "user": "anonymous",
+      "received": 0
+    },
+    "status": "done",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "closed"
+      }
+    ]
+  }
+]

@@ -1,0 +1,337 @@
+[
+  {
+    "label": "start",
+    "value": {
+      "operating": "green"
+    },
+    "context": {
+      "pedestrianWaiting": false,
+      "cycles": 0
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 0",
+    "value": {
+      "operating": "yellow"
+    },
+    "context": {
+      "pedestrianWaiting": true,
+      "cycles": 0
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 1",
+    "value": {
+      "operating": "red"
+    },
+    "context": {
+      "pedestrianWaiting": false,
+      "cycles": 1
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "pedestrians.cross"
+      }
+    ]
+  },
+  {
+    "label": "step 2",
+    "value": {
+      "operating": "green"
+    },
+    "context": {
+      "pedestrianWaiting": false,
+      "cycles": 1
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 3",
+    "value": {
+      "operating": "yellow"
+    },
+    "context": {
+      "pedestrianWaiting": false,
+      "cycles": 1
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 4",
+    "value": {
+      "operating": "red"
+    },
+    "context": {
+      "pedestrianWaiting": false,
+      "cycles": 2
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "pedestrians.cross"
+      }
+    ]
+  },
+  {
+    "label": "step 5",
+    "value": {
+      "operating": "red"
+    },
+    "context": {
+      "pedestrianWaiting": false,
+      "cycles": 2
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 6",
+    "value": {
+      "operating": "red"
+    },
+    "context": {
+      "pedestrianWaiting": false,
+      "cycles": 2
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 7",
+    "value": {
+      "fault": {
+        "lamp": "on",
+        "buzzer": "silent"
+      }
+    },
+    "context": {
+      "pedestrianWaiting": false,
+      "cycles": 2
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "fault.entered"
+      }
+    ]
+  },
+  {
+    "label": "step 8",
+    "value": {
+      "fault": {
+        "lamp": "off",
+        "buzzer": "silent"
+      }
+    },
+    "context": {
+      "pedestrianWaiting": false,
+      "cycles": 2
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 9",
+    "value": {
+      "fault": {
+        "lamp": "off",
+        "buzzer": "beeping"
+      }
+    },
+    "context": {
+      "pedestrianWaiting": false,
+      "cycles": 2
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 10",
+    "value": {
+      "fault": {
+        "lamp": "on",
+        "buzzer": "beeping"
+      }
+    },
+    "context": {
+      "pedestrianWaiting": false,
+      "cycles": 2
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 11",
+    "value": {
+      "fault": {
+        "lamp": "off",
+        "buzzer": "beeping"
+      }
+    },
+    "context": {
+      "pedestrianWaiting": false,
+      "cycles": 2
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 12",
+    "value": {
+      "fault": {
+        "lamp": "off",
+        "buzzer": "silent"
+      }
+    },
+    "context": {
+      "pedestrianWaiting": false,
+      "cycles": 2
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 13",
+    "value": {
+      "fault": {
+        "lamp": "on",
+        "buzzer": "beeping"
+      }
+    },
+    "context": {
+      "pedestrianWaiting": false,
+      "cycles": 2
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 14",
+    "value": {
+      "operating": "green"
+    },
+    "context": {
+      "pedestrianWaiting": false,
+      "cycles": 2
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 15",
+    "value": {
+      "operating": "green"
+    },
+    "context": {
+      "pedestrianWaiting": false,
+      "cycles": 2
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 16",
+    "value": {
+      "operating": "yellow"
+    },
+    "context": {
+      "pedestrianWaiting": false,
+      "cycles": 2
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 17",
+    "value": {
+      "fault": {
+        "lamp": "on",
+        "buzzer": "silent"
+      }
+    },
+    "context": {
+      "pedestrianWaiting": false,
+      "cycles": 2
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "fault.entered"
+      }
+    ]
+  },
+  {
+    "label": "step 18",
+    "value": {
+      "fault": {
+        "lamp": "off",
+        "buzzer": "silent"
+      }
+    },
+    "context": {
+      "pedestrianWaiting": false,
+      "cycles": 2
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 19",
+    "value": {
+      "operating": "green"
+    },
+    "context": {
+      "pedestrianWaiting": false,
+      "cycles": 2
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 20",
+    "value": {
+      "operating": "yellow"
+    },
+    "context": {
+      "pedestrianWaiting": false,
+      "cycles": 2
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 21",
+    "value": {
+      "operating": "red"
+    },
+    "context": {
+      "pedestrianWaiting": false,
+      "cycles": 3
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "pedestrians.cross"
+      }
+    ]
+  },
+  {
+    "label": "step 22",
+    "value": {
+      "operating": "green"
+    },
+    "context": {
+      "pedestrianWaiting": false,
+      "cycles": 3
+    },
+    "status": "active",
+    "emitted": []
+  }
+]

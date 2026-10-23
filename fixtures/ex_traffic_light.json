@@ -1,0 +1,318 @@
+{
+  "source": "examples/traffic-light/src/trafficLightMachine.ts",
+  "notes": "red's entry counter (cycles + 1) moved onto yellow's transition into red, unrolled per value; named delays as their numbers; emits added for red and fault entry",
+  "machine": {
+    "id": "trafficLight",
+    "context": {
+      "pedestrianWaiting": false,
+      "cycles": 0
+    },
+    "initial": "operating",
+    "states": {
+      "operating": {
+        "initial": "green",
+        "states": {
+          "green": {
+            "after": {
+              "6000": {
+                "target": "yellow"
+              }
+            },
+            "on": {
+              "pedestrianRequest": {
+                "target": "yellow",
+                "context": {
+                  "pedestrianWaiting": true
+                }
+              }
+            }
+          },
+          "yellow": {
+            "after": {
+              "2000": [
+                {
+                  "target": "red",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "cycles",
+                      "value": 0
+                    }
+                  },
+                  "context": {
+                    "cycles": 1
+                  }
+                },
+                {
+                  "target": "red",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "cycles",
+                      "value": 1
+                    }
+                  },
+                  "context": {
+                    "cycles": 2
+                  }
+                },
+                {
+                  "target": "red",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "cycles",
+                      "value": 2
+                    }
+                  },
+                  "context": {
+                    "cycles": 3
+                  }
+                },
+                {
+                  "target": "red",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "cycles",
+                      "value": 3
+                    }
+                  },
+                  "context": {
+                    "cycles": 4
+                  }
+                },
+                {
+                  "target": "red",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "cycles",
+                      "value": 4
+                    }
+                  },
+                  "context": {
+                    "cycles": 5
+                  }
+                },
+                {
+                  "target": "red",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "cycles",
+                      "value": 5
+                    }
+                  },
+                  "context": {
+                    "cycles": 6
+                  }
+                },
+                {
+                  "target": "red",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "cycles",
+                      "value": 6
+                    }
+                  },
+                  "context": {
+                    "cycles": 7
+                  }
+                },
+                {
+                  "target": "red",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "cycles",
+                      "value": 7
+                    }
+                  },
+                  "context": {
+                    "cycles": 8
+                  }
+                }
+              ]
+            }
+          },
+          "red": {
+            "entry": [
+              {
+                "type": "@xstate.assign",
+                "context": {
+                  "pedestrianWaiting": false
+                }
+              },
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "pedestrians.cross"
+                }
+              }
+            ],
+            "after": {
+              "5000": {
+                "target": "green"
+              }
+            }
+          }
+        },
+        "on": {
+          "fault": {
+            "target": "fault"
+          }
+        }
+      },
+      "fault": {
+        "type": "parallel",
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "fault.entered"
+            }
+          }
+        ],
+        "states": {
+          "lamp": {
+            "initial": "on",
+            "states": {
+              "on": {
+                "after": {
+                  "500": {
+                    "target": "off"
+                  }
+                }
+              },
+              "off": {
+                "after": {
+                  "500": {
+                    "target": "on"
+                  }
+                }
+              }
+            }
+          },
+          "buzzer": {
+            "initial": "silent",
+            "states": {
+              "silent": {
+                "after": {
+                  "800": {
+                    "target": "beeping"
+                  }
+                }
+              },
+              "beeping": {
+                "after": {
+                  "800": {
+                    "target": "silent"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "on": {
+          "reset": {
+            "target": "operating"
+          }
+        }
+      }
+    }
+  },
+  "steps": [
+    {
+      "at": 1000,
+      "send": {
+        "type": "pedestrianRequest"
+      }
+    },
+    {
+      "at": 3000
+    },
+    {
+      "at": 8000
+    },
+    {
+      "at": 14000
+    },
+    {
+      "at": 16000
+    },
+    {
+      "at": 17000,
+      "send": {
+        "type": "pedestrianRequest"
+      }
+    },
+    {
+      "at": 19000
+    },
+    {
+      "at": 19500,
+      "send": {
+        "type": "fault"
+      }
+    },
+    {
+      "at": 20000
+    },
+    {
+      "at": 20300
+    },
+    {
+      "at": 20500
+    },
+    {
+      "at": 21000
+    },
+    {
+      "at": 21100
+    },
+    {
+      "at": 21900
+    },
+    {
+      "at": 22300,
+      "send": {
+        "type": "reset"
+      }
+    },
+    {
+      "at": 22400,
+      "send": {
+        "type": "reset"
+      }
+    },
+    {
+      "at": 28300
+    },
+    {
+      "at": 29000,
+      "send": {
+        "type": "fault"
+      }
+    },
+    {
+      "at": 30600
+    },
+    {
+      "at": 31000,
+      "send": {
+        "type": "reset"
+      }
+    },
+    {
+      "at": 37000
+    },
+    {
+      "at": 39000
+    },
+    {
+      "at": 44000
+    }
+  ]
+}

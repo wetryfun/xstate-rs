@@ -1,0 +1,421 @@
+[
+  {
+    "label": "start",
+    "value": "doorsClosed",
+    "context": {
+      "currentFloor": 1,
+      "queue": [],
+      "k": "1-",
+      "queued": false
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 0",
+    "value": "moving",
+    "context": {
+      "currentFloor": 1,
+      "queue": [
+        3
+      ],
+      "k": "1-3",
+      "queued": true
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 1",
+    "value": "moving",
+    "context": {
+      "currentFloor": 2,
+      "queue": [
+        3
+      ],
+      "k": "2-3",
+      "queued": true
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 2",
+    "value": "moving",
+    "context": {
+      "currentFloor": 2,
+      "queue": [
+        3,
+        1
+      ],
+      "k": "2-31",
+      "queued": true
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 3",
+    "value": "moving",
+    "context": {
+      "currentFloor": 2,
+      "queue": [
+        3,
+        1
+      ],
+      "k": "2-31",
+      "queued": true
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 4",
+    "value": "doorsOpen",
+    "context": {
+      "currentFloor": 3,
+      "queue": [
+        1
+      ],
+      "k": "3-1",
+      "queued": true
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "doors.opened"
+      }
+    ]
+  },
+  {
+    "label": "step 5",
+    "value": "moving",
+    "context": {
+      "currentFloor": 3,
+      "queue": [
+        1
+      ],
+      "k": "3-1",
+      "queued": true
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "doors.closing"
+      }
+    ]
+  },
+  {
+    "label": "step 6",
+    "value": "moving",
+    "context": {
+      "currentFloor": 2,
+      "queue": [
+        1
+      ],
+      "k": "2-1",
+      "queued": true
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 7",
+    "value": "moving",
+    "context": {
+      "currentFloor": 2,
+      "queue": [
+        1
+      ],
+      "k": "2-1",
+      "queued": true
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 8",
+    "value": "doorsOpen",
+    "context": {
+      "currentFloor": 1,
+      "queue": [],
+      "k": "1-",
+      "queued": false
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "doors.opened"
+      }
+    ]
+  },
+  {
+    "label": "step 9",
+    "value": "doorsClosed",
+    "context": {
+      "currentFloor": 1,
+      "queue": [],
+      "k": "1-",
+      "queued": false
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "doors.closing"
+      }
+    ]
+  },
+  {
+    "label": "step 10",
+    "value": "doorsOpen",
+    "context": {
+      "currentFloor": 1,
+      "queue": [],
+      "k": "1-",
+      "queued": false
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "doors.opened"
+      }
+    ]
+  },
+  {
+    "label": "step 11",
+    "value": "doorsOpen",
+    "context": {
+      "currentFloor": 1,
+      "queue": [
+        2
+      ],
+      "k": "1-2",
+      "queued": true
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 12",
+    "value": "doorsOpen",
+    "context": {
+      "currentFloor": 1,
+      "queue": [
+        2,
+        3
+      ],
+      "k": "1-23",
+      "queued": true
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 13",
+    "value": "doorsOpen",
+    "context": {
+      "currentFloor": 1,
+      "queue": [
+        2,
+        3
+      ],
+      "k": "1-23",
+      "queued": true
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 14",
+    "value": "moving",
+    "context": {
+      "currentFloor": 1,
+      "queue": [
+        2,
+        3
+      ],
+      "k": "1-23",
+      "queued": true
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "doors.closing"
+      }
+    ]
+  },
+  {
+    "label": "step 15",
+    "value": "doorsOpen",
+    "context": {
+      "currentFloor": 2,
+      "queue": [
+        3
+      ],
+      "k": "2-3",
+      "queued": true
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "doors.opened"
+      }
+    ]
+  },
+  {
+    "label": "step 16",
+    "value": "moving",
+    "context": {
+      "currentFloor": 2,
+      "queue": [
+        3
+      ],
+      "k": "2-3",
+      "queued": true
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "doors.closing"
+      }
+    ]
+  },
+  {
+    "label": "step 17",
+    "value": "doorsOpen",
+    "context": {
+      "currentFloor": 3,
+      "queue": [],
+      "k": "3-",
+      "queued": false
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "doors.opened"
+      }
+    ]
+  },
+  {
+    "label": "step 18",
+    "value": "doorsOpen",
+    "context": {
+      "currentFloor": 3,
+      "queue": [],
+      "k": "3-",
+      "queued": false
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 19",
+    "value": "doorsClosed",
+    "context": {
+      "currentFloor": 3,
+      "queue": [],
+      "k": "3-",
+      "queued": false
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "doors.closing"
+      }
+    ]
+  },
+  {
+    "label": "step 20",
+    "value": "moving",
+    "context": {
+      "currentFloor": 3,
+      "queue": [
+        1
+      ],
+      "k": "3-1",
+      "queued": true
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 21",
+    "value": "moving",
+    "context": {
+      "currentFloor": 3,
+      "queue": [
+        1,
+        2
+      ],
+      "k": "3-12",
+      "queued": true
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 22",
+    "value": "moving",
+    "context": {
+      "currentFloor": 2,
+      "queue": [
+        1,
+        2
+      ],
+      "k": "2-12",
+      "queued": true
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 23",
+    "value": "doorsOpen",
+    "context": {
+      "currentFloor": 1,
+      "queue": [
+        2
+      ],
+      "k": "1-2",
+      "queued": true
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "doors.opened"
+      }
+    ]
+  },
+  {
+    "label": "step 24",
+    "value": "doorsOpen",
+    "context": {
+      "currentFloor": 1,
+      "queue": [
+        2
+      ],
+      "k": "1-2",
+      "queued": true
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 25",
+    "value": "moving",
+    "context": {
+      "currentFloor": 1,
+      "queue": [
+        2
+      ],
+      "k": "1-2",
+      "queued": true
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "doors.closing"
+      }
+    ]
+  }
+]

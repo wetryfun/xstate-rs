@@ -1,0 +1,228 @@
+[
+  {
+    "label": "start",
+    "value": "idle",
+    "context": {
+      "id": "client-b",
+      "text": "",
+      "version": 0,
+      "pending": null,
+      "rebases": 0
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 0",
+    "value": "submitted",
+    "context": {
+      "id": "client-b",
+      "text": "",
+      "version": 0,
+      "pending": {
+        "text": "Hello "
+      },
+      "rebases": 0
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "toServer",
+        "baseVersion": 0,
+        "op": {
+          "text": "Hello "
+        }
+      },
+      {
+        "type": "submitted"
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "value": "idle",
+    "context": {
+      "id": "client-b",
+      "text": "",
+      "version": 1,
+      "pending": null,
+      "rebases": 0
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 2",
+    "value": "submitted",
+    "context": {
+      "id": "client-b",
+      "text": "",
+      "version": 1,
+      "pending": {
+        "text": "World"
+      },
+      "rebases": 0
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "toServer",
+        "baseVersion": 1,
+        "op": {
+          "text": "World"
+        }
+      },
+      {
+        "type": "submitted"
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "value": "submitted",
+    "context": {
+      "id": "client-b",
+      "text": "",
+      "version": 2,
+      "pending": {
+        "text": "World"
+      },
+      "rebases": 1
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "toServer",
+        "baseVersion": 2
+      },
+      {
+        "type": "submitted"
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "value": "idle",
+    "context": {
+      "id": "client-b",
+      "text": "",
+      "version": 3,
+      "pending": null,
+      "rebases": 1
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 5",
+    "value": "submitted",
+    "context": {
+      "id": "client-b",
+      "text": "",
+      "version": 3,
+      "pending": {
+        "text": "World"
+      },
+      "rebases": 1
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "toServer",
+        "baseVersion": 3,
+        "op": {
+          "text": "World"
+        }
+      },
+      {
+        "type": "submitted"
+      }
+    ]
+  },
+  {
+    "label": "step 6",
+    "value": "submitted",
+    "context": {
+      "id": "client-b",
+      "text": "",
+      "version": 3,
+      "pending": {
+        "text": "World"
+      },
+      "rebases": 2
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "toServer",
+        "baseVersion": 3
+      },
+      {
+        "type": "submitted"
+      }
+    ]
+  },
+  {
+    "label": "step 7",
+    "value": "conflicted",
+    "context": {
+      "id": "client-b",
+      "text": "",
+      "version": 3,
+      "pending": {
+        "text": "World"
+      },
+      "rebases": 2
+    },
+    "status": "done",
+    "emitted": [],
+    "output": {
+      "id": "client-b",
+      "dropped": {
+        "text": "World"
+      }
+    }
+  },
+  {
+    "label": "step 8",
+    "value": "conflicted",
+    "context": {
+      "id": "client-b",
+      "text": "",
+      "version": 3,
+      "pending": {
+        "text": "World"
+      },
+      "rebases": 2
+    },
+    "status": "done",
+    "emitted": [],
+    "output": {
+      "id": "client-b",
+      "dropped": {
+        "text": "World"
+      }
+    }
+  },
+  {
+    "label": "step 9",
+    "value": "conflicted",
+    "context": {
+      "id": "client-b",
+      "text": "",
+      "version": 3,
+      "pending": {
+        "text": "World"
+      },
+      "rebases": 2
+    },
+    "status": "done",
+    "emitted": [],
+    "output": {
+      "id": "client-b",
+      "dropped": {
+        "text": "World"
+      }
+    }
+  }
+]

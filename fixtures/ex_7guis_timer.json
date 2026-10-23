@@ -1,0 +1,1256 @@
+{
+  "source": "examples/7guis-timer-react/src/timerMachine.ts",
+  "notes": "durations 200/300/500 ms in 100 ms ticks; the ticks callback actor is dropped and TICK is sent by the steps (running's entry/exit emits stand for the ticker); lowering the duration clamps elapsed as the original's TICK min does; elapsed and duration are a composite key k",
+  "machine": {
+    "id": "timer",
+    "context": {
+      "elapsed": 0,
+      "duration": 300,
+      "k": "0|300"
+    },
+    "initial": "running",
+    "states": {
+      "running": {
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "ticker.started"
+            }
+          }
+        ],
+        "exit": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "ticker.stopped"
+            }
+          }
+        ],
+        "always": [
+          {
+            "target": "done",
+            "guard": {
+              "type": "ctxEquals",
+              "params": {
+                "key": "k",
+                "value": "200|200"
+              }
+            }
+          },
+          {
+            "target": "done",
+            "guard": {
+              "type": "ctxEquals",
+              "params": {
+                "key": "k",
+                "value": "300|300"
+              }
+            }
+          },
+          {
+            "target": "done",
+            "guard": {
+              "type": "ctxEquals",
+              "params": {
+                "key": "k",
+                "value": "500|500"
+              }
+            }
+          }
+        ],
+        "on": {
+          "TICK": [
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|200"
+                }
+              },
+              "context": {
+                "elapsed": 100,
+                "k": "100|200"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|200"
+                }
+              },
+              "context": {
+                "elapsed": 200,
+                "k": "200|200"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|300"
+                }
+              },
+              "context": {
+                "elapsed": 100,
+                "k": "100|300"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|300"
+                }
+              },
+              "context": {
+                "elapsed": 200,
+                "k": "200|300"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "200|300"
+                }
+              },
+              "context": {
+                "elapsed": 300,
+                "k": "300|300"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|500"
+                }
+              },
+              "context": {
+                "elapsed": 100,
+                "k": "100|500"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|500"
+                }
+              },
+              "context": {
+                "elapsed": 200,
+                "k": "200|500"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "200|500"
+                }
+              },
+              "context": {
+                "elapsed": 300,
+                "k": "300|500"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "300|500"
+                }
+              },
+              "context": {
+                "elapsed": 400,
+                "k": "400|500"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "400|500"
+                }
+              },
+              "context": {
+                "elapsed": 500,
+                "k": "500|500"
+              }
+            }
+          ]
+        }
+      },
+      "done": {}
+    },
+    "on": {
+      "setDuration": [
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 200
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0|200"
+            }
+          },
+          "context": {
+            "duration": 200,
+            "elapsed": 0,
+            "k": "0|200"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 300
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0|200"
+            }
+          },
+          "context": {
+            "duration": 300,
+            "elapsed": 0,
+            "k": "0|300"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 500
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0|200"
+            }
+          },
+          "context": {
+            "duration": 500,
+            "elapsed": 0,
+            "k": "0|500"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 200
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "100|200"
+            }
+          },
+          "context": {
+            "duration": 200,
+            "elapsed": 100,
+            "k": "100|200"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 300
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "100|200"
+            }
+          },
+          "context": {
+            "duration": 300,
+            "elapsed": 100,
+            "k": "100|300"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 500
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "100|200"
+            }
+          },
+          "context": {
+            "duration": 500,
+            "elapsed": 100,
+            "k": "100|500"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 200
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "200|200"
+            }
+          },
+          "context": {
+            "duration": 200,
+            "elapsed": 200,
+            "k": "200|200"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 300
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "200|200"
+            }
+          },
+          "context": {
+            "duration": 300,
+            "elapsed": 200,
+            "k": "200|300"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 500
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "200|200"
+            }
+          },
+          "context": {
+            "duration": 500,
+            "elapsed": 200,
+            "k": "200|500"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 200
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0|300"
+            }
+          },
+          "context": {
+            "duration": 200,
+            "elapsed": 0,
+            "k": "0|200"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 300
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0|300"
+            }
+          },
+          "context": {
+            "duration": 300,
+            "elapsed": 0,
+            "k": "0|300"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 500
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0|300"
+            }
+          },
+          "context": {
+            "duration": 500,
+            "elapsed": 0,
+            "k": "0|500"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 200
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "100|300"
+            }
+          },
+          "context": {
+            "duration": 200,
+            "elapsed": 100,
+            "k": "100|200"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 300
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "100|300"
+            }
+          },
+          "context": {
+            "duration": 300,
+            "elapsed": 100,
+            "k": "100|300"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 500
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "100|300"
+            }
+          },
+          "context": {
+            "duration": 500,
+            "elapsed": 100,
+            "k": "100|500"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 200
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "200|300"
+            }
+          },
+          "context": {
+            "duration": 200,
+            "elapsed": 200,
+            "k": "200|200"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 300
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "200|300"
+            }
+          },
+          "context": {
+            "duration": 300,
+            "elapsed": 200,
+            "k": "200|300"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 500
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "200|300"
+            }
+          },
+          "context": {
+            "duration": 500,
+            "elapsed": 200,
+            "k": "200|500"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 200
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "300|300"
+            }
+          },
+          "context": {
+            "duration": 200,
+            "elapsed": 200,
+            "k": "200|200"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 300
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "300|300"
+            }
+          },
+          "context": {
+            "duration": 300,
+            "elapsed": 300,
+            "k": "300|300"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 500
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "300|300"
+            }
+          },
+          "context": {
+            "duration": 500,
+            "elapsed": 300,
+            "k": "300|500"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 200
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0|500"
+            }
+          },
+          "context": {
+            "duration": 200,
+            "elapsed": 0,
+            "k": "0|200"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 300
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0|500"
+            }
+          },
+          "context": {
+            "duration": 300,
+            "elapsed": 0,
+            "k": "0|300"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 500
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0|500"
+            }
+          },
+          "context": {
+            "duration": 500,
+            "elapsed": 0,
+            "k": "0|500"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 200
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "100|500"
+            }
+          },
+          "context": {
+            "duration": 200,
+            "elapsed": 100,
+            "k": "100|200"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 300
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "100|500"
+            }
+          },
+          "context": {
+            "duration": 300,
+            "elapsed": 100,
+            "k": "100|300"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 500
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "100|500"
+            }
+          },
+          "context": {
+            "duration": 500,
+            "elapsed": 100,
+            "k": "100|500"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 200
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "200|500"
+            }
+          },
+          "context": {
+            "duration": 200,
+            "elapsed": 200,
+            "k": "200|200"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 300
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "200|500"
+            }
+          },
+          "context": {
+            "duration": 300,
+            "elapsed": 200,
+            "k": "200|300"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 500
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "200|500"
+            }
+          },
+          "context": {
+            "duration": 500,
+            "elapsed": 200,
+            "k": "200|500"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 200
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "300|500"
+            }
+          },
+          "context": {
+            "duration": 200,
+            "elapsed": 200,
+            "k": "200|200"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 300
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "300|500"
+            }
+          },
+          "context": {
+            "duration": 300,
+            "elapsed": 300,
+            "k": "300|300"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 500
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "300|500"
+            }
+          },
+          "context": {
+            "duration": 500,
+            "elapsed": 300,
+            "k": "300|500"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 200
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "400|500"
+            }
+          },
+          "context": {
+            "duration": 200,
+            "elapsed": 200,
+            "k": "200|200"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 300
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "400|500"
+            }
+          },
+          "context": {
+            "duration": 300,
+            "elapsed": 300,
+            "k": "300|300"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 500
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "400|500"
+            }
+          },
+          "context": {
+            "duration": 500,
+            "elapsed": 400,
+            "k": "400|500"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 200
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "500|500"
+            }
+          },
+          "context": {
+            "duration": 200,
+            "elapsed": 200,
+            "k": "200|200"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 300
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "500|500"
+            }
+          },
+          "context": {
+            "duration": 300,
+            "elapsed": 300,
+            "k": "300|300"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "matches": {
+            "duration": 500
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "500|500"
+            }
+          },
+          "context": {
+            "duration": 500,
+            "elapsed": 500,
+            "k": "500|500"
+          },
+          "reenter": true
+        }
+      ],
+      "reset": [
+        {
+          "target": ".running",
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0|200"
+            }
+          },
+          "context": {
+            "elapsed": 0,
+            "k": "0|200"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "100|200"
+            }
+          },
+          "context": {
+            "elapsed": 0,
+            "k": "0|200"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "200|200"
+            }
+          },
+          "context": {
+            "elapsed": 0,
+            "k": "0|200"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0|300"
+            }
+          },
+          "context": {
+            "elapsed": 0,
+            "k": "0|300"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "100|300"
+            }
+          },
+          "context": {
+            "elapsed": 0,
+            "k": "0|300"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "200|300"
+            }
+          },
+          "context": {
+            "elapsed": 0,
+            "k": "0|300"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "300|300"
+            }
+          },
+          "context": {
+            "elapsed": 0,
+            "k": "0|300"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0|500"
+            }
+          },
+          "context": {
+            "elapsed": 0,
+            "k": "0|500"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "100|500"
+            }
+          },
+          "context": {
+            "elapsed": 0,
+            "k": "0|500"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "200|500"
+            }
+          },
+          "context": {
+            "elapsed": 0,
+            "k": "0|500"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "300|500"
+            }
+          },
+          "context": {
+            "elapsed": 0,
+            "k": "0|500"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "400|500"
+            }
+          },
+          "context": {
+            "elapsed": 0,
+            "k": "0|500"
+          },
+          "reenter": true
+        },
+        {
+          "target": ".running",
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "500|500"
+            }
+          },
+          "context": {
+            "elapsed": 0,
+            "k": "0|500"
+          },
+          "reenter": true
+        }
+      ]
+    }
+  },
+  "steps": [
+    {
+      "at": 0,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 1,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 2,
+      "send": {
+        "type": "setDuration",
+        "duration": 500
+      }
+    },
+    {
+      "at": 3,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 4,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 5,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 6,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 7,
+      "send": {
+        "type": "setDuration",
+        "duration": 200
+      }
+    },
+    {
+      "at": 8,
+      "send": {
+        "type": "reset"
+      }
+    },
+    {
+      "at": 9,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 10,
+      "send": {
+        "type": "setDuration",
+        "duration": 300
+      }
+    },
+    {
+      "at": 11,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 12,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 13,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 14,
+      "send": {
+        "type": "reset"
+      }
+    },
+    {
+      "at": 15,
+      "send": {
+        "type": "setDuration",
+        "duration": 200
+      }
+    },
+    {
+      "at": 16,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 17,
+      "send": {
+        "type": "TICK"
+      }
+    }
+  ]
+}

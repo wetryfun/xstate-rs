@@ -1,0 +1,2392 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 0,
+              "duration": 30
+            },
+            "value": "loading",
+            "children": {
+              "video.loading:0": {
+                "$actor": "video/video.loading:0",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.loading"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "video/video.loading:0",
+            "incarnation": "1"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 0,
+        "effect": 1
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "video/video.loading:0",
+          "incarnation": "1"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 0,
+              "duration": 30
+            },
+            "value": "loading",
+            "children": {
+              "video.loading:0": {
+                "$actor": "video/video.loading:0",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.loading"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "video/video.loading:0",
+            "incarnation": "1"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 1,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 0,
+              "duration": 3
+            },
+            "value": {
+              "ready": "paused"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.ready",
+              "video.ready.paused"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "duration": 3
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "duration": 3
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 3,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 0,
+              "duration": 3
+            },
+            "value": {
+              "ready": "playing"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.ready",
+              "video.ready.playing"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "duration": 3
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "duration": 3
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 4,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 3",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 1,
+              "duration": 3
+            },
+            "value": {
+              "ready": "playing"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.ready",
+              "video.ready.playing"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "duration": 3
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "duration": 3
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 5,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 4",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 1,
+              "duration": 3
+            },
+            "value": {
+              "ready": "buffering"
+            },
+            "children": {},
+            "timers": [
+              {
+                "delay": 1500,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 1500,
+                  "stateId": "video.ready.buffering"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.ready",
+              "video.ready.buffering"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "duration": 3
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "duration": 3
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 1500,
+          "sequence": 6,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 1500,
+              "stateId": "video.ready.buffering"
+            }
+          }
+        }
+      ],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 7,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 5",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 1,
+              "duration": 3
+            },
+            "value": {
+              "ready": "buffering"
+            },
+            "children": {},
+            "timers": [
+              {
+                "delay": 1500,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 1500,
+                  "stateId": "video.ready.buffering"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.ready",
+              "video.ready.buffering"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "duration": 3
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "duration": 3
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 1500,
+          "sequence": 6,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 1500,
+              "stateId": "video.ready.buffering"
+            }
+          }
+        }
+      ],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 8,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 6",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 1500,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 1,
+              "duration": 3
+            },
+            "value": {
+              "ready": "playing"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.ready",
+              "video.ready.playing"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "duration": 3
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "duration": 3
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 9,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 7",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 1500,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 2,
+              "duration": 3
+            },
+            "value": {
+              "ready": "playing"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.ready",
+              "video.ready.playing"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "duration": 3
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "duration": 3
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 10,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 8",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 1500,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 2,
+              "duration": 3
+            },
+            "value": {
+              "ready": "paused"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.ready",
+              "video.ready.paused"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "duration": 3
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "duration": 3
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 11,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 9",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 1500,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 1,
+              "duration": 3
+            },
+            "value": {
+              "ready": "paused"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.ready",
+              "video.ready.paused"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "duration": 3
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "duration": 3
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 12,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 10",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 1500,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 1,
+              "duration": 3
+            },
+            "value": {
+              "ready": "playing"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.ready",
+              "video.ready.playing"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "duration": 3
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "duration": 3
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 13,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 11",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 1500,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 2,
+              "duration": 3
+            },
+            "value": {
+              "ready": "playing"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.ready",
+              "video.ready.playing"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "duration": 3
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "duration": 3
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 14,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 12",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 1500,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 3,
+              "duration": 3
+            },
+            "value": {
+              "ready": "ended"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.ready",
+              "video.ready.ended"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "duration": 3
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "duration": 3
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "type": "video.ended",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "video.ended"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 15,
+        "effect": 2
+      }
+    },
+    "effects": [
+      {
+        "id": "system:1",
+        "source": {
+          "$actor": "video",
+          "incarnation": "0"
+        },
+        "type": "video.ended",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "video.ended"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 13",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 1500,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 3,
+              "duration": 3
+            },
+            "value": {
+              "ready": "ended"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.ready",
+              "video.ready.ended"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "duration": 3
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "duration": 3
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "type": "video.ended",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "video.ended"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 16,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 14",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 1500,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 0,
+              "duration": 3
+            },
+            "value": {
+              "ready": "paused"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.ready",
+              "video.ready.paused"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "duration": 3
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "duration": 3
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "type": "video.ended",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "video.ended"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 17,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 15",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 1500,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 0,
+              "duration": 3
+            },
+            "value": {
+              "ready": "playing"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.ready",
+              "video.ready.playing"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "duration": 3
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "duration": 3
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "type": "video.ended",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "video.ended"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 18,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 16",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 1500,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 3,
+              "duration": 3
+            },
+            "value": {
+              "ready": "ended"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.ready",
+              "video.ready.ended"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "duration": 3
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "duration": 3
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "type": "video.ended",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "video.ended"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "type": "video.ended",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "video.ended"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 19,
+        "effect": 3
+      }
+    },
+    "effects": [
+      {
+        "id": "system:2",
+        "source": {
+          "$actor": "video",
+          "incarnation": "0"
+        },
+        "type": "video.ended",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "video.ended"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 17",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 1500,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 0,
+              "duration": 3
+            },
+            "value": {
+              "ready": "playing"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.ready",
+              "video.ready.playing"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "duration": 3
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "duration": 3
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "type": "video.ended",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "video.ended"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "type": "video.ended",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "video.ended"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 20,
+        "effect": 3
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 18",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 1500,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 0,
+              "duration": 3
+            },
+            "value": {
+              "ready": "buffering"
+            },
+            "children": {},
+            "timers": [
+              {
+                "delay": 1500,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 1500,
+                  "stateId": "video.ready.buffering"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.ready",
+              "video.ready.buffering"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "duration": 3
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "duration": 3
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "occurrence": 1,
+          "scheduledAt": 1500,
+          "dueAt": 3000,
+          "sequence": 21,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 1500,
+              "stateId": "video.ready.buffering"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "type": "video.ended",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "video.ended"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "type": "video.ended",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "video.ended"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 2,
+        "sequence": 22,
+        "effect": 3
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 19",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 1500,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 0,
+              "duration": 3
+            },
+            "value": {
+              "ready": "paused"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.ready",
+              "video.ready.paused"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "duration": 3
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "duration": 3
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "type": "video.ended",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "video.ended"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "type": "video.ended",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "video.ended"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 2,
+        "sequence": 23,
+        "effect": 3
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 20",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 4000,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 0,
+              "duration": 3
+            },
+            "value": {
+              "ready": "paused"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.ready",
+              "video.ready.paused"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "duration": 3
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "duration": 3
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "type": "video.ended",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "video.ended"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "type": "video.ended",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "video.ended"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 2,
+        "sequence": 23,
+        "effect": 3
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 21",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 4000,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 0,
+              "duration": 3
+            },
+            "value": {
+              "ready": "playing"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.ready",
+              "video.ready.playing"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "duration": 3
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "duration": 3
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "type": "video.ended",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "video.ended"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "type": "video.ended",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "video.ended"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 2,
+        "sequence": 24,
+        "effect": 3
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 22",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 4000,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 1,
+              "duration": 3
+            },
+            "value": {
+              "ready": "playing"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.ready",
+              "video.ready.playing"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "duration": 3
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "duration": 3
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "type": "video.ended",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "video.ended"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "type": "video.ended",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "video.ended"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 2,
+        "sequence": 25,
+        "effect": 3
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 23",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 4000,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 0,
+              "duration": 3
+            },
+            "value": {
+              "ready": "playing"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.ready",
+              "video.ready.playing"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "duration": 3
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "duration": 3
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "type": "video.ended",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "video.ended"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "type": "video.ended",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "video.ended"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 2,
+        "sequence": 26,
+        "effect": 3
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 24",
+    "snapshot": {
+      "root": "video",
+      "executionId": "system",
+      "now": 4000,
+      "actors": {
+        "video": {
+          "id": "video",
+          "address": "video",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "currentTime": 1,
+              "duration": 3
+            },
+            "value": {
+              "ready": "playing"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "video",
+              "video.ready",
+              "video.ready.playing"
+            ]
+          }
+        },
+        "video/video.loading:0": {
+          "id": "video.loading:0",
+          "address": "video/video.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadMetadata",
+          "parent": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "duration": 3
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "duration": 3
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "type": "video.ended",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "video.ended"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "video",
+            "incarnation": "0"
+          },
+          "type": "video.ended",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "video.ended"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 2,
+        "sequence": 27,
+        "effect": 3
+      }
+    },
+    "effects": []
+  }
+]

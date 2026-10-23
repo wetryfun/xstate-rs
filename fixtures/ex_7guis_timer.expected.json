@@ -1,0 +1,263 @@
+[
+  {
+    "label": "start",
+    "value": "running",
+    "context": {
+      "elapsed": 0,
+      "duration": 300,
+      "k": "0|300"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "ticker.started"
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "value": "running",
+    "context": {
+      "elapsed": 100,
+      "duration": 300,
+      "k": "100|300"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 1",
+    "value": "running",
+    "context": {
+      "elapsed": 200,
+      "duration": 300,
+      "k": "200|300"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 2",
+    "value": "running",
+    "context": {
+      "elapsed": 200,
+      "duration": 500,
+      "k": "200|500"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "ticker.stopped"
+      },
+      {
+        "type": "ticker.started"
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "value": "running",
+    "context": {
+      "elapsed": 300,
+      "duration": 500,
+      "k": "300|500"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 4",
+    "value": "running",
+    "context": {
+      "elapsed": 400,
+      "duration": 500,
+      "k": "400|500"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 5",
+    "value": "done",
+    "context": {
+      "elapsed": 500,
+      "duration": 500,
+      "k": "500|500"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "ticker.stopped"
+      }
+    ]
+  },
+  {
+    "label": "step 6",
+    "value": "done",
+    "context": {
+      "elapsed": 500,
+      "duration": 500,
+      "k": "500|500"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 7",
+    "value": "done",
+    "context": {
+      "elapsed": 200,
+      "duration": 200,
+      "k": "200|200"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "ticker.started"
+      },
+      {
+        "type": "ticker.stopped"
+      }
+    ]
+  },
+  {
+    "label": "step 8",
+    "value": "running",
+    "context": {
+      "elapsed": 0,
+      "duration": 200,
+      "k": "0|200"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "ticker.started"
+      }
+    ]
+  },
+  {
+    "label": "step 9",
+    "value": "running",
+    "context": {
+      "elapsed": 100,
+      "duration": 200,
+      "k": "100|200"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 10",
+    "value": "running",
+    "context": {
+      "elapsed": 100,
+      "duration": 300,
+      "k": "100|300"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "ticker.stopped"
+      },
+      {
+        "type": "ticker.started"
+      }
+    ]
+  },
+  {
+    "label": "step 11",
+    "value": "running",
+    "context": {
+      "elapsed": 200,
+      "duration": 300,
+      "k": "200|300"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 12",
+    "value": "done",
+    "context": {
+      "elapsed": 300,
+      "duration": 300,
+      "k": "300|300"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "ticker.stopped"
+      }
+    ]
+  },
+  {
+    "label": "step 13",
+    "value": "done",
+    "context": {
+      "elapsed": 300,
+      "duration": 300,
+      "k": "300|300"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 14",
+    "value": "running",
+    "context": {
+      "elapsed": 0,
+      "duration": 300,
+      "k": "0|300"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "ticker.started"
+      }
+    ]
+  },
+  {
+    "label": "step 15",
+    "value": "running",
+    "context": {
+      "elapsed": 0,
+      "duration": 200,
+      "k": "0|200"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "ticker.stopped"
+      },
+      {
+        "type": "ticker.started"
+      }
+    ]
+  },
+  {
+    "label": "step 16",
+    "value": "running",
+    "context": {
+      "elapsed": 100,
+      "duration": 200,
+      "k": "100|200"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 17",
+    "value": "done",
+    "context": {
+      "elapsed": 200,
+      "duration": 200,
+      "k": "200|200"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "ticker.stopped"
+      }
+    ]
+  }
+]

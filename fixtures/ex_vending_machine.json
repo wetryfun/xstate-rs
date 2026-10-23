@@ -1,0 +1,4484 @@
+{
+  "source": "examples/vending-machine/src/vendingMachine.ts",
+  "notes": "coins of 25 and 100 up to 150 credit; credit and stock are a composite key k, unrolled over reachable values; returningChange's entry assign (computed from credit) moved onto the transitions into it",
+  "machine": {
+    "id": "vendingMachine",
+    "context": {
+      "credit": 0,
+      "stock": {
+        "cola": 2,
+        "chips": 1,
+        "gum": 0
+      },
+      "dispensing": null,
+      "change": 0,
+      "message": "Insert coins",
+      "k": "0|2|1"
+    },
+    "initial": "idle",
+    "states": {
+      "idle": {
+        "on": {
+          "insertCoin": [
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|2|1"
+                }
+              },
+              "context": {
+                "credit": 25,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "25|2|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 100
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|2|1"
+                }
+              },
+              "context": {
+                "credit": 100,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "100|2|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|2|1"
+                }
+              },
+              "context": {
+                "credit": 50,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "50|2|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 100
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|2|1"
+                }
+              },
+              "context": {
+                "credit": 125,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "125|2|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|2|1"
+                }
+              },
+              "context": {
+                "credit": 125,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "125|2|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|2|1"
+                }
+              },
+              "context": {
+                "credit": 150,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "150|2|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|2|0"
+                }
+              },
+              "context": {
+                "credit": 25,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "25|2|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 100
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|2|0"
+                }
+              },
+              "context": {
+                "credit": 100,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "100|2|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|2|0"
+                }
+              },
+              "context": {
+                "credit": 50,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "50|2|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 100
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|2|0"
+                }
+              },
+              "context": {
+                "credit": 125,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "125|2|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|2|0"
+                }
+              },
+              "context": {
+                "credit": 125,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "125|2|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|2|0"
+                }
+              },
+              "context": {
+                "credit": 150,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "150|2|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|1|0"
+                }
+              },
+              "context": {
+                "credit": 25,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "25|1|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 100
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|1|0"
+                }
+              },
+              "context": {
+                "credit": 100,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "100|1|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|1|0"
+                }
+              },
+              "context": {
+                "credit": 50,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "50|1|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 100
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|1|0"
+                }
+              },
+              "context": {
+                "credit": 125,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "125|1|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|1|0"
+                }
+              },
+              "context": {
+                "credit": 125,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "125|1|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|1|0"
+                }
+              },
+              "context": {
+                "credit": 150,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "150|1|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|0|0"
+                }
+              },
+              "context": {
+                "credit": 25,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "25|0|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 100
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|0|0"
+                }
+              },
+              "context": {
+                "credit": 100,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "100|0|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|0|0"
+                }
+              },
+              "context": {
+                "credit": 50,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "50|0|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 100
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|0|0"
+                }
+              },
+              "context": {
+                "credit": 125,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "125|0|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|0|0"
+                }
+              },
+              "context": {
+                "credit": 125,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "125|0|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|0|0"
+                }
+              },
+              "context": {
+                "credit": 150,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "150|0|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|0|0"
+                }
+              },
+              "context": {
+                "credit": 75,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "75|0|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 100
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|0|0"
+                }
+              },
+              "context": {
+                "credit": 150,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "150|0|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|0|0"
+                }
+              },
+              "context": {
+                "credit": 100,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "100|0|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|1|0"
+                }
+              },
+              "context": {
+                "credit": 75,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "75|1|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 100
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|1|0"
+                }
+              },
+              "context": {
+                "credit": 150,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "150|1|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|1|0"
+                }
+              },
+              "context": {
+                "credit": 100,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "100|1|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|2|0"
+                }
+              },
+              "context": {
+                "credit": 75,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "75|2|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 100
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|2|0"
+                }
+              },
+              "context": {
+                "credit": 150,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "150|2|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|2|0"
+                }
+              },
+              "context": {
+                "credit": 100,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "100|2|0"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|1|1"
+                }
+              },
+              "context": {
+                "credit": 25,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "25|1|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 100
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|1|1"
+                }
+              },
+              "context": {
+                "credit": 100,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "100|1|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|1|1"
+                }
+              },
+              "context": {
+                "credit": 50,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "50|1|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 100
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|1|1"
+                }
+              },
+              "context": {
+                "credit": 125,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "125|1|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|1|1"
+                }
+              },
+              "context": {
+                "credit": 125,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "125|1|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|1|1"
+                }
+              },
+              "context": {
+                "credit": 150,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "150|1|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|0|1"
+                }
+              },
+              "context": {
+                "credit": 25,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "25|0|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 100
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|0|1"
+                }
+              },
+              "context": {
+                "credit": 100,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "100|0|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|0|1"
+                }
+              },
+              "context": {
+                "credit": 50,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "50|0|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 100
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|0|1"
+                }
+              },
+              "context": {
+                "credit": 125,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "125|0|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|0|1"
+                }
+              },
+              "context": {
+                "credit": 125,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "125|0|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|0|1"
+                }
+              },
+              "context": {
+                "credit": 150,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "150|0|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|0|1"
+                }
+              },
+              "context": {
+                "credit": 75,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "75|0|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 100
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|0|1"
+                }
+              },
+              "context": {
+                "credit": 150,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "150|0|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|0|1"
+                }
+              },
+              "context": {
+                "credit": 100,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "100|0|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|1|1"
+                }
+              },
+              "context": {
+                "credit": 75,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "75|1|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 100
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|1|1"
+                }
+              },
+              "context": {
+                "credit": 150,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "150|1|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|1|1"
+                }
+              },
+              "context": {
+                "credit": 100,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "100|1|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|2|1"
+                }
+              },
+              "context": {
+                "credit": 75,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "75|2|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 100
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|2|1"
+                }
+              },
+              "context": {
+                "credit": 150,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "150|2|1"
+              }
+            },
+            {
+              "matches": {
+                "value": 25
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|2|1"
+                }
+              },
+              "context": {
+                "credit": 100,
+                "change": 0,
+                "message": "Insert coins or make a selection",
+                "k": "100|2|1"
+              }
+            }
+          ],
+          "select": [
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|2|1"
+                }
+              },
+              "context": {
+                "message": "Add 125\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|2|1"
+                }
+              },
+              "context": {
+                "message": "Add 100\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|2|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|2|1"
+                }
+              },
+              "context": {
+                "message": "Add 100\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|2|1"
+                }
+              },
+              "context": {
+                "message": "Add 75\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|2|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|2|1"
+                }
+              },
+              "context": {
+                "message": "Add 25\u00a2 more"
+              }
+            },
+            {
+              "target": "dispensing",
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|2|1"
+                }
+              },
+              "context": {
+                "credit": 0,
+                "stock": {
+                  "cola": 2,
+                  "chips": 0,
+                  "gum": 0
+                },
+                "dispensing": "chips",
+                "message": "Dispensing\u2026",
+                "k": "0|2|0"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|2|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "target": "dispensing",
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|2|1"
+                }
+              },
+              "context": {
+                "credit": 0,
+                "stock": {
+                  "cola": 1,
+                  "chips": 1,
+                  "gum": 0
+                },
+                "dispensing": "cola",
+                "message": "Dispensing\u2026",
+                "k": "0|1|1"
+              }
+            },
+            {
+              "target": "dispensing",
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|2|1"
+                }
+              },
+              "context": {
+                "credit": 25,
+                "stock": {
+                  "cola": 2,
+                  "chips": 0,
+                  "gum": 0
+                },
+                "dispensing": "chips",
+                "message": "Dispensing\u2026",
+                "k": "25|2|0"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|2|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|2|0"
+                }
+              },
+              "context": {
+                "message": "Add 125\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|2|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|2|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|2|0"
+                }
+              },
+              "context": {
+                "message": "Add 100\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|2|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|2|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|2|0"
+                }
+              },
+              "context": {
+                "message": "Add 25\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|2|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|2|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "target": "dispensing",
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|2|0"
+                }
+              },
+              "context": {
+                "credit": 0,
+                "stock": {
+                  "cola": 1,
+                  "chips": 0,
+                  "gum": 0
+                },
+                "dispensing": "cola",
+                "message": "Dispensing\u2026",
+                "k": "0|1|0"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|2|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|2|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "target": "dispensing",
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|2|0"
+                }
+              },
+              "context": {
+                "credit": 25,
+                "stock": {
+                  "cola": 1,
+                  "chips": 0,
+                  "gum": 0
+                },
+                "dispensing": "cola",
+                "message": "Dispensing\u2026",
+                "k": "25|1|0"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|2|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|2|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|1|0"
+                }
+              },
+              "context": {
+                "message": "Add 125\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|1|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|1|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|1|0"
+                }
+              },
+              "context": {
+                "message": "Add 100\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|1|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|1|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|1|0"
+                }
+              },
+              "context": {
+                "message": "Add 25\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|1|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|1|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "target": "dispensing",
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|1|0"
+                }
+              },
+              "context": {
+                "credit": 0,
+                "stock": {
+                  "cola": 0,
+                  "chips": 0,
+                  "gum": 0
+                },
+                "dispensing": "cola",
+                "message": "Dispensing\u2026",
+                "k": "0|0|0"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|1|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|1|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "target": "dispensing",
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|1|0"
+                }
+              },
+              "context": {
+                "credit": 25,
+                "stock": {
+                  "cola": 0,
+                  "chips": 0,
+                  "gum": 0
+                },
+                "dispensing": "cola",
+                "message": "Dispensing\u2026",
+                "k": "25|0|0"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|1|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|1|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|0|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|0|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|0|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|0|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|0|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|0|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|0|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|0|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|0|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|0|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|0|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|0|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|0|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|0|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|0|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|0|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|0|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|0|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|0|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|0|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|0|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|1|0"
+                }
+              },
+              "context": {
+                "message": "Add 75\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|1|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|1|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|1|0"
+                }
+              },
+              "context": {
+                "message": "Add 50\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|1|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|1|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|2|0"
+                }
+              },
+              "context": {
+                "message": "Add 75\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|2|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|2|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|2|0"
+                }
+              },
+              "context": {
+                "message": "Add 50\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|2|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|2|0"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "target": "dispensing",
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|2|1"
+                }
+              },
+              "context": {
+                "credit": 25,
+                "stock": {
+                  "cola": 1,
+                  "chips": 1,
+                  "gum": 0
+                },
+                "dispensing": "cola",
+                "message": "Dispensing\u2026",
+                "k": "25|1|1"
+              }
+            },
+            {
+              "target": "dispensing",
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|2|1"
+                }
+              },
+              "context": {
+                "credit": 50,
+                "stock": {
+                  "cola": 2,
+                  "chips": 0,
+                  "gum": 0
+                },
+                "dispensing": "chips",
+                "message": "Dispensing\u2026",
+                "k": "50|2|0"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|2|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|1|1"
+                }
+              },
+              "context": {
+                "message": "Add 125\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|1|1"
+                }
+              },
+              "context": {
+                "message": "Add 100\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|1|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|1|1"
+                }
+              },
+              "context": {
+                "message": "Add 100\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|1|1"
+                }
+              },
+              "context": {
+                "message": "Add 75\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|1|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|1|1"
+                }
+              },
+              "context": {
+                "message": "Add 25\u00a2 more"
+              }
+            },
+            {
+              "target": "dispensing",
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|1|1"
+                }
+              },
+              "context": {
+                "credit": 0,
+                "stock": {
+                  "cola": 1,
+                  "chips": 0,
+                  "gum": 0
+                },
+                "dispensing": "chips",
+                "message": "Dispensing\u2026",
+                "k": "0|1|0"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|1|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "target": "dispensing",
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|1|1"
+                }
+              },
+              "context": {
+                "credit": 0,
+                "stock": {
+                  "cola": 0,
+                  "chips": 1,
+                  "gum": 0
+                },
+                "dispensing": "cola",
+                "message": "Dispensing\u2026",
+                "k": "0|0|1"
+              }
+            },
+            {
+              "target": "dispensing",
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|1|1"
+                }
+              },
+              "context": {
+                "credit": 25,
+                "stock": {
+                  "cola": 1,
+                  "chips": 0,
+                  "gum": 0
+                },
+                "dispensing": "chips",
+                "message": "Dispensing\u2026",
+                "k": "25|1|0"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|1|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "target": "dispensing",
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|1|1"
+                }
+              },
+              "context": {
+                "credit": 25,
+                "stock": {
+                  "cola": 0,
+                  "chips": 1,
+                  "gum": 0
+                },
+                "dispensing": "cola",
+                "message": "Dispensing\u2026",
+                "k": "25|0|1"
+              }
+            },
+            {
+              "target": "dispensing",
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|1|1"
+                }
+              },
+              "context": {
+                "credit": 50,
+                "stock": {
+                  "cola": 1,
+                  "chips": 0,
+                  "gum": 0
+                },
+                "dispensing": "chips",
+                "message": "Dispensing\u2026",
+                "k": "50|1|0"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|1|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|0|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|0|1"
+                }
+              },
+              "context": {
+                "message": "Add 100\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|0|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|0|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|0|1"
+                }
+              },
+              "context": {
+                "message": "Add 75\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|0|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|0|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "target": "dispensing",
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|0|1"
+                }
+              },
+              "context": {
+                "credit": 0,
+                "stock": {
+                  "cola": 0,
+                  "chips": 0,
+                  "gum": 0
+                },
+                "dispensing": "chips",
+                "message": "Dispensing\u2026",
+                "k": "0|0|0"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|0|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|0|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "target": "dispensing",
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|0|1"
+                }
+              },
+              "context": {
+                "credit": 25,
+                "stock": {
+                  "cola": 0,
+                  "chips": 0,
+                  "gum": 0
+                },
+                "dispensing": "chips",
+                "message": "Dispensing\u2026",
+                "k": "25|0|0"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|0|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|0|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "target": "dispensing",
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|0|1"
+                }
+              },
+              "context": {
+                "credit": 50,
+                "stock": {
+                  "cola": 0,
+                  "chips": 0,
+                  "gum": 0
+                },
+                "dispensing": "chips",
+                "message": "Dispensing\u2026",
+                "k": "50|0|0"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|0|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|0|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|0|1"
+                }
+              },
+              "context": {
+                "message": "Add 50\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|0|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|0|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|0|1"
+                }
+              },
+              "context": {
+                "message": "Add 25\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|0|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|1|1"
+                }
+              },
+              "context": {
+                "message": "Add 75\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|1|1"
+                }
+              },
+              "context": {
+                "message": "Add 50\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|1|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|1|1"
+                }
+              },
+              "context": {
+                "message": "Add 50\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|1|1"
+                }
+              },
+              "context": {
+                "message": "Add 25\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|1|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|2|1"
+                }
+              },
+              "context": {
+                "message": "Add 75\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|2|1"
+                }
+              },
+              "context": {
+                "message": "Add 50\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|2|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            },
+            {
+              "matches": {
+                "id": "cola"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|2|1"
+                }
+              },
+              "context": {
+                "message": "Add 50\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "chips"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|2|1"
+                }
+              },
+              "context": {
+                "message": "Add 25\u00a2 more"
+              }
+            },
+            {
+              "matches": {
+                "id": "gum"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|2|1"
+                }
+              },
+              "context": {
+                "message": "Sold out"
+              }
+            }
+          ],
+          "refund": [
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|2|1"
+                }
+              },
+              "context": {
+                "change": 25,
+                "credit": 0,
+                "message": "Returning 25\u00a2",
+                "k": "0|2|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|2|1"
+                }
+              },
+              "context": {
+                "change": 100,
+                "credit": 0,
+                "message": "Returning 100\u00a2",
+                "k": "0|2|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|2|1"
+                }
+              },
+              "context": {
+                "change": 125,
+                "credit": 0,
+                "message": "Returning 125\u00a2",
+                "k": "0|2|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|2|0"
+                }
+              },
+              "context": {
+                "change": 25,
+                "credit": 0,
+                "message": "Returning 25\u00a2",
+                "k": "0|2|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|2|0"
+                }
+              },
+              "context": {
+                "change": 100,
+                "credit": 0,
+                "message": "Returning 100\u00a2",
+                "k": "0|2|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|2|0"
+                }
+              },
+              "context": {
+                "change": 125,
+                "credit": 0,
+                "message": "Returning 125\u00a2",
+                "k": "0|2|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|2|0"
+                }
+              },
+              "context": {
+                "change": 150,
+                "credit": 0,
+                "message": "Returning 150\u00a2",
+                "k": "0|2|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|1|0"
+                }
+              },
+              "context": {
+                "change": 25,
+                "credit": 0,
+                "message": "Returning 25\u00a2",
+                "k": "0|1|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|1|0"
+                }
+              },
+              "context": {
+                "change": 100,
+                "credit": 0,
+                "message": "Returning 100\u00a2",
+                "k": "0|1|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|1|0"
+                }
+              },
+              "context": {
+                "change": 125,
+                "credit": 0,
+                "message": "Returning 125\u00a2",
+                "k": "0|1|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|1|0"
+                }
+              },
+              "context": {
+                "change": 150,
+                "credit": 0,
+                "message": "Returning 150\u00a2",
+                "k": "0|1|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|0|0"
+                }
+              },
+              "context": {
+                "change": 25,
+                "credit": 0,
+                "message": "Returning 25\u00a2",
+                "k": "0|0|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|0|0"
+                }
+              },
+              "context": {
+                "change": 100,
+                "credit": 0,
+                "message": "Returning 100\u00a2",
+                "k": "0|0|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|0|0"
+                }
+              },
+              "context": {
+                "change": 125,
+                "credit": 0,
+                "message": "Returning 125\u00a2",
+                "k": "0|0|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|0|0"
+                }
+              },
+              "context": {
+                "change": 150,
+                "credit": 0,
+                "message": "Returning 150\u00a2",
+                "k": "0|0|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|0|0"
+                }
+              },
+              "context": {
+                "change": 50,
+                "credit": 0,
+                "message": "Returning 50\u00a2",
+                "k": "0|0|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|0|0"
+                }
+              },
+              "context": {
+                "change": 75,
+                "credit": 0,
+                "message": "Returning 75\u00a2",
+                "k": "0|0|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|1|0"
+                }
+              },
+              "context": {
+                "change": 50,
+                "credit": 0,
+                "message": "Returning 50\u00a2",
+                "k": "0|1|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|1|0"
+                }
+              },
+              "context": {
+                "change": 75,
+                "credit": 0,
+                "message": "Returning 75\u00a2",
+                "k": "0|1|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|2|0"
+                }
+              },
+              "context": {
+                "change": 50,
+                "credit": 0,
+                "message": "Returning 50\u00a2",
+                "k": "0|2|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|2|0"
+                }
+              },
+              "context": {
+                "change": 75,
+                "credit": 0,
+                "message": "Returning 75\u00a2",
+                "k": "0|2|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|2|1"
+                }
+              },
+              "context": {
+                "change": 150,
+                "credit": 0,
+                "message": "Returning 150\u00a2",
+                "k": "0|2|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|1|1"
+                }
+              },
+              "context": {
+                "change": 25,
+                "credit": 0,
+                "message": "Returning 25\u00a2",
+                "k": "0|1|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|1|1"
+                }
+              },
+              "context": {
+                "change": 100,
+                "credit": 0,
+                "message": "Returning 100\u00a2",
+                "k": "0|1|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|1|1"
+                }
+              },
+              "context": {
+                "change": 125,
+                "credit": 0,
+                "message": "Returning 125\u00a2",
+                "k": "0|1|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|1|1"
+                }
+              },
+              "context": {
+                "change": 150,
+                "credit": 0,
+                "message": "Returning 150\u00a2",
+                "k": "0|1|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|0|1"
+                }
+              },
+              "context": {
+                "change": 25,
+                "credit": 0,
+                "message": "Returning 25\u00a2",
+                "k": "0|0|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|0|1"
+                }
+              },
+              "context": {
+                "change": 100,
+                "credit": 0,
+                "message": "Returning 100\u00a2",
+                "k": "0|0|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|0|1"
+                }
+              },
+              "context": {
+                "change": 125,
+                "credit": 0,
+                "message": "Returning 125\u00a2",
+                "k": "0|0|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|0|1"
+                }
+              },
+              "context": {
+                "change": 150,
+                "credit": 0,
+                "message": "Returning 150\u00a2",
+                "k": "0|0|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|0|1"
+                }
+              },
+              "context": {
+                "change": 50,
+                "credit": 0,
+                "message": "Returning 50\u00a2",
+                "k": "0|0|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|0|1"
+                }
+              },
+              "context": {
+                "change": 75,
+                "credit": 0,
+                "message": "Returning 75\u00a2",
+                "k": "0|0|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|1|1"
+                }
+              },
+              "context": {
+                "change": 50,
+                "credit": 0,
+                "message": "Returning 50\u00a2",
+                "k": "0|1|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|1|1"
+                }
+              },
+              "context": {
+                "change": 75,
+                "credit": 0,
+                "message": "Returning 75\u00a2",
+                "k": "0|1|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|2|1"
+                }
+              },
+              "context": {
+                "change": 50,
+                "credit": 0,
+                "message": "Returning 50\u00a2",
+                "k": "0|2|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|2|1"
+                }
+              },
+              "context": {
+                "change": 75,
+                "credit": 0,
+                "message": "Returning 75\u00a2",
+                "k": "0|2|1"
+              }
+            }
+          ]
+        }
+      },
+      "dispensing": {
+        "after": {
+          "1200": [
+            {
+              "target": "idle",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|2|1"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "message": "Enjoy!"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|2|1"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 25,
+                "credit": 0,
+                "message": "Returning 25\u00a2",
+                "k": "0|2|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|2|1"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 100,
+                "credit": 0,
+                "message": "Returning 100\u00a2",
+                "k": "0|2|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|2|1"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 125,
+                "credit": 0,
+                "message": "Returning 125\u00a2",
+                "k": "0|2|1"
+              }
+            },
+            {
+              "target": "idle",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|2|0"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "message": "Enjoy!"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|2|0"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 25,
+                "credit": 0,
+                "message": "Returning 25\u00a2",
+                "k": "0|2|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|2|0"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 100,
+                "credit": 0,
+                "message": "Returning 100\u00a2",
+                "k": "0|2|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|2|0"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 125,
+                "credit": 0,
+                "message": "Returning 125\u00a2",
+                "k": "0|2|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|2|0"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 150,
+                "credit": 0,
+                "message": "Returning 150\u00a2",
+                "k": "0|2|0"
+              }
+            },
+            {
+              "target": "idle",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|1|0"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "message": "Enjoy!"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|1|0"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 25,
+                "credit": 0,
+                "message": "Returning 25\u00a2",
+                "k": "0|1|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|1|0"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 100,
+                "credit": 0,
+                "message": "Returning 100\u00a2",
+                "k": "0|1|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|1|0"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 125,
+                "credit": 0,
+                "message": "Returning 125\u00a2",
+                "k": "0|1|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|1|0"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 150,
+                "credit": 0,
+                "message": "Returning 150\u00a2",
+                "k": "0|1|0"
+              }
+            },
+            {
+              "target": "idle",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|0|0"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "message": "Enjoy!"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|0|0"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 25,
+                "credit": 0,
+                "message": "Returning 25\u00a2",
+                "k": "0|0|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|0|0"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 100,
+                "credit": 0,
+                "message": "Returning 100\u00a2",
+                "k": "0|0|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|0|0"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 125,
+                "credit": 0,
+                "message": "Returning 125\u00a2",
+                "k": "0|0|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|0|0"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 150,
+                "credit": 0,
+                "message": "Returning 150\u00a2",
+                "k": "0|0|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|0|0"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 50,
+                "credit": 0,
+                "message": "Returning 50\u00a2",
+                "k": "0|0|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|0|0"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 75,
+                "credit": 0,
+                "message": "Returning 75\u00a2",
+                "k": "0|0|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|1|0"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 50,
+                "credit": 0,
+                "message": "Returning 50\u00a2",
+                "k": "0|1|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|1|0"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 75,
+                "credit": 0,
+                "message": "Returning 75\u00a2",
+                "k": "0|1|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|2|0"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 50,
+                "credit": 0,
+                "message": "Returning 50\u00a2",
+                "k": "0|2|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|2|0"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 75,
+                "credit": 0,
+                "message": "Returning 75\u00a2",
+                "k": "0|2|0"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|2|1"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 150,
+                "credit": 0,
+                "message": "Returning 150\u00a2",
+                "k": "0|2|1"
+              }
+            },
+            {
+              "target": "idle",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|1|1"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "message": "Enjoy!"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|1|1"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 25,
+                "credit": 0,
+                "message": "Returning 25\u00a2",
+                "k": "0|1|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|1|1"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 100,
+                "credit": 0,
+                "message": "Returning 100\u00a2",
+                "k": "0|1|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|1|1"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 125,
+                "credit": 0,
+                "message": "Returning 125\u00a2",
+                "k": "0|1|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|1|1"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 150,
+                "credit": 0,
+                "message": "Returning 150\u00a2",
+                "k": "0|1|1"
+              }
+            },
+            {
+              "target": "idle",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|0|1"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "message": "Enjoy!"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "25|0|1"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 25,
+                "credit": 0,
+                "message": "Returning 25\u00a2",
+                "k": "0|0|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "100|0|1"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 100,
+                "credit": 0,
+                "message": "Returning 100\u00a2",
+                "k": "0|0|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "125|0|1"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 125,
+                "credit": 0,
+                "message": "Returning 125\u00a2",
+                "k": "0|0|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "150|0|1"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 150,
+                "credit": 0,
+                "message": "Returning 150\u00a2",
+                "k": "0|0|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|0|1"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 50,
+                "credit": 0,
+                "message": "Returning 50\u00a2",
+                "k": "0|0|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|0|1"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 75,
+                "credit": 0,
+                "message": "Returning 75\u00a2",
+                "k": "0|0|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|1|1"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 50,
+                "credit": 0,
+                "message": "Returning 50\u00a2",
+                "k": "0|1|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|1|1"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 75,
+                "credit": 0,
+                "message": "Returning 75\u00a2",
+                "k": "0|1|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "50|2|1"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 50,
+                "credit": 0,
+                "message": "Returning 50\u00a2",
+                "k": "0|2|1"
+              }
+            },
+            {
+              "target": "returningChange",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "75|2|1"
+                }
+              },
+              "context": {
+                "dispensing": null,
+                "change": 75,
+                "credit": 0,
+                "message": "Returning 75\u00a2",
+                "k": "0|2|1"
+              }
+            }
+          ]
+        }
+      },
+      "returningChange": {
+        "after": {
+          "800": {
+            "target": "idle",
+            "context": {
+              "message": "Insert coins"
+            }
+          }
+        }
+      }
+    }
+  },
+  "steps": [
+    {
+      "at": 0,
+      "send": {
+        "type": "select",
+        "id": "gum"
+      }
+    },
+    {
+      "at": 10,
+      "send": {
+        "type": "insertCoin",
+        "value": 25
+      }
+    },
+    {
+      "at": 20,
+      "send": {
+        "type": "select",
+        "id": "cola"
+      }
+    },
+    {
+      "at": 30,
+      "send": {
+        "type": "insertCoin",
+        "value": 100
+      }
+    },
+    {
+      "at": 40,
+      "send": {
+        "type": "select",
+        "id": "cola"
+      }
+    },
+    {
+      "at": 60,
+      "send": {
+        "type": "insertCoin",
+        "value": 25
+      }
+    },
+    {
+      "at": 1300,
+      "send": {
+        "type": "select",
+        "id": "cola"
+      }
+    },
+    {
+      "at": 1400,
+      "send": {
+        "type": "insertCoin",
+        "value": 25
+      }
+    },
+    {
+      "at": 1500,
+      "send": {
+        "type": "insertCoin",
+        "value": 100
+      }
+    },
+    {
+      "at": 1600,
+      "send": {
+        "type": "select",
+        "id": "chips"
+      }
+    },
+    {
+      "at": 2900
+    },
+    {
+      "at": 3700
+    },
+    {
+      "at": 3800,
+      "send": {
+        "type": "refund"
+      }
+    },
+    {
+      "at": 3900,
+      "send": {
+        "type": "insertCoin",
+        "value": 25
+      }
+    },
+    {
+      "at": 4000,
+      "send": {
+        "type": "refund"
+      }
+    },
+    {
+      "at": 4100,
+      "send": {
+        "type": "insertCoin",
+        "value": 25
+      }
+    },
+    {
+      "at": 4900,
+      "send": {
+        "type": "insertCoin",
+        "value": 100
+      }
+    },
+    {
+      "at": 5000,
+      "send": {
+        "type": "insertCoin",
+        "value": 25
+      }
+    },
+    {
+      "at": 5100,
+      "send": {
+        "type": "select",
+        "id": "chips"
+      }
+    },
+    {
+      "at": 5200,
+      "send": {
+        "type": "select",
+        "id": "cola"
+      }
+    },
+    {
+      "at": 6500
+    },
+    {
+      "at": 6600,
+      "send": {
+        "type": "insertCoin",
+        "value": 100
+      }
+    },
+    {
+      "at": 6700,
+      "send": {
+        "type": "select",
+        "id": "cola"
+      }
+    }
+  ]
+}

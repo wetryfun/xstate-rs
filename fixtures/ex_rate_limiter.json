@@ -1,0 +1,941 @@
+{
+  "source": "examples/rate-limiter/src/main.ts",
+  "notes": "capacity 2 and 5 requests instead of 3 and 10; the waiting and granted id lists are counts; tokens, waiting and granted are a composite key k over reachable values; the final output is static",
+  "machine": {
+    "id": "limiter",
+    "context": {
+      "tokens": 2,
+      "waiting": 0,
+      "granted": 0,
+      "k": "2|0|0"
+    },
+    "initial": "open",
+    "states": {
+      "open": {
+        "after": {
+          "200": [
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|0|0"
+                }
+              },
+              "reenter": true
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|0|1"
+                }
+              },
+              "context": {
+                "tokens": 2,
+                "k": "2|0|1"
+              },
+              "reenter": true
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|0|2"
+                }
+              },
+              "context": {
+                "tokens": 1,
+                "k": "1|0|2"
+              },
+              "reenter": true
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|0|1"
+                }
+              },
+              "reenter": true
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|0|2"
+                }
+              },
+              "context": {
+                "tokens": 2,
+                "k": "2|0|2"
+              },
+              "reenter": true
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|0|3"
+                }
+              },
+              "context": {
+                "tokens": 1,
+                "k": "1|0|3"
+              },
+              "reenter": true
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|0|2"
+                }
+              },
+              "reenter": true
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|0|3"
+                }
+              },
+              "context": {
+                "tokens": 2,
+                "k": "2|0|3"
+              },
+              "reenter": true
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|0|4"
+                }
+              },
+              "context": {
+                "tokens": 1,
+                "k": "1|0|4"
+              },
+              "reenter": true
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|0|3"
+                }
+              },
+              "reenter": true
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|0|4"
+                }
+              },
+              "context": {
+                "tokens": 2,
+                "k": "2|0|4"
+              },
+              "reenter": true
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|0|5"
+                }
+              },
+              "context": {
+                "tokens": 1,
+                "k": "1|0|5"
+              },
+              "reenter": true
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|0|4"
+                }
+              },
+              "reenter": true
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|0|5"
+                }
+              },
+              "context": {
+                "tokens": 2,
+                "k": "2|0|5"
+              },
+              "reenter": true
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|0|5"
+                }
+              },
+              "reenter": true
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|1|4"
+                }
+              },
+              "context": {
+                "waiting": 0,
+                "granted": 5,
+                "k": "0|0|5"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "released"
+                  }
+                }
+              ],
+              "reenter": true
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|1|3"
+                }
+              },
+              "context": {
+                "waiting": 0,
+                "granted": 4,
+                "k": "0|0|4"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "released"
+                  }
+                }
+              ],
+              "reenter": true
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|2|3"
+                }
+              },
+              "context": {
+                "waiting": 1,
+                "granted": 4,
+                "k": "0|1|4"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "released"
+                  }
+                }
+              ],
+              "reenter": true
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|1|2"
+                }
+              },
+              "context": {
+                "waiting": 0,
+                "granted": 3,
+                "k": "0|0|3"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "released"
+                  }
+                }
+              ],
+              "reenter": true
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|2|2"
+                }
+              },
+              "context": {
+                "waiting": 1,
+                "granted": 3,
+                "k": "0|1|3"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "released"
+                  }
+                }
+              ],
+              "reenter": true
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|3|2"
+                }
+              },
+              "context": {
+                "waiting": 2,
+                "granted": 3,
+                "k": "0|2|3"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "released"
+                  }
+                }
+              ],
+              "reenter": true
+            }
+          ]
+        },
+        "on": {
+          "acquire": [
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|0|0"
+                }
+              },
+              "context": {
+                "tokens": 1,
+                "granted": 1,
+                "k": "1|0|1"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "granted"
+                  }
+                }
+              ]
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|0|1"
+                }
+              },
+              "context": {
+                "tokens": 0,
+                "granted": 2,
+                "k": "0|0|2"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "granted"
+                  }
+                }
+              ]
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|0|2"
+                }
+              },
+              "context": {
+                "waiting": 1,
+                "k": "0|1|2"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "queued"
+                  }
+                }
+              ]
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|0|1"
+                }
+              },
+              "context": {
+                "tokens": 1,
+                "granted": 2,
+                "k": "1|0|2"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "granted"
+                  }
+                }
+              ]
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|0|2"
+                }
+              },
+              "context": {
+                "tokens": 0,
+                "granted": 3,
+                "k": "0|0|3"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "granted"
+                  }
+                }
+              ]
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|0|3"
+                }
+              },
+              "context": {
+                "waiting": 1,
+                "k": "0|1|3"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "queued"
+                  }
+                }
+              ]
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|0|2"
+                }
+              },
+              "context": {
+                "tokens": 1,
+                "granted": 3,
+                "k": "1|0|3"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "granted"
+                  }
+                }
+              ]
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|0|3"
+                }
+              },
+              "context": {
+                "tokens": 0,
+                "granted": 4,
+                "k": "0|0|4"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "granted"
+                  }
+                }
+              ]
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|0|4"
+                }
+              },
+              "context": {
+                "waiting": 1,
+                "k": "0|1|4"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "queued"
+                  }
+                }
+              ]
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|0|3"
+                }
+              },
+              "context": {
+                "tokens": 1,
+                "granted": 4,
+                "k": "1|0|4"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "granted"
+                  }
+                }
+              ]
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|0|4"
+                }
+              },
+              "context": {
+                "tokens": 0,
+                "granted": 5,
+                "k": "0|0|5"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "granted"
+                  }
+                }
+              ]
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|0|5"
+                }
+              },
+              "context": {
+                "waiting": 1,
+                "k": "0|1|5"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "queued"
+                  }
+                }
+              ]
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|0|4"
+                }
+              },
+              "context": {
+                "tokens": 1,
+                "granted": 5,
+                "k": "1|0|5"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "granted"
+                  }
+                }
+              ]
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|0|5"
+                }
+              },
+              "context": {
+                "tokens": 0,
+                "granted": 6,
+                "k": "0|0|6"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "granted"
+                  }
+                }
+              ]
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|0|5"
+                }
+              },
+              "context": {
+                "tokens": 1,
+                "granted": 6,
+                "k": "1|0|6"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "granted"
+                  }
+                }
+              ]
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|1|4"
+                }
+              },
+              "context": {
+                "waiting": 2,
+                "k": "0|2|4"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "queued"
+                  }
+                }
+              ]
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|1|3"
+                }
+              },
+              "context": {
+                "waiting": 2,
+                "k": "0|2|3"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "queued"
+                  }
+                }
+              ]
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|2|3"
+                }
+              },
+              "context": {
+                "waiting": 3,
+                "k": "0|3|3"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "queued"
+                  }
+                }
+              ]
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|1|2"
+                }
+              },
+              "context": {
+                "waiting": 2,
+                "k": "0|2|2"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "queued"
+                  }
+                }
+              ]
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|2|2"
+                }
+              },
+              "context": {
+                "waiting": 3,
+                "k": "0|3|2"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "queued"
+                  }
+                }
+              ]
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0|3|2"
+                }
+              },
+              "context": {
+                "waiting": 4,
+                "k": "0|4|2"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "queued"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "always": [
+          {
+            "target": "drained",
+            "guard": {
+              "type": "ctxEquals",
+              "params": {
+                "key": "k",
+                "value": "0|0|5"
+              }
+            }
+          },
+          {
+            "target": "drained",
+            "guard": {
+              "type": "ctxEquals",
+              "params": {
+                "key": "k",
+                "value": "1|0|5"
+              }
+            }
+          },
+          {
+            "target": "drained",
+            "guard": {
+              "type": "ctxEquals",
+              "params": {
+                "key": "k",
+                "value": "2|0|5"
+              }
+            }
+          }
+        ]
+      },
+      "drained": {
+        "type": "final",
+        "output": {
+          "granted": 5
+        }
+      }
+    }
+  },
+  "steps": [
+    {
+      "at": 0,
+      "send": {
+        "type": "acquire"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "acquire"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "acquire"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "acquire"
+      }
+    },
+    {
+      "at": 100
+    },
+    {
+      "at": 200
+    },
+    {
+      "at": 300,
+      "send": {
+        "type": "acquire"
+      }
+    },
+    {
+      "at": 400
+    },
+    {
+      "at": 600
+    },
+    {
+      "at": 800
+    },
+    {
+      "at": 1000
+    },
+    {
+      "at": 1200
+    }
+  ]
+}

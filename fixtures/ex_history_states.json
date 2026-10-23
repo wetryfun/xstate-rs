@@ -1,0 +1,647 @@
+{
+  "source": "examples/history-states/src/settingsMachine.ts",
+  "notes": "open's entry counter (opens + 1) moved onto the transitions into open, unrolled per value (initial opens 2: the first entry's increment); selectTab / selectSection targets by matches; entry/exit emits added",
+  "machine": {
+    "id": "settings",
+    "context": {
+      "opens": 2
+    },
+    "initial": "open",
+    "states": {
+      "closed": {
+        "on": {
+          "open": [
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 2
+                }
+              },
+              "context": {
+                "opens": 3
+              }
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 3
+                }
+              },
+              "context": {
+                "opens": 4
+              }
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 4
+                }
+              },
+              "context": {
+                "opens": 5
+              }
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 5
+                }
+              },
+              "context": {
+                "opens": 6
+              }
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 6
+                }
+              },
+              "context": {
+                "opens": 7
+              }
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 7
+                }
+              },
+              "context": {
+                "opens": 8
+              }
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 8
+                }
+              },
+              "context": {
+                "opens": 9
+              }
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 9
+                }
+              },
+              "context": {
+                "opens": 10
+              }
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 10
+                }
+              },
+              "context": {
+                "opens": 11
+              }
+            },
+            {
+              "target": "open",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 11
+                }
+              },
+              "context": {
+                "opens": 12
+              }
+            }
+          ],
+          "openShallow": [
+            {
+              "target": "open.lastTab",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 2
+                }
+              },
+              "context": {
+                "opens": 3
+              }
+            },
+            {
+              "target": "open.lastTab",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 3
+                }
+              },
+              "context": {
+                "opens": 4
+              }
+            },
+            {
+              "target": "open.lastTab",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 4
+                }
+              },
+              "context": {
+                "opens": 5
+              }
+            },
+            {
+              "target": "open.lastTab",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 5
+                }
+              },
+              "context": {
+                "opens": 6
+              }
+            },
+            {
+              "target": "open.lastTab",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 6
+                }
+              },
+              "context": {
+                "opens": 7
+              }
+            },
+            {
+              "target": "open.lastTab",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 7
+                }
+              },
+              "context": {
+                "opens": 8
+              }
+            },
+            {
+              "target": "open.lastTab",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 8
+                }
+              },
+              "context": {
+                "opens": 9
+              }
+            },
+            {
+              "target": "open.lastTab",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 9
+                }
+              },
+              "context": {
+                "opens": 10
+              }
+            },
+            {
+              "target": "open.lastTab",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 10
+                }
+              },
+              "context": {
+                "opens": 11
+              }
+            },
+            {
+              "target": "open.lastTab",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 11
+                }
+              },
+              "context": {
+                "opens": 12
+              }
+            }
+          ],
+          "openDeep": [
+            {
+              "target": "open.lastTabAndSection",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 2
+                }
+              },
+              "context": {
+                "opens": 3
+              }
+            },
+            {
+              "target": "open.lastTabAndSection",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 3
+                }
+              },
+              "context": {
+                "opens": 4
+              }
+            },
+            {
+              "target": "open.lastTabAndSection",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 4
+                }
+              },
+              "context": {
+                "opens": 5
+              }
+            },
+            {
+              "target": "open.lastTabAndSection",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 5
+                }
+              },
+              "context": {
+                "opens": 6
+              }
+            },
+            {
+              "target": "open.lastTabAndSection",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 6
+                }
+              },
+              "context": {
+                "opens": 7
+              }
+            },
+            {
+              "target": "open.lastTabAndSection",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 7
+                }
+              },
+              "context": {
+                "opens": 8
+              }
+            },
+            {
+              "target": "open.lastTabAndSection",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 8
+                }
+              },
+              "context": {
+                "opens": 9
+              }
+            },
+            {
+              "target": "open.lastTabAndSection",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 9
+                }
+              },
+              "context": {
+                "opens": 10
+              }
+            },
+            {
+              "target": "open.lastTabAndSection",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 10
+                }
+              },
+              "context": {
+                "opens": 11
+              }
+            },
+            {
+              "target": "open.lastTabAndSection",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "opens",
+                  "value": 11
+                }
+              },
+              "context": {
+                "opens": 12
+              }
+            }
+          ]
+        }
+      },
+      "open": {
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "opened"
+            }
+          }
+        ],
+        "exit": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "closed"
+            }
+          }
+        ],
+        "initial": "general",
+        "states": {
+          "general": {},
+          "appearance": {},
+          "advanced": {
+            "initial": "network",
+            "states": {
+              "network": {
+                "entry": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "network"
+                    }
+                  }
+                ]
+              },
+              "experiments": {
+                "entry": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "experiments"
+                    }
+                  }
+                ]
+              }
+            },
+            "on": {
+              "selectSection": [
+                {
+                  "target": ".network",
+                  "matches": {
+                    "section": "network"
+                  }
+                },
+                {
+                  "target": ".experiments",
+                  "matches": {
+                    "section": "experiments"
+                  }
+                }
+              ]
+            }
+          },
+          "lastTab": {
+            "type": "history",
+            "history": "shallow",
+            "target": "general"
+          },
+          "lastTabAndSection": {
+            "type": "history",
+            "history": "deep",
+            "target": "general"
+          }
+        },
+        "on": {
+          "selectTab": [
+            {
+              "target": ".general",
+              "matches": {
+                "tab": "general"
+              }
+            },
+            {
+              "target": ".appearance",
+              "matches": {
+                "tab": "appearance"
+              }
+            },
+            {
+              "target": ".advanced",
+              "matches": {
+                "tab": "advanced"
+              }
+            }
+          ],
+          "close": {
+            "target": "closed"
+          }
+        }
+      }
+    }
+  },
+  "steps": [
+    {
+      "at": 0,
+      "send": {
+        "type": "close"
+      }
+    },
+    {
+      "at": 1,
+      "send": {
+        "type": "openDeep"
+      }
+    },
+    {
+      "at": 2,
+      "send": {
+        "type": "selectTab",
+        "tab": "advanced"
+      }
+    },
+    {
+      "at": 3,
+      "send": {
+        "type": "selectSection",
+        "section": "experiments"
+      }
+    },
+    {
+      "at": 4,
+      "send": {
+        "type": "close"
+      }
+    },
+    {
+      "at": 5,
+      "send": {
+        "type": "openShallow"
+      }
+    },
+    {
+      "at": 6,
+      "send": {
+        "type": "selectSection",
+        "section": "experiments"
+      }
+    },
+    {
+      "at": 7,
+      "send": {
+        "type": "close"
+      }
+    },
+    {
+      "at": 8,
+      "send": {
+        "type": "openDeep"
+      }
+    },
+    {
+      "at": 9,
+      "send": {
+        "type": "selectTab",
+        "tab": "appearance"
+      }
+    },
+    {
+      "at": 10,
+      "send": {
+        "type": "close"
+      }
+    },
+    {
+      "at": 11,
+      "send": {
+        "type": "openDeep"
+      }
+    },
+    {
+      "at": 12,
+      "send": {
+        "type": "close"
+      }
+    },
+    {
+      "at": 13,
+      "send": {
+        "type": "open"
+      }
+    },
+    {
+      "at": 14,
+      "send": {
+        "type": "selectTab",
+        "tab": "advanced"
+      }
+    },
+    {
+      "at": 15,
+      "send": {
+        "type": "close"
+      }
+    },
+    {
+      "at": 16,
+      "send": {
+        "type": "openShallow"
+      }
+    },
+    {
+      "at": 17,
+      "send": {
+        "type": "selectTab",
+        "tab": "general"
+      }
+    },
+    {
+      "at": 18,
+      "send": {
+        "type": "selectSection",
+        "section": "network"
+      }
+    },
+    {
+      "at": 19,
+      "send": {
+        "type": "close"
+      }
+    },
+    {
+      "at": 20,
+      "send": {
+        "type": "openDeep"
+      }
+    }
+  ]
+}

@@ -1,0 +1,397 @@
+[
+  {
+    "label": "start",
+    "value": "paused",
+    "context": {
+      "index": 0,
+      "elapsed": 0,
+      "shuffle": false,
+      "k": "0:0:0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 0",
+    "value": "playing",
+    "context": {
+      "index": 0,
+      "elapsed": 0,
+      "shuffle": false,
+      "k": "0:0:0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 1",
+    "value": "playing",
+    "context": {
+      "index": 0,
+      "elapsed": 1,
+      "shuffle": false,
+      "k": "0:1:0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 2",
+    "value": "playing",
+    "context": {
+      "index": 1,
+      "elapsed": 0,
+      "shuffle": false,
+      "k": "1:0:0"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "track.ended",
+        "index": 0
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "value": "playing",
+    "context": {
+      "index": 2,
+      "elapsed": 0,
+      "shuffle": false,
+      "k": "2:0:0"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "track.ended",
+        "index": 1
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "value": "playing",
+    "context": {
+      "index": 2,
+      "elapsed": 1,
+      "shuffle": false,
+      "k": "2:1:0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 5",
+    "value": "paused",
+    "context": {
+      "index": 2,
+      "elapsed": 1,
+      "shuffle": false,
+      "k": "2:1:0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 6",
+    "value": "paused",
+    "context": {
+      "index": 2,
+      "elapsed": 1,
+      "shuffle": false,
+      "k": "2:1:0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 7",
+    "value": "paused",
+    "context": {
+      "index": 3,
+      "elapsed": 0,
+      "shuffle": false,
+      "k": "3:0:0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 8",
+    "value": "playing",
+    "context": {
+      "index": 3,
+      "elapsed": 0,
+      "shuffle": false,
+      "k": "3:0:0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 9",
+    "value": "playing",
+    "context": {
+      "index": 0,
+      "elapsed": 0,
+      "shuffle": false,
+      "k": "0:0:0"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "track.ended",
+        "index": 3
+      }
+    ]
+  },
+  {
+    "label": "step 10",
+    "value": "playing",
+    "context": {
+      "index": 0,
+      "elapsed": 1,
+      "shuffle": false,
+      "k": "0:1:0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 11",
+    "value": "playing",
+    "context": {
+      "index": 0,
+      "elapsed": 1,
+      "shuffle": true,
+      "k": "0:1:1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 12",
+    "value": "playing",
+    "context": {
+      "index": 2,
+      "elapsed": 0,
+      "shuffle": true,
+      "k": "2:0:1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 13",
+    "value": "playing",
+    "context": {
+      "index": 2,
+      "elapsed": 1,
+      "shuffle": true,
+      "k": "2:1:1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 14",
+    "value": "playing",
+    "context": {
+      "index": 0,
+      "elapsed": 0,
+      "shuffle": true,
+      "k": "0:0:1"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "track.ended",
+        "index": 2
+      }
+    ]
+  },
+  {
+    "label": "step 15",
+    "value": "playing",
+    "context": {
+      "index": 3,
+      "elapsed": 0,
+      "shuffle": true,
+      "k": "3:0:1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 16",
+    "value": "playing",
+    "context": {
+      "index": 2,
+      "elapsed": 0,
+      "shuffle": true,
+      "k": "2:0:1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 17",
+    "value": "playing",
+    "context": {
+      "index": 2,
+      "elapsed": 0,
+      "shuffle": true,
+      "k": "2:0:1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 18",
+    "value": "playing",
+    "context": {
+      "index": 2,
+      "elapsed": 1,
+      "shuffle": true,
+      "k": "2:1:1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 19",
+    "value": "playing",
+    "context": {
+      "index": 0,
+      "elapsed": 0,
+      "shuffle": true,
+      "k": "0:0:1"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "track.ended",
+        "index": 2
+      }
+    ]
+  },
+  {
+    "label": "step 20",
+    "value": "playing",
+    "context": {
+      "index": 0,
+      "elapsed": 1,
+      "shuffle": true,
+      "k": "0:1:1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 21",
+    "value": "playing",
+    "context": {
+      "index": 0,
+      "elapsed": 1,
+      "shuffle": false,
+      "k": "0:1:0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 22",
+    "value": "paused",
+    "context": {
+      "index": 0,
+      "elapsed": 1,
+      "shuffle": false,
+      "k": "0:1:0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 23",
+    "value": "playing",
+    "context": {
+      "index": 3,
+      "elapsed": 0,
+      "shuffle": false,
+      "k": "3:0:0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 24",
+    "value": "playing",
+    "context": {
+      "index": 0,
+      "elapsed": 0,
+      "shuffle": false,
+      "k": "0:0:0"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "track.ended",
+        "index": 3
+      }
+    ]
+  },
+  {
+    "label": "step 25",
+    "value": "playing",
+    "context": {
+      "index": 0,
+      "elapsed": 1,
+      "shuffle": false,
+      "k": "0:1:0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 26",
+    "value": "playing",
+    "context": {
+      "index": 1,
+      "elapsed": 0,
+      "shuffle": false,
+      "k": "1:0:0"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "track.ended",
+        "index": 0
+      }
+    ]
+  },
+  {
+    "label": "step 27",
+    "value": "playing",
+    "context": {
+      "index": 2,
+      "elapsed": 0,
+      "shuffle": false,
+      "k": "2:0:0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 28",
+    "value": "playing",
+    "context": {
+      "index": 1,
+      "elapsed": 0,
+      "shuffle": false,
+      "k": "1:0:0"
+    },
+    "status": "active",
+    "emitted": []
+  }
+]

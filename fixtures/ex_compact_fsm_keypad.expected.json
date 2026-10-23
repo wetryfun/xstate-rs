@@ -1,0 +1,189 @@
+[
+  {
+    "label": "start",
+    "value": "entering",
+    "context": {
+      "entered": "",
+      "attempts": 0,
+      "k": "|0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 0",
+    "value": "entering",
+    "context": {
+      "entered": "9",
+      "attempts": 0,
+      "k": "9|0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 1",
+    "value": "entering",
+    "context": {
+      "entered": "99",
+      "attempts": 0,
+      "k": "99|0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 2",
+    "value": "entering",
+    "context": {
+      "entered": "99",
+      "attempts": 0,
+      "k": "99|0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 3",
+    "value": "entering",
+    "context": {
+      "entered": "",
+      "attempts": 1,
+      "k": "|1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 4",
+    "value": "entering",
+    "context": {
+      "entered": "1",
+      "attempts": 1,
+      "k": "1|1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 5",
+    "value": "entering",
+    "context": {
+      "entered": "",
+      "attempts": 1,
+      "k": "|1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 6",
+    "value": "entering",
+    "context": {
+      "entered": "1",
+      "attempts": 1,
+      "k": "1|1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 7",
+    "value": "entering",
+    "context": {
+      "entered": "12",
+      "attempts": 1,
+      "k": "12|1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 8",
+    "value": "unlocked",
+    "context": {
+      "entered": "12",
+      "attempts": 1,
+      "k": "12|1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 9",
+    "value": "entering",
+    "context": {
+      "entered": "",
+      "attempts": 1,
+      "k": "|0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 10",
+    "value": "entering",
+    "context": {
+      "entered": "",
+      "attempts": 1,
+      "k": "|1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 11",
+    "value": "entering",
+    "context": {
+      "entered": "",
+      "attempts": 2,
+      "k": "|2"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 12",
+    "value": "entering",
+    "context": {
+      "entered": "2",
+      "attempts": 2,
+      "k": "2|2"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 13",
+    "value": "locked",
+    "context": {
+      "entered": "",
+      "attempts": 2,
+      "k": "|2"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 14",
+    "value": "locked",
+    "context": {
+      "entered": "",
+      "attempts": 2,
+      "k": "|2"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 15",
+    "value": "locked",
+    "context": {
+      "entered": "",
+      "attempts": 2,
+      "k": "|2"
+    },
+    "status": "active",
+    "emitted": []
+  }
+]

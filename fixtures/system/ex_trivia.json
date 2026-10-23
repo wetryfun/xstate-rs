@@ -1,0 +1,1072 @@
+{
+  "source": "examples/trivia-game-example/src/triviaMachine.ts",
+  "notes": "a win at 30 points instead of 100; the correct answer is 7 (a static character); points, lifes and the question number are unrolled per value; entry assigns that computed from context moved onto the transitions; loaded data are static",
+  "logic": [
+    {
+      "name": "loadHomePageCharacters",
+      "async": {}
+    },
+    {
+      "name": "loadSingleCharacter",
+      "async": {}
+    },
+    {
+      "name": "loadRandomCharacters",
+      "async": {}
+    },
+    {
+      "name": "trivia",
+      "actors": [
+        "loadHomePageCharacters",
+        "loadSingleCharacter",
+        "loadRandomCharacters"
+      ],
+      "machine": {
+        "id": "triviaMachine",
+        "initial": "homepage",
+        "context": {
+          "homePageCharacters": [],
+          "hasLoaded": false,
+          "isClueOpened": false,
+          "currentCharacter": null,
+          "randomCharacters": [],
+          "points": 0,
+          "question": 0,
+          "lifes": 3
+        },
+        "states": {
+          "homepage": {
+            "initial": "loadingData",
+            "states": {
+              "loadingData": {
+                "invoke": {
+                  "src": "loadHomePageCharacters",
+                  "onDone": {
+                    "target": "dataLoaded",
+                    "context": {
+                      "homePageCharacters": [
+                        {
+                          "id": 1
+                        },
+                        {
+                          "id": 2
+                        }
+                      ],
+                      "hasLoaded": true
+                    }
+                  },
+                  "onError": {
+                    "target": "loadFailed"
+                  }
+                }
+              },
+              "loadFailed": {
+                "entry": [
+                  {
+                    "type": "@xstate.assign",
+                    "context": {
+                      "hasLoaded": true
+                    }
+                  }
+                ],
+                "on": {
+                  "user.retry": {
+                    "target": "loadingData"
+                  }
+                }
+              },
+              "dataLoaded": {
+                "on": {
+                  "user.play": {
+                    "target": "#instructionModal"
+                  }
+                }
+              }
+            }
+          },
+          "instructionModal": {
+            "id": "instructionModal",
+            "on": {
+              "user.close": {
+                "target": "homepage.dataLoaded"
+              },
+              "user.reject": {
+                "target": "homepage.dataLoaded"
+              },
+              "user.accept": {
+                "target": "startTrivia",
+                "context": {
+                  "hasLoaded": false
+                }
+              }
+            }
+          },
+          "startTrivia": {
+            "id": "startTrivia",
+            "initial": "loadQuestionData",
+            "entry": [
+              {
+                "type": "@xstate.assign",
+                "context": {
+                  "currentCharacter": null,
+                  "randomCharacters": [],
+                  "points": 0,
+                  "question": 0,
+                  "lifes": 3
+                }
+              }
+            ],
+            "states": {
+              "loadQuestionData": {
+                "id": "loadQuestionData",
+                "initial": "loadCharacter",
+                "entry": [
+                  {
+                    "type": "@xstate.assign",
+                    "context": {
+                      "hasLoaded": false
+                    }
+                  }
+                ],
+                "states": {
+                  "loadCharacter": {
+                    "invoke": {
+                      "src": "loadSingleCharacter",
+                      "onDone": {
+                        "target": "loadRandomCharacters",
+                        "context": {
+                          "currentCharacter": {
+                            "id": 7,
+                            "name": "Rick"
+                          }
+                        }
+                      },
+                      "onError": {
+                        "target": "#questionFailed"
+                      }
+                    }
+                  },
+                  "loadRandomCharacters": {
+                    "invoke": {
+                      "src": "loadRandomCharacters",
+                      "onDone": [
+                        {
+                          "target": "#questionReady",
+                          "guard": {
+                            "type": "ctxEquals",
+                            "params": {
+                              "key": "question",
+                              "value": 0
+                            }
+                          },
+                          "context": {
+                            "randomCharacters": [
+                              {
+                                "id": 7
+                              },
+                              {
+                                "id": 2
+                              },
+                              {
+                                "id": 9
+                              }
+                            ],
+                            "question": 1,
+                            "hasLoaded": true
+                          }
+                        },
+                        {
+                          "target": "#questionReady",
+                          "guard": {
+                            "type": "ctxEquals",
+                            "params": {
+                              "key": "question",
+                              "value": 1
+                            }
+                          },
+                          "context": {
+                            "randomCharacters": [
+                              {
+                                "id": 7
+                              },
+                              {
+                                "id": 2
+                              },
+                              {
+                                "id": 9
+                              }
+                            ],
+                            "question": 2,
+                            "hasLoaded": true
+                          }
+                        },
+                        {
+                          "target": "#questionReady",
+                          "guard": {
+                            "type": "ctxEquals",
+                            "params": {
+                              "key": "question",
+                              "value": 2
+                            }
+                          },
+                          "context": {
+                            "randomCharacters": [
+                              {
+                                "id": 7
+                              },
+                              {
+                                "id": 2
+                              },
+                              {
+                                "id": 9
+                              }
+                            ],
+                            "question": 3,
+                            "hasLoaded": true
+                          }
+                        },
+                        {
+                          "target": "#questionReady",
+                          "guard": {
+                            "type": "ctxEquals",
+                            "params": {
+                              "key": "question",
+                              "value": 3
+                            }
+                          },
+                          "context": {
+                            "randomCharacters": [
+                              {
+                                "id": 7
+                              },
+                              {
+                                "id": 2
+                              },
+                              {
+                                "id": 9
+                              }
+                            ],
+                            "question": 4,
+                            "hasLoaded": true
+                          }
+                        },
+                        {
+                          "target": "#questionReady",
+                          "guard": {
+                            "type": "ctxEquals",
+                            "params": {
+                              "key": "question",
+                              "value": 4
+                            }
+                          },
+                          "context": {
+                            "randomCharacters": [
+                              {
+                                "id": 7
+                              },
+                              {
+                                "id": 2
+                              },
+                              {
+                                "id": 9
+                              }
+                            ],
+                            "question": 5,
+                            "hasLoaded": true
+                          }
+                        },
+                        {
+                          "target": "#questionReady",
+                          "guard": {
+                            "type": "ctxEquals",
+                            "params": {
+                              "key": "question",
+                              "value": 5
+                            }
+                          },
+                          "context": {
+                            "randomCharacters": [
+                              {
+                                "id": 7
+                              },
+                              {
+                                "id": 2
+                              },
+                              {
+                                "id": 9
+                              }
+                            ],
+                            "question": 6,
+                            "hasLoaded": true
+                          }
+                        },
+                        {
+                          "target": "#questionReady",
+                          "guard": {
+                            "type": "ctxEquals",
+                            "params": {
+                              "key": "question",
+                              "value": 6
+                            }
+                          },
+                          "context": {
+                            "randomCharacters": [
+                              {
+                                "id": 7
+                              },
+                              {
+                                "id": 2
+                              },
+                              {
+                                "id": 9
+                              }
+                            ],
+                            "question": 7,
+                            "hasLoaded": true
+                          }
+                        },
+                        {
+                          "target": "#questionReady",
+                          "guard": {
+                            "type": "ctxEquals",
+                            "params": {
+                              "key": "question",
+                              "value": 7
+                            }
+                          },
+                          "context": {
+                            "randomCharacters": [
+                              {
+                                "id": 7
+                              },
+                              {
+                                "id": 2
+                              },
+                              {
+                                "id": 9
+                              }
+                            ],
+                            "question": 8,
+                            "hasLoaded": true
+                          }
+                        },
+                        {
+                          "target": "#questionReady",
+                          "guard": {
+                            "type": "ctxEquals",
+                            "params": {
+                              "key": "question",
+                              "value": 8
+                            }
+                          },
+                          "context": {
+                            "randomCharacters": [
+                              {
+                                "id": 7
+                              },
+                              {
+                                "id": 2
+                              },
+                              {
+                                "id": 9
+                              }
+                            ],
+                            "question": 9,
+                            "hasLoaded": true
+                          }
+                        },
+                        {
+                          "target": "#questionReady",
+                          "guard": {
+                            "type": "ctxEquals",
+                            "params": {
+                              "key": "question",
+                              "value": 9
+                            }
+                          },
+                          "context": {
+                            "randomCharacters": [
+                              {
+                                "id": 7
+                              },
+                              {
+                                "id": 2
+                              },
+                              {
+                                "id": 9
+                              }
+                            ],
+                            "question": 10,
+                            "hasLoaded": true
+                          }
+                        },
+                        {
+                          "target": "#questionReady",
+                          "guard": {
+                            "type": "ctxEquals",
+                            "params": {
+                              "key": "question",
+                              "value": 10
+                            }
+                          },
+                          "context": {
+                            "randomCharacters": [
+                              {
+                                "id": 7
+                              },
+                              {
+                                "id": 2
+                              },
+                              {
+                                "id": 9
+                              }
+                            ],
+                            "question": 11,
+                            "hasLoaded": true
+                          }
+                        },
+                        {
+                          "target": "#questionReady",
+                          "guard": {
+                            "type": "ctxEquals",
+                            "params": {
+                              "key": "question",
+                              "value": 11
+                            }
+                          },
+                          "context": {
+                            "randomCharacters": [
+                              {
+                                "id": 7
+                              },
+                              {
+                                "id": 2
+                              },
+                              {
+                                "id": 9
+                              }
+                            ],
+                            "question": 12,
+                            "hasLoaded": true
+                          }
+                        }
+                      ],
+                      "onError": {
+                        "target": "#questionFailed"
+                      }
+                    }
+                  }
+                }
+              },
+              "loadFailed": {
+                "id": "questionFailed",
+                "entry": [
+                  {
+                    "type": "@xstate.assign",
+                    "context": {
+                      "hasLoaded": true
+                    }
+                  }
+                ],
+                "on": {
+                  "user.retry": {
+                    "target": "#loadQuestionData"
+                  }
+                }
+              },
+              "questionReady": {
+                "id": "questionReady",
+                "initial": "questionStart",
+                "on": {
+                  "user.toggleClue": [
+                    {
+                      "guard": {
+                        "type": "ctxEquals",
+                        "params": {
+                          "key": "isClueOpened",
+                          "value": false
+                        }
+                      },
+                      "context": {
+                        "isClueOpened": true
+                      }
+                    },
+                    {
+                      "context": {
+                        "isClueOpened": false
+                      }
+                    }
+                  ]
+                },
+                "states": {
+                  "questionStart": {
+                    "on": {
+                      "user.selectAnswer": [
+                        {
+                          "target": "correctAnswer",
+                          "matches": {
+                            "answer": 7
+                          },
+                          "guard": {
+                            "type": "ctxEquals",
+                            "params": {
+                              "key": "points",
+                              "value": 0
+                            }
+                          },
+                          "context": {
+                            "points": 10
+                          }
+                        },
+                        {
+                          "target": "correctAnswer",
+                          "matches": {
+                            "answer": 7
+                          },
+                          "guard": {
+                            "type": "ctxEquals",
+                            "params": {
+                              "key": "points",
+                              "value": 10
+                            }
+                          },
+                          "context": {
+                            "points": 20
+                          }
+                        },
+                        {
+                          "target": "correctAnswer",
+                          "matches": {
+                            "answer": 7
+                          },
+                          "guard": {
+                            "type": "ctxEquals",
+                            "params": {
+                              "key": "points",
+                              "value": 20
+                            }
+                          },
+                          "context": {
+                            "points": 30
+                          }
+                        },
+                        {
+                          "target": "incorrectAnswer",
+                          "guard": {
+                            "type": "ctxEquals",
+                            "params": {
+                              "key": "lifes",
+                              "value": 1
+                            }
+                          },
+                          "context": {
+                            "lifes": 0
+                          }
+                        },
+                        {
+                          "target": "incorrectAnswer",
+                          "guard": {
+                            "type": "ctxEquals",
+                            "params": {
+                              "key": "lifes",
+                              "value": 2
+                            }
+                          },
+                          "context": {
+                            "lifes": 1
+                          }
+                        },
+                        {
+                          "target": "incorrectAnswer",
+                          "guard": {
+                            "type": "ctxEquals",
+                            "params": {
+                              "key": "lifes",
+                              "value": 3
+                            }
+                          },
+                          "context": {
+                            "lifes": 2
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "correctAnswer": {
+                    "always": [
+                      {
+                        "target": "lostGame",
+                        "guard": {
+                          "type": "ctxEquals",
+                          "params": {
+                            "key": "lifes",
+                            "value": 0
+                          }
+                        }
+                      },
+                      {
+                        "target": "wonGame",
+                        "guard": {
+                          "type": "ctxEquals",
+                          "params": {
+                            "key": "points",
+                            "value": 30
+                          }
+                        }
+                      }
+                    ],
+                    "on": {
+                      "user.nextQuestion": {
+                        "target": "#loadQuestionData"
+                      }
+                    }
+                  },
+                  "incorrectAnswer": {
+                    "always": [
+                      {
+                        "target": "lostGame",
+                        "guard": {
+                          "type": "ctxEquals",
+                          "params": {
+                            "key": "lifes",
+                            "value": 0
+                          }
+                        }
+                      },
+                      {
+                        "target": "wonGame",
+                        "guard": {
+                          "type": "ctxEquals",
+                          "params": {
+                            "key": "points",
+                            "value": 30
+                          }
+                        }
+                      }
+                    ],
+                    "on": {
+                      "user.nextQuestion": {
+                        "target": "#loadQuestionData"
+                      }
+                    }
+                  },
+                  "lostGame": {
+                    "on": {
+                      "user.playAgain": {
+                        "target": "#startTrivia"
+                      }
+                    }
+                  },
+                  "wonGame": {
+                    "on": {
+                      "user.playAgain": {
+                        "target": "#startTrivia"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "root": "trivia",
+  "steps": [
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "500"
+        }
+      }
+    },
+    {
+      "send": "triviaMachine",
+      "event": {
+        "type": "user.retry"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": [
+          {
+            "id": 1
+          }
+        ]
+      }
+    },
+    {
+      "send": "triviaMachine",
+      "event": {
+        "type": "user.play"
+      }
+    },
+    {
+      "send": "triviaMachine",
+      "event": {
+        "type": "user.close"
+      }
+    },
+    {
+      "send": "triviaMachine",
+      "event": {
+        "type": "user.play"
+      }
+    },
+    {
+      "send": "triviaMachine",
+      "event": {
+        "type": "user.accept"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "id": 7,
+          "name": "Rick"
+        }
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": [
+          {
+            "id": 7
+          },
+          {
+            "id": 2
+          },
+          {
+            "id": 9
+          }
+        ]
+      }
+    },
+    {
+      "send": "triviaMachine",
+      "event": {
+        "type": "user.toggleClue"
+      }
+    },
+    {
+      "send": "triviaMachine",
+      "event": {
+        "type": "user.selectAnswer",
+        "answer": 7
+      }
+    },
+    {
+      "send": "triviaMachine",
+      "event": {
+        "type": "user.toggleClue"
+      }
+    },
+    {
+      "send": "triviaMachine",
+      "event": {
+        "type": "user.nextQuestion"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "id": 7,
+          "name": "Rick"
+        }
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "500"
+        }
+      }
+    },
+    {
+      "send": "triviaMachine",
+      "event": {
+        "type": "user.retry"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "id": 7,
+          "name": "Rick"
+        }
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": [
+          {
+            "id": 7
+          },
+          {
+            "id": 2
+          },
+          {
+            "id": 9
+          }
+        ]
+      }
+    },
+    {
+      "send": "triviaMachine",
+      "event": {
+        "type": "user.selectAnswer",
+        "answer": 2
+      }
+    },
+    {
+      "send": "triviaMachine",
+      "event": {
+        "type": "user.nextQuestion"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "id": 7,
+          "name": "Rick"
+        }
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": [
+          {
+            "id": 7
+          },
+          {
+            "id": 2
+          },
+          {
+            "id": 9
+          }
+        ]
+      }
+    },
+    {
+      "send": "triviaMachine",
+      "event": {
+        "type": "user.selectAnswer",
+        "answer": 7
+      }
+    },
+    {
+      "send": "triviaMachine",
+      "event": {
+        "type": "user.nextQuestion"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "id": 7,
+          "name": "Rick"
+        }
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": [
+          {
+            "id": 7
+          },
+          {
+            "id": 2
+          },
+          {
+            "id": 9
+          }
+        ]
+      }
+    },
+    {
+      "send": "triviaMachine",
+      "event": {
+        "type": "user.selectAnswer",
+        "answer": 7
+      }
+    },
+    {
+      "send": "triviaMachine",
+      "event": {
+        "type": "user.playAgain"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "id": 7,
+          "name": "Rick"
+        }
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": [
+          {
+            "id": 7
+          },
+          {
+            "id": 2
+          },
+          {
+            "id": 9
+          }
+        ]
+      }
+    },
+    {
+      "send": "triviaMachine",
+      "event": {
+        "type": "user.selectAnswer",
+        "answer": 1
+      }
+    },
+    {
+      "send": "triviaMachine",
+      "event": {
+        "type": "user.nextQuestion"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "id": 7,
+          "name": "Rick"
+        }
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": [
+          {
+            "id": 7
+          },
+          {
+            "id": 2
+          },
+          {
+            "id": 9
+          }
+        ]
+      }
+    },
+    {
+      "send": "triviaMachine",
+      "event": {
+        "type": "user.selectAnswer",
+        "answer": 1
+      }
+    },
+    {
+      "send": "triviaMachine",
+      "event": {
+        "type": "user.nextQuestion"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "id": 7,
+          "name": "Rick"
+        }
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": [
+          {
+            "id": 7
+          },
+          {
+            "id": 2
+          },
+          {
+            "id": 9
+          }
+        ]
+      }
+    },
+    {
+      "send": "triviaMachine",
+      "event": {
+        "type": "user.selectAnswer",
+        "answer": 1
+      }
+    },
+    {
+      "send": "triviaMachine",
+      "event": {
+        "type": "user.playAgain"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "id": 7,
+          "name": "Rick"
+        }
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": [
+          {
+            "id": 7
+          },
+          {
+            "id": 2
+          },
+          {
+            "id": 9
+          }
+        ]
+      }
+    }
+  ]
+}

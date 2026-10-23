@@ -1,0 +1,210 @@
+[
+  {
+    "label": "start",
+    "value": "open",
+    "context": {
+      "tokens": 2,
+      "waiting": 0,
+      "granted": 0,
+      "k": "2|0|0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 0",
+    "value": "open",
+    "context": {
+      "tokens": 1,
+      "waiting": 0,
+      "granted": 1,
+      "k": "1|0|1"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "granted"
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "value": "open",
+    "context": {
+      "tokens": 0,
+      "waiting": 0,
+      "granted": 2,
+      "k": "0|0|2"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "granted"
+      }
+    ]
+  },
+  {
+    "label": "step 2",
+    "value": "open",
+    "context": {
+      "tokens": 0,
+      "waiting": 1,
+      "granted": 2,
+      "k": "0|1|2"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "queued"
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "value": "open",
+    "context": {
+      "tokens": 0,
+      "waiting": 2,
+      "granted": 2,
+      "k": "0|2|2"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "queued"
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "value": "open",
+    "context": {
+      "tokens": 0,
+      "waiting": 2,
+      "granted": 2,
+      "k": "0|2|2"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 5",
+    "value": "open",
+    "context": {
+      "tokens": 0,
+      "waiting": 1,
+      "granted": 3,
+      "k": "0|1|3"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "released"
+      }
+    ]
+  },
+  {
+    "label": "step 6",
+    "value": "open",
+    "context": {
+      "tokens": 0,
+      "waiting": 2,
+      "granted": 3,
+      "k": "0|2|3"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "queued"
+      }
+    ]
+  },
+  {
+    "label": "step 7",
+    "value": "open",
+    "context": {
+      "tokens": 0,
+      "waiting": 1,
+      "granted": 4,
+      "k": "0|1|4"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "released"
+      }
+    ]
+  },
+  {
+    "label": "step 8",
+    "value": "drained",
+    "context": {
+      "tokens": 0,
+      "waiting": 0,
+      "granted": 5,
+      "k": "0|0|5"
+    },
+    "status": "done",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "released"
+      }
+    ],
+    "output": {
+      "granted": 5
+    }
+  },
+  {
+    "label": "step 9",
+    "value": "drained",
+    "context": {
+      "tokens": 0,
+      "waiting": 0,
+      "granted": 5,
+      "k": "0|0|5"
+    },
+    "status": "done",
+    "emitted": [],
+    "output": {
+      "granted": 5
+    }
+  },
+  {
+    "label": "step 10",
+    "value": "drained",
+    "context": {
+      "tokens": 0,
+      "waiting": 0,
+      "granted": 5,
+      "k": "0|0|5"
+    },
+    "status": "done",
+    "emitted": [],
+    "output": {
+      "granted": 5
+    }
+  },
+  {
+    "label": "step 11",
+    "value": "drained",
+    "context": {
+      "tokens": 0,
+      "waiting": 0,
+      "granted": 5,
+      "k": "0|0|5"
+    },
+    "status": "done",
+    "emitted": [],
+    "output": {
+      "granted": 5
+    }
+  }
+]

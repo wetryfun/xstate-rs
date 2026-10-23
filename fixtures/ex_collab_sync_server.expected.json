@@ -1,0 +1,156 @@
+[
+  {
+    "label": "start",
+    "value": {},
+    "context": {
+      "version": 0,
+      "accepted": 0
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 0",
+    "value": {},
+    "context": {
+      "version": 1,
+      "accepted": 1
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "toClient",
+        "clientId": "client-a",
+        "message": {
+          "type": "accepted",
+          "version": 1
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "value": {},
+    "context": {
+      "version": 1,
+      "accepted": 1
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "toClient",
+        "clientId": "client-b",
+        "message": {
+          "type": "rejected",
+          "version": 1
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 2",
+    "value": {},
+    "context": {
+      "version": 2,
+      "accepted": 2
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "toClient",
+        "clientId": "client-b",
+        "message": {
+          "type": "accepted",
+          "version": 2
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "value": {},
+    "context": {
+      "version": 2,
+      "accepted": 2
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "toClient",
+        "clientId": "client-a",
+        "message": {
+          "type": "rejected",
+          "version": 2
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "value": {},
+    "context": {
+      "version": 3,
+      "accepted": 3
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "toClient",
+        "clientId": "client-a",
+        "message": {
+          "type": "accepted",
+          "version": 3
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 5",
+    "value": {},
+    "context": {
+      "version": 4,
+      "accepted": 4
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "toClient",
+        "clientId": "client-b",
+        "message": {
+          "type": "accepted",
+          "version": 4
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 6",
+    "value": {},
+    "context": {
+      "version": 4,
+      "accepted": 4
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 7",
+    "value": {},
+    "context": {
+      "version": 4,
+      "accepted": 4
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 8",
+    "value": {},
+    "context": {
+      "version": 4,
+      "accepted": 4
+    },
+    "status": "active",
+    "emitted": []
+  }
+]

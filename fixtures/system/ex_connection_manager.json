@@ -1,0 +1,606 @@
+{
+  "source": "examples/connection-manager/src/main.ts",
+  "notes": "a fixed 200 ms backoff instead of exponential with jitter; attempt, connects and drops unrolled per value; invoke inputs, session ids and the final output are static; logs are emits",
+  "logic": [
+    {
+      "name": "connect",
+      "async": {}
+    },
+    {
+      "name": "ping",
+      "async": {}
+    },
+    {
+      "name": "client",
+      "actors": [
+        "connect",
+        "ping"
+      ],
+      "machine": {
+        "id": "client",
+        "context": {
+          "attempt": 0,
+          "sessionId": null,
+          "connects": 0,
+          "drops": 0,
+          "lastError": null
+        },
+        "initial": "connecting",
+        "states": {
+          "connecting": {
+            "entry": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "log",
+                  "message": "connecting"
+                }
+              }
+            ],
+            "invoke": {
+              "src": "connect",
+              "input": {
+                "attempt": 1
+              },
+              "onDone": [
+                {
+                  "target": "connected",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "connects",
+                      "value": 0
+                    }
+                  },
+                  "context": {
+                    "attempt": 0,
+                    "sessionId": "sess-1",
+                    "connects": 1
+                  },
+                  "actions": [
+                    {
+                      "type": "@xstate.emit",
+                      "event": {
+                        "type": "log",
+                        "message": "connected"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "target": "connected",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "connects",
+                      "value": 1
+                    }
+                  },
+                  "context": {
+                    "attempt": 0,
+                    "sessionId": "sess-2",
+                    "connects": 2
+                  },
+                  "actions": [
+                    {
+                      "type": "@xstate.emit",
+                      "event": {
+                        "type": "log",
+                        "message": "connected"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "target": "connected",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "connects",
+                      "value": 2
+                    }
+                  },
+                  "context": {
+                    "attempt": 0,
+                    "sessionId": "sess-3",
+                    "connects": 3
+                  },
+                  "actions": [
+                    {
+                      "type": "@xstate.emit",
+                      "event": {
+                        "type": "log",
+                        "message": "connected"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "target": "connected",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "connects",
+                      "value": 3
+                    }
+                  },
+                  "context": {
+                    "attempt": 0,
+                    "sessionId": "sess-4",
+                    "connects": 4
+                  },
+                  "actions": [
+                    {
+                      "type": "@xstate.emit",
+                      "event": {
+                        "type": "log",
+                        "message": "connected"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "target": "connected",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "connects",
+                      "value": 4
+                    }
+                  },
+                  "context": {
+                    "attempt": 0,
+                    "sessionId": "sess-5",
+                    "connects": 5
+                  },
+                  "actions": [
+                    {
+                      "type": "@xstate.emit",
+                      "event": {
+                        "type": "log",
+                        "message": "connected"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "target": "connected",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "connects",
+                      "value": 5
+                    }
+                  },
+                  "context": {
+                    "attempt": 0,
+                    "sessionId": "sess-6",
+                    "connects": 6
+                  },
+                  "actions": [
+                    {
+                      "type": "@xstate.emit",
+                      "event": {
+                        "type": "log",
+                        "message": "connected"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "onError": [
+                {
+                  "target": "backingOff",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "attempt",
+                      "value": 0
+                    }
+                  },
+                  "context": {
+                    "attempt": 1,
+                    "lastError": "ECONNREFUSED"
+                  }
+                },
+                {
+                  "target": "backingOff",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "attempt",
+                      "value": 1
+                    }
+                  },
+                  "context": {
+                    "attempt": 2,
+                    "lastError": "ECONNREFUSED"
+                  }
+                },
+                {
+                  "target": "backingOff",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "attempt",
+                      "value": 2
+                    }
+                  },
+                  "context": {
+                    "attempt": 3,
+                    "lastError": "ECONNREFUSED"
+                  }
+                },
+                {
+                  "target": "gaveUp",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "attempt",
+                      "value": 3
+                    }
+                  },
+                  "context": {
+                    "attempt": 4,
+                    "lastError": "ECONNREFUSED"
+                  }
+                }
+              ]
+            }
+          },
+          "connected": {
+            "after": {
+              "120": {
+                "target": "pinging"
+              }
+            }
+          },
+          "pinging": {
+            "invoke": {
+              "src": "ping",
+              "input": {
+                "sessionId": "sess"
+              },
+              "onDone": {
+                "target": "connected",
+                "actions": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "log",
+                      "message": "pong"
+                    }
+                  }
+                ],
+                "reenter": true
+              },
+              "onError": [
+                {
+                  "target": "disconnected",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "drops",
+                      "value": 0
+                    }
+                  },
+                  "context": {
+                    "lastError": "pong timeout",
+                    "sessionId": null,
+                    "drops": 1
+                  },
+                  "actions": [
+                    {
+                      "type": "@xstate.emit",
+                      "event": {
+                        "type": "log",
+                        "message": "disconnected"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "target": "disconnected",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "drops",
+                      "value": 1
+                    }
+                  },
+                  "context": {
+                    "lastError": "pong timeout",
+                    "sessionId": null,
+                    "drops": 2
+                  },
+                  "actions": [
+                    {
+                      "type": "@xstate.emit",
+                      "event": {
+                        "type": "log",
+                        "message": "disconnected"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "target": "disconnected",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "drops",
+                      "value": 2
+                    }
+                  },
+                  "context": {
+                    "lastError": "pong timeout",
+                    "sessionId": null,
+                    "drops": 3
+                  },
+                  "actions": [
+                    {
+                      "type": "@xstate.emit",
+                      "event": {
+                        "type": "log",
+                        "message": "disconnected"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "target": "disconnected",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "drops",
+                      "value": 3
+                    }
+                  },
+                  "context": {
+                    "lastError": "pong timeout",
+                    "sessionId": null,
+                    "drops": 4
+                  },
+                  "actions": [
+                    {
+                      "type": "@xstate.emit",
+                      "event": {
+                        "type": "log",
+                        "message": "disconnected"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "target": "disconnected",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "drops",
+                      "value": 4
+                    }
+                  },
+                  "context": {
+                    "lastError": "pong timeout",
+                    "sessionId": null,
+                    "drops": 5
+                  },
+                  "actions": [
+                    {
+                      "type": "@xstate.emit",
+                      "event": {
+                        "type": "log",
+                        "message": "disconnected"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "target": "disconnected",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "drops",
+                      "value": 5
+                    }
+                  },
+                  "context": {
+                    "lastError": "pong timeout",
+                    "sessionId": null,
+                    "drops": 6
+                  },
+                  "actions": [
+                    {
+                      "type": "@xstate.emit",
+                      "event": {
+                        "type": "log",
+                        "message": "disconnected"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "disconnected": {
+            "always": {
+              "target": "connecting"
+            }
+          },
+          "backingOff": {
+            "entry": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "log",
+                  "message": "backing off"
+                }
+              }
+            ],
+            "after": {
+              "200": {
+                "target": "connecting"
+              }
+            }
+          },
+          "gaveUp": {
+            "entry": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "log",
+                  "message": "giving up"
+                }
+              }
+            ],
+            "type": "final",
+            "output": {
+              "lastError": "ECONNREFUSED"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "root": "client",
+  "steps": [
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "sessionId": "sess-1"
+        }
+      }
+    },
+    {
+      "advance": 120
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "rtt": 20
+        }
+      }
+    },
+    {
+      "advance": 240
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "rtt": 20
+        }
+      }
+    },
+    {
+      "advance": 360
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "pong timeout"
+        }
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "ECONNREFUSED"
+        }
+      }
+    },
+    {
+      "advance": 560
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "ECONNREFUSED"
+        }
+      }
+    },
+    {
+      "advance": 760
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "sessionId": "sess-4"
+        }
+      }
+    },
+    {
+      "advance": 880
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "pong timeout"
+        }
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "ECONNREFUSED"
+        }
+      }
+    },
+    {
+      "advance": 1080
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "ECONNREFUSED"
+        }
+      }
+    },
+    {
+      "advance": 1280
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "ECONNREFUSED"
+        }
+      }
+    },
+    {
+      "advance": 1480
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "ECONNREFUSED"
+        }
+      }
+    },
+    {
+      "advance": 2000
+    }
+  ]
+}

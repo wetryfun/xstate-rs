@@ -1,0 +1,408 @@
+{
+  "source": "examples/websocket-server/src/main.ts (sessionMachine)",
+  "notes": "context from input is static; the user is set by matches on two users; the broadcast echo filter is @xstate.not over ctxEquals; received is unrolled per value; transport calls are emits; the server machine uses enq.spawn and is not portable",
+  "machine": {
+    "id": "session",
+    "context": {
+      "sessionId": "s1",
+      "user": "anonymous",
+      "received": 0
+    },
+    "initial": "handshake",
+    "on": {
+      "disconnect": {
+        "target": ".closed"
+      }
+    },
+    "states": {
+      "handshake": {
+        "after": {
+          "900": {
+            "target": "closing"
+          }
+        },
+        "on": {
+          "hello": [
+            {
+              "target": "active",
+              "matches": {
+                "user": "ada"
+              },
+              "context": {
+                "user": "ada"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "sendToClient",
+                    "message": "welcome"
+                  }
+                }
+              ]
+            },
+            {
+              "target": "active",
+              "matches": {
+                "user": "bob"
+              },
+              "context": {
+                "user": "bob"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "sendToClient",
+                    "message": "welcome"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "active": {
+        "after": {
+          "900": {
+            "target": "closing"
+          }
+        },
+        "on": {
+          "clientMessage": [
+            {
+              "target": "active",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "received",
+                  "value": 0
+                }
+              },
+              "context": {
+                "received": 1
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "clientMessage"
+                  }
+                }
+              ],
+              "reenter": true
+            },
+            {
+              "target": "active",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "received",
+                  "value": 1
+                }
+              },
+              "context": {
+                "received": 2
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "clientMessage"
+                  }
+                }
+              ],
+              "reenter": true
+            },
+            {
+              "target": "active",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "received",
+                  "value": 2
+                }
+              },
+              "context": {
+                "received": 3
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "clientMessage"
+                  }
+                }
+              ],
+              "reenter": true
+            },
+            {
+              "target": "active",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "received",
+                  "value": 3
+                }
+              },
+              "context": {
+                "received": 4
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "clientMessage"
+                  }
+                }
+              ],
+              "reenter": true
+            },
+            {
+              "target": "active",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "received",
+                  "value": 4
+                }
+              },
+              "context": {
+                "received": 5
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "clientMessage"
+                  }
+                }
+              ],
+              "reenter": true
+            },
+            {
+              "target": "active",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "received",
+                  "value": 5
+                }
+              },
+              "context": {
+                "received": 6
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "clientMessage"
+                  }
+                }
+              ],
+              "reenter": true
+            },
+            {
+              "target": "active",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "received",
+                  "value": 6
+                }
+              },
+              "context": {
+                "received": 7
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "clientMessage"
+                  }
+                }
+              ],
+              "reenter": true
+            },
+            {
+              "target": "active",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "received",
+                  "value": 7
+                }
+              },
+              "context": {
+                "received": 8
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "log",
+                    "message": "clientMessage"
+                  }
+                }
+              ],
+              "reenter": true
+            }
+          ],
+          "broadcast": [
+            {
+              "matches": {
+                "from": "ada"
+              },
+              "guard": {
+                "type": "@xstate.not",
+                "params": {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "user",
+                      "value": "ada"
+                    }
+                  }
+                }
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "sendToClient",
+                    "type_": "broadcast",
+                    "from_": "ada"
+                  }
+                }
+              ]
+            },
+            {
+              "matches": {
+                "from": "bob"
+              },
+              "guard": {
+                "type": "@xstate.not",
+                "params": {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "user",
+                      "value": "bob"
+                    }
+                  }
+                }
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "sendToClient",
+                    "type_": "broadcast",
+                    "from_": "bob"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "closing": {
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "dropConnection",
+              "reason": "heartbeat timeout"
+            }
+          }
+        ],
+        "on": {
+          "disconnect": {
+            "target": "closed"
+          }
+        }
+      },
+      "closed": {
+        "type": "final",
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "log",
+              "message": "closed"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "steps": [
+    {
+      "at": 100,
+      "send": {
+        "type": "hello",
+        "user": "ada"
+      }
+    },
+    {
+      "at": 500,
+      "send": {
+        "type": "clientMessage",
+        "text": "hi"
+      }
+    },
+    {
+      "at": 900,
+      "send": {
+        "type": "broadcast",
+        "from": "bob",
+        "text": "yo"
+      }
+    },
+    {
+      "at": 1000,
+      "send": {
+        "type": "broadcast",
+        "from": "ada",
+        "text": "me"
+      }
+    },
+    {
+      "at": 1300,
+      "send": {
+        "type": "clientMessage",
+        "text": "x"
+      }
+    },
+    {
+      "at": 2000,
+      "send": {
+        "type": "clientMessage",
+        "text": "y"
+      }
+    },
+    {
+      "at": 2950
+    },
+    {
+      "at": 3000,
+      "send": {
+        "type": "clientMessage",
+        "text": "late"
+      }
+    },
+    {
+      "at": 3100,
+      "send": {
+        "type": "disconnect"
+      }
+    }
+  ]
+}

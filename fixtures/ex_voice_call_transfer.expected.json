@@ -1,0 +1,143 @@
+[
+  {
+    "label": "start",
+    "value": "ringing",
+    "context": {
+      "caller": "Ada",
+      "intent": "unknown",
+      "turns": 0,
+      "resolution": "incomplete"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "ringing"
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "value": "greeting",
+    "context": {
+      "caller": "Ada",
+      "intent": "unknown",
+      "turns": 0,
+      "resolution": "incomplete"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "hello"
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "value": "listening",
+    "context": {
+      "caller": "Ada",
+      "intent": "unknown",
+      "turns": 0,
+      "resolution": "incomplete"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "listening"
+      }
+    ]
+  },
+  {
+    "label": "step 2",
+    "value": "clarifying",
+    "context": {
+      "caller": "Ada",
+      "intent": "unknown",
+      "turns": 1,
+      "resolution": "incomplete"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "rephrase"
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "value": "listening",
+    "context": {
+      "caller": "Ada",
+      "intent": "unknown",
+      "turns": 1,
+      "resolution": "incomplete"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "listening"
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "value": "transferring",
+    "context": {
+      "caller": "Ada",
+      "intent": "human",
+      "turns": 2,
+      "resolution": "waiting for a human"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "transferring"
+      }
+    ]
+  },
+  {
+    "label": "step 5",
+    "value": "ended",
+    "context": {
+      "caller": "Ada",
+      "intent": "human",
+      "turns": 2,
+      "resolution": "waiting for a human"
+    },
+    "status": "done",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "caller hung up"
+      },
+      {
+        "type": "log",
+        "message": "call ended"
+      }
+    ],
+    "output": {
+      "ended": true
+    }
+  },
+  {
+    "label": "step 6",
+    "value": "ended",
+    "context": {
+      "caller": "Ada",
+      "intent": "human",
+      "turns": 2,
+      "resolution": "waiting for a human"
+    },
+    "status": "done",
+    "emitted": [],
+    "output": {
+      "ended": true
+    }
+  }
+]

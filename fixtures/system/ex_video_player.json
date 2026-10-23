@@ -1,0 +1,382 @@
+{
+  "source": "examples/video-player-react/src/videoMachine.ts",
+  "notes": "duration 3 instead of 30; the playbackClock callback actor is dropped and TICK is sent by the steps; SEEK clamping and the metadata's duration are unrolled per value",
+  "logic": [
+    {
+      "name": "loadMetadata",
+      "async": {}
+    },
+    {
+      "name": "video",
+      "actors": [
+        "loadMetadata"
+      ],
+      "machine": {
+        "id": "video",
+        "initial": "loading",
+        "context": {
+          "currentTime": 0,
+          "duration": 30
+        },
+        "states": {
+          "loading": {
+            "invoke": {
+              "src": "loadMetadata",
+              "onDone": {
+                "target": "ready",
+                "context": {
+                  "duration": 3
+                }
+              }
+            }
+          },
+          "ready": {
+            "initial": "paused",
+            "states": {
+              "paused": {
+                "on": {
+                  "PLAY": {
+                    "target": "playing"
+                  }
+                }
+              },
+              "playing": {
+                "on": {
+                  "PAUSE": {
+                    "target": "paused"
+                  },
+                  "STALL": {
+                    "target": "buffering"
+                  },
+                  "TICK": [
+                    {
+                      "guard": {
+                        "type": "ctxEquals",
+                        "params": {
+                          "key": "currentTime",
+                          "value": 0
+                        }
+                      },
+                      "context": {
+                        "currentTime": 1
+                      }
+                    },
+                    {
+                      "guard": {
+                        "type": "ctxEquals",
+                        "params": {
+                          "key": "currentTime",
+                          "value": 1
+                        }
+                      },
+                      "context": {
+                        "currentTime": 2
+                      }
+                    },
+                    {
+                      "guard": {
+                        "type": "ctxEquals",
+                        "params": {
+                          "key": "currentTime",
+                          "value": 2
+                        }
+                      },
+                      "context": {
+                        "currentTime": 3
+                      }
+                    }
+                  ]
+                },
+                "always": {
+                  "target": "ended",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "currentTime",
+                      "value": 3
+                    }
+                  }
+                }
+              },
+              "buffering": {
+                "after": {
+                  "1500": {
+                    "target": "playing"
+                  }
+                },
+                "on": {
+                  "PAUSE": {
+                    "target": "paused"
+                  }
+                }
+              },
+              "ended": {
+                "entry": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "video.ended"
+                    }
+                  }
+                ],
+                "on": {
+                  "REPLAY": {
+                    "target": "playing",
+                    "context": {
+                      "currentTime": 0
+                    }
+                  },
+                  "SEEK": [
+                    {
+                      "target": "paused",
+                      "matches": {
+                        "time": -2
+                      },
+                      "context": {
+                        "currentTime": 0
+                      }
+                    },
+                    {
+                      "target": "paused",
+                      "matches": {
+                        "time": 0
+                      },
+                      "context": {
+                        "currentTime": 0
+                      }
+                    },
+                    {
+                      "target": "paused",
+                      "matches": {
+                        "time": 1
+                      },
+                      "context": {
+                        "currentTime": 1
+                      }
+                    },
+                    {
+                      "target": "paused",
+                      "matches": {
+                        "time": 2
+                      },
+                      "context": {
+                        "currentTime": 2
+                      }
+                    },
+                    {
+                      "target": "paused",
+                      "matches": {
+                        "time": 5
+                      },
+                      "context": {
+                        "currentTime": 5
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            "on": {
+              "SEEK": [
+                {
+                  "matches": {
+                    "time": -2
+                  },
+                  "context": {
+                    "currentTime": 0
+                  }
+                },
+                {
+                  "matches": {
+                    "time": 0
+                  },
+                  "context": {
+                    "currentTime": 0
+                  }
+                },
+                {
+                  "matches": {
+                    "time": 1
+                  },
+                  "context": {
+                    "currentTime": 1
+                  }
+                },
+                {
+                  "matches": {
+                    "time": 2
+                  },
+                  "context": {
+                    "currentTime": 2
+                  }
+                },
+                {
+                  "matches": {
+                    "time": 5
+                  },
+                  "context": {
+                    "currentTime": 3
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "root": "video",
+  "steps": [
+    {
+      "send": "video",
+      "event": {
+        "type": "PLAY"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "duration": 3
+        }
+      }
+    },
+    {
+      "send": "video",
+      "event": {
+        "type": "PLAY"
+      }
+    },
+    {
+      "send": "video",
+      "event": {
+        "type": "TICK"
+      }
+    },
+    {
+      "send": "video",
+      "event": {
+        "type": "STALL"
+      }
+    },
+    {
+      "send": "video",
+      "event": {
+        "type": "TICK"
+      }
+    },
+    {
+      "advance": 1500
+    },
+    {
+      "send": "video",
+      "event": {
+        "type": "TICK"
+      }
+    },
+    {
+      "send": "video",
+      "event": {
+        "type": "PAUSE"
+      }
+    },
+    {
+      "send": "video",
+      "event": {
+        "type": "SEEK",
+        "time": 1
+      }
+    },
+    {
+      "send": "video",
+      "event": {
+        "type": "PLAY"
+      }
+    },
+    {
+      "send": "video",
+      "event": {
+        "type": "TICK"
+      }
+    },
+    {
+      "send": "video",
+      "event": {
+        "type": "TICK"
+      }
+    },
+    {
+      "send": "video",
+      "event": {
+        "type": "TICK"
+      }
+    },
+    {
+      "send": "video",
+      "event": {
+        "type": "SEEK",
+        "time": 0
+      }
+    },
+    {
+      "send": "video",
+      "event": {
+        "type": "PLAY"
+      }
+    },
+    {
+      "send": "video",
+      "event": {
+        "type": "SEEK",
+        "time": 5
+      }
+    },
+    {
+      "send": "video",
+      "event": {
+        "type": "REPLAY"
+      }
+    },
+    {
+      "send": "video",
+      "event": {
+        "type": "STALL"
+      }
+    },
+    {
+      "send": "video",
+      "event": {
+        "type": "PAUSE"
+      }
+    },
+    {
+      "advance": 4000
+    },
+    {
+      "send": "video",
+      "event": {
+        "type": "PLAY"
+      }
+    },
+    {
+      "send": "video",
+      "event": {
+        "type": "TICK"
+      }
+    },
+    {
+      "send": "video",
+      "event": {
+        "type": "SEEK",
+        "time": -2
+      }
+    },
+    {
+      "send": "video",
+      "event": {
+        "type": "TICK"
+      }
+    }
+  ]
+}

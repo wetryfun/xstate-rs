@@ -1,0 +1,434 @@
+[
+  {
+    "label": "start",
+    "value": "idle",
+    "context": {
+      "credit": 0,
+      "stock": {
+        "cola": 2,
+        "chips": 1,
+        "gum": 0
+      },
+      "dispensing": null,
+      "change": 0,
+      "message": "Insert coins",
+      "k": "0|2|1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 0",
+    "value": "idle",
+    "context": {
+      "credit": 0,
+      "stock": {
+        "cola": 2,
+        "chips": 1,
+        "gum": 0
+      },
+      "dispensing": null,
+      "change": 0,
+      "message": "Sold out",
+      "k": "0|2|1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 1",
+    "value": "idle",
+    "context": {
+      "credit": 25,
+      "stock": {
+        "cola": 2,
+        "chips": 1,
+        "gum": 0
+      },
+      "dispensing": null,
+      "change": 0,
+      "message": "Insert coins or make a selection",
+      "k": "25|2|1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 2",
+    "value": "idle",
+    "context": {
+      "credit": 25,
+      "stock": {
+        "cola": 2,
+        "chips": 1,
+        "gum": 0
+      },
+      "dispensing": null,
+      "change": 0,
+      "message": "Add 100¢ more",
+      "k": "25|2|1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 3",
+    "value": "idle",
+    "context": {
+      "credit": 125,
+      "stock": {
+        "cola": 2,
+        "chips": 1,
+        "gum": 0
+      },
+      "dispensing": null,
+      "change": 0,
+      "message": "Insert coins or make a selection",
+      "k": "125|2|1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 4",
+    "value": "dispensing",
+    "context": {
+      "credit": 0,
+      "stock": {
+        "cola": 1,
+        "chips": 1,
+        "gum": 0
+      },
+      "dispensing": "cola",
+      "change": 0,
+      "message": "Dispensing…",
+      "k": "0|1|1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 5",
+    "value": "dispensing",
+    "context": {
+      "credit": 0,
+      "stock": {
+        "cola": 1,
+        "chips": 1,
+        "gum": 0
+      },
+      "dispensing": "cola",
+      "change": 0,
+      "message": "Dispensing…",
+      "k": "0|1|1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 6",
+    "value": "idle",
+    "context": {
+      "credit": 0,
+      "stock": {
+        "cola": 1,
+        "chips": 1,
+        "gum": 0
+      },
+      "dispensing": null,
+      "change": 0,
+      "message": "Add 125¢ more",
+      "k": "0|1|1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 7",
+    "value": "idle",
+    "context": {
+      "credit": 25,
+      "stock": {
+        "cola": 1,
+        "chips": 1,
+        "gum": 0
+      },
+      "dispensing": null,
+      "change": 0,
+      "message": "Insert coins or make a selection",
+      "k": "25|1|1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 8",
+    "value": "idle",
+    "context": {
+      "credit": 125,
+      "stock": {
+        "cola": 1,
+        "chips": 1,
+        "gum": 0
+      },
+      "dispensing": null,
+      "change": 0,
+      "message": "Insert coins or make a selection",
+      "k": "125|1|1"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 9",
+    "value": "dispensing",
+    "context": {
+      "credit": 25,
+      "stock": {
+        "cola": 1,
+        "chips": 0,
+        "gum": 0
+      },
+      "dispensing": "chips",
+      "change": 0,
+      "message": "Dispensing…",
+      "k": "25|1|0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 10",
+    "value": "returningChange",
+    "context": {
+      "credit": 0,
+      "stock": {
+        "cola": 1,
+        "chips": 0,
+        "gum": 0
+      },
+      "dispensing": null,
+      "change": 25,
+      "message": "Returning 25¢",
+      "k": "0|1|0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 11",
+    "value": "idle",
+    "context": {
+      "credit": 0,
+      "stock": {
+        "cola": 1,
+        "chips": 0,
+        "gum": 0
+      },
+      "dispensing": null,
+      "change": 25,
+      "message": "Insert coins",
+      "k": "0|1|0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 12",
+    "value": "idle",
+    "context": {
+      "credit": 0,
+      "stock": {
+        "cola": 1,
+        "chips": 0,
+        "gum": 0
+      },
+      "dispensing": null,
+      "change": 25,
+      "message": "Insert coins",
+      "k": "0|1|0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 13",
+    "value": "idle",
+    "context": {
+      "credit": 25,
+      "stock": {
+        "cola": 1,
+        "chips": 0,
+        "gum": 0
+      },
+      "dispensing": null,
+      "change": 0,
+      "message": "Insert coins or make a selection",
+      "k": "25|1|0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 14",
+    "value": "returningChange",
+    "context": {
+      "credit": 0,
+      "stock": {
+        "cola": 1,
+        "chips": 0,
+        "gum": 0
+      },
+      "dispensing": null,
+      "change": 25,
+      "message": "Returning 25¢",
+      "k": "0|1|0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 15",
+    "value": "returningChange",
+    "context": {
+      "credit": 0,
+      "stock": {
+        "cola": 1,
+        "chips": 0,
+        "gum": 0
+      },
+      "dispensing": null,
+      "change": 25,
+      "message": "Returning 25¢",
+      "k": "0|1|0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 16",
+    "value": "idle",
+    "context": {
+      "credit": 100,
+      "stock": {
+        "cola": 1,
+        "chips": 0,
+        "gum": 0
+      },
+      "dispensing": null,
+      "change": 0,
+      "message": "Insert coins or make a selection",
+      "k": "100|1|0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 17",
+    "value": "idle",
+    "context": {
+      "credit": 125,
+      "stock": {
+        "cola": 1,
+        "chips": 0,
+        "gum": 0
+      },
+      "dispensing": null,
+      "change": 0,
+      "message": "Insert coins or make a selection",
+      "k": "125|1|0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 18",
+    "value": "idle",
+    "context": {
+      "credit": 125,
+      "stock": {
+        "cola": 1,
+        "chips": 0,
+        "gum": 0
+      },
+      "dispensing": null,
+      "change": 0,
+      "message": "Sold out",
+      "k": "125|1|0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 19",
+    "value": "dispensing",
+    "context": {
+      "credit": 0,
+      "stock": {
+        "cola": 0,
+        "chips": 0,
+        "gum": 0
+      },
+      "dispensing": "cola",
+      "change": 0,
+      "message": "Dispensing…",
+      "k": "0|0|0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 20",
+    "value": "idle",
+    "context": {
+      "credit": 0,
+      "stock": {
+        "cola": 0,
+        "chips": 0,
+        "gum": 0
+      },
+      "dispensing": null,
+      "change": 0,
+      "message": "Enjoy!",
+      "k": "0|0|0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 21",
+    "value": "idle",
+    "context": {
+      "credit": 100,
+      "stock": {
+        "cola": 0,
+        "chips": 0,
+        "gum": 0
+      },
+      "dispensing": null,
+      "change": 0,
+      "message": "Insert coins or make a selection",
+      "k": "100|0|0"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 22",
+    "value": "idle",
+    "context": {
+      "credit": 100,
+      "stock": {
+        "cola": 0,
+        "chips": 0,
+        "gum": 0
+      },
+      "dispensing": null,
+      "change": 0,
+      "message": "Sold out",
+      "k": "100|0|0"
+    },
+    "status": "active",
+    "emitted": []
+  }
+]

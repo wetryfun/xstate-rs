@@ -1,0 +1,953 @@
+{
+  "source": "examples/document-collab-sync/src/main.ts (serverMachine)",
+  "notes": "the document text is not tracked (versions and accepted counts are, per value); sending to a client is an emit",
+  "machine": {
+    "id": "server",
+    "context": {
+      "version": 0,
+      "accepted": 0
+    },
+    "on": {
+      "submit": [
+        {
+          "matches": {
+            "baseVersion": 0,
+            "clientId": "client-a"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 0
+            }
+          },
+          "context": {
+            "version": 1,
+            "accepted": 1
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-a",
+                "message": {
+                  "type": "accepted",
+                  "version": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 0,
+            "clientId": "client-b"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 0
+            }
+          },
+          "context": {
+            "version": 1,
+            "accepted": 1
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-b",
+                "message": {
+                  "type": "accepted",
+                  "version": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 0,
+            "clientId": "client-a"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 1
+            }
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-a",
+                "message": {
+                  "type": "rejected",
+                  "version": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 0,
+            "clientId": "client-b"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 1
+            }
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-b",
+                "message": {
+                  "type": "rejected",
+                  "version": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 0,
+            "clientId": "client-a"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 2
+            }
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-a",
+                "message": {
+                  "type": "rejected",
+                  "version": 2
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 0,
+            "clientId": "client-b"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 2
+            }
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-b",
+                "message": {
+                  "type": "rejected",
+                  "version": 2
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 0,
+            "clientId": "client-a"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 3
+            }
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-a",
+                "message": {
+                  "type": "rejected",
+                  "version": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 0,
+            "clientId": "client-b"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 3
+            }
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-b",
+                "message": {
+                  "type": "rejected",
+                  "version": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 1,
+            "clientId": "client-a"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 0
+            }
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-a",
+                "message": {
+                  "type": "rejected",
+                  "version": 0
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 1,
+            "clientId": "client-b"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 0
+            }
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-b",
+                "message": {
+                  "type": "rejected",
+                  "version": 0
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 1,
+            "clientId": "client-a"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 1
+            }
+          },
+          "context": {
+            "version": 2,
+            "accepted": 2
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-a",
+                "message": {
+                  "type": "accepted",
+                  "version": 2
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 1,
+            "clientId": "client-b"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 1
+            }
+          },
+          "context": {
+            "version": 2,
+            "accepted": 2
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-b",
+                "message": {
+                  "type": "accepted",
+                  "version": 2
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 1,
+            "clientId": "client-a"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 2
+            }
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-a",
+                "message": {
+                  "type": "rejected",
+                  "version": 2
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 1,
+            "clientId": "client-b"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 2
+            }
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-b",
+                "message": {
+                  "type": "rejected",
+                  "version": 2
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 1,
+            "clientId": "client-a"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 3
+            }
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-a",
+                "message": {
+                  "type": "rejected",
+                  "version": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 1,
+            "clientId": "client-b"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 3
+            }
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-b",
+                "message": {
+                  "type": "rejected",
+                  "version": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 2,
+            "clientId": "client-a"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 0
+            }
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-a",
+                "message": {
+                  "type": "rejected",
+                  "version": 0
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 2,
+            "clientId": "client-b"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 0
+            }
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-b",
+                "message": {
+                  "type": "rejected",
+                  "version": 0
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 2,
+            "clientId": "client-a"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 1
+            }
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-a",
+                "message": {
+                  "type": "rejected",
+                  "version": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 2,
+            "clientId": "client-b"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 1
+            }
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-b",
+                "message": {
+                  "type": "rejected",
+                  "version": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 2,
+            "clientId": "client-a"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 2
+            }
+          },
+          "context": {
+            "version": 3,
+            "accepted": 3
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-a",
+                "message": {
+                  "type": "accepted",
+                  "version": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 2,
+            "clientId": "client-b"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 2
+            }
+          },
+          "context": {
+            "version": 3,
+            "accepted": 3
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-b",
+                "message": {
+                  "type": "accepted",
+                  "version": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 2,
+            "clientId": "client-a"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 3
+            }
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-a",
+                "message": {
+                  "type": "rejected",
+                  "version": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 2,
+            "clientId": "client-b"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 3
+            }
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-b",
+                "message": {
+                  "type": "rejected",
+                  "version": 3
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 3,
+            "clientId": "client-a"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 0
+            }
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-a",
+                "message": {
+                  "type": "rejected",
+                  "version": 0
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 3,
+            "clientId": "client-b"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 0
+            }
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-b",
+                "message": {
+                  "type": "rejected",
+                  "version": 0
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 3,
+            "clientId": "client-a"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 1
+            }
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-a",
+                "message": {
+                  "type": "rejected",
+                  "version": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 3,
+            "clientId": "client-b"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 1
+            }
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-b",
+                "message": {
+                  "type": "rejected",
+                  "version": 1
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 3,
+            "clientId": "client-a"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 2
+            }
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-a",
+                "message": {
+                  "type": "rejected",
+                  "version": 2
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 3,
+            "clientId": "client-b"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 2
+            }
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-b",
+                "message": {
+                  "type": "rejected",
+                  "version": 2
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 3,
+            "clientId": "client-a"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 3
+            }
+          },
+          "context": {
+            "version": 4,
+            "accepted": 4
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-a",
+                "message": {
+                  "type": "accepted",
+                  "version": 4
+                }
+              }
+            }
+          ]
+        },
+        {
+          "matches": {
+            "baseVersion": 3,
+            "clientId": "client-b"
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "version",
+              "value": 3
+            }
+          },
+          "context": {
+            "version": 4,
+            "accepted": 4
+          },
+          "actions": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "toClient",
+                "clientId": "client-b",
+                "message": {
+                  "type": "accepted",
+                  "version": 4
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "steps": [
+    {
+      "at": 0,
+      "send": {
+        "type": "submit",
+        "clientId": "client-a",
+        "baseVersion": 0
+      }
+    },
+    {
+      "at": 1,
+      "send": {
+        "type": "submit",
+        "clientId": "client-b",
+        "baseVersion": 0
+      }
+    },
+    {
+      "at": 2,
+      "send": {
+        "type": "submit",
+        "clientId": "client-b",
+        "baseVersion": 1
+      }
+    },
+    {
+      "at": 3,
+      "send": {
+        "type": "submit",
+        "clientId": "client-a",
+        "baseVersion": 1
+      }
+    },
+    {
+      "at": 4,
+      "send": {
+        "type": "submit",
+        "clientId": "client-a",
+        "baseVersion": 2
+      }
+    },
+    {
+      "at": 5,
+      "send": {
+        "type": "submit",
+        "clientId": "client-b",
+        "baseVersion": 3
+      }
+    },
+    {
+      "at": 6,
+      "send": {
+        "type": "submit",
+        "clientId": "client-b",
+        "baseVersion": 0
+      }
+    },
+    {
+      "at": 7,
+      "send": {
+        "type": "submit",
+        "clientId": "client-a",
+        "baseVersion": 3
+      }
+    },
+    {
+      "at": 8,
+      "send": {
+        "type": "submit",
+        "clientId": "client-b",
+        "baseVersion": 4
+      }
+    }
+  ]
+}

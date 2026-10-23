@@ -1,0 +1,597 @@
+{
+  "source": "examples/agent-voice-call/src/main.ts",
+  "notes": "as ex_voice_call_billing: clarifying times out back to listening, then a transfer the caller hangs up on",
+  "machine": {
+    "id": "call",
+    "context": {
+      "caller": "Ada",
+      "intent": "unknown",
+      "turns": 0,
+      "resolution": "incomplete"
+    },
+    "on": {
+      "hangup": {
+        "target": ".ended",
+        "actions": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "log",
+              "message": "caller hung up"
+            }
+          }
+        ]
+      }
+    },
+    "initial": "ringing",
+    "states": {
+      "ringing": {
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "log",
+              "message": "ringing"
+            }
+          }
+        ],
+        "on": {
+          "answered": {
+            "target": "greeting"
+          }
+        }
+      },
+      "greeting": {
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "log",
+              "message": "hello"
+            }
+          }
+        ],
+        "after": {
+          "300": {
+            "target": "listening"
+          }
+        }
+      },
+      "listening": {
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "log",
+              "message": "listening"
+            }
+          }
+        ],
+        "on": {
+          "utterance": [
+            {
+              "target": "transferring",
+              "matches": {
+                "text": "get me a human"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "turns",
+                  "value": 0
+                }
+              },
+              "context": {
+                "intent": "human",
+                "turns": 1,
+                "resolution": "waiting for a human"
+              }
+            },
+            {
+              "target": "billing",
+              "matches": {
+                "text": "my bill is wrong"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "turns",
+                  "value": 0
+                }
+              },
+              "context": {
+                "intent": "billing",
+                "turns": 1
+              }
+            },
+            {
+              "target": "support",
+              "matches": {
+                "text": "it is broken"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "turns",
+                  "value": 0
+                }
+              },
+              "context": {
+                "intent": "support",
+                "turns": 1
+              }
+            },
+            {
+              "target": "clarifying",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "turns",
+                  "value": 0
+                }
+              },
+              "context": {
+                "intent": "unknown",
+                "turns": 1
+              }
+            },
+            {
+              "target": "transferring",
+              "matches": {
+                "text": "get me a human"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "turns",
+                  "value": 1
+                }
+              },
+              "context": {
+                "intent": "human",
+                "turns": 2,
+                "resolution": "waiting for a human"
+              }
+            },
+            {
+              "target": "billing",
+              "matches": {
+                "text": "my bill is wrong"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "turns",
+                  "value": 1
+                }
+              },
+              "context": {
+                "intent": "billing",
+                "turns": 2
+              }
+            },
+            {
+              "target": "support",
+              "matches": {
+                "text": "it is broken"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "turns",
+                  "value": 1
+                }
+              },
+              "context": {
+                "intent": "support",
+                "turns": 2
+              }
+            },
+            {
+              "target": "clarifying",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "turns",
+                  "value": 1
+                }
+              },
+              "context": {
+                "intent": "unknown",
+                "turns": 2
+              }
+            },
+            {
+              "target": "transferring",
+              "matches": {
+                "text": "get me a human"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "turns",
+                  "value": 2
+                }
+              },
+              "context": {
+                "intent": "human",
+                "turns": 3,
+                "resolution": "waiting for a human"
+              }
+            },
+            {
+              "target": "billing",
+              "matches": {
+                "text": "my bill is wrong"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "turns",
+                  "value": 2
+                }
+              },
+              "context": {
+                "intent": "billing",
+                "turns": 3
+              }
+            },
+            {
+              "target": "support",
+              "matches": {
+                "text": "it is broken"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "turns",
+                  "value": 2
+                }
+              },
+              "context": {
+                "intent": "support",
+                "turns": 3
+              }
+            },
+            {
+              "target": "clarifying",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "turns",
+                  "value": 2
+                }
+              },
+              "context": {
+                "intent": "unknown",
+                "turns": 3
+              }
+            },
+            {
+              "target": "transferring",
+              "matches": {
+                "text": "get me a human"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "turns",
+                  "value": 3
+                }
+              },
+              "context": {
+                "intent": "human",
+                "turns": 4,
+                "resolution": "waiting for a human"
+              }
+            },
+            {
+              "target": "billing",
+              "matches": {
+                "text": "my bill is wrong"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "turns",
+                  "value": 3
+                }
+              },
+              "context": {
+                "intent": "billing",
+                "turns": 4
+              }
+            },
+            {
+              "target": "support",
+              "matches": {
+                "text": "it is broken"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "turns",
+                  "value": 3
+                }
+              },
+              "context": {
+                "intent": "support",
+                "turns": 4
+              }
+            },
+            {
+              "target": "clarifying",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "turns",
+                  "value": 3
+                }
+              },
+              "context": {
+                "intent": "unknown",
+                "turns": 4
+              }
+            }
+          ]
+        }
+      },
+      "clarifying": {
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "log",
+              "message": "rephrase"
+            }
+          }
+        ],
+        "on": {
+          "utterance": [
+            {
+              "target": "billing",
+              "matches": {
+                "text": "my bill is wrong"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "turns",
+                  "value": 0
+                }
+              },
+              "context": {
+                "intent": "billing",
+                "turns": 1
+              }
+            },
+            {
+              "target": "support",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "turns",
+                  "value": 0
+                }
+              },
+              "context": {
+                "intent": "support",
+                "turns": 1
+              }
+            },
+            {
+              "target": "billing",
+              "matches": {
+                "text": "my bill is wrong"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "turns",
+                  "value": 1
+                }
+              },
+              "context": {
+                "intent": "billing",
+                "turns": 2
+              }
+            },
+            {
+              "target": "support",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "turns",
+                  "value": 1
+                }
+              },
+              "context": {
+                "intent": "support",
+                "turns": 2
+              }
+            },
+            {
+              "target": "billing",
+              "matches": {
+                "text": "my bill is wrong"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "turns",
+                  "value": 2
+                }
+              },
+              "context": {
+                "intent": "billing",
+                "turns": 3
+              }
+            },
+            {
+              "target": "support",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "turns",
+                  "value": 2
+                }
+              },
+              "context": {
+                "intent": "support",
+                "turns": 3
+              }
+            },
+            {
+              "target": "billing",
+              "matches": {
+                "text": "my bill is wrong"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "turns",
+                  "value": 3
+                }
+              },
+              "context": {
+                "intent": "billing",
+                "turns": 4
+              }
+            },
+            {
+              "target": "support",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "turns",
+                  "value": 3
+                }
+              },
+              "context": {
+                "intent": "support",
+                "turns": 4
+              }
+            }
+          ]
+        },
+        "after": {
+          "1200": {
+            "target": "listening"
+          }
+        }
+      },
+      "billing": {
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "log",
+              "message": "billing"
+            }
+          }
+        ],
+        "after": {
+          "300": {
+            "target": "ended",
+            "context": {
+              "resolution": "billing question answered"
+            }
+          }
+        }
+      },
+      "support": {
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "log",
+              "message": "support"
+            }
+          }
+        ],
+        "after": {
+          "300": {
+            "target": "ended",
+            "context": {
+              "resolution": "reset scheduled"
+            }
+          }
+        }
+      },
+      "transferring": {
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "log",
+              "message": "transferring"
+            }
+          }
+        ],
+        "after": {
+          "1200": {
+            "target": "ended",
+            "context": {
+              "resolution": "human agent joined"
+            }
+          }
+        }
+      },
+      "ended": {
+        "type": "final",
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "log",
+              "message": "call ended"
+            }
+          }
+        ],
+        "output": {
+          "ended": true
+        }
+      }
+    }
+  },
+  "steps": [
+    {
+      "at": 0,
+      "send": {
+        "type": "answered"
+      }
+    },
+    {
+      "at": 300
+    },
+    {
+      "at": 350,
+      "send": {
+        "type": "utterance",
+        "text": "silence"
+      }
+    },
+    {
+      "at": 1550
+    },
+    {
+      "at": 1600,
+      "send": {
+        "type": "utterance",
+        "text": "get me a human"
+      }
+    },
+    {
+      "at": 2000,
+      "send": {
+        "type": "hangup"
+      }
+    },
+    {
+      "at": 2100,
+      "send": {
+        "type": "answered"
+      }
+    }
+  ]
+}

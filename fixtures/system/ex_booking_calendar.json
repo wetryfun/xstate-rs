@@ -1,0 +1,610 @@
+{
+  "source": "examples/booking-calendar-react/src/bookingMachine.ts",
+  "notes": "a 2 s hold instead of 20 s; the seconds callback actor is dropped and TICK is sent by the steps; slot availability is per-slot context flags (the loaded slots are static); bookSlot's input is static",
+  "logic": [
+    {
+      "name": "loadSlots",
+      "async": {}
+    },
+    {
+      "name": "bookSlot",
+      "async": {}
+    },
+    {
+      "name": "booking",
+      "actors": [
+        "loadSlots",
+        "bookSlot"
+      ],
+      "machine": {
+        "id": "booking",
+        "context": {
+          "slots": [],
+          "selectedId": null,
+          "secondsLeft": 20,
+          "confirmation": null,
+          "error": null,
+          "s1Taken": true,
+          "s2Taken": true,
+          "s3Taken": true
+        },
+        "initial": "loading",
+        "states": {
+          "loading": {
+            "invoke": {
+              "src": "loadSlots",
+              "onDone": {
+                "target": "selecting",
+                "context": {
+                  "slots": [
+                    {
+                      "id": "s1",
+                      "taken": false
+                    },
+                    {
+                      "id": "s2",
+                      "taken": true
+                    },
+                    {
+                      "id": "s3",
+                      "taken": false
+                    }
+                  ],
+                  "s1Taken": false,
+                  "s3Taken": false
+                }
+              },
+              "onError": {
+                "target": "selecting",
+                "context": {
+                  "error": "Could not load slots."
+                }
+              }
+            }
+          },
+          "selecting": {
+            "on": {
+              "select": [
+                {
+                  "target": "holding",
+                  "matches": {
+                    "slotId": "s1"
+                  },
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "s1Taken",
+                      "value": false
+                    }
+                  },
+                  "context": {
+                    "selectedId": "s1",
+                    "secondsLeft": 20,
+                    "error": null
+                  }
+                },
+                {
+                  "target": "holding",
+                  "matches": {
+                    "slotId": "s2"
+                  },
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "s2Taken",
+                      "value": false
+                    }
+                  },
+                  "context": {
+                    "selectedId": "s2",
+                    "secondsLeft": 20,
+                    "error": null
+                  }
+                },
+                {
+                  "target": "holding",
+                  "matches": {
+                    "slotId": "s3"
+                  },
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "s3Taken",
+                      "value": false
+                    }
+                  },
+                  "context": {
+                    "selectedId": "s3",
+                    "secondsLeft": 20,
+                    "error": null
+                  }
+                }
+              ]
+            }
+          },
+          "holding": {
+            "after": {
+              "2000": {
+                "target": "selecting",
+                "context": {
+                  "selectedId": null,
+                  "error": "Your hold expired."
+                }
+              }
+            },
+            "on": {
+              "TICK": [
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "secondsLeft",
+                      "value": 20
+                    }
+                  },
+                  "context": {
+                    "secondsLeft": 19
+                  }
+                },
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "secondsLeft",
+                      "value": 19
+                    }
+                  },
+                  "context": {
+                    "secondsLeft": 18
+                  }
+                },
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "secondsLeft",
+                      "value": 18
+                    }
+                  },
+                  "context": {
+                    "secondsLeft": 17
+                  }
+                },
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "secondsLeft",
+                      "value": 17
+                    }
+                  },
+                  "context": {
+                    "secondsLeft": 16
+                  }
+                },
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "secondsLeft",
+                      "value": 16
+                    }
+                  },
+                  "context": {
+                    "secondsLeft": 15
+                  }
+                },
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "secondsLeft",
+                      "value": 15
+                    }
+                  },
+                  "context": {
+                    "secondsLeft": 14
+                  }
+                },
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "secondsLeft",
+                      "value": 14
+                    }
+                  },
+                  "context": {
+                    "secondsLeft": 13
+                  }
+                },
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "secondsLeft",
+                      "value": 13
+                    }
+                  },
+                  "context": {
+                    "secondsLeft": 12
+                  }
+                },
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "secondsLeft",
+                      "value": 12
+                    }
+                  },
+                  "context": {
+                    "secondsLeft": 11
+                  }
+                },
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "secondsLeft",
+                      "value": 11
+                    }
+                  },
+                  "context": {
+                    "secondsLeft": 10
+                  }
+                },
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "secondsLeft",
+                      "value": 10
+                    }
+                  },
+                  "context": {
+                    "secondsLeft": 9
+                  }
+                },
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "secondsLeft",
+                      "value": 9
+                    }
+                  },
+                  "context": {
+                    "secondsLeft": 8
+                  }
+                },
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "secondsLeft",
+                      "value": 8
+                    }
+                  },
+                  "context": {
+                    "secondsLeft": 7
+                  }
+                },
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "secondsLeft",
+                      "value": 7
+                    }
+                  },
+                  "context": {
+                    "secondsLeft": 6
+                  }
+                },
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "secondsLeft",
+                      "value": 6
+                    }
+                  },
+                  "context": {
+                    "secondsLeft": 5
+                  }
+                },
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "secondsLeft",
+                      "value": 5
+                    }
+                  },
+                  "context": {
+                    "secondsLeft": 4
+                  }
+                },
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "secondsLeft",
+                      "value": 4
+                    }
+                  },
+                  "context": {
+                    "secondsLeft": 3
+                  }
+                },
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "secondsLeft",
+                      "value": 3
+                    }
+                  },
+                  "context": {
+                    "secondsLeft": 2
+                  }
+                },
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "secondsLeft",
+                      "value": 2
+                    }
+                  },
+                  "context": {
+                    "secondsLeft": 1
+                  }
+                },
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "secondsLeft",
+                      "value": 1
+                    }
+                  },
+                  "context": {
+                    "secondsLeft": 0
+                  }
+                }
+              ],
+              "confirm": {
+                "target": "confirming"
+              },
+              "release": {
+                "target": "selecting",
+                "context": {
+                  "selectedId": null
+                }
+              }
+            }
+          },
+          "confirming": {
+            "invoke": {
+              "src": "bookSlot",
+              "input": {
+                "slotId": "s1"
+              },
+              "onDone": {
+                "target": "booked",
+                "context": {
+                  "confirmation": "BK-1"
+                }
+              },
+              "onError": [
+                {
+                  "target": "selecting",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "selectedId",
+                      "value": "s1"
+                    }
+                  },
+                  "context": {
+                    "s1Taken": true,
+                    "selectedId": null,
+                    "error": "Slot already taken"
+                  }
+                },
+                {
+                  "target": "selecting",
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "selectedId",
+                      "value": "s3"
+                    }
+                  },
+                  "context": {
+                    "s3Taken": true,
+                    "selectedId": null,
+                    "error": "Slot already taken"
+                  }
+                }
+              ]
+            }
+          },
+          "booked": {
+            "on": {
+              "reset": {
+                "target": "loading",
+                "context": {
+                  "selectedId": null,
+                  "confirmation": null,
+                  "error": null,
+                  "secondsLeft": 20
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "root": "booking",
+  "steps": [
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "Slot already taken"
+        }
+      }
+    },
+    {
+      "send": "booking",
+      "event": {
+        "type": "select",
+        "slotId": "s1"
+      }
+    },
+    {
+      "advance": 10
+    },
+    {
+      "send": "booking",
+      "event": {
+        "type": "select",
+        "slotId": "s1"
+      }
+    },
+    {
+      "send": "booking",
+      "event": {
+        "type": "TICK"
+      }
+    },
+    {
+      "send": "booking",
+      "event": {
+        "type": "TICK"
+      }
+    },
+    {
+      "advance": 2100
+    },
+    {
+      "send": "booking",
+      "event": {
+        "type": "select",
+        "slotId": "s3"
+      }
+    },
+    {
+      "send": "booking",
+      "event": {
+        "type": "release"
+      }
+    },
+    {
+      "send": "booking",
+      "event": {
+        "type": "select",
+        "slotId": "s3"
+      }
+    },
+    {
+      "send": "booking",
+      "event": {
+        "type": "confirm"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "Slot already taken"
+        }
+      }
+    },
+    {
+      "send": "booking",
+      "event": {
+        "type": "select",
+        "slotId": "s3"
+      }
+    },
+    {
+      "send": "booking",
+      "event": {
+        "type": "select",
+        "slotId": "s2"
+      }
+    },
+    {
+      "send": "booking",
+      "event": {
+        "type": "select",
+        "slotId": "s1"
+      }
+    },
+    {
+      "send": "booking",
+      "event": {
+        "type": "TICK"
+      }
+    },
+    {
+      "send": "booking",
+      "event": {
+        "type": "confirm"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": "BK-1"
+      }
+    },
+    {
+      "send": "booking",
+      "event": {
+        "type": "reset"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": [
+          {
+            "id": "s1",
+            "taken": false
+          },
+          {
+            "id": "s2",
+            "taken": true
+          },
+          {
+            "id": "s3",
+            "taken": false
+          }
+        ]
+      }
+    },
+    {
+      "send": "booking",
+      "event": {
+        "type": "select",
+        "slotId": "s3"
+      }
+    },
+    {
+      "advance": 3000
+    },
+    {
+      "advance": 5000
+    }
+  ]
+}

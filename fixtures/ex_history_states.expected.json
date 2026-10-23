@@ -1,0 +1,329 @@
+[
+  {
+    "label": "start",
+    "value": {
+      "open": "general"
+    },
+    "context": {
+      "opens": 2
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "opened"
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "value": "closed",
+    "context": {
+      "opens": 2
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "closed"
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "value": {
+      "open": "general"
+    },
+    "context": {
+      "opens": 3
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "opened"
+      }
+    ]
+  },
+  {
+    "label": "step 2",
+    "value": {
+      "open": {
+        "advanced": "network"
+      }
+    },
+    "context": {
+      "opens": 3
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "network"
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "value": {
+      "open": {
+        "advanced": "experiments"
+      }
+    },
+    "context": {
+      "opens": 3
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "experiments"
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "value": "closed",
+    "context": {
+      "opens": 3
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "closed"
+      }
+    ]
+  },
+  {
+    "label": "step 5",
+    "value": {
+      "open": {
+        "advanced": "network"
+      }
+    },
+    "context": {
+      "opens": 4
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "opened"
+      },
+      {
+        "type": "network"
+      }
+    ]
+  },
+  {
+    "label": "step 6",
+    "value": {
+      "open": {
+        "advanced": "experiments"
+      }
+    },
+    "context": {
+      "opens": 4
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "experiments"
+      }
+    ]
+  },
+  {
+    "label": "step 7",
+    "value": "closed",
+    "context": {
+      "opens": 4
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "closed"
+      }
+    ]
+  },
+  {
+    "label": "step 8",
+    "value": {
+      "open": {
+        "advanced": "experiments"
+      }
+    },
+    "context": {
+      "opens": 5
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "opened"
+      },
+      {
+        "type": "experiments"
+      }
+    ]
+  },
+  {
+    "label": "step 9",
+    "value": {
+      "open": "appearance"
+    },
+    "context": {
+      "opens": 5
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 10",
+    "value": "closed",
+    "context": {
+      "opens": 5
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "closed"
+      }
+    ]
+  },
+  {
+    "label": "step 11",
+    "value": {
+      "open": "appearance"
+    },
+    "context": {
+      "opens": 6
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "opened"
+      }
+    ]
+  },
+  {
+    "label": "step 12",
+    "value": "closed",
+    "context": {
+      "opens": 6
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "closed"
+      }
+    ]
+  },
+  {
+    "label": "step 13",
+    "value": {
+      "open": "general"
+    },
+    "context": {
+      "opens": 7
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "opened"
+      }
+    ]
+  },
+  {
+    "label": "step 14",
+    "value": {
+      "open": {
+        "advanced": "network"
+      }
+    },
+    "context": {
+      "opens": 7
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "network"
+      }
+    ]
+  },
+  {
+    "label": "step 15",
+    "value": "closed",
+    "context": {
+      "opens": 7
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "closed"
+      }
+    ]
+  },
+  {
+    "label": "step 16",
+    "value": {
+      "open": {
+        "advanced": "network"
+      }
+    },
+    "context": {
+      "opens": 8
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "opened"
+      },
+      {
+        "type": "network"
+      }
+    ]
+  },
+  {
+    "label": "step 17",
+    "value": {
+      "open": "general"
+    },
+    "context": {
+      "opens": 8
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 18",
+    "value": {
+      "open": "general"
+    },
+    "context": {
+      "opens": 8
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 19",
+    "value": "closed",
+    "context": {
+      "opens": 8
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "closed"
+      }
+    ]
+  },
+  {
+    "label": "step 20",
+    "value": {
+      "open": "general"
+    },
+    "context": {
+      "opens": 9
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "opened"
+      }
+    ]
+  }
+]

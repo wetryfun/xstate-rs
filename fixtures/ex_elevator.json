@@ -1,0 +1,1233 @@
+{
+  "source": "examples/elevator/src/elevatorMachine.ts",
+  "notes": "3 floors instead of 6 and a queue of at most 2 calls; the queue, floor and their composite key k are context patched per reachable value; doorsOpen entry/exit emits added to observe order",
+  "machine": {
+    "id": "elevator",
+    "context": {
+      "currentFloor": 1,
+      "queue": [],
+      "k": "1-",
+      "queued": false
+    },
+    "initial": "doorsClosed",
+    "states": {
+      "doorsClosed": {
+        "always": {
+          "target": "moving",
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "queued",
+              "value": true
+            }
+          }
+        },
+        "on": {
+          "call": [
+            {
+              "target": "doorsOpen",
+              "matches": {
+                "floor": 1
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "currentFloor",
+                  "value": 1
+                }
+              }
+            },
+            {
+              "target": "doorsOpen",
+              "matches": {
+                "floor": 2
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "currentFloor",
+                  "value": 2
+                }
+              }
+            },
+            {
+              "target": "doorsOpen",
+              "matches": {
+                "floor": 3
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "currentFloor",
+                  "value": 3
+                }
+              }
+            },
+            {
+              "matches": {
+                "floor": 2
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1-"
+                }
+              },
+              "context": {
+                "currentFloor": 1,
+                "queue": [
+                  2
+                ],
+                "k": "1-2",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 3
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1-"
+                }
+              },
+              "context": {
+                "currentFloor": 1,
+                "queue": [
+                  3
+                ],
+                "k": "1-3",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 3
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1-2"
+                }
+              },
+              "context": {
+                "currentFloor": 1,
+                "queue": [
+                  2,
+                  3
+                ],
+                "k": "1-23",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 2
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1-3"
+                }
+              },
+              "context": {
+                "currentFloor": 1,
+                "queue": [
+                  3,
+                  2
+                ],
+                "k": "1-32",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 1
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2-3"
+                }
+              },
+              "context": {
+                "currentFloor": 2,
+                "queue": [
+                  3,
+                  1
+                ],
+                "k": "2-31",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 1
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "3-"
+                }
+              },
+              "context": {
+                "currentFloor": 3,
+                "queue": [
+                  1
+                ],
+                "k": "3-1",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 2
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "3-"
+                }
+              },
+              "context": {
+                "currentFloor": 3,
+                "queue": [
+                  2
+                ],
+                "k": "3-2",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 2
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "3-1"
+                }
+              },
+              "context": {
+                "currentFloor": 3,
+                "queue": [
+                  1,
+                  2
+                ],
+                "k": "3-12",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 1
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "3-2"
+                }
+              },
+              "context": {
+                "currentFloor": 3,
+                "queue": [
+                  2,
+                  1
+                ],
+                "k": "3-21",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 1
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2-"
+                }
+              },
+              "context": {
+                "currentFloor": 2,
+                "queue": [
+                  1
+                ],
+                "k": "2-1",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 3
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2-"
+                }
+              },
+              "context": {
+                "currentFloor": 2,
+                "queue": [
+                  3
+                ],
+                "k": "2-3",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 3
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2-1"
+                }
+              },
+              "context": {
+                "currentFloor": 2,
+                "queue": [
+                  1,
+                  3
+                ],
+                "k": "2-13",
+                "queued": true
+              }
+            }
+          ]
+        }
+      },
+      "moving": {
+        "after": {
+          "900": [
+            {
+              "target": "doorsOpen",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1-2"
+                }
+              },
+              "context": {
+                "currentFloor": 2,
+                "queue": [],
+                "k": "2-",
+                "queued": false
+              }
+            },
+            {
+              "target": "moving",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1-3"
+                }
+              },
+              "context": {
+                "currentFloor": 2,
+                "queue": [
+                  3
+                ],
+                "k": "2-3",
+                "queued": true
+              },
+              "reenter": true
+            },
+            {
+              "target": "moving",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1-32"
+                }
+              },
+              "context": {
+                "currentFloor": 2,
+                "queue": [
+                  3,
+                  2
+                ],
+                "k": "2-32",
+                "queued": true
+              },
+              "reenter": true
+            },
+            {
+              "target": "doorsOpen",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2-3"
+                }
+              },
+              "context": {
+                "currentFloor": 3,
+                "queue": [],
+                "k": "3-",
+                "queued": false
+              }
+            },
+            {
+              "target": "doorsOpen",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2-31"
+                }
+              },
+              "context": {
+                "currentFloor": 3,
+                "queue": [
+                  1
+                ],
+                "k": "3-1",
+                "queued": true
+              }
+            },
+            {
+              "target": "moving",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "3-1"
+                }
+              },
+              "context": {
+                "currentFloor": 2,
+                "queue": [
+                  1
+                ],
+                "k": "2-1",
+                "queued": true
+              },
+              "reenter": true
+            },
+            {
+              "target": "doorsOpen",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "3-2"
+                }
+              },
+              "context": {
+                "currentFloor": 2,
+                "queue": [],
+                "k": "2-",
+                "queued": false
+              }
+            },
+            {
+              "target": "doorsOpen",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "3-21"
+                }
+              },
+              "context": {
+                "currentFloor": 2,
+                "queue": [
+                  1
+                ],
+                "k": "2-1",
+                "queued": true
+              }
+            },
+            {
+              "target": "doorsOpen",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2-1"
+                }
+              },
+              "context": {
+                "currentFloor": 1,
+                "queue": [],
+                "k": "1-",
+                "queued": false
+              }
+            },
+            {
+              "target": "doorsOpen",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2-13"
+                }
+              },
+              "context": {
+                "currentFloor": 1,
+                "queue": [
+                  3
+                ],
+                "k": "1-3",
+                "queued": true
+              }
+            },
+            {
+              "target": "moving",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "3-12"
+                }
+              },
+              "context": {
+                "currentFloor": 2,
+                "queue": [
+                  1,
+                  2
+                ],
+                "k": "2-12",
+                "queued": true
+              },
+              "reenter": true
+            },
+            {
+              "target": "doorsOpen",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2-12"
+                }
+              },
+              "context": {
+                "currentFloor": 1,
+                "queue": [
+                  2
+                ],
+                "k": "1-2",
+                "queued": true
+              }
+            },
+            {
+              "target": "doorsOpen",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2-32"
+                }
+              },
+              "context": {
+                "currentFloor": 3,
+                "queue": [
+                  2
+                ],
+                "k": "3-2",
+                "queued": true
+              }
+            },
+            {
+              "target": "doorsOpen",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1-23"
+                }
+              },
+              "context": {
+                "currentFloor": 2,
+                "queue": [
+                  3
+                ],
+                "k": "2-3",
+                "queued": true
+              }
+            }
+          ]
+        },
+        "on": {
+          "call": [
+            {
+              "matches": {
+                "floor": 2
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1-"
+                }
+              },
+              "context": {
+                "currentFloor": 1,
+                "queue": [
+                  2
+                ],
+                "k": "1-2",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 3
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1-"
+                }
+              },
+              "context": {
+                "currentFloor": 1,
+                "queue": [
+                  3
+                ],
+                "k": "1-3",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 3
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1-2"
+                }
+              },
+              "context": {
+                "currentFloor": 1,
+                "queue": [
+                  2,
+                  3
+                ],
+                "k": "1-23",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 2
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1-3"
+                }
+              },
+              "context": {
+                "currentFloor": 1,
+                "queue": [
+                  3,
+                  2
+                ],
+                "k": "1-32",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 1
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2-3"
+                }
+              },
+              "context": {
+                "currentFloor": 2,
+                "queue": [
+                  3,
+                  1
+                ],
+                "k": "2-31",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 1
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "3-"
+                }
+              },
+              "context": {
+                "currentFloor": 3,
+                "queue": [
+                  1
+                ],
+                "k": "3-1",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 2
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "3-"
+                }
+              },
+              "context": {
+                "currentFloor": 3,
+                "queue": [
+                  2
+                ],
+                "k": "3-2",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 2
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "3-1"
+                }
+              },
+              "context": {
+                "currentFloor": 3,
+                "queue": [
+                  1,
+                  2
+                ],
+                "k": "3-12",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 1
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "3-2"
+                }
+              },
+              "context": {
+                "currentFloor": 3,
+                "queue": [
+                  2,
+                  1
+                ],
+                "k": "3-21",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 1
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2-"
+                }
+              },
+              "context": {
+                "currentFloor": 2,
+                "queue": [
+                  1
+                ],
+                "k": "2-1",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 3
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2-"
+                }
+              },
+              "context": {
+                "currentFloor": 2,
+                "queue": [
+                  3
+                ],
+                "k": "2-3",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 3
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2-1"
+                }
+              },
+              "context": {
+                "currentFloor": 2,
+                "queue": [
+                  1,
+                  3
+                ],
+                "k": "2-13",
+                "queued": true
+              }
+            }
+          ]
+        }
+      },
+      "doorsOpen": {
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "doors.opened"
+            }
+          }
+        ],
+        "exit": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "doors.closing"
+            }
+          }
+        ],
+        "after": {
+          "3000": {
+            "target": "doorsClosed"
+          }
+        },
+        "on": {
+          "closeDoors": {
+            "target": "doorsClosed"
+          },
+          "call": [
+            {
+              "matches": {
+                "floor": 2
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1-"
+                }
+              },
+              "context": {
+                "currentFloor": 1,
+                "queue": [
+                  2
+                ],
+                "k": "1-2",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 3
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1-"
+                }
+              },
+              "context": {
+                "currentFloor": 1,
+                "queue": [
+                  3
+                ],
+                "k": "1-3",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 3
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1-2"
+                }
+              },
+              "context": {
+                "currentFloor": 1,
+                "queue": [
+                  2,
+                  3
+                ],
+                "k": "1-23",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 2
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1-3"
+                }
+              },
+              "context": {
+                "currentFloor": 1,
+                "queue": [
+                  3,
+                  2
+                ],
+                "k": "1-32",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 1
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2-3"
+                }
+              },
+              "context": {
+                "currentFloor": 2,
+                "queue": [
+                  3,
+                  1
+                ],
+                "k": "2-31",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 1
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "3-"
+                }
+              },
+              "context": {
+                "currentFloor": 3,
+                "queue": [
+                  1
+                ],
+                "k": "3-1",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 2
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "3-"
+                }
+              },
+              "context": {
+                "currentFloor": 3,
+                "queue": [
+                  2
+                ],
+                "k": "3-2",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 2
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "3-1"
+                }
+              },
+              "context": {
+                "currentFloor": 3,
+                "queue": [
+                  1,
+                  2
+                ],
+                "k": "3-12",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 1
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "3-2"
+                }
+              },
+              "context": {
+                "currentFloor": 3,
+                "queue": [
+                  2,
+                  1
+                ],
+                "k": "3-21",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 1
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2-"
+                }
+              },
+              "context": {
+                "currentFloor": 2,
+                "queue": [
+                  1
+                ],
+                "k": "2-1",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 3
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2-"
+                }
+              },
+              "context": {
+                "currentFloor": 2,
+                "queue": [
+                  3
+                ],
+                "k": "2-3",
+                "queued": true
+              }
+            },
+            {
+              "matches": {
+                "floor": 3
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2-1"
+                }
+              },
+              "context": {
+                "currentFloor": 2,
+                "queue": [
+                  1,
+                  3
+                ],
+                "k": "2-13",
+                "queued": true
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "steps": [
+    {
+      "at": 0,
+      "send": {
+        "type": "call",
+        "floor": 3
+      }
+    },
+    {
+      "at": 900
+    },
+    {
+      "at": 1000,
+      "send": {
+        "type": "call",
+        "floor": 1
+      }
+    },
+    {
+      "at": 1000,
+      "send": {
+        "type": "call",
+        "floor": 1
+      }
+    },
+    {
+      "at": 1800
+    },
+    {
+      "at": 2000,
+      "send": {
+        "type": "closeDoors"
+      }
+    },
+    {
+      "at": 2900
+    },
+    {
+      "at": 3000,
+      "send": {
+        "type": "call",
+        "floor": 2
+      }
+    },
+    {
+      "at": 3800
+    },
+    {
+      "at": 6800
+    },
+    {
+      "at": 7000,
+      "send": {
+        "type": "call",
+        "floor": 1
+      }
+    },
+    {
+      "at": 7100,
+      "send": {
+        "type": "call",
+        "floor": 2
+      }
+    },
+    {
+      "at": 7200,
+      "send": {
+        "type": "call",
+        "floor": 3
+      }
+    },
+    {
+      "at": 7300,
+      "send": {
+        "type": "call",
+        "floor": 2
+      }
+    },
+    {
+      "at": 10000
+    },
+    {
+      "at": 10900
+    },
+    {
+      "at": 11000,
+      "send": {
+        "type": "closeDoors"
+      }
+    },
+    {
+      "at": 11900
+    },
+    {
+      "at": 12000,
+      "send": {
+        "type": "call",
+        "floor": 3
+      }
+    },
+    {
+      "at": 15000
+    },
+    {
+      "at": 15100,
+      "send": {
+        "type": "call",
+        "floor": 1
+      }
+    },
+    {
+      "at": 15200,
+      "send": {
+        "type": "call",
+        "floor": 2
+      }
+    },
+    {
+      "at": 16000
+    },
+    {
+      "at": 16900
+    },
+    {
+      "at": 17000,
+      "send": {
+        "type": "call",
+        "floor": 2
+      }
+    },
+    {
+      "at": 20000
+    }
+  ]
+}

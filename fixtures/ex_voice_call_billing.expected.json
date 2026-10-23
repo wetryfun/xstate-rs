@@ -1,0 +1,153 @@
+[
+  {
+    "label": "start",
+    "value": "ringing",
+    "context": {
+      "caller": "Ada",
+      "intent": "unknown",
+      "turns": 0,
+      "resolution": "incomplete"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "ringing"
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "value": "greeting",
+    "context": {
+      "caller": "Ada",
+      "intent": "unknown",
+      "turns": 0,
+      "resolution": "incomplete"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "hello"
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "value": "greeting",
+    "context": {
+      "caller": "Ada",
+      "intent": "unknown",
+      "turns": 0,
+      "resolution": "incomplete"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 2",
+    "value": "listening",
+    "context": {
+      "caller": "Ada",
+      "intent": "unknown",
+      "turns": 0,
+      "resolution": "incomplete"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "listening"
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "value": "clarifying",
+    "context": {
+      "caller": "Ada",
+      "intent": "unknown",
+      "turns": 1,
+      "resolution": "incomplete"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "rephrase"
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "value": "listening",
+    "context": {
+      "caller": "Ada",
+      "intent": "unknown",
+      "turns": 1,
+      "resolution": "incomplete"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "listening"
+      }
+    ]
+  },
+  {
+    "label": "step 5",
+    "value": "clarifying",
+    "context": {
+      "caller": "Ada",
+      "intent": "unknown",
+      "turns": 2,
+      "resolution": "incomplete"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "rephrase"
+      }
+    ]
+  },
+  {
+    "label": "step 6",
+    "value": "billing",
+    "context": {
+      "caller": "Ada",
+      "intent": "billing",
+      "turns": 3,
+      "resolution": "incomplete"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "billing"
+      }
+    ]
+  },
+  {
+    "label": "step 7",
+    "value": "ended",
+    "context": {
+      "caller": "Ada",
+      "intent": "billing",
+      "turns": 3,
+      "resolution": "billing question answered"
+    },
+    "status": "done",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "call ended"
+      }
+    ],
+    "output": {
+      "ended": true
+    }
+  }
+]

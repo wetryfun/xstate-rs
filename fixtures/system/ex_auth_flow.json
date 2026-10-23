@@ -1,0 +1,324 @@
+{
+  "source": "examples/auth-flow-react/src/authMachine.ts",
+  "notes": "credentials and sessions are static values (two submit branches by matches); invoke inputs are static; the session from onDone is a fixed object",
+  "logic": [
+    {
+      "name": "authenticate",
+      "async": {}
+    },
+    {
+      "name": "refreshToken",
+      "async": {}
+    },
+    {
+      "name": "auth",
+      "actors": [
+        "authenticate",
+        "refreshToken"
+      ],
+      "machine": {
+        "id": "auth",
+        "context": {
+          "credentials": null,
+          "session": null,
+          "error": null
+        },
+        "initial": "loggedOut",
+        "states": {
+          "loggedOut": {
+            "on": {
+              "submit": [
+                {
+                  "target": "authenticating",
+                  "matches": {
+                    "email": "ada@example.com"
+                  },
+                  "context": {
+                    "error": null,
+                    "credentials": {
+                      "email": "ada@example.com",
+                      "password": "lovelace"
+                    }
+                  }
+                },
+                {
+                  "target": "authenticating",
+                  "context": {
+                    "error": null,
+                    "credentials": {
+                      "email": "eve@example.com",
+                      "password": "nope"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "authenticating": {
+            "invoke": {
+              "src": "authenticate",
+              "input": {
+                "email": "ada@example.com",
+                "password": "lovelace"
+              },
+              "onDone": {
+                "target": "authenticated",
+                "context": {
+                  "session": {
+                    "user": "ada@example.com",
+                    "token": "t1",
+                    "expiresAt": 10000
+                  },
+                  "error": null,
+                  "credentials": null
+                }
+              },
+              "onError": {
+                "target": "loggedOut",
+                "context": {
+                  "error": "Incorrect email or password."
+                }
+              }
+            }
+          },
+          "authenticated": {
+            "initial": "idle",
+            "on": {
+              "logout": {
+                "target": "loggedOut",
+                "context": {
+                  "session": null,
+                  "error": null
+                }
+              },
+              "expire": {
+                "target": "sessionExpired"
+              }
+            },
+            "states": {
+              "idle": {
+                "after": {
+                  "4000": {
+                    "target": "refreshing"
+                  }
+                }
+              },
+              "refreshing": {
+                "invoke": {
+                  "src": "refreshToken",
+                  "input": {
+                    "session": {
+                      "user": "ada@example.com",
+                      "token": "t1",
+                      "expiresAt": 10000
+                    }
+                  },
+                  "onDone": {
+                    "target": "idle",
+                    "context": {
+                      "session": {
+                        "user": "ada@example.com",
+                        "token": "t2",
+                        "expiresAt": 10000
+                      }
+                    }
+                  },
+                  "onError": {
+                    "target": "#auth.sessionExpired",
+                    "context": {
+                      "error": "Refresh token rejected."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "sessionExpired": {
+            "on": {
+              "retry": {
+                "target": "loggedOut",
+                "context": {
+                  "session": null
+                }
+              },
+              "logout": {
+                "target": "loggedOut",
+                "context": {
+                  "session": null,
+                  "error": null
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "root": "auth",
+  "steps": [
+    {
+      "send": "auth",
+      "event": {
+        "type": "submit",
+        "email": "eve@example.com",
+        "password": "nope"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "Incorrect email or password."
+        }
+      }
+    },
+    {
+      "send": "auth",
+      "event": {
+        "type": "submit",
+        "email": "ada@example.com",
+        "password": "lovelace"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "user": "ada@example.com",
+          "token": "t1",
+          "expiresAt": 10000
+        }
+      }
+    },
+    {
+      "advance": 3000
+    },
+    {
+      "advance": 4000
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "user": "ada@example.com",
+          "token": "t1",
+          "expiresAt": 10000
+        }
+      }
+    },
+    {
+      "advance": 8000
+    },
+    {
+      "send": "auth",
+      "event": {
+        "type": "expire"
+      }
+    },
+    {
+      "send": "auth",
+      "event": {
+        "type": "retry"
+      }
+    },
+    {
+      "send": "auth",
+      "event": {
+        "type": "submit",
+        "email": "ada@example.com",
+        "password": "lovelace"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "user": "ada@example.com",
+          "token": "t1",
+          "expiresAt": 10000
+        }
+      }
+    },
+    {
+      "advance": 12000
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "Refresh token rejected."
+        }
+      }
+    },
+    {
+      "send": "auth",
+      "event": {
+        "type": "logout"
+      }
+    },
+    {
+      "send": "auth",
+      "event": {
+        "type": "submit",
+        "email": "ada@example.com",
+        "password": "lovelace"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "user": "ada@example.com",
+          "token": "t1",
+          "expiresAt": 10000
+        }
+      }
+    },
+    {
+      "send": "auth",
+      "event": {
+        "type": "logout"
+      }
+    },
+    {
+      "send": "auth",
+      "event": {
+        "type": "expire"
+      }
+    },
+    {
+      "send": "auth",
+      "event": {
+        "type": "submit",
+        "email": "ada@example.com",
+        "password": "lovelace"
+      }
+    },
+    {
+      "send": "auth",
+      "event": {
+        "type": "logout"
+      }
+    },
+    {
+      "advance": 20000
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "user": "ada@example.com",
+          "token": "t1",
+          "expiresAt": 10000
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,626 @@
+{
+  "source": "examples/document-collab-sync/src/main.ts (clientMachine)",
+  "notes": "the client id is static (no input); text is not tracked; versions and rebases are unrolled per value; sending to the server is an emit; the final output is static",
+  "machine": {
+    "id": "client",
+    "context": {
+      "id": "client-b",
+      "text": "",
+      "version": 0,
+      "pending": null,
+      "rebases": 0
+    },
+    "initial": "idle",
+    "states": {
+      "idle": {
+        "on": {
+          "edit": [
+            {
+              "target": "submitted",
+              "matches": {
+                "text": "Hello "
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "version",
+                  "value": 0
+                }
+              },
+              "context": {
+                "pending": {
+                  "text": "Hello "
+                }
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "toServer",
+                    "baseVersion": 0,
+                    "op": {
+                      "text": "Hello "
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "target": "submitted",
+              "matches": {
+                "text": "Hello "
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "version",
+                  "value": 1
+                }
+              },
+              "context": {
+                "pending": {
+                  "text": "Hello "
+                }
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "toServer",
+                    "baseVersion": 1,
+                    "op": {
+                      "text": "Hello "
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "target": "submitted",
+              "matches": {
+                "text": "Hello "
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "version",
+                  "value": 2
+                }
+              },
+              "context": {
+                "pending": {
+                  "text": "Hello "
+                }
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "toServer",
+                    "baseVersion": 2,
+                    "op": {
+                      "text": "Hello "
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "target": "submitted",
+              "matches": {
+                "text": "Hello "
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "version",
+                  "value": 3
+                }
+              },
+              "context": {
+                "pending": {
+                  "text": "Hello "
+                }
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "toServer",
+                    "baseVersion": 3,
+                    "op": {
+                      "text": "Hello "
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "target": "submitted",
+              "matches": {
+                "text": "World"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "version",
+                  "value": 0
+                }
+              },
+              "context": {
+                "pending": {
+                  "text": "World"
+                }
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "toServer",
+                    "baseVersion": 0,
+                    "op": {
+                      "text": "World"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "target": "submitted",
+              "matches": {
+                "text": "World"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "version",
+                  "value": 1
+                }
+              },
+              "context": {
+                "pending": {
+                  "text": "World"
+                }
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "toServer",
+                    "baseVersion": 1,
+                    "op": {
+                      "text": "World"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "target": "submitted",
+              "matches": {
+                "text": "World"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "version",
+                  "value": 2
+                }
+              },
+              "context": {
+                "pending": {
+                  "text": "World"
+                }
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "toServer",
+                    "baseVersion": 2,
+                    "op": {
+                      "text": "World"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "target": "submitted",
+              "matches": {
+                "text": "World"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "version",
+                  "value": 3
+                }
+              },
+              "context": {
+                "pending": {
+                  "text": "World"
+                }
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "toServer",
+                    "baseVersion": 3,
+                    "op": {
+                      "text": "World"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      },
+      "submitted": {
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "submitted"
+            }
+          }
+        ],
+        "on": {
+          "accepted": [
+            {
+              "target": "idle",
+              "matches": {
+                "version": 1
+              },
+              "context": {
+                "version": 1,
+                "pending": null
+              }
+            },
+            {
+              "target": "idle",
+              "matches": {
+                "version": 2
+              },
+              "context": {
+                "version": 2,
+                "pending": null
+              }
+            },
+            {
+              "target": "idle",
+              "matches": {
+                "version": 3
+              },
+              "context": {
+                "version": 3,
+                "pending": null
+              }
+            },
+            {
+              "target": "idle",
+              "matches": {
+                "version": 4
+              },
+              "context": {
+                "version": 4,
+                "pending": null
+              }
+            }
+          ],
+          "rejected": [
+            {
+              "target": "conflicted",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "rebases",
+                  "value": 2
+                }
+              }
+            },
+            {
+              "target": "submitted",
+              "matches": {
+                "version": 0
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "rebases",
+                  "value": 0
+                }
+              },
+              "context": {
+                "version": 0,
+                "rebases": 1
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "toServer",
+                    "baseVersion": 0
+                  }
+                }
+              ],
+              "reenter": true
+            },
+            {
+              "target": "submitted",
+              "matches": {
+                "version": 1
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "rebases",
+                  "value": 0
+                }
+              },
+              "context": {
+                "version": 1,
+                "rebases": 1
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "toServer",
+                    "baseVersion": 1
+                  }
+                }
+              ],
+              "reenter": true
+            },
+            {
+              "target": "submitted",
+              "matches": {
+                "version": 2
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "rebases",
+                  "value": 0
+                }
+              },
+              "context": {
+                "version": 2,
+                "rebases": 1
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "toServer",
+                    "baseVersion": 2
+                  }
+                }
+              ],
+              "reenter": true
+            },
+            {
+              "target": "submitted",
+              "matches": {
+                "version": 3
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "rebases",
+                  "value": 0
+                }
+              },
+              "context": {
+                "version": 3,
+                "rebases": 1
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "toServer",
+                    "baseVersion": 3
+                  }
+                }
+              ],
+              "reenter": true
+            },
+            {
+              "target": "submitted",
+              "matches": {
+                "version": 0
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "rebases",
+                  "value": 1
+                }
+              },
+              "context": {
+                "version": 0,
+                "rebases": 2
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "toServer",
+                    "baseVersion": 0
+                  }
+                }
+              ],
+              "reenter": true
+            },
+            {
+              "target": "submitted",
+              "matches": {
+                "version": 1
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "rebases",
+                  "value": 1
+                }
+              },
+              "context": {
+                "version": 1,
+                "rebases": 2
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "toServer",
+                    "baseVersion": 1
+                  }
+                }
+              ],
+              "reenter": true
+            },
+            {
+              "target": "submitted",
+              "matches": {
+                "version": 2
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "rebases",
+                  "value": 1
+                }
+              },
+              "context": {
+                "version": 2,
+                "rebases": 2
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "toServer",
+                    "baseVersion": 2
+                  }
+                }
+              ],
+              "reenter": true
+            },
+            {
+              "target": "submitted",
+              "matches": {
+                "version": 3
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "rebases",
+                  "value": 1
+                }
+              },
+              "context": {
+                "version": 3,
+                "rebases": 2
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "toServer",
+                    "baseVersion": 3
+                  }
+                }
+              ],
+              "reenter": true
+            }
+          ]
+        }
+      },
+      "conflicted": {
+        "type": "final",
+        "output": {
+          "id": "client-b",
+          "dropped": {
+            "text": "World"
+          }
+        }
+      }
+    }
+  },
+  "steps": [
+    {
+      "at": 0,
+      "send": {
+        "type": "edit",
+        "text": "Hello "
+      }
+    },
+    {
+      "at": 1,
+      "send": {
+        "type": "accepted",
+        "version": 1
+      }
+    },
+    {
+      "at": 2,
+      "send": {
+        "type": "edit",
+        "text": "World"
+      }
+    },
+    {
+      "at": 3,
+      "send": {
+        "type": "rejected",
+        "version": 2
+      }
+    },
+    {
+      "at": 4,
+      "send": {
+        "type": "accepted",
+        "version": 3
+      }
+    },
+    {
+      "at": 5,
+      "send": {
+        "type": "edit",
+        "text": "World"
+      }
+    },
+    {
+      "at": 6,
+      "send": {
+        "type": "rejected",
+        "version": 3
+      }
+    },
+    {
+      "at": 7,
+      "send": {
+        "type": "rejected",
+        "version": 3
+      }
+    },
+    {
+      "at": 8,
+      "send": {
+        "type": "rejected",
+        "version": 3
+      }
+    },
+    {
+      "at": 9,
+      "send": {
+        "type": "edit",
+        "text": "Hello "
+      }
+    }
+  ]
+}

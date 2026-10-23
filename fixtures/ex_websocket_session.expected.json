@@ -1,0 +1,148 @@
+[
+  {
+    "label": "start",
+    "value": "handshake",
+    "context": {
+      "sessionId": "s1",
+      "user": "anonymous",
+      "received": 0
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 0",
+    "value": "active",
+    "context": {
+      "sessionId": "s1",
+      "user": "ada",
+      "received": 0
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "sendToClient",
+        "message": "welcome"
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "value": "active",
+    "context": {
+      "sessionId": "s1",
+      "user": "ada",
+      "received": 1
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "clientMessage"
+      }
+    ]
+  },
+  {
+    "label": "step 2",
+    "value": "active",
+    "context": {
+      "sessionId": "s1",
+      "user": "ada",
+      "received": 1
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "sendToClient",
+        "type_": "broadcast",
+        "from_": "bob"
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "value": "active",
+    "context": {
+      "sessionId": "s1",
+      "user": "ada",
+      "received": 1
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 4",
+    "value": "active",
+    "context": {
+      "sessionId": "s1",
+      "user": "ada",
+      "received": 2
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "clientMessage"
+      }
+    ]
+  },
+  {
+    "label": "step 5",
+    "value": "active",
+    "context": {
+      "sessionId": "s1",
+      "user": "ada",
+      "received": 3
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "clientMessage"
+      }
+    ]
+  },
+  {
+    "label": "step 6",
+    "value": "closing",
+    "context": {
+      "sessionId": "s1",
+      "user": "ada",
+      "received": 3
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "dropConnection",
+        "reason": "heartbeat timeout"
+      }
+    ]
+  },
+  {
+    "label": "step 7",
+    "value": "closing",
+    "context": {
+      "sessionId": "s1",
+      "user": "ada",
+      "received": 3
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 8",
+    "value": "closed",
+    "context": {
+      "sessionId": "s1",
+      "user": "ada",
+      "received": 3
+    },
+    "status": "done",
+    "emitted": [
+      {
+        "type": "log",
+        "message": "closed"
+      }
+    ]
+  }
+]

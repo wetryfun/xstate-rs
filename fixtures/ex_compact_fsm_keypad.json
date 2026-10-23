@@ -1,0 +1,1760 @@
+{
+  "source": "examples/compact-fsm/src/main.ts (keypadFSM)",
+  "notes": "PIN \"12\" with digits 1, 2, 9 instead of \"1234\"; entered and attempts are a composite key k over reachable values; unlocked's string-target clear resets entered (the original keeps it, but k must stay consistent)",
+  "machine": {
+    "id": "keypad",
+    "initial": "entering",
+    "context": {
+      "entered": "",
+      "attempts": 0,
+      "k": "|0"
+    },
+    "states": {
+      "entering": {
+        "on": {
+          "digit": [
+            {
+              "matches": {
+                "value": "1"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "|0"
+                }
+              },
+              "context": {
+                "entered": "1",
+                "k": "1|0"
+              }
+            },
+            {
+              "matches": {
+                "value": "2"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "|0"
+                }
+              },
+              "context": {
+                "entered": "2",
+                "k": "2|0"
+              }
+            },
+            {
+              "matches": {
+                "value": "9"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "|0"
+                }
+              },
+              "context": {
+                "entered": "9",
+                "k": "9|0"
+              }
+            },
+            {
+              "matches": {
+                "value": "1"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|0"
+                }
+              },
+              "context": {
+                "entered": "11",
+                "k": "11|0"
+              }
+            },
+            {
+              "matches": {
+                "value": "2"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|0"
+                }
+              },
+              "context": {
+                "entered": "12",
+                "k": "12|0"
+              }
+            },
+            {
+              "matches": {
+                "value": "9"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|0"
+                }
+              },
+              "context": {
+                "entered": "19",
+                "k": "19|0"
+              }
+            },
+            {
+              "matches": {
+                "value": "1"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|0"
+                }
+              },
+              "context": {
+                "entered": "21",
+                "k": "21|0"
+              }
+            },
+            {
+              "matches": {
+                "value": "2"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|0"
+                }
+              },
+              "context": {
+                "entered": "22",
+                "k": "22|0"
+              }
+            },
+            {
+              "matches": {
+                "value": "9"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|0"
+                }
+              },
+              "context": {
+                "entered": "29",
+                "k": "29|0"
+              }
+            },
+            {
+              "matches": {
+                "value": "1"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "9|0"
+                }
+              },
+              "context": {
+                "entered": "91",
+                "k": "91|0"
+              }
+            },
+            {
+              "matches": {
+                "value": "2"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "9|0"
+                }
+              },
+              "context": {
+                "entered": "92",
+                "k": "92|0"
+              }
+            },
+            {
+              "matches": {
+                "value": "9"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "9|0"
+                }
+              },
+              "context": {
+                "entered": "99",
+                "k": "99|0"
+              }
+            },
+            {
+              "matches": {
+                "value": "1"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "|1"
+                }
+              },
+              "context": {
+                "entered": "1",
+                "k": "1|1"
+              }
+            },
+            {
+              "matches": {
+                "value": "2"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "|1"
+                }
+              },
+              "context": {
+                "entered": "2",
+                "k": "2|1"
+              }
+            },
+            {
+              "matches": {
+                "value": "9"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "|1"
+                }
+              },
+              "context": {
+                "entered": "9",
+                "k": "9|1"
+              }
+            },
+            {
+              "matches": {
+                "value": "1"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|1"
+                }
+              },
+              "context": {
+                "entered": "11",
+                "k": "11|1"
+              }
+            },
+            {
+              "matches": {
+                "value": "2"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|1"
+                }
+              },
+              "context": {
+                "entered": "12",
+                "k": "12|1"
+              }
+            },
+            {
+              "matches": {
+                "value": "9"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|1"
+                }
+              },
+              "context": {
+                "entered": "19",
+                "k": "19|1"
+              }
+            },
+            {
+              "matches": {
+                "value": "1"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|1"
+                }
+              },
+              "context": {
+                "entered": "21",
+                "k": "21|1"
+              }
+            },
+            {
+              "matches": {
+                "value": "2"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|1"
+                }
+              },
+              "context": {
+                "entered": "22",
+                "k": "22|1"
+              }
+            },
+            {
+              "matches": {
+                "value": "9"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|1"
+                }
+              },
+              "context": {
+                "entered": "29",
+                "k": "29|1"
+              }
+            },
+            {
+              "matches": {
+                "value": "1"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "9|1"
+                }
+              },
+              "context": {
+                "entered": "91",
+                "k": "91|1"
+              }
+            },
+            {
+              "matches": {
+                "value": "2"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "9|1"
+                }
+              },
+              "context": {
+                "entered": "92",
+                "k": "92|1"
+              }
+            },
+            {
+              "matches": {
+                "value": "9"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "9|1"
+                }
+              },
+              "context": {
+                "entered": "99",
+                "k": "99|1"
+              }
+            },
+            {
+              "matches": {
+                "value": "1"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "|2"
+                }
+              },
+              "context": {
+                "entered": "1",
+                "k": "1|2"
+              }
+            },
+            {
+              "matches": {
+                "value": "2"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "|2"
+                }
+              },
+              "context": {
+                "entered": "2",
+                "k": "2|2"
+              }
+            },
+            {
+              "matches": {
+                "value": "9"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "|2"
+                }
+              },
+              "context": {
+                "entered": "9",
+                "k": "9|2"
+              }
+            },
+            {
+              "matches": {
+                "value": "1"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|2"
+                }
+              },
+              "context": {
+                "entered": "11",
+                "k": "11|2"
+              }
+            },
+            {
+              "matches": {
+                "value": "2"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|2"
+                }
+              },
+              "context": {
+                "entered": "12",
+                "k": "12|2"
+              }
+            },
+            {
+              "matches": {
+                "value": "9"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|2"
+                }
+              },
+              "context": {
+                "entered": "19",
+                "k": "19|2"
+              }
+            },
+            {
+              "matches": {
+                "value": "1"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|2"
+                }
+              },
+              "context": {
+                "entered": "21",
+                "k": "21|2"
+              }
+            },
+            {
+              "matches": {
+                "value": "2"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|2"
+                }
+              },
+              "context": {
+                "entered": "22",
+                "k": "22|2"
+              }
+            },
+            {
+              "matches": {
+                "value": "9"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|2"
+                }
+              },
+              "context": {
+                "entered": "29",
+                "k": "29|2"
+              }
+            },
+            {
+              "matches": {
+                "value": "1"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "9|2"
+                }
+              },
+              "context": {
+                "entered": "91",
+                "k": "91|2"
+              }
+            },
+            {
+              "matches": {
+                "value": "2"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "9|2"
+                }
+              },
+              "context": {
+                "entered": "92",
+                "k": "92|2"
+              }
+            },
+            {
+              "matches": {
+                "value": "9"
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "9|2"
+                }
+              },
+              "context": {
+                "entered": "99",
+                "k": "99|2"
+              }
+            }
+          ],
+          "clear": [
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|0"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|0"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|0"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "9|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|0"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "9|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "9|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "91|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "92|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "99|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "21|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "22|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "29|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "11|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "12|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "19|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "91|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "92|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "99|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "21|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "22|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "29|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "11|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "12|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "19|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "91|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|0"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "92|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|0"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "99|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|0"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "21|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|0"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "22|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|0"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "29|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|0"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "11|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|0"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "12|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|0"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "19|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|0"
+              }
+            }
+          ],
+          "submit": [
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "attempts": 1,
+                "k": "|1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "attempts": 1,
+                "k": "|1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "attempts": 1,
+                "k": "|1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "9|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "attempts": 1,
+                "k": "|1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "attempts": 2,
+                "k": "|2"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "attempts": 2,
+                "k": "|2"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "attempts": 2,
+                "k": "|2"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "9|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "attempts": 2,
+                "k": "|2"
+              }
+            },
+            {
+              "target": "locked",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "target": "locked",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "target": "locked",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "target": "locked",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "9|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "target": "locked",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "91|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "target": "locked",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "92|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "target": "locked",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "99|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "target": "locked",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "21|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "target": "locked",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "22|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "target": "locked",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "29|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "target": "locked",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "11|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "target": "unlocked",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "12|2"
+                }
+              }
+            },
+            {
+              "target": "locked",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "19|2"
+                }
+              },
+              "context": {
+                "entered": "",
+                "k": "|2"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "91|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "attempts": 2,
+                "k": "|2"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "92|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "attempts": 2,
+                "k": "|2"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "99|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "attempts": 2,
+                "k": "|2"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "21|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "attempts": 2,
+                "k": "|2"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "22|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "attempts": 2,
+                "k": "|2"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "29|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "attempts": 2,
+                "k": "|2"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "11|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "attempts": 2,
+                "k": "|2"
+              }
+            },
+            {
+              "target": "unlocked",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "12|1"
+                }
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "19|1"
+                }
+              },
+              "context": {
+                "entered": "",
+                "attempts": 2,
+                "k": "|2"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "91|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "attempts": 1,
+                "k": "|1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "92|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "attempts": 1,
+                "k": "|1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "99|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "attempts": 1,
+                "k": "|1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "21|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "attempts": 1,
+                "k": "|1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "22|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "attempts": 1,
+                "k": "|1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "29|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "attempts": 1,
+                "k": "|1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "11|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "attempts": 1,
+                "k": "|1"
+              }
+            },
+            {
+              "target": "unlocked",
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "12|0"
+                }
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "19|0"
+                }
+              },
+              "context": {
+                "entered": "",
+                "attempts": 1,
+                "k": "|1"
+              }
+            }
+          ]
+        }
+      },
+      "unlocked": {
+        "on": {
+          "clear": {
+            "target": "entering",
+            "context": {
+              "entered": "",
+              "k": "|0"
+            }
+          }
+        }
+      },
+      "locked": {}
+    }
+  },
+  "steps": [
+    {
+      "at": 0,
+      "send": {
+        "type": "digit",
+        "value": "9"
+      }
+    },
+    {
+      "at": 1,
+      "send": {
+        "type": "digit",
+        "value": "9"
+      }
+    },
+    {
+      "at": 2,
+      "send": {
+        "type": "digit",
+        "value": "9"
+      }
+    },
+    {
+      "at": 3,
+      "send": {
+        "type": "submit"
+      }
+    },
+    {
+      "at": 4,
+      "send": {
+        "type": "digit",
+        "value": "1"
+      }
+    },
+    {
+      "at": 5,
+      "send": {
+        "type": "clear"
+      }
+    },
+    {
+      "at": 6,
+      "send": {
+        "type": "digit",
+        "value": "1"
+      }
+    },
+    {
+      "at": 7,
+      "send": {
+        "type": "digit",
+        "value": "2"
+      }
+    },
+    {
+      "at": 8,
+      "send": {
+        "type": "submit"
+      }
+    },
+    {
+      "at": 9,
+      "send": {
+        "type": "clear"
+      }
+    },
+    {
+      "at": 10,
+      "send": {
+        "type": "submit"
+      }
+    },
+    {
+      "at": 11,
+      "send": {
+        "type": "submit"
+      }
+    },
+    {
+      "at": 12,
+      "send": {
+        "type": "digit",
+        "value": "2"
+      }
+    },
+    {
+      "at": 13,
+      "send": {
+        "type": "submit"
+      }
+    },
+    {
+      "at": 14,
+      "send": {
+        "type": "digit",
+        "value": "1"
+      }
+    },
+    {
+      "at": 15,
+      "send": {
+        "type": "submit"
+      }
+    }
+  ]
+}

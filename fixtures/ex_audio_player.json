@@ -1,0 +1,1646 @@
+{
+  "source": "examples/audio-player-react/src/playlistMachine.ts",
+  "notes": "track durations 2/1/2/1 seconds; shuffle is deterministic ((index + 2) % 4) instead of random; the clock callback actor is dropped and TICK is sent by the steps; index, elapsed and shuffle are a composite key k; auto-advance emits track.ended",
+  "machine": {
+    "id": "playlist",
+    "initial": "paused",
+    "context": {
+      "index": 0,
+      "elapsed": 0,
+      "shuffle": false,
+      "k": "0:0:0"
+    },
+    "states": {
+      "paused": {
+        "on": {
+          "PLAY": {
+            "target": "playing"
+          }
+        }
+      },
+      "playing": {
+        "on": {
+          "PAUSE": {
+            "target": "paused"
+          },
+          "TICK": [
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0:0:0"
+                }
+              },
+              "context": {
+                "index": 0,
+                "elapsed": 1,
+                "shuffle": false,
+                "k": "0:1:0"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0:0:1"
+                }
+              },
+              "context": {
+                "index": 0,
+                "elapsed": 1,
+                "shuffle": true,
+                "k": "0:1:1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0:1:0"
+                }
+              },
+              "context": {
+                "index": 0,
+                "elapsed": 2,
+                "shuffle": false,
+                "k": "0:2:0"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "0:1:1"
+                }
+              },
+              "context": {
+                "index": 0,
+                "elapsed": 2,
+                "shuffle": true,
+                "k": "0:2:1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1:0:0"
+                }
+              },
+              "context": {
+                "index": 1,
+                "elapsed": 1,
+                "shuffle": false,
+                "k": "1:1:0"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "1:0:1"
+                }
+              },
+              "context": {
+                "index": 1,
+                "elapsed": 1,
+                "shuffle": true,
+                "k": "1:1:1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2:0:0"
+                }
+              },
+              "context": {
+                "index": 2,
+                "elapsed": 1,
+                "shuffle": false,
+                "k": "2:1:0"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2:0:1"
+                }
+              },
+              "context": {
+                "index": 2,
+                "elapsed": 1,
+                "shuffle": true,
+                "k": "2:1:1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2:1:0"
+                }
+              },
+              "context": {
+                "index": 2,
+                "elapsed": 2,
+                "shuffle": false,
+                "k": "2:2:0"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "2:1:1"
+                }
+              },
+              "context": {
+                "index": 2,
+                "elapsed": 2,
+                "shuffle": true,
+                "k": "2:2:1"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "3:0:0"
+                }
+              },
+              "context": {
+                "index": 3,
+                "elapsed": 1,
+                "shuffle": false,
+                "k": "3:1:0"
+              }
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "k",
+                  "value": "3:0:1"
+                }
+              },
+              "context": {
+                "index": 3,
+                "elapsed": 1,
+                "shuffle": true,
+                "k": "3:1:1"
+              }
+            }
+          ]
+        },
+        "always": [
+          {
+            "guard": {
+              "type": "ctxEquals",
+              "params": {
+                "key": "k",
+                "value": "0:2:0"
+              }
+            },
+            "context": {
+              "index": 1,
+              "elapsed": 0,
+              "shuffle": false,
+              "k": "1:0:0"
+            },
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "track.ended",
+                  "index": 0
+                }
+              }
+            ]
+          },
+          {
+            "guard": {
+              "type": "ctxEquals",
+              "params": {
+                "key": "k",
+                "value": "0:2:1"
+              }
+            },
+            "context": {
+              "index": 2,
+              "elapsed": 0,
+              "shuffle": true,
+              "k": "2:0:1"
+            },
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "track.ended",
+                  "index": 0
+                }
+              }
+            ]
+          },
+          {
+            "guard": {
+              "type": "ctxEquals",
+              "params": {
+                "key": "k",
+                "value": "1:1:0"
+              }
+            },
+            "context": {
+              "index": 2,
+              "elapsed": 0,
+              "shuffle": false,
+              "k": "2:0:0"
+            },
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "track.ended",
+                  "index": 1
+                }
+              }
+            ]
+          },
+          {
+            "guard": {
+              "type": "ctxEquals",
+              "params": {
+                "key": "k",
+                "value": "1:1:1"
+              }
+            },
+            "context": {
+              "index": 3,
+              "elapsed": 0,
+              "shuffle": true,
+              "k": "3:0:1"
+            },
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "track.ended",
+                  "index": 1
+                }
+              }
+            ]
+          },
+          {
+            "guard": {
+              "type": "ctxEquals",
+              "params": {
+                "key": "k",
+                "value": "2:2:0"
+              }
+            },
+            "context": {
+              "index": 3,
+              "elapsed": 0,
+              "shuffle": false,
+              "k": "3:0:0"
+            },
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "track.ended",
+                  "index": 2
+                }
+              }
+            ]
+          },
+          {
+            "guard": {
+              "type": "ctxEquals",
+              "params": {
+                "key": "k",
+                "value": "2:2:1"
+              }
+            },
+            "context": {
+              "index": 0,
+              "elapsed": 0,
+              "shuffle": true,
+              "k": "0:0:1"
+            },
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "track.ended",
+                  "index": 2
+                }
+              }
+            ]
+          },
+          {
+            "guard": {
+              "type": "ctxEquals",
+              "params": {
+                "key": "k",
+                "value": "3:1:0"
+              }
+            },
+            "context": {
+              "index": 0,
+              "elapsed": 0,
+              "shuffle": false,
+              "k": "0:0:0"
+            },
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "track.ended",
+                  "index": 3
+                }
+              }
+            ]
+          },
+          {
+            "guard": {
+              "type": "ctxEquals",
+              "params": {
+                "key": "k",
+                "value": "3:1:1"
+              }
+            },
+            "context": {
+              "index": 1,
+              "elapsed": 0,
+              "shuffle": true,
+              "k": "1:0:1"
+            },
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "track.ended",
+                  "index": 3
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    "on": {
+      "NEXT": [
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0:0:0"
+            }
+          },
+          "context": {
+            "index": 1,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "1:0:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0:0:1"
+            }
+          },
+          "context": {
+            "index": 2,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "2:0:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0:1:0"
+            }
+          },
+          "context": {
+            "index": 1,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "1:0:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0:1:1"
+            }
+          },
+          "context": {
+            "index": 2,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "2:0:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0:2:0"
+            }
+          },
+          "context": {
+            "index": 1,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "1:0:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0:2:1"
+            }
+          },
+          "context": {
+            "index": 2,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "2:0:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "1:0:0"
+            }
+          },
+          "context": {
+            "index": 2,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "2:0:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "1:0:1"
+            }
+          },
+          "context": {
+            "index": 3,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "3:0:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "1:1:0"
+            }
+          },
+          "context": {
+            "index": 2,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "2:0:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "1:1:1"
+            }
+          },
+          "context": {
+            "index": 3,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "3:0:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "2:0:0"
+            }
+          },
+          "context": {
+            "index": 3,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "3:0:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "2:0:1"
+            }
+          },
+          "context": {
+            "index": 0,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "0:0:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "2:1:0"
+            }
+          },
+          "context": {
+            "index": 3,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "3:0:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "2:1:1"
+            }
+          },
+          "context": {
+            "index": 0,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "0:0:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "2:2:0"
+            }
+          },
+          "context": {
+            "index": 3,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "3:0:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "2:2:1"
+            }
+          },
+          "context": {
+            "index": 0,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "0:0:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "3:0:0"
+            }
+          },
+          "context": {
+            "index": 0,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "0:0:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "3:0:1"
+            }
+          },
+          "context": {
+            "index": 1,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "1:0:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "3:1:0"
+            }
+          },
+          "context": {
+            "index": 0,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "0:0:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "3:1:1"
+            }
+          },
+          "context": {
+            "index": 1,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "1:0:1"
+          }
+        }
+      ],
+      "PREV": [
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0:0:0"
+            }
+          },
+          "context": {
+            "index": 3,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "3:0:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0:0:1"
+            }
+          },
+          "context": {
+            "index": 3,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "3:0:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0:1:0"
+            }
+          },
+          "context": {
+            "index": 3,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "3:0:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0:1:1"
+            }
+          },
+          "context": {
+            "index": 3,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "3:0:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0:2:0"
+            }
+          },
+          "context": {
+            "index": 3,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "3:0:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0:2:1"
+            }
+          },
+          "context": {
+            "index": 3,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "3:0:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "1:0:0"
+            }
+          },
+          "context": {
+            "index": 0,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "0:0:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "1:0:1"
+            }
+          },
+          "context": {
+            "index": 0,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "0:0:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "1:1:0"
+            }
+          },
+          "context": {
+            "index": 0,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "0:0:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "1:1:1"
+            }
+          },
+          "context": {
+            "index": 0,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "0:0:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "2:0:0"
+            }
+          },
+          "context": {
+            "index": 1,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "1:0:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "2:0:1"
+            }
+          },
+          "context": {
+            "index": 1,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "1:0:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "2:1:0"
+            }
+          },
+          "context": {
+            "index": 1,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "1:0:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "2:1:1"
+            }
+          },
+          "context": {
+            "index": 1,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "1:0:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "2:2:0"
+            }
+          },
+          "context": {
+            "index": 1,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "1:0:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "2:2:1"
+            }
+          },
+          "context": {
+            "index": 1,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "1:0:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "3:0:0"
+            }
+          },
+          "context": {
+            "index": 2,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "2:0:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "3:0:1"
+            }
+          },
+          "context": {
+            "index": 2,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "2:0:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "3:1:0"
+            }
+          },
+          "context": {
+            "index": 2,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "2:0:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "3:1:1"
+            }
+          },
+          "context": {
+            "index": 2,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "2:0:1"
+          }
+        }
+      ],
+      "SELECT": [
+        {
+          "target": ".playing",
+          "matches": {
+            "index": 0
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "shuffle",
+              "value": false
+            }
+          },
+          "context": {
+            "index": 0,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "0:0:0"
+          }
+        },
+        {
+          "target": ".playing",
+          "matches": {
+            "index": 0
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "shuffle",
+              "value": true
+            }
+          },
+          "context": {
+            "index": 0,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "0:0:1"
+          }
+        },
+        {
+          "target": ".playing",
+          "matches": {
+            "index": 1
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "shuffle",
+              "value": false
+            }
+          },
+          "context": {
+            "index": 1,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "1:0:0"
+          }
+        },
+        {
+          "target": ".playing",
+          "matches": {
+            "index": 1
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "shuffle",
+              "value": true
+            }
+          },
+          "context": {
+            "index": 1,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "1:0:1"
+          }
+        },
+        {
+          "target": ".playing",
+          "matches": {
+            "index": 2
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "shuffle",
+              "value": false
+            }
+          },
+          "context": {
+            "index": 2,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "2:0:0"
+          }
+        },
+        {
+          "target": ".playing",
+          "matches": {
+            "index": 2
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "shuffle",
+              "value": true
+            }
+          },
+          "context": {
+            "index": 2,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "2:0:1"
+          }
+        },
+        {
+          "target": ".playing",
+          "matches": {
+            "index": 3
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "shuffle",
+              "value": false
+            }
+          },
+          "context": {
+            "index": 3,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "3:0:0"
+          }
+        },
+        {
+          "target": ".playing",
+          "matches": {
+            "index": 3
+          },
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "shuffle",
+              "value": true
+            }
+          },
+          "context": {
+            "index": 3,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "3:0:1"
+          }
+        }
+      ],
+      "TOGGLE_SHUFFLE": [
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0:0:0"
+            }
+          },
+          "context": {
+            "index": 0,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "0:0:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0:0:1"
+            }
+          },
+          "context": {
+            "index": 0,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "0:0:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0:1:0"
+            }
+          },
+          "context": {
+            "index": 0,
+            "elapsed": 1,
+            "shuffle": true,
+            "k": "0:1:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0:1:1"
+            }
+          },
+          "context": {
+            "index": 0,
+            "elapsed": 1,
+            "shuffle": false,
+            "k": "0:1:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0:2:0"
+            }
+          },
+          "context": {
+            "index": 0,
+            "elapsed": 2,
+            "shuffle": true,
+            "k": "0:2:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "0:2:1"
+            }
+          },
+          "context": {
+            "index": 0,
+            "elapsed": 2,
+            "shuffle": false,
+            "k": "0:2:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "1:0:0"
+            }
+          },
+          "context": {
+            "index": 1,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "1:0:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "1:0:1"
+            }
+          },
+          "context": {
+            "index": 1,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "1:0:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "1:1:0"
+            }
+          },
+          "context": {
+            "index": 1,
+            "elapsed": 1,
+            "shuffle": true,
+            "k": "1:1:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "1:1:1"
+            }
+          },
+          "context": {
+            "index": 1,
+            "elapsed": 1,
+            "shuffle": false,
+            "k": "1:1:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "2:0:0"
+            }
+          },
+          "context": {
+            "index": 2,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "2:0:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "2:0:1"
+            }
+          },
+          "context": {
+            "index": 2,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "2:0:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "2:1:0"
+            }
+          },
+          "context": {
+            "index": 2,
+            "elapsed": 1,
+            "shuffle": true,
+            "k": "2:1:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "2:1:1"
+            }
+          },
+          "context": {
+            "index": 2,
+            "elapsed": 1,
+            "shuffle": false,
+            "k": "2:1:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "2:2:0"
+            }
+          },
+          "context": {
+            "index": 2,
+            "elapsed": 2,
+            "shuffle": true,
+            "k": "2:2:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "2:2:1"
+            }
+          },
+          "context": {
+            "index": 2,
+            "elapsed": 2,
+            "shuffle": false,
+            "k": "2:2:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "3:0:0"
+            }
+          },
+          "context": {
+            "index": 3,
+            "elapsed": 0,
+            "shuffle": true,
+            "k": "3:0:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "3:0:1"
+            }
+          },
+          "context": {
+            "index": 3,
+            "elapsed": 0,
+            "shuffle": false,
+            "k": "3:0:0"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "3:1:0"
+            }
+          },
+          "context": {
+            "index": 3,
+            "elapsed": 1,
+            "shuffle": true,
+            "k": "3:1:1"
+          }
+        },
+        {
+          "guard": {
+            "type": "ctxEquals",
+            "params": {
+              "key": "k",
+              "value": "3:1:1"
+            }
+          },
+          "context": {
+            "index": 3,
+            "elapsed": 1,
+            "shuffle": false,
+            "k": "3:1:0"
+          }
+        }
+      ]
+    }
+  },
+  "steps": [
+    {
+      "at": 0,
+      "send": {
+        "type": "PLAY"
+      }
+    },
+    {
+      "at": 10,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 20,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 30,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 40,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 50,
+      "send": {
+        "type": "PAUSE"
+      }
+    },
+    {
+      "at": 60,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 70,
+      "send": {
+        "type": "NEXT"
+      }
+    },
+    {
+      "at": 80,
+      "send": {
+        "type": "PLAY"
+      }
+    },
+    {
+      "at": 90,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 100,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 110,
+      "send": {
+        "type": "TOGGLE_SHUFFLE"
+      }
+    },
+    {
+      "at": 120,
+      "send": {
+        "type": "NEXT"
+      }
+    },
+    {
+      "at": 130,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 140,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 150,
+      "send": {
+        "type": "PREV"
+      }
+    },
+    {
+      "at": 160,
+      "send": {
+        "type": "PREV"
+      }
+    },
+    {
+      "at": 170,
+      "send": {
+        "type": "SELECT",
+        "index": 2
+      }
+    },
+    {
+      "at": 180,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 190,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 200,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 210,
+      "send": {
+        "type": "TOGGLE_SHUFFLE"
+      }
+    },
+    {
+      "at": 220,
+      "send": {
+        "type": "PAUSE"
+      }
+    },
+    {
+      "at": 230,
+      "send": {
+        "type": "SELECT",
+        "index": 3
+      }
+    },
+    {
+      "at": 240,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 250,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 260,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 270,
+      "send": {
+        "type": "NEXT"
+      }
+    },
+    {
+      "at": 280,
+      "send": {
+        "type": "PREV"
+      }
+    }
+  ]
+}

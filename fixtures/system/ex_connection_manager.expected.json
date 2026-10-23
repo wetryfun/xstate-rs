@@ -1,0 +1,3205 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "client",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "client": {
+          "id": "client",
+          "address": "client",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0,
+              "sessionId": null,
+              "connects": 0,
+              "drops": 0,
+              "lastError": null
+            },
+            "value": "connecting",
+            "children": {
+              "client.connecting:0": {
+                "$actor": "client/client.connecting:0",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "client",
+              "client.connecting"
+            ]
+          }
+        },
+        "client/client.connecting:0": {
+          "id": "client.connecting:0",
+          "address": "client/client.connecting:0",
+          "incarnation": "1",
+          "src": "root/actors/connect",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "attempt": 1
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "attempt": 1
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "connecting"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "connecting"
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "client/client.connecting:0",
+            "incarnation": "1"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 0,
+        "effect": 2
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "client",
+          "incarnation": "0"
+        },
+        "type": "log",
+        "kind": "emit",
+        "params": {
+          "message": "connecting"
+        },
+        "args": [],
+        "event": {
+          "type": "log",
+          "message": "connecting"
+        }
+      },
+      {
+        "id": "system:1",
+        "source": {
+          "$actor": "client/client.connecting:0",
+          "incarnation": "1"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "client",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "client": {
+          "id": "client",
+          "address": "client",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0,
+              "sessionId": null,
+              "connects": 0,
+              "drops": 0,
+              "lastError": null
+            },
+            "value": "connecting",
+            "children": {
+              "client.connecting:0": {
+                "$actor": "client/client.connecting:0",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "client",
+              "client.connecting"
+            ]
+          }
+        },
+        "client/client.connecting:0": {
+          "id": "client.connecting:0",
+          "address": "client/client.connecting:0",
+          "incarnation": "1",
+          "src": "root/actors/connect",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "attempt": 1
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "attempt": 1
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "client/client.connecting:0",
+            "incarnation": "1"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 1,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "client",
+      "executionId": "system",
+      "now": 120,
+      "actors": {
+        "client": {
+          "id": "client",
+          "address": "client",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0,
+              "sessionId": null,
+              "connects": 0,
+              "drops": 0,
+              "lastError": null
+            },
+            "value": "connecting",
+            "children": {
+              "client.connecting:0": {
+                "$actor": "client/client.connecting:0",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "client",
+              "client.connecting"
+            ]
+          }
+        },
+        "client/client.connecting:0": {
+          "id": "client.connecting:0",
+          "address": "client/client.connecting:0",
+          "incarnation": "1",
+          "src": "root/actors/connect",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "attempt": 1
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "attempt": 1
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "client/client.connecting:0",
+            "incarnation": "1"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 1,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "client",
+      "executionId": "system",
+      "now": 120,
+      "actors": {
+        "client": {
+          "id": "client",
+          "address": "client",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0,
+              "sessionId": "sess-1",
+              "connects": 1,
+              "drops": 0,
+              "lastError": null
+            },
+            "value": "connected",
+            "children": {},
+            "timers": [
+              {
+                "delay": 120,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 120,
+                  "stateId": "client.connected"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "client",
+              "client.connected"
+            ]
+          }
+        },
+        "client/client.connecting:0": {
+          "id": "client.connecting:0",
+          "address": "client/client.connecting:0",
+          "incarnation": "1",
+          "src": "root/actors/connect",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "attempt": 1
+          },
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "rtt": 20
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "rtt": 20
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 120,
+          "dueAt": 240,
+          "sequence": 3,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 120,
+              "stateId": "client.connected"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "connected"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "connected"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 4,
+        "effect": 3
+      }
+    },
+    "effects": [
+      {
+        "id": "system:2",
+        "source": {
+          "$actor": "client",
+          "incarnation": "0"
+        },
+        "type": "log",
+        "kind": "emit",
+        "params": {
+          "message": "connected"
+        },
+        "args": [],
+        "event": {
+          "type": "log",
+          "message": "connected"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "snapshot": {
+      "root": "client",
+      "executionId": "system",
+      "now": 240,
+      "actors": {
+        "client": {
+          "id": "client",
+          "address": "client",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0,
+              "sessionId": "sess-1",
+              "connects": 1,
+              "drops": 0,
+              "lastError": null
+            },
+            "value": "pinging",
+            "children": {
+              "client.pinging:0": {
+                "$actor": "client/client.pinging:0",
+                "incarnation": "2"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "client",
+              "client.pinging"
+            ]
+          }
+        },
+        "client/client.connecting:0": {
+          "id": "client.connecting:0",
+          "address": "client/client.connecting:0",
+          "incarnation": "1",
+          "src": "root/actors/connect",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "attempt": 1
+          },
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "rtt": 20
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "rtt": 20
+                }
+              }
+            }
+          }
+        },
+        "client/client.pinging:0": {
+          "id": "client.pinging:0",
+          "address": "client/client.pinging:0",
+          "incarnation": "2",
+          "src": "root/actors/ping",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "sessionId": "sess"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "sessionId": "sess"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "connected"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "connected"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "client/client.pinging:0",
+            "incarnation": "2"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 1,
+        "sequence": 5,
+        "effect": 4
+      }
+    },
+    "effects": [
+      {
+        "id": "system:3",
+        "source": {
+          "$actor": "client/client.pinging:0",
+          "incarnation": "2"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "snapshot": {
+      "root": "client",
+      "executionId": "system",
+      "now": 240,
+      "actors": {
+        "client": {
+          "id": "client",
+          "address": "client",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0,
+              "sessionId": "sess-1",
+              "connects": 1,
+              "drops": 0,
+              "lastError": null
+            },
+            "value": "pinging",
+            "children": {
+              "client.pinging:0": {
+                "$actor": "client/client.pinging:0",
+                "incarnation": "2"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "client",
+              "client.pinging"
+            ]
+          }
+        },
+        "client/client.connecting:0": {
+          "id": "client.connecting:0",
+          "address": "client/client.connecting:0",
+          "incarnation": "1",
+          "src": "root/actors/connect",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "attempt": 1
+          },
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "rtt": 20
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "rtt": 20
+                }
+              }
+            }
+          }
+        },
+        "client/client.pinging:0": {
+          "id": "client.pinging:0",
+          "address": "client/client.pinging:0",
+          "incarnation": "2",
+          "src": "root/actors/ping",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "sessionId": "sess"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "sessionId": "sess"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "client/client.pinging:0",
+            "incarnation": "2"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 1,
+        "sequence": 6,
+        "effect": 4
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 5",
+    "snapshot": {
+      "root": "client",
+      "executionId": "system",
+      "now": 360,
+      "actors": {
+        "client": {
+          "id": "client",
+          "address": "client",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0,
+              "sessionId": "sess-1",
+              "connects": 1,
+              "drops": 0,
+              "lastError": null
+            },
+            "value": "pinging",
+            "children": {
+              "client.pinging:0": {
+                "$actor": "client/client.pinging:0",
+                "incarnation": "2"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "client",
+              "client.pinging"
+            ]
+          }
+        },
+        "client/client.connecting:0": {
+          "id": "client.connecting:0",
+          "address": "client/client.connecting:0",
+          "incarnation": "1",
+          "src": "root/actors/connect",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "attempt": 1
+          },
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "rtt": 20
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "rtt": 20
+                }
+              }
+            }
+          }
+        },
+        "client/client.pinging:0": {
+          "id": "client.pinging:0",
+          "address": "client/client.pinging:0",
+          "incarnation": "2",
+          "src": "root/actors/ping",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "sessionId": "sess"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "sessionId": "sess"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "client/client.pinging:0",
+            "incarnation": "2"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 1,
+        "sequence": 6,
+        "effect": 4
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 6",
+    "snapshot": {
+      "root": "client",
+      "executionId": "system",
+      "now": 360,
+      "actors": {
+        "client": {
+          "id": "client",
+          "address": "client",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0,
+              "sessionId": null,
+              "connects": 1,
+              "drops": 1,
+              "lastError": "pong timeout"
+            },
+            "value": "connecting",
+            "children": {
+              "client.connecting:0": {
+                "$actor": "client/client.connecting:0",
+                "incarnation": "3"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "client",
+              "client.connecting"
+            ]
+          }
+        },
+        "client/client.connecting:0": {
+          "id": "client.connecting:0",
+          "address": "client/client.connecting:0",
+          "incarnation": "3",
+          "src": "root/actors/connect",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "attempt": 1
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "attempt": 1
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "client/client.pinging:0": {
+          "id": "client.pinging:0",
+          "address": "client/client.pinging:0",
+          "incarnation": "2",
+          "src": "root/actors/ping",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "sessionId": "sess"
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "pong timeout"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "pong timeout"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "disconnected"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "disconnected"
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "connecting"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "connecting"
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "client/client.connecting:0",
+            "incarnation": "3"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 4,
+        "timer": 1,
+        "sequence": 8,
+        "effect": 7
+      }
+    },
+    "effects": [
+      {
+        "id": "system:4",
+        "source": {
+          "$actor": "client",
+          "incarnation": "0"
+        },
+        "type": "log",
+        "kind": "emit",
+        "params": {
+          "message": "disconnected"
+        },
+        "args": [],
+        "event": {
+          "type": "log",
+          "message": "disconnected"
+        }
+      },
+      {
+        "id": "system:5",
+        "source": {
+          "$actor": "client",
+          "incarnation": "0"
+        },
+        "type": "log",
+        "kind": "emit",
+        "params": {
+          "message": "connecting"
+        },
+        "args": [],
+        "event": {
+          "type": "log",
+          "message": "connecting"
+        }
+      },
+      {
+        "id": "system:6",
+        "source": {
+          "$actor": "client/client.connecting:0",
+          "incarnation": "3"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 7",
+    "snapshot": {
+      "root": "client",
+      "executionId": "system",
+      "now": 360,
+      "actors": {
+        "client": {
+          "id": "client",
+          "address": "client",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0,
+              "sessionId": null,
+              "connects": 1,
+              "drops": 1,
+              "lastError": "pong timeout"
+            },
+            "value": "connecting",
+            "children": {
+              "client.connecting:0": {
+                "$actor": "client/client.connecting:0",
+                "incarnation": "3"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "client",
+              "client.connecting"
+            ]
+          }
+        },
+        "client/client.connecting:0": {
+          "id": "client.connecting:0",
+          "address": "client/client.connecting:0",
+          "incarnation": "3",
+          "src": "root/actors/connect",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "attempt": 1
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "attempt": 1
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "client/client.pinging:0": {
+          "id": "client.pinging:0",
+          "address": "client/client.pinging:0",
+          "incarnation": "2",
+          "src": "root/actors/ping",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "sessionId": "sess"
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "pong timeout"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "pong timeout"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "connecting"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "connecting"
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "client/client.connecting:0",
+            "incarnation": "3"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 4,
+        "timer": 1,
+        "sequence": 9,
+        "effect": 7
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 8",
+    "snapshot": {
+      "root": "client",
+      "executionId": "system",
+      "now": 560,
+      "actors": {
+        "client": {
+          "id": "client",
+          "address": "client",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0,
+              "sessionId": null,
+              "connects": 1,
+              "drops": 1,
+              "lastError": "pong timeout"
+            },
+            "value": "connecting",
+            "children": {
+              "client.connecting:0": {
+                "$actor": "client/client.connecting:0",
+                "incarnation": "3"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "client",
+              "client.connecting"
+            ]
+          }
+        },
+        "client/client.connecting:0": {
+          "id": "client.connecting:0",
+          "address": "client/client.connecting:0",
+          "incarnation": "3",
+          "src": "root/actors/connect",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "attempt": 1
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "attempt": 1
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "client/client.pinging:0": {
+          "id": "client.pinging:0",
+          "address": "client/client.pinging:0",
+          "incarnation": "2",
+          "src": "root/actors/ping",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "sessionId": "sess"
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "pong timeout"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "pong timeout"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "connecting"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "connecting"
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "client/client.connecting:0",
+            "incarnation": "3"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 4,
+        "timer": 1,
+        "sequence": 9,
+        "effect": 7
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 9",
+    "snapshot": {
+      "root": "client",
+      "executionId": "system",
+      "now": 560,
+      "actors": {
+        "client": {
+          "id": "client",
+          "address": "client",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0,
+              "sessionId": null,
+              "connects": 1,
+              "drops": 1,
+              "lastError": "pong timeout"
+            },
+            "value": "connecting",
+            "children": {
+              "client.connecting:0": {
+                "$actor": "client/client.connecting:0",
+                "incarnation": "3"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "client",
+              "client.connecting"
+            ]
+          }
+        },
+        "client/client.connecting:0": {
+          "id": "client.connecting:0",
+          "address": "client/client.connecting:0",
+          "incarnation": "3",
+          "src": "root/actors/connect",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "attempt": 1
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "attempt": 1
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "client/client.pinging:0": {
+          "id": "client.pinging:0",
+          "address": "client/client.pinging:0",
+          "incarnation": "2",
+          "src": "root/actors/ping",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "sessionId": "sess"
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "pong timeout"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "pong timeout"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "client/client.connecting:0",
+            "incarnation": "3"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 4,
+        "timer": 1,
+        "sequence": 10,
+        "effect": 7
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 10",
+    "snapshot": {
+      "root": "client",
+      "executionId": "system",
+      "now": 760,
+      "actors": {
+        "client": {
+          "id": "client",
+          "address": "client",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0,
+              "sessionId": null,
+              "connects": 1,
+              "drops": 1,
+              "lastError": "pong timeout"
+            },
+            "value": "connecting",
+            "children": {
+              "client.connecting:0": {
+                "$actor": "client/client.connecting:0",
+                "incarnation": "3"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "client",
+              "client.connecting"
+            ]
+          }
+        },
+        "client/client.connecting:0": {
+          "id": "client.connecting:0",
+          "address": "client/client.connecting:0",
+          "incarnation": "3",
+          "src": "root/actors/connect",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "attempt": 1
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "attempt": 1
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "client/client.pinging:0": {
+          "id": "client.pinging:0",
+          "address": "client/client.pinging:0",
+          "incarnation": "2",
+          "src": "root/actors/ping",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "sessionId": "sess"
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "pong timeout"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "pong timeout"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "client/client.connecting:0",
+            "incarnation": "3"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 4,
+        "timer": 1,
+        "sequence": 10,
+        "effect": 7
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 11",
+    "snapshot": {
+      "root": "client",
+      "executionId": "system",
+      "now": 760,
+      "actors": {
+        "client": {
+          "id": "client",
+          "address": "client",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0,
+              "sessionId": "sess-2",
+              "connects": 2,
+              "drops": 1,
+              "lastError": "pong timeout"
+            },
+            "value": "connected",
+            "children": {},
+            "timers": [
+              {
+                "delay": 120,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 120,
+                  "stateId": "client.connected"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "client",
+              "client.connected"
+            ]
+          }
+        },
+        "client/client.connecting:0": {
+          "id": "client.connecting:0",
+          "address": "client/client.connecting:0",
+          "incarnation": "3",
+          "src": "root/actors/connect",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "attempt": 1
+          },
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "sessionId": "sess-4"
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "sessionId": "sess-4"
+                }
+              }
+            }
+          }
+        },
+        "client/client.pinging:0": {
+          "id": "client.pinging:0",
+          "address": "client/client.pinging:0",
+          "incarnation": "2",
+          "src": "root/actors/ping",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "sessionId": "sess"
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "pong timeout"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "pong timeout"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "occurrence": 1,
+          "scheduledAt": 760,
+          "dueAt": 880,
+          "sequence": 12,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 120,
+              "stateId": "client.connected"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "connected"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "connected"
+          }
+        }
+      },
+      "counters": {
+        "actor": 4,
+        "timer": 2,
+        "sequence": 13,
+        "effect": 8
+      }
+    },
+    "effects": [
+      {
+        "id": "system:7",
+        "source": {
+          "$actor": "client",
+          "incarnation": "0"
+        },
+        "type": "log",
+        "kind": "emit",
+        "params": {
+          "message": "connected"
+        },
+        "args": [],
+        "event": {
+          "type": "log",
+          "message": "connected"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 12",
+    "snapshot": {
+      "root": "client",
+      "executionId": "system",
+      "now": 880,
+      "actors": {
+        "client": {
+          "id": "client",
+          "address": "client",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0,
+              "sessionId": "sess-2",
+              "connects": 2,
+              "drops": 1,
+              "lastError": "pong timeout"
+            },
+            "value": "pinging",
+            "children": {
+              "client.pinging:0": {
+                "$actor": "client/client.pinging:0",
+                "incarnation": "4"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "client",
+              "client.pinging"
+            ]
+          }
+        },
+        "client/client.connecting:0": {
+          "id": "client.connecting:0",
+          "address": "client/client.connecting:0",
+          "incarnation": "3",
+          "src": "root/actors/connect",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "attempt": 1
+          },
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "sessionId": "sess-4"
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "sessionId": "sess-4"
+                }
+              }
+            }
+          }
+        },
+        "client/client.pinging:0": {
+          "id": "client.pinging:0",
+          "address": "client/client.pinging:0",
+          "incarnation": "4",
+          "src": "root/actors/ping",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "sessionId": "sess"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "sessionId": "sess"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "connected"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "connected"
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "client/client.pinging:0",
+            "incarnation": "4"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 5,
+        "timer": 2,
+        "sequence": 14,
+        "effect": 9
+      }
+    },
+    "effects": [
+      {
+        "id": "system:8",
+        "source": {
+          "$actor": "client/client.pinging:0",
+          "incarnation": "4"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 13",
+    "snapshot": {
+      "root": "client",
+      "executionId": "system",
+      "now": 880,
+      "actors": {
+        "client": {
+          "id": "client",
+          "address": "client",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0,
+              "sessionId": "sess-2",
+              "connects": 2,
+              "drops": 1,
+              "lastError": "pong timeout"
+            },
+            "value": "pinging",
+            "children": {
+              "client.pinging:0": {
+                "$actor": "client/client.pinging:0",
+                "incarnation": "4"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "client",
+              "client.pinging"
+            ]
+          }
+        },
+        "client/client.connecting:0": {
+          "id": "client.connecting:0",
+          "address": "client/client.connecting:0",
+          "incarnation": "3",
+          "src": "root/actors/connect",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "attempt": 1
+          },
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "sessionId": "sess-4"
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "sessionId": "sess-4"
+                }
+              }
+            }
+          }
+        },
+        "client/client.pinging:0": {
+          "id": "client.pinging:0",
+          "address": "client/client.pinging:0",
+          "incarnation": "4",
+          "src": "root/actors/ping",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "sessionId": "sess"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "sessionId": "sess"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "client/client.pinging:0",
+            "incarnation": "4"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 5,
+        "timer": 2,
+        "sequence": 15,
+        "effect": 9
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 14",
+    "snapshot": {
+      "root": "client",
+      "executionId": "system",
+      "now": 880,
+      "actors": {
+        "client": {
+          "id": "client",
+          "address": "client",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0,
+              "sessionId": null,
+              "connects": 2,
+              "drops": 2,
+              "lastError": "pong timeout"
+            },
+            "value": "connecting",
+            "children": {
+              "client.connecting:0": {
+                "$actor": "client/client.connecting:0",
+                "incarnation": "5"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "client",
+              "client.connecting"
+            ]
+          }
+        },
+        "client/client.connecting:0": {
+          "id": "client.connecting:0",
+          "address": "client/client.connecting:0",
+          "incarnation": "5",
+          "src": "root/actors/connect",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "attempt": 1
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "attempt": 1
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "client/client.pinging:0": {
+          "id": "client.pinging:0",
+          "address": "client/client.pinging:0",
+          "incarnation": "4",
+          "src": "root/actors/ping",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "sessionId": "sess"
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "ECONNREFUSED"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "ECONNREFUSED"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "disconnected"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "disconnected"
+          }
+        },
+        "system:10": {
+          "id": "system:10",
+          "source": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "connecting"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "connecting"
+          }
+        },
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "client/client.connecting:0",
+            "incarnation": "5"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 6,
+        "timer": 2,
+        "sequence": 17,
+        "effect": 12
+      }
+    },
+    "effects": [
+      {
+        "id": "system:9",
+        "source": {
+          "$actor": "client",
+          "incarnation": "0"
+        },
+        "type": "log",
+        "kind": "emit",
+        "params": {
+          "message": "disconnected"
+        },
+        "args": [],
+        "event": {
+          "type": "log",
+          "message": "disconnected"
+        }
+      },
+      {
+        "id": "system:10",
+        "source": {
+          "$actor": "client",
+          "incarnation": "0"
+        },
+        "type": "log",
+        "kind": "emit",
+        "params": {
+          "message": "connecting"
+        },
+        "args": [],
+        "event": {
+          "type": "log",
+          "message": "connecting"
+        }
+      },
+      {
+        "id": "system:11",
+        "source": {
+          "$actor": "client/client.connecting:0",
+          "incarnation": "5"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 15",
+    "snapshot": {
+      "root": "client",
+      "executionId": "system",
+      "now": 1080,
+      "actors": {
+        "client": {
+          "id": "client",
+          "address": "client",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0,
+              "sessionId": null,
+              "connects": 2,
+              "drops": 2,
+              "lastError": "pong timeout"
+            },
+            "value": "connecting",
+            "children": {
+              "client.connecting:0": {
+                "$actor": "client/client.connecting:0",
+                "incarnation": "5"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "client",
+              "client.connecting"
+            ]
+          }
+        },
+        "client/client.connecting:0": {
+          "id": "client.connecting:0",
+          "address": "client/client.connecting:0",
+          "incarnation": "5",
+          "src": "root/actors/connect",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "attempt": 1
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "attempt": 1
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "client/client.pinging:0": {
+          "id": "client.pinging:0",
+          "address": "client/client.pinging:0",
+          "incarnation": "4",
+          "src": "root/actors/ping",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "sessionId": "sess"
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "ECONNREFUSED"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "ECONNREFUSED"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "disconnected"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "disconnected"
+          }
+        },
+        "system:10": {
+          "id": "system:10",
+          "source": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "connecting"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "connecting"
+          }
+        },
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "client/client.connecting:0",
+            "incarnation": "5"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 6,
+        "timer": 2,
+        "sequence": 17,
+        "effect": 12
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 16",
+    "snapshot": {
+      "root": "client",
+      "executionId": "system",
+      "now": 1080,
+      "actors": {
+        "client": {
+          "id": "client",
+          "address": "client",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0,
+              "sessionId": null,
+              "connects": 2,
+              "drops": 2,
+              "lastError": "pong timeout"
+            },
+            "value": "connecting",
+            "children": {
+              "client.connecting:0": {
+                "$actor": "client/client.connecting:0",
+                "incarnation": "5"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "client",
+              "client.connecting"
+            ]
+          }
+        },
+        "client/client.connecting:0": {
+          "id": "client.connecting:0",
+          "address": "client/client.connecting:0",
+          "incarnation": "5",
+          "src": "root/actors/connect",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "attempt": 1
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "attempt": 1
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "client/client.pinging:0": {
+          "id": "client.pinging:0",
+          "address": "client/client.pinging:0",
+          "incarnation": "4",
+          "src": "root/actors/ping",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "sessionId": "sess"
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "ECONNREFUSED"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "ECONNREFUSED"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:10": {
+          "id": "system:10",
+          "source": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "connecting"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "connecting"
+          }
+        },
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "client/client.connecting:0",
+            "incarnation": "5"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 6,
+        "timer": 2,
+        "sequence": 18,
+        "effect": 12
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 17",
+    "snapshot": {
+      "root": "client",
+      "executionId": "system",
+      "now": 1280,
+      "actors": {
+        "client": {
+          "id": "client",
+          "address": "client",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0,
+              "sessionId": null,
+              "connects": 2,
+              "drops": 2,
+              "lastError": "pong timeout"
+            },
+            "value": "connecting",
+            "children": {
+              "client.connecting:0": {
+                "$actor": "client/client.connecting:0",
+                "incarnation": "5"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "client",
+              "client.connecting"
+            ]
+          }
+        },
+        "client/client.connecting:0": {
+          "id": "client.connecting:0",
+          "address": "client/client.connecting:0",
+          "incarnation": "5",
+          "src": "root/actors/connect",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "attempt": 1
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "attempt": 1
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "client/client.pinging:0": {
+          "id": "client.pinging:0",
+          "address": "client/client.pinging:0",
+          "incarnation": "4",
+          "src": "root/actors/ping",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "sessionId": "sess"
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "ECONNREFUSED"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "ECONNREFUSED"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:10": {
+          "id": "system:10",
+          "source": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "connecting"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "connecting"
+          }
+        },
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "client/client.connecting:0",
+            "incarnation": "5"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 6,
+        "timer": 2,
+        "sequence": 18,
+        "effect": 12
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 18",
+    "snapshot": {
+      "root": "client",
+      "executionId": "system",
+      "now": 1280,
+      "actors": {
+        "client": {
+          "id": "client",
+          "address": "client",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0,
+              "sessionId": null,
+              "connects": 2,
+              "drops": 2,
+              "lastError": "pong timeout"
+            },
+            "value": "connecting",
+            "children": {
+              "client.connecting:0": {
+                "$actor": "client/client.connecting:0",
+                "incarnation": "5"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "client",
+              "client.connecting"
+            ]
+          }
+        },
+        "client/client.connecting:0": {
+          "id": "client.connecting:0",
+          "address": "client/client.connecting:0",
+          "incarnation": "5",
+          "src": "root/actors/connect",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "attempt": 1
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "attempt": 1
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "client/client.pinging:0": {
+          "id": "client.pinging:0",
+          "address": "client/client.pinging:0",
+          "incarnation": "4",
+          "src": "root/actors/ping",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "sessionId": "sess"
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "ECONNREFUSED"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "ECONNREFUSED"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "client/client.connecting:0",
+            "incarnation": "5"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 6,
+        "timer": 2,
+        "sequence": 19,
+        "effect": 12
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 19",
+    "snapshot": {
+      "root": "client",
+      "executionId": "system",
+      "now": 1480,
+      "actors": {
+        "client": {
+          "id": "client",
+          "address": "client",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0,
+              "sessionId": null,
+              "connects": 2,
+              "drops": 2,
+              "lastError": "pong timeout"
+            },
+            "value": "connecting",
+            "children": {
+              "client.connecting:0": {
+                "$actor": "client/client.connecting:0",
+                "incarnation": "5"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "client",
+              "client.connecting"
+            ]
+          }
+        },
+        "client/client.connecting:0": {
+          "id": "client.connecting:0",
+          "address": "client/client.connecting:0",
+          "incarnation": "5",
+          "src": "root/actors/connect",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "attempt": 1
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "attempt": 1
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "client/client.pinging:0": {
+          "id": "client.pinging:0",
+          "address": "client/client.pinging:0",
+          "incarnation": "4",
+          "src": "root/actors/ping",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "sessionId": "sess"
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "ECONNREFUSED"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "ECONNREFUSED"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "client/client.connecting:0",
+            "incarnation": "5"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 6,
+        "timer": 2,
+        "sequence": 19,
+        "effect": 12
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 20",
+    "snapshot": {
+      "root": "client",
+      "executionId": "system",
+      "now": 1480,
+      "actors": {
+        "client": {
+          "id": "client",
+          "address": "client",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 1,
+              "sessionId": null,
+              "connects": 2,
+              "drops": 2,
+              "lastError": "ECONNREFUSED"
+            },
+            "value": "backingOff",
+            "children": {},
+            "timers": [
+              {
+                "delay": 200,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 200,
+                  "stateId": "client.backingOff"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "client",
+              "client.backingOff"
+            ]
+          }
+        },
+        "client/client.connecting:0": {
+          "id": "client.connecting:0",
+          "address": "client/client.connecting:0",
+          "incarnation": "5",
+          "src": "root/actors/connect",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "attempt": 1
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "ECONNREFUSED"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "ECONNREFUSED"
+                }
+              }
+            }
+          }
+        },
+        "client/client.pinging:0": {
+          "id": "client.pinging:0",
+          "address": "client/client.pinging:0",
+          "incarnation": "4",
+          "src": "root/actors/ping",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "sessionId": "sess"
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "ECONNREFUSED"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "ECONNREFUSED"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "occurrence": 2,
+          "scheduledAt": 1480,
+          "dueAt": 1680,
+          "sequence": 21,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 200,
+              "stateId": "client.backingOff"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:12": {
+          "id": "system:12",
+          "source": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "backing off"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "backing off"
+          }
+        }
+      },
+      "counters": {
+        "actor": 6,
+        "timer": 3,
+        "sequence": 22,
+        "effect": 13
+      }
+    },
+    "effects": [
+      {
+        "id": "system:12",
+        "source": {
+          "$actor": "client",
+          "incarnation": "0"
+        },
+        "type": "log",
+        "kind": "emit",
+        "params": {
+          "message": "backing off"
+        },
+        "args": [],
+        "event": {
+          "type": "log",
+          "message": "backing off"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 21",
+    "snapshot": {
+      "root": "client",
+      "executionId": "system",
+      "now": 2000,
+      "actors": {
+        "client": {
+          "id": "client",
+          "address": "client",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 1,
+              "sessionId": null,
+              "connects": 2,
+              "drops": 2,
+              "lastError": "ECONNREFUSED"
+            },
+            "value": "connecting",
+            "children": {
+              "client.connecting:0": {
+                "$actor": "client/client.connecting:0",
+                "incarnation": "6"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "client",
+              "client.connecting"
+            ]
+          }
+        },
+        "client/client.connecting:0": {
+          "id": "client.connecting:0",
+          "address": "client/client.connecting:0",
+          "incarnation": "6",
+          "src": "root/actors/connect",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "attempt": 1
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "attempt": 1
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "client/client.pinging:0": {
+          "id": "client.pinging:0",
+          "address": "client/client.pinging:0",
+          "incarnation": "4",
+          "src": "root/actors/ping",
+          "parent": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "sessionId": "sess"
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "ECONNREFUSED"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "ECONNREFUSED"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:12": {
+          "id": "system:12",
+          "source": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "backing off"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "backing off"
+          }
+        },
+        "system:13": {
+          "id": "system:13",
+          "source": {
+            "$actor": "client",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "connecting"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "connecting"
+          }
+        },
+        "system:14": {
+          "id": "system:14",
+          "source": {
+            "$actor": "client/client.connecting:0",
+            "incarnation": "6"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 7,
+        "timer": 3,
+        "sequence": 23,
+        "effect": 15
+      }
+    },
+    "effects": [
+      {
+        "id": "system:13",
+        "source": {
+          "$actor": "client",
+          "incarnation": "0"
+        },
+        "type": "log",
+        "kind": "emit",
+        "params": {
+          "message": "connecting"
+        },
+        "args": [],
+        "event": {
+          "type": "log",
+          "message": "connecting"
+        }
+      },
+      {
+        "id": "system:14",
+        "source": {
+          "$actor": "client/client.connecting:0",
+          "incarnation": "6"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  }
+]
