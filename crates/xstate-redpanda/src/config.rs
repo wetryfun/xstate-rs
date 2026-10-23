@@ -1,0 +1,208 @@
+//! The service's configuration file (JSON) and machine loading for the
+//! `xstate-redpanda` binary.
+//!
+//! ```json
+//! {
+//!   "machine": "order.json",
+//!   "bootstrapServers": "localhost:9092",
+//!   "groupId": "orders",
+//!   "topics": { "input": "orders", "output": "orders-out", "changelog": "orders-changelog", "deadLetter": "orders-dead" },
+//!   "workers": 4,
+//!   "rack": "rack-a",
+//!   "maxBatch": 10000, "batchLingerMs": 20, "pollTimeoutMs": 100, "requestTimeoutMs": 30000,
+//!   "transactionalId": "orders",
+//!   "codec": "messagepack",
+//!   "evictFinal": true,
+//!   "client": { "compression.type": "lz4" },
+//!   "metricsAddress": "0.0.0.0:9464",
+//!   "logIntervalMs": 10000
+//! }
+//! ```
+//!
+//! `machine` is a path (relative to the configuration file) to a
+//! `MachineJSON` file or an extract bundle (`{ "machine", "schemas" }`).
+
+use std::path::{Path, PathBuf};
+use std::time::Duration;
+
+use serde::Deserialize;
+use serde_json::Value;
+use xstate_rt::{Machine, Registry};
+
+use crate::codec::Codec;
+use crate::engine::EngineConfig;
+use crate::kafka::ServiceConfig;
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct Topics {
+    pub input: String,
+    pub output: String,
+    pub changelog: String,
+    #[serde(default)]
+    pub dead_letter: Option<String>,
+}
+
+/// The configuration file.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct FileConfig {
+    pub machine: PathBuf,
+    pub bootstrap_servers: String,
+    pub group_id: String,
+    pub topics: Topics,
+    #[serde(default)]
+    pub transactional_id: Option<String>,
+    #[serde(default)]
+    pub workers: Option<usize>,
+    #[serde(default)]
+    pub rack: Option<String>,
+    #[serde(default)]
+    pub max_batch: Option<usize>,
+    #[serde(default)]
+    pub batch_linger_ms: Option<u64>,
+    #[serde(default)]
+    pub poll_timeout_ms: Option<u64>,
+    #[serde(default)]
+    pub request_timeout_ms: Option<u64>,
+    #[serde(default)]
+    pub codec: Option<String>,
+    #[serde(default)]
+    pub evict_final: Option<bool>,
+    #[serde(default)]
+    pub client: serde_json::Map<String, Value>,
+    #[serde(default)]
+    pub metrics_address: Option<String>,
+    #[serde(default)]
+    pub log_interval_ms: Option<u64>,
+}
+
+impl FileConfig {
+    /// Reads a configuration file; `machine` becomes relative to its directory.
+    pub fn load(path: &Path) -> Result<Self, String> {
+        let text = std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
+        let mut config: FileConfig = serde_json::from_str(&text).map_err(|e| format!("{}: {e}", path.display()))?;
+        if config.machine.is_relative() {
+            config.machine = path.parent().unwrap_or(Path::new(".")).join(&config.machine);
+        }
+        Ok(config)
+    }
+
+    /// The service settings.
+    pub fn service(&self) -> Result<ServiceConfig, String> {
+        let t = &self.topics;
+        let mut c = ServiceConfig::new(&self.bootstrap_servers, &self.group_id, &t.input, &t.output, &t.changelog);
+        c.dead_letter_topic = t.dead_letter.clone();
+        if let Some(id) = &self.transactional_id {
+            c.transactional_id = id.clone();
+        }
+        if let Some(w) = self.workers {
+            c.workers = w.max(1);
+        }
+        c.rack = self.rack.clone();
+        if let Some(n) = self.max_batch {
+            c.max_batch = n.max(1);
+        }
+        let ms = Duration::from_millis;
+        if let Some(v) = self.batch_linger_ms {
+            c.batch_linger = ms(v);
+        }
+        if let Some(v) = self.poll_timeout_ms {
+            c.poll_timeout = ms(v);
+        }
+        if let Some(v) = self.request_timeout_ms {
+            c.request_timeout = ms(v);
+        }
+        let codec = match self.codec.as_deref() {
+            None | Some("messagepack") => Codec::MessagePack,
+            Some("json") => Codec::Json,
+            Some(other) => return Err(format!("unknown codec \"{other}\" (expected \"messagepack\" or \"json\")")),
+        };
+        c.engine = EngineConfig { codec, evict_final: self.evict_final.unwrap_or(true) };
+        for (k, v) in &self.client {
+            let v = match v {
+                Value::String(s) => s.clone(),
+                other => other.to_string(),
+            };
+            c.client_config.push((k.clone(), v));
+        }
+        Ok(c)
+    }
+
+    /// Loads the machine. The generic service has no Rust implementations,
+    /// so the definition must not reference custom guards, actions, delays
+    /// or actors (build a binary of your own with `Service::start` for those).
+    pub fn machine(&self) -> Result<Machine<Value, Value>, String> {
+        let path = &self.machine;
+        let text = std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
+        let json: Value = serde_json::from_str(&text).map_err(|e| format!("{}: {e}", path.display()))?;
+        let definition = match json.get("machine") {
+            Some(m) if json.get("states").is_none() => m.clone(),
+            _ => json,
+        };
+        let refs = Machine::<Value, Value>::references(&definition).map_err(|e| format!("{}: {e}", path.display()))?;
+        let mut needed: Vec<String> = Vec::new();
+        for (kind, list) in
+            [("guard", &refs.guards), ("action", &refs.actions), ("delay", &refs.delays), ("actor", &refs.actors)]
+        {
+            for r in list {
+                needed.push(format!("{kind} \"{}\" at {}", r.name, r.path));
+            }
+        }
+        if !needed.is_empty() {
+            return Err(format!(
+                "{}: the machine needs Rust implementations ({}); run it with xstate_redpanda::kafka::Service::start in a binary of your own",
+                path.display(),
+                needed.join(", ")
+            ));
+        }
+        Machine::from_json(&definition, &Registry::new()).map_err(|e| format!("{}: {e}", path.display()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn write(dir: &Path, name: &str, text: &str) -> PathBuf {
+        let p = dir.join(name);
+        std::fs::write(&p, text).unwrap();
+        p
+    }
+
+    #[test]
+    fn loads_config_and_machine() {
+        let dir = std::env::temp_dir().join(format!("xstate-config-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        write(&dir, "m.json", r#"{ "machine": { "id": "m", "initial": "a", "states": { "a": {} } }, "schemas": {} }"#);
+        let path = write(
+            &dir,
+            "c.json",
+            r#"{ "machine": "m.json", "bootstrapServers": "b:9092", "groupId": "g",
+                 "topics": { "input": "i", "output": "o", "changelog": "c" },
+                 "workers": 3, "codec": "json", "batchLingerMs": 5, "client": { "linger.ms": 7 } }"#,
+        );
+        let config = FileConfig::load(&path).unwrap();
+        let service = config.service().unwrap();
+        assert_eq!(service.workers, 3);
+        assert_eq!(service.engine.codec, Codec::Json);
+        assert_eq!(service.batch_linger, Duration::from_millis(5));
+        assert_eq!(service.client_config, vec![("linger.ms".to_owned(), "7".to_owned())]);
+        assert!(config.machine().is_ok());
+
+        write(
+            &dir,
+            "m.json",
+            r#"{ "id": "m", "initial": "a", "states": { "a": { "entry": [{ "type": "track" }] } } }"#,
+        );
+        let err = config.machine().err().expect("rejected");
+        assert!(err.contains("action \"track\""), "{err}");
+        let bad = write(
+            &dir,
+            "bad.json",
+            r#"{ "machine": "m.json", "bootstrapServers": "b", "groupId": "g", "topics": { "input": "i", "output": "o", "changelog": "c" }, "typo": 1 }"#,
+        );
+        assert!(FileConfig::load(&bad).unwrap_err().contains("typo"));
+        std::fs::remove_dir_all(&dir).ok();
+    }
+}

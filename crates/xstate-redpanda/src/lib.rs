@@ -15,9 +15,13 @@
 //! [`engine`] is deterministic and has no Kafka dependency.
 
 pub mod codec;
+#[cfg(feature = "kafka")]
+pub mod config;
 pub mod engine;
 #[cfg(feature = "kafka")]
 pub mod kafka;
+pub mod metrics;
 
 pub use codec::Codec;
 pub use engine::{DeadLetter, Emitted, EngineConfig, Output, Partition};
+pub use metrics::{Metrics, MetricsSnapshot};

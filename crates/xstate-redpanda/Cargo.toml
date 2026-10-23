@@ -11,7 +11,7 @@ publish = false
 [features]
 default = []
 # The Kafka driver (librdkafka, built from source).
-kafka = ["dep:rdkafka"]
+kafka = ["dep:rdkafka", "dep:ctrlc"]
 
 [dependencies]
 xstate-rt = { path = "../xstate-rt" }
@@ -19,6 +19,7 @@ serde.workspace = true
 serde_json.workspace = true
 rmp-serde = "1.3"
 rdkafka = { version = "0.39", default-features = false, optional = true }
+ctrlc = { version = "3.5", optional = true, features = ["termination"] }
 
 [dev-dependencies]
 criterion = { version = "0.8", default-features = false }
@@ -26,6 +27,10 @@ criterion = { version = "0.8", default-features = false }
 [[bench]]
 name = "engine"
 harness = false
+
+[[bin]]
+name = "xstate-redpanda"
+required-features = ["kafka"]
 
 [[example]]
 name = "mock_throughput"

@@ -42,6 +42,7 @@ use serde::Serialize;
 use xstate_rt::{EventType, Machine};
 
 use crate::engine::{EngineConfig, Output, Partition};
+use crate::metrics::{Metrics, MetricsSnapshot};
 
 /// How the service connects and batches.
 #[derive(Debug, Clone)]
@@ -143,6 +144,7 @@ pub fn clock_ms() -> u64 {
 pub struct Service {
     stop: Arc<AtomicBool>,
     workers: Vec<JoinHandle<Result<()>>>,
+    metrics: Arc<Metrics>,
 }
 
 impl Service {
@@ -154,16 +156,27 @@ impl Service {
     {
         let config = Arc::new(config);
         let stop = Arc::new(AtomicBool::new(false));
+        let metrics = Arc::new(Metrics::new(config.workers.max(1)));
         let workers = (0..config.workers.max(1))
             .map(|i| {
-                let (config, machine, stop) = (config.clone(), machine.clone(), stop.clone());
+                let (config, machine, stop, metrics) = (config.clone(), machine.clone(), stop.clone(), metrics.clone());
                 std::thread::Builder::new()
                     .name(format!("xstate-worker-{i}"))
-                    .spawn(move || Worker::new(i, &config, machine)?.run(&stop))
+                    .spawn(move || Worker::new(i, &config, machine, metrics)?.run(&stop))
                     .map_err(|e| ServiceError(format!("spawning a worker failed: {e}")))
             })
             .collect::<Result<Vec<_>>>()?;
-        Ok(Self { stop, workers })
+        Ok(Self { stop, workers, metrics })
+    }
+
+    /// The service's counters so far.
+    pub fn metrics(&self) -> MetricsSnapshot {
+        self.metrics.snapshot()
+    }
+
+    /// The shared counters, for exporting them while the service runs.
+    pub fn metrics_handle(&self) -> Arc<Metrics> {
+        self.metrics.clone()
     }
 
     /// Whether every worker is still running.
@@ -191,6 +204,8 @@ impl Service {
 }
 
 struct Worker<'a, C, E> {
+    index: usize,
+    metrics: Arc<Metrics>,
     config: &'a ServiceConfig,
     machine: Arc<Machine<C, E>>,
     consumer: BaseConsumer,
@@ -205,7 +220,12 @@ where
     C: Serialize + DeserializeOwned + Clone + Send + Sync + 'static,
     E: EventType + Send + Sync,
 {
-    fn new(index: usize, config: &'a ServiceConfig, machine: Arc<Machine<C, E>>) -> Result<Self> {
+    fn new(
+        index: usize,
+        config: &'a ServiceConfig,
+        machine: Arc<Machine<C, E>>,
+        metrics: Arc<Metrics>,
+    ) -> Result<Self> {
         let consumer: BaseConsumer = config
             .client()
             .set("group.id", &config.group_id)
@@ -221,13 +241,14 @@ where
             .create()?;
         producer.init_transactions(config.request_timeout)?;
         let restorer = restore_consumer(config)?;
-        Ok(Self { config, machine, consumer, producer, restorer, partitions: HashMap::new() })
+        Ok(Self { index, metrics, config, machine, consumer, producer, restorer, partitions: HashMap::new() })
     }
 
     fn run(mut self, stop: &AtomicBool) -> Result<()> {
         while !stop.load(Ordering::Relaxed) {
             if let Err(e) = self.batch() {
                 debug(|| format!("batch failed: {e}"));
+                self.metrics.aborted();
                 // Start over from the last committed state.
                 let _ = self.producer.abort_transaction(self.config.request_timeout);
                 self.partitions.clear();
@@ -276,6 +297,7 @@ where
             if !self.partitions.contains_key(&partition) {
                 // Assigned during this poll.
                 let restored = restore_with(&self.restorer, config, &self.machine, &[partition])?;
+                self.metrics.restored(1, restored.values().map(|p| p.len() as u64).sum());
                 self.partitions.extend(restored);
             }
             let key = message.key().map(|k| String::from_utf8_lossy(k).into_owned());
@@ -303,18 +325,24 @@ where
                 outputs.iter().map(|o| o.0).collect::<Vec<_>>()
             )
         });
-        let result = self.commit(outputs, offsets);
+        let count = |f: fn(&Output) -> usize| outputs.iter().map(|(_, o)| f(o) as u64).sum::<u64>();
+        let (emitted, dead, changelog) =
+            (count(|o| o.emitted.len()), count(|o| o.dead_letters.len()), count(|o| o.changelog.len()));
+        let committing = std::time::Instant::now();
+        self.commit(outputs, offsets)?;
+        let micros = committing.elapsed().as_micros() as u64;
+        self.metrics.committed(polled as u64, emitted, dead, changelog, micros);
+        self.metrics.set_actors(self.index, self.partitions.values().map(|p| p.len() as u64).sum());
         debug(|| format!("committed after {:?}", started.elapsed()));
-        result
+        Ok(())
     }
 
     fn restore(&mut self, partitions: &[i32]) -> Result<()> {
         let started = std::time::Instant::now();
         let restored = restore_with(&self.restorer, self.config, &self.machine, partitions)?;
-        debug(|| {
-            let actors: usize = restored.values().map(Partition::len).sum();
-            format!("restored partitions {partitions:?} ({actors} actors) in {:?}", started.elapsed())
-        });
+        let actors: usize = restored.values().map(Partition::len).sum();
+        self.metrics.restored(partitions.len() as u64, actors as u64);
+        debug(|| format!("restored partitions {partitions:?} ({actors} actors) in {:?}", started.elapsed()));
         self.partitions.extend(restored);
         Ok(())
     }
