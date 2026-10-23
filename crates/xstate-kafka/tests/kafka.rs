@@ -266,3 +266,39 @@ fn restores_from_local_checkpoints() {
     assert!(third.restored_records >= 62, "{third:?}");
     std::fs::remove_dir_all(&dir).ok();
 }
+
+#[test]
+fn a_failed_commit_discards_the_batch_behind_it() {
+    use rdkafka::types::{RDKafkaApiKey, RDKafkaRespErr};
+    let cluster = MockCluster::new(1).unwrap();
+    for topic in ["input", "output", "changelog", "dead"] {
+        cluster.create_topic(topic, PARTITIONS, 1).unwrap();
+    }
+    let bootstrap = cluster.bootstrap_servers();
+    let keys: Vec<String> = (0..200).map(|i| format!("k{i}")).collect();
+    let next = r#"{"type":"next"}"#;
+    produce(&bootstrap, &keys.iter().map(|k| (Some(k.as_str()), next)).collect::<Vec<_>>());
+    // The first transaction fails when it commits its offsets (abortably),
+    // while the next batch is already being processed behind it. The mock
+    // never stores transactional offsets, so this only works for the first
+    // transaction: the rewind goes back to the beginning.
+    cluster.request_errors(
+        RDKafkaApiKey::TxnOffsetCommit,
+        &[RDKafkaRespErr::RD_KAFKA_RESP_ERR_TOPIC_AUTHORIZATION_FAILED],
+    );
+    let mut c = config(&bootstrap);
+    c.workers = 1;
+    c.max_batch = 50;
+    let service = Service::start(c, machine()).unwrap();
+    let output = read(&bootstrap, "output", 200);
+    let m = service.metrics();
+    service.stop().unwrap();
+    assert_eq!(m.aborted_transactions, 1, "{m:?}");
+    assert_eq!(m.records, 200, "{m:?}");
+    // Every key reached s1 exactly once: nothing of the aborted transaction
+    // or of the discarded batch behind it is visible or applied twice.
+    assert_eq!(output.len(), 200, "{output:?}");
+    let by_key = states(&output);
+    assert_eq!(by_key.len(), 200);
+    assert!(by_key.values().all(|s| s == &vec!["s1".to_owned()]), "{by_key:?}");
+}

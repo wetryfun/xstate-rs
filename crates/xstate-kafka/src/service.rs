@@ -20,9 +20,17 @@
 //! transactional producer (`transactional.id` = prefix + worker index; with
 //! KIP-447 transactions, fencing follows the group generation). A partition's
 //! actors are restored from its changelog partition the first time a record
-//! of that partition arrives. When a transaction fails, the worker aborts
-//! it, forgets its partitions and rewinds to the committed offsets, so the
-//! batch is processed again from the last committed state.
+//! of that partition arrives.
+//!
+//! A worker's transactions are committed by its committer thread while the
+//! worker processes the next batch, which keeps growing until that commit is
+//! done (up to `max_batch`), so batch sizes follow the commit latency: small
+//! under light load, large under heavy load. One transaction is in flight
+//! at a time. When a transaction fails, the worker aborts it, discards the
+//! batch behind it, forgets its partitions and rewinds to the committed
+//! offsets, so everything uncommitted is processed again from the last
+//! committed state. A batch that writes checkpoints commits before the
+//! worker goes on, since a checkpoint holds the state right after a commit.
 //!
 //! With `state_dir` set, workers also write a local checkpoint of each
 //! partition (every live actor's changelog record and the changelog offset
@@ -75,11 +83,14 @@ pub struct ServiceConfig {
     pub workers: usize,
     /// `client.rack`, for follower fetching from the local replica.
     pub rack: Option<String>,
-    /// Records per transaction, at most.
+    /// Records per transaction, at most. A batch only grows this large
+    /// while the previous transaction is still committing (heavy load), so
+    /// a large limit costs no latency under light load.
     pub max_batch: usize,
-    /// How long a batch keeps collecting records after the first one, while
-    /// it is below `max_batch`. Longer batches amortize the transaction
-    /// commit; shorter ones lower latency.
+    /// How long a batch keeps collecting records after the first one when
+    /// no transaction is committing (it otherwise collects until the commit
+    /// is done). Longer batches amortize the transaction commit; shorter
+    /// ones lower latency.
     pub batch_linger: Duration,
     /// How long a worker waits for records when it has no due timer.
     pub poll_timeout: Duration,
@@ -114,7 +125,7 @@ impl ServiceConfig {
             effects_topic: None,
             workers: std::thread::available_parallelism().map_or(1, |n| n.get()),
             rack: None,
-            max_batch: 10_000,
+            max_batch: 50_000,
             batch_linger: Duration::from_millis(20),
             poll_timeout: Duration::from_millis(100),
             request_timeout: Duration::from_secs(30),
@@ -185,7 +196,7 @@ impl Service {
                 let (config, machine, stop, metrics) = (config.clone(), machine.clone(), stop.clone(), metrics.clone());
                 std::thread::Builder::new()
                     .name(format!("xstate-worker-{i}"))
-                    .spawn(move || Worker::new(i, &config, machine, metrics)?.run(&stop))
+                    .spawn(move || Worker::new(i, config, machine, metrics)?.run(&stop))
                     .map_err(|e| ServiceError(format!("spawning a worker failed: {e}")))
             })
             .collect::<Result<Vec<_>>>()?;
@@ -226,13 +237,17 @@ impl Service {
     }
 }
 
-struct Worker<'a, C, E> {
+struct Worker<C, E> {
     index: usize,
     metrics: Arc<Metrics>,
-    config: &'a ServiceConfig,
+    config: Arc<ServiceConfig>,
     machine: Arc<Machine<C, E>>,
     consumer: BaseConsumer,
-    producer: BaseProducer,
+    producer: Arc<BaseProducer>,
+    /// Commits a batch's transaction while the worker runs the next batch.
+    committer: Committer,
+    /// The batch being committed, if any.
+    in_flight: Option<InFlight>,
     /// Reads changelog partitions when they are assigned; reused.
     restorer: BaseConsumer,
     partitions: HashMap<i32, Partition<C, E>>,
@@ -242,14 +257,25 @@ struct Worker<'a, C, E> {
     changed: HashSet<i32>,
 }
 
-impl<'a, C, E> Worker<'a, C, E>
+/// A batch handed to the committer: what to count once it commits.
+struct InFlight {
+    records: u64,
+    emitted: u64,
+    dead_letters: u64,
+    changelog: u64,
+    effects: u64,
+    /// When the batch started, for the debug trace.
+    started: Instant,
+}
+
+impl<C, E> Worker<C, E>
 where
     C: Serialize + DeserializeOwned + Clone + Send + Sync + 'static,
     E: EventType + Send + Sync,
 {
     fn new(
         index: usize,
-        config: &'a ServiceConfig,
+        config: Arc<ServiceConfig>,
         machine: Arc<Machine<C, E>>,
         metrics: Arc<Metrics>,
     ) -> Result<Self> {
@@ -267,7 +293,9 @@ where
             .set("enable.idempotence", "true")
             .create()?;
         producer.init_transactions(config.request_timeout)?;
-        let restorer = restore_consumer(config)?;
+        let producer = Arc::new(producer);
+        let restorer = restore_consumer(&config)?;
+        let committer = Committer::spawn(index, producer.clone(), config.clone())?;
         Ok(Self {
             index,
             metrics,
@@ -275,6 +303,8 @@ where
             machine,
             consumer,
             producer,
+            committer,
+            in_flight: None,
             restorer,
             partitions: HashMap::new(),
             checkpointed: HashMap::new(),
@@ -283,22 +313,33 @@ where
     }
 
     fn run(mut self, stop: &AtomicBool) -> Result<()> {
-        while !stop.load(Ordering::Relaxed) {
-            if let Err(e) = self.batch() {
+        loop {
+            let stopping = stop.load(Ordering::Relaxed);
+            // The last round only completes the batch in flight.
+            let result = if stopping { self.settle() } else { self.batch() };
+            if let Err(e) = result {
                 debug(|| format!("batch failed: {e}"));
                 self.metrics.aborted();
                 // Start over from the last committed state.
-                let _ = self.producer.abort_transaction(self.config.request_timeout);
+                self.discard_in_flight();
+                abort(&self.producer, &self.config)?;
                 self.forget(|_| false);
                 self.rewind()?;
                 if is_fatal(&e) {
                     return Err(e);
                 }
+                if stopping {
+                    break;
+                }
+                continue;
+            }
+            if stopping {
+                // A clean stop leaves exact checkpoints: nothing to replay.
+                let due = self.checkpoints_due(true);
+                self.write_checkpoints(due, &HashSet::new());
+                break;
             }
         }
-        // A clean stop leaves exact checkpoints: nothing to replay.
-        let due = self.checkpoints_due(true);
-        self.write_checkpoints(due, &HashSet::new());
         // Leave the group now, so the partitions move to other workers
         // without waiting for this member's session to time out.
         self.consumer.unsubscribe();
@@ -309,13 +350,16 @@ where
     /// Polls up to `max_batch` records, runs them and due timers, and
     /// commits the result.
     fn batch(&mut self) -> Result<()> {
-        let config = self.config;
+        let config_arc = self.config.clone();
+        let config: &ServiceConfig = &config_arc;
         // Restore newly assigned partitions together, and forget revoked ones.
         let assigned: HashSet<i32> =
             self.consumer.assignment()?.elements_for_topic(&config.input_topic).iter().map(|e| e.partition()).collect();
         self.forget(|p| assigned.contains(&p));
         let missing: Vec<i32> = assigned.iter().copied().filter(|p| !self.partitions.contains_key(p)).collect();
         if !missing.is_empty() {
+            // Restore what is committed, including the batch in flight.
+            self.settle()?;
             self.restore(&missing)?;
         }
         let mut offsets: HashMap<i32, i64> = HashMap::new();
@@ -330,9 +374,26 @@ where
         let mut polled = 0;
         // Where the batch's time goes, for the debug trace.
         let (mut polling, mut handling) = (Duration::ZERO, Duration::ZERO);
+        // While a batch is being committed, this one keeps growing until the
+        // commit is done (or the batch is full): batches follow the commit
+        // latency. Polls are short then, to notice the commit promptly.
+        let mut committed: Option<Result<u64>> = None;
         while polled < config.max_batch {
+            if self.in_flight.is_some() && committed.is_none() {
+                committed = self.committer.try_result();
+                if committed.is_some() && polled > 0 {
+                    break;
+                }
+            }
+            let waiting_for_commit = self.in_flight.is_some() && committed.is_none();
+            let poll_timeout = if waiting_for_commit { Duration::from_millis(2) } else { timeout };
             let poll_started = Instant::now();
-            let Some(message) = self.consumer.poll(timeout) else { break };
+            let Some(message) = self.consumer.poll(poll_timeout) else {
+                if waiting_for_commit {
+                    continue;
+                }
+                break;
+            };
             polling += poll_started.elapsed();
             polled += 1;
             let first = *first.get_or_insert_with(Instant::now);
@@ -340,6 +401,14 @@ where
             let message = message?;
             let partition = message.partition();
             if !self.partitions.contains_key(&partition) {
+                // Restore what is committed, including the batch in flight.
+                if self.in_flight.is_some() {
+                    let result = match committed.take() {
+                        Some(r) => r,
+                        None => self.committer.wait_result(),
+                    };
+                    finish_in_flight(&mut self.in_flight, &self.metrics, result)?;
+                }
                 // Assigned during this poll.
                 restore_into(
                     &self.restorer,
@@ -359,6 +428,16 @@ where
             offsets.insert(partition, message.offset());
         }
 
+        // A rebalance during the polls may have revoked partitions: their
+        // records are not this worker's to commit any more (the new owner
+        // starts from the committed offset).
+        let assigned: HashSet<i32> =
+            self.consumer.assignment()?.elements_for_topic(&config.input_topic).iter().map(|e| e.partition()).collect();
+        if self.partitions.keys().any(|p| !assigned.contains(p)) {
+            self.forget(|p| assigned.contains(&p));
+            offsets.retain(|p, _| assigned.contains(p));
+        }
+
         let flush_started = Instant::now();
         let now = clock_ms();
         let mut outputs: Vec<(i32, Output)> = Vec::new();
@@ -368,6 +447,15 @@ where
             if !out.is_empty() {
                 outputs.push((id, out));
             }
+        }
+        // The batch in flight must have committed before this one is handed
+        // over (one transaction at a time; a failure discards both).
+        if self.in_flight.is_some() {
+            let result = match committed.take() {
+                Some(r) => r,
+                None => self.committer.wait_result(),
+            };
+            self.complete_in_flight(result)?;
         }
         if outputs.is_empty() && offsets.is_empty() {
             // Everything is committed: checkpoints now cover the whole changelog.
@@ -392,21 +480,47 @@ where
         );
         let touched: HashSet<i32> = outputs.iter().filter(|(_, o)| !o.changelog.is_empty()).map(|(p, _)| *p).collect();
         self.changed.extend(&touched);
-        let checkpoints = self.checkpoints_due(false);
-        let committing = Instant::now();
-        self.commit(outputs, offsets)?;
-        let micros = committing.elapsed().as_micros() as u64;
-        self.metrics.committed(polled as u64, emitted, dead, changelog, effects, micros);
+        let group = self.consumer.group_metadata().ok_or_else(|| ServiceError("no consumer group metadata".into()))?;
+        let in_flight = InFlight { records: polled as u64, emitted, dead_letters: dead, changelog, effects, started };
         self.metrics.set_actors(self.index, self.partitions.values().map(|p| p.len() as u64).sum());
-        self.write_checkpoints(checkpoints, &touched);
-        debug(|| format!("committed after {:?}", started.elapsed()));
+        // Checkpoints need the state right after a commit, so a batch that
+        // writes checkpoints commits before the worker goes on.
+        let checkpoints = self.checkpoints_due(false);
+        self.committer.submit(Job { outputs, offsets, group })?;
+        self.in_flight = Some(in_flight);
+        if !checkpoints.is_empty() {
+            self.settle()?;
+            self.write_checkpoints(checkpoints, &touched);
+        }
         Ok(())
+    }
+
+    /// Waits for the batch in flight, if any, to commit.
+    fn settle(&mut self) -> Result<()> {
+        if self.in_flight.is_none() {
+            return Ok(());
+        }
+        let result = self.committer.wait_result();
+        self.complete_in_flight(result)
+    }
+
+    /// Counts the batch in flight once its commit result is known.
+    fn complete_in_flight(&mut self, result: Result<u64>) -> Result<()> {
+        finish_in_flight(&mut self.in_flight, &self.metrics, result)
+    }
+
+    /// Forgets the batch in flight after a failure, once the committer is
+    /// done with it.
+    fn discard_in_flight(&mut self) {
+        if self.in_flight.take().is_some() {
+            let _ = self.committer.wait_result();
+        }
     }
 
     fn restore(&mut self, partitions: &[i32]) -> Result<()> {
         restore_into(
             &self.restorer,
-            self.config,
+            &self.config,
             &self.machine,
             &self.metrics,
             &mut self.partitions,
@@ -471,52 +585,6 @@ where
         }
     }
 
-    fn commit(&self, outputs: Vec<(i32, Output)>, offsets: HashMap<i32, i64>) -> Result<()> {
-        let config = self.config;
-        let producer = &self.producer;
-        producer.begin_transaction()?;
-        for (partition, out) in &outputs {
-            for e in &out.emitted {
-                let payload = e.event.to_string();
-                send(producer, BaseRecord::to(&config.output_topic).key(&e.key).payload(&payload))?;
-            }
-            if let Some(topic) = &config.effects_topic {
-                for e in &out.effects {
-                    let payload = e.effect.to_string();
-                    send(producer, BaseRecord::to(topic).key(&e.key).payload(&payload))?;
-                }
-            }
-            for (key, record) in &out.changelog {
-                let mut r = BaseRecord::<str, [u8]>::to(&config.changelog_topic).partition(*partition).key(key);
-                if let Some(record) = record {
-                    r = r.payload(record);
-                }
-                send(producer, r)?;
-            }
-            if let Some(topic) = &config.dead_letter_topic {
-                for d in &out.dead_letters {
-                    let headers = OwnedHeaders::new().insert(Header { key: "reason", value: Some(&d.reason) });
-                    let mut r = BaseRecord::<str, [u8]>::to(topic).payload(&d.payload).headers(headers);
-                    if let Some(key) = &d.key {
-                        r = r.key(key);
-                    }
-                    send(producer, r)?;
-                }
-            }
-        }
-        if !offsets.is_empty() {
-            let mut tpl = TopicPartitionList::new();
-            for (&partition, &offset) in &offsets {
-                tpl.add_partition_offset(&config.input_topic, partition, Offset::Offset(offset + 1))?;
-            }
-            let group =
-                self.consumer.group_metadata().ok_or_else(|| ServiceError("no consumer group metadata".into()))?;
-            producer.send_offsets_to_transaction(&tpl, &group, config.request_timeout)?;
-        }
-        producer.commit_transaction(config.request_timeout)?;
-        Ok(())
-    }
-
     /// Moves every assigned partition back to its committed offset.
     fn rewind(&self) -> Result<()> {
         let committed = self.consumer.committed(self.config.request_timeout)?;
@@ -529,6 +597,166 @@ where
         }
         Ok(())
     }
+}
+
+/// Aborts the current transaction, if any. An abort that times out is
+/// still in progress and must be called again until it completes (any
+/// other transaction call fails meanwhile); "no transaction" is fine.
+fn abort(producer: &BaseProducer, config: &ServiceConfig) -> Result<()> {
+    // The abort waits for the delivery reports of the transaction's messages,
+    // and a `BaseProducer` only gets them when polled: poll meanwhile.
+    let aborting = AtomicBool::new(true);
+    std::thread::scope(|scope| {
+        scope.spawn(|| {
+            while aborting.load(Ordering::Relaxed) {
+                producer.poll(Duration::from_millis(10));
+            }
+        });
+        let result = abort_with_retries(producer, config);
+        aborting.store(false, Ordering::Relaxed);
+        result
+    })
+}
+
+fn abort_with_retries(producer: &BaseProducer, config: &ServiceConfig) -> Result<()> {
+    for _ in 0..10 {
+        match producer.abort_transaction(config.request_timeout) {
+            Ok(()) => return Ok(()),
+            Err(KafkaError::Transaction(e)) if e.is_retriable() => {
+                debug(|| format!("abort still in progress: {e}"));
+            }
+            Err(KafkaError::Transaction(e)) if e.is_fatal() => {
+                return Err(ServiceError(format!("aborting the transaction failed (fatal): {e}")));
+            }
+            Err(e) => {
+                debug(|| format!("nothing to abort: {e}"));
+                return Ok(());
+            }
+        }
+    }
+    Err(ServiceError("aborting the transaction timed out repeatedly (fatal)".into()))
+}
+
+/// Counts the batch in flight once its commit result is known (a function
+/// of the worker's fields, so it can run while a polled message borrows the
+/// consumer).
+fn finish_in_flight(in_flight: &mut Option<InFlight>, metrics: &Metrics, result: Result<u64>) -> Result<()> {
+    let b = in_flight.take().expect("a batch in flight");
+    let micros = result?;
+    metrics.committed(b.records, b.emitted, b.dead_letters, b.changelog, b.effects, micros);
+    debug(|| format!("committed after {:?}", b.started.elapsed()));
+    Ok(())
+}
+
+/// A batch's transaction: its output, changelog records and dead letters,
+/// and the input offsets after it.
+struct Job {
+    outputs: Vec<(i32, Output)>,
+    offsets: HashMap<i32, i64>,
+    group: rdkafka::consumer::ConsumerGroupMetadata,
+}
+
+/// A worker's committer thread: runs one transaction at a time, so the
+/// worker can process the next batch meanwhile. Results come back in order,
+/// as the commit time in microseconds.
+struct Committer {
+    jobs: Option<std::sync::mpsc::SyncSender<Job>>,
+    results: std::sync::mpsc::Receiver<Result<u64>>,
+    thread: Option<JoinHandle<()>>,
+}
+
+impl Committer {
+    fn spawn(index: usize, producer: Arc<BaseProducer>, config: Arc<ServiceConfig>) -> Result<Self> {
+        let (jobs, inbox) = std::sync::mpsc::sync_channel::<Job>(1);
+        let (outbox, results) = std::sync::mpsc::sync_channel(1);
+        let thread = std::thread::Builder::new()
+            .name(format!("xstate-commit-{index}"))
+            .spawn(move || {
+                for job in inbox {
+                    let started = Instant::now();
+                    let result =
+                        commit_transaction(&producer, &config, job).map(|()| started.elapsed().as_micros() as u64);
+                    if outbox.send(result).is_err() {
+                        break;
+                    }
+                }
+            })
+            .map_err(|e| ServiceError(format!("spawning a committer failed: {e}")))?;
+        Ok(Self { jobs: Some(jobs), results, thread: Some(thread) })
+    }
+
+    fn submit(&self, job: Job) -> Result<()> {
+        let jobs = self.jobs.as_ref().expect("running");
+        jobs.send(job).map_err(|_| ServiceError("the committer stopped".into()))
+    }
+
+    /// The result of the transaction in flight, if it is done.
+    fn try_result(&self) -> Option<Result<u64>> {
+        match self.results.try_recv() {
+            Ok(r) => Some(r),
+            Err(std::sync::mpsc::TryRecvError::Empty) => None,
+            Err(std::sync::mpsc::TryRecvError::Disconnected) => Some(Err(ServiceError("the committer stopped".into()))),
+        }
+    }
+
+    /// Waits for the result of the transaction in flight.
+    fn wait_result(&self) -> Result<u64> {
+        self.results.recv().unwrap_or_else(|_| Err(ServiceError("the committer stopped".into())))
+    }
+}
+
+impl Drop for Committer {
+    fn drop(&mut self) {
+        self.jobs.take();
+        if let Some(thread) = self.thread.take() {
+            let _ = thread.join();
+        }
+    }
+}
+
+/// Commits one batch: emitted events, external work, changelog records and
+/// dead letters, and the input offsets, in one transaction.
+fn commit_transaction(producer: &BaseProducer, config: &ServiceConfig, job: Job) -> Result<()> {
+    let Job { outputs, offsets, group } = job;
+    producer.begin_transaction()?;
+    for (partition, out) in &outputs {
+        for e in &out.emitted {
+            let payload = e.event.to_string();
+            send(producer, BaseRecord::to(&config.output_topic).key(&e.key).payload(&payload))?;
+        }
+        if let Some(topic) = &config.effects_topic {
+            for e in &out.effects {
+                let payload = e.effect.to_string();
+                send(producer, BaseRecord::to(topic).key(&e.key).payload(&payload))?;
+            }
+        }
+        for (key, record) in &out.changelog {
+            let mut r = BaseRecord::<str, [u8]>::to(&config.changelog_topic).partition(*partition).key(key);
+            if let Some(record) = record {
+                r = r.payload(record);
+            }
+            send(producer, r)?;
+        }
+        if let Some(topic) = &config.dead_letter_topic {
+            for d in &out.dead_letters {
+                let headers = OwnedHeaders::new().insert(Header { key: "reason", value: Some(&d.reason) });
+                let mut r = BaseRecord::<str, [u8]>::to(topic).payload(&d.payload).headers(headers);
+                if let Some(key) = &d.key {
+                    r = r.key(key);
+                }
+                send(producer, r)?;
+            }
+        }
+    }
+    if !offsets.is_empty() {
+        let mut tpl = TopicPartitionList::new();
+        for (&partition, &offset) in &offsets {
+            tpl.add_partition_offset(&config.input_topic, partition, Offset::Offset(offset + 1))?;
+        }
+        producer.send_offsets_to_transaction(&tpl, &group, config.request_timeout)?;
+    }
+    producer.commit_transaction(config.request_timeout)?;
+    Ok(())
 }
 
 /// Restores `partitions` into a worker's partition map (a function of the

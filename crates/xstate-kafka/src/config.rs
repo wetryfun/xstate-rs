@@ -9,7 +9,7 @@
 //!   "topics": { "input": "orders", "output": "orders-out", "changelog": "orders-changelog", "deadLetter": "orders-dead", "effects": "orders-effects" },
 //!   "workers": 4,
 //!   "rack": "rack-a",
-//!   "maxBatch": 10000, "batchLingerMs": 20, "pollTimeoutMs": 100, "requestTimeoutMs": 30000,
+//!   "maxBatch": 50000, "batchLingerMs": 20, "pollTimeoutMs": 100, "requestTimeoutMs": 30000,
 //!   "transactionalId": "orders",
 //!   "codec": "messagepack",
 //!   "evictFinal": true,

@@ -4,7 +4,7 @@
 //! output topic.
 //!
 //!   cargo run --release -p xstate-kafka --features kafka --example mock_throughput -- \
-//!       [events=200000] [keys=10000] [partitions=8] [workers=4] [max_batch=10000]
+//!       [events=200000] [keys=10000] [partitions=8] [workers=4] [max_batch=50000]
 //!
 //! The mock cluster has no network or disk, so this measures the client
 //! side: the actors, encoding, and librdkafka's produce/consume/transaction
@@ -34,7 +34,7 @@ fn arg(i: usize, default: usize) -> usize {
 
 fn main() {
     let (events, keys, partitions, workers, max_batch) =
-        (arg(1, 200_000), arg(2, 10_000), arg(3, 8), arg(4, 4), arg(5, 10_000));
+        (arg(1, 200_000), arg(2, 10_000), arg(3, 8), arg(4, 4), arg(5, 50_000));
     let definition = json!({
         "id": "order",
         "initial": "open",
