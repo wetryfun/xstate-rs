@@ -102,6 +102,17 @@ pub(crate) enum EnqOp {
     Cancel(String),
     Log(Vec<Value>),
     Action { name: String, params: Value },
+    SendTo { to: SendTarget, event: Value, delay: Option<u64>, id: Option<String> },
+    Stop(String),
+}
+
+/// Who `enq.sendTo` sends to.
+#[derive(Debug, Clone)]
+pub(crate) enum SendTarget {
+    /// A child, by id (resolved when the operation runs).
+    Child(String),
+    /// The actor's parent (none for the root).
+    Parent,
 }
 
 impl Enq {
@@ -134,6 +145,37 @@ impl Enq {
     /// with these params (an effect, as for a `{ type, params }` action).
     pub fn action(&self, name: &str, params: Value) {
         self.ops.borrow_mut().push(EnqOp::Action { name: name.to_owned(), params });
+    }
+
+    /// `enq.sendTo(children[child], event)`: a missing child makes the event
+    /// a dead letter (`@xstate.deadLetter`, reason `missingTarget`).
+    pub fn send_to(&self, child: &str, event: Value) {
+        self.push_send(SendTarget::Child(child.to_owned()), event, None, None);
+    }
+
+    /// `enq.sendTo(children[child], event, { delay, id })`: a logical timer
+    /// with the child as its target, cancellable by `id`.
+    pub fn send_to_delayed(&self, child: &str, event: Value, delay_ms: u64, id: Option<&str>) {
+        self.push_send(SendTarget::Child(child.to_owned()), event, Some(delay_ms), id);
+    }
+
+    /// `enq.sendTo(self._parent, event)` (a dead letter from the root).
+    pub fn send_parent(&self, event: Value) {
+        self.push_send(SendTarget::Parent, event, None, None);
+    }
+
+    /// `enq.sendTo(self._parent, event, { delay, id })`.
+    pub fn send_parent_delayed(&self, event: Value, delay_ms: u64, id: Option<&str>) {
+        self.push_send(SendTarget::Parent, event, Some(delay_ms), id);
+    }
+
+    /// `enq.stop(children[child])` (nothing when there is no such child).
+    pub fn stop(&self, child: &str) {
+        self.ops.borrow_mut().push(EnqOp::Stop(child.to_owned()));
+    }
+
+    fn push_send(&self, to: SendTarget, event: Value, delay: Option<u64>, id: Option<&str>) {
+        self.ops.borrow_mut().push(EnqOp::SendTo { to, event, delay, id: id.map(str::to_owned) });
     }
 
     pub(crate) fn take(&self) -> Vec<EnqOp> {

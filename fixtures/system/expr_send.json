@@ -1,0 +1,190 @@
+{
+  "notes": "enq.sendTo from Rust: to a child (immediately and delayed, the delayed one a logical timer with a target), to a missing child and to a root's missing parent (dead letters), from a child to its parent; enq.stop.",
+  "logic": [
+    {
+      "name": "kid",
+      "machine": {
+        "id": "kid",
+        "context": {
+          "count": 0
+        },
+        "initial": "on",
+        "states": {
+          "on": {
+            "on": {
+              "PING": {
+                "context": {
+                  "count": {
+                    "@code": "countPlusOne",
+                    "@lang": "rust"
+                  }
+                },
+                "actions": [
+                  {
+                    "@code": "replyParent",
+                    "@lang": "rust"
+                  }
+                ]
+              },
+              "STOP": {
+                "target": "off"
+              }
+            }
+          },
+          "off": {
+            "type": "final"
+          }
+        }
+      }
+    },
+    {
+      "name": "par",
+      "machine": {
+        "id": "par",
+        "context": {
+          "pongs": 0
+        },
+        "initial": "idle",
+        "states": {
+          "idle": {
+            "invoke": {
+              "id": "c",
+              "src": "kid"
+            },
+            "on": {
+              "PING": {
+                "actions": [
+                  {
+                    "@code": "sendPing",
+                    "@lang": "rust"
+                  }
+                ]
+              },
+              "LATER": {
+                "actions": [
+                  {
+                    "@code": "sendPingLater",
+                    "@lang": "rust"
+                  }
+                ]
+              },
+              "UNSEND": {
+                "actions": [
+                  {
+                    "type": "@xstate.cancel",
+                    "id": "ping"
+                  }
+                ]
+              },
+              "MISSING": {
+                "actions": [
+                  {
+                    "@code": "sendMissing",
+                    "@lang": "rust"
+                  }
+                ]
+              },
+              "ORPHAN": {
+                "actions": [
+                  {
+                    "@code": "replyParent",
+                    "@lang": "rust"
+                  }
+                ]
+              },
+              "KILL": {
+                "actions": [
+                  {
+                    "@code": "stopChild",
+                    "@lang": "rust"
+                  }
+                ]
+              },
+              "PONG": {
+                "context": {
+                  "pongs": {
+                    "@code": "pongsPlusOne",
+                    "@lang": "rust"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "actors": [
+        "kid"
+      ]
+    }
+  ],
+  "root": "par",
+  "init": {},
+  "steps": [
+    {
+      "send": "par",
+      "event": {
+        "type": "PING"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "LATER"
+      }
+    },
+    {
+      "advance": 50
+    },
+    {
+      "advance": 100
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "LATER"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "UNSEND"
+      }
+    },
+    {
+      "advance": 300
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "MISSING"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "ORPHAN"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "LATER"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "KILL"
+      }
+    },
+    {
+      "advance": 500
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "PING"
+      }
+    }
+  ]
+}

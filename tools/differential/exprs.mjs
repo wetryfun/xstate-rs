@@ -47,6 +47,23 @@ export const exprs = {
   choosePick: ({ context }) => (context.count % 2 === 0 ? { target: 'even' } : { target: 'odd', context: { picked: context.count } }),
   pickEvenAlways: ({ context }) => (context.count % 2 === 0 ? { target: 'even' } : undefined),
   doneToEven: ({ event }) => ({ target: 'even', context: { result: event.output } }),
+  // Sending and stopping.
+  sendPing: ({ enq }) => {
+    enq.sendTo('c', { type: 'PING' });
+  },
+  sendPingLater: ({ enq }) => {
+    enq.sendTo('c', { type: 'PING' }, { delay: 100, id: 'ping' });
+  },
+  sendMissing: ({ enq }) => {
+    enq.sendTo('nope', { type: 'PING' });
+  },
+  replyParent: ({ enq, self }) => {
+    enq.sendTo(self._parent, { type: 'PONG' });
+  },
+  stopChild: ({ enq, children }) => {
+    enq.stop(children.c);
+  },
+  pongsPlusOne: ({ context }) => context.pongs + 1,
   // State input.
   stateInput: ({ input }) => input ?? null,
   hasInput: ({ input }) => input !== undefined,

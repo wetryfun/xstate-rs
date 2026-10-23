@@ -28,7 +28,7 @@ use serde_json::{json, Map, Value};
 use crate::core::{self, Host, MicrostepResult, Nid, RegionOutput, Resolved, Resolver, TRef, Tid};
 use crate::event::{Ev, EventType, AFTER, DONE_STATE};
 use crate::machine::*;
-use crate::registry::{ActionFn, Enq, EnqOp, ExprArgs, GuardArgs};
+use crate::registry::{ActionFn, Enq, EnqOp, ExprArgs, GuardArgs, SendTarget};
 use crate::system::{
     has_builtin_timer_identity, ActorRef, AfterDelay, AllocateOptions, AnySnapshot, Context, Effect, EffectKind,
     EffectType, ExternalSpec, Logic, Status, SystemError, TimerKey, Transition,
@@ -41,6 +41,8 @@ pub(crate) struct LogicalTimer<E> {
     pub seq: Option<u64>,
     pub delay: u64,
     pub event: TimerEv<E>,
+    /// A delayed `sendTo`'s target (`None`: a raise to the actor itself).
+    pub target: Option<Box<ActorRef>>,
 }
 
 /// A logical timer's event. `after` events (most timers) are kept without
@@ -201,9 +203,9 @@ impl<E: EventType> LogicalTimer<E> {
             m.insert("seq".into(), json!(seq));
         }
         m.insert("delay".into(), json!(self.delay));
-        m.insert("type".into(), json!("@xstate.raise"));
+        m.insert("type".into(), json!(if self.target.is_some() { "@xstate.sendTo" } else { "@xstate.raise" }));
         m.insert("event".into(), self.event.to_json());
-        m.insert("target".into(), json!("self"));
+        m.insert("target".into(), self.target.as_ref().map_or_else(|| json!("self"), |t| t.to_json()));
         Value::Object(m)
     }
 }
@@ -331,7 +333,12 @@ enum Op<E> {
         event: Ev<E>,
         id: Option<String>,
         delay: u64,
+        /// For a delayed `sendTo`: its target.
+        target: Option<ActorRef>,
     },
+    SendTo(ActorRef, Value),
+    /// An event whose target is missing (`@xstate.deadLetter`).
+    DeadLetter(Value),
     Cancel(TimerKey),
     Log(Vec<Value>),
     Emit(Value),
@@ -582,12 +589,15 @@ impl<E: EventType> Serialize for TimerData<'_, E> {
             map.serialize_entry("seq", &seq)?;
         }
         map.serialize_entry("delay", &t.delay)?;
-        map.serialize_entry("type", "@xstate.raise")?;
+        map.serialize_entry("type", if t.target.is_some() { "@xstate.sendTo" } else { "@xstate.raise" })?;
         match &t.event {
             TimerEv::After { delay, state_id } => map.serialize_entry("event", &AfterView(delay, state_id))?,
             TimerEv::Ev(e) => map.serialize_entry("event", &EvView(e))?,
         }
-        map.serialize_entry("target", "self")?;
+        match &t.target {
+            Some(target) => map.serialize_entry("target", &target.to_json())?,
+            None => map.serialize_entry("target", "self")?,
+        }
         map.end()
     }
 }
@@ -974,7 +984,7 @@ where
                     let event = self.m.raise_events[*event as usize].clone();
                     match delay {
                         None => out.internal.push(event),
-                        Some(delay) => out.ops.push(Op::Raise { event, id: id.clone(), delay: *delay }),
+                        Some(delay) => out.ops.push(Op::Raise { event, id: id.clone(), delay: *delay, target: None }),
                     }
                 }
                 Action::RaiseExpr { event, id, delay } => {
@@ -984,7 +994,7 @@ where
                     let event = Ev::from_json(value).expect("an object with a string type");
                     match delay {
                         None => out.internal.push(event),
-                        Some(delay) => out.ops.push(Op::Raise { event, id: id.clone(), delay: *delay }),
+                        Some(delay) => out.ops.push(Op::Raise { event, id: id.clone(), delay: *delay, target: None }),
                     }
                 }
                 Action::Cancel(id) => out.ops.push(Op::Cancel(TimerKey::Id(id.clone()))),
@@ -1130,7 +1140,7 @@ where
                     let event = Ev::from_json(event).expect("an object with a string type");
                     match delay {
                         None => out.internal.push(event),
-                        Some(delay) => out.ops.push(Op::Raise { event, id, delay }),
+                        Some(delay) => out.ops.push(Op::Raise { event, id, delay, target: None }),
                     }
                 }
                 EnqOp::Emit(event) => {
@@ -1147,6 +1157,31 @@ where
                     let exec = factory(&params)
                         .map_err(|m| SystemError::Failed(format!("invalid params for action '{name}': {m}")))?;
                     out.ops.push(Op::CustomDyn { name, params, exec });
+                }
+                EnqOp::SendTo { to, event, delay, id } => {
+                    if !event.is_object() {
+                        return Err(SystemError::Failed("Only event objects may be used with sendTo".into()));
+                    }
+                    let target = match &to {
+                        SendTarget::Child(id) => self.st.children.get(id).cloned(),
+                        SendTarget::Parent => self.cx.parent_ref(),
+                    };
+                    match (target, delay) {
+                        (None, _) => out.ops.push(Op::DeadLetter(event)),
+                        (Some(target), None) => out.ops.push(Op::SendTo(target, event)),
+                        (Some(target), Some(delay)) => {
+                            let event = Ev::from_json(event.clone()).unwrap_or_else(|| Ev::Internal {
+                                event_type: Cow::Owned(String::new()),
+                                data: event.as_object().cloned().unwrap_or_default(),
+                            });
+                            out.ops.push(Op::Raise { event, id, delay, target: Some(target) });
+                        }
+                    }
+                }
+                EnqOp::Stop(id) => {
+                    if let Some(child) = self.st.children.get(&id) {
+                        out.ops.push(Op::Stop(child.clone()));
+                    }
                 }
             }
         }
@@ -1258,7 +1293,7 @@ where
     fn resolve_ops(&mut self, ops: Vec<Op<E>>) {
         for op in ops {
             match op {
-                Op::Raise { event, id, delay } => {
+                Op::Raise { event, id, delay, target } => {
                     let seq = if id.is_none() && !has_builtin_timer_identity(event.event_type()) {
                         let seq = self.st.next_timer_id;
                         self.st.next_timer_id += 1;
@@ -1266,7 +1301,8 @@ where
                     } else {
                         None
                     };
-                    let timer = LogicalTimer { id, seq, delay, event: TimerEv::new(event) };
+                    let timer =
+                        LogicalTimer { id, seq, delay, event: TimerEv::new(event), target: target.map(Box::new) };
                     let key = timer.key();
                     let timers = self.timers_mut();
                     match timers.iter_mut().find(|t| t.matches(&key)) {
@@ -1331,6 +1367,16 @@ where
                         exec: Some(action.exec.clone()),
                     }));
                 }
+                Op::SendTo(target, event) => self.effects.push(Effect::SendTo { target, event }),
+                Op::DeadLetter(event) => self.effects.push(Effect::External(ExternalSpec {
+                    kind: EffectKind::Builtin,
+                    ty: EffectType::Fixed("@xstate.deadLetter".into()),
+                    params: None,
+                    args: Vec::new(),
+                    event: Some(event),
+                    reason: Some("missingTarget".into()),
+                    exec: None,
+                })),
                 Op::Spawn(r) => self.effects.push(Effect::Spawn(r)),
                 Op::Stop(r) => {
                     // XState's `applyChildUpdate`: the child leaves `children`
@@ -1457,7 +1503,7 @@ where
         }
         for d in &data.delayed {
             let delay = self.resolve_delay(d.delay)?;
-            out.ops.push(Op::Raise { event: self.delayed_event(node, d), id: None, delay });
+            out.ops.push(Op::Raise { event: self.delayed_event(node, d), id: None, delay, target: None });
         }
         self.queue.extend(out.internal);
         ops.append(&mut out.ops);
@@ -1559,7 +1605,14 @@ where
         let Some(index) = index else { return false };
         let timer = self.timers_mut().remove(index);
         self.token += 1;
-        self.queue.push_back(timer.event.into_ev());
+        match timer.target {
+            // A delayed `sendTo` relays its event (dropped if the target
+            // has stopped).
+            Some(target) => {
+                self.effects.push(Effect::SendTo { target: *target, event: timer.event.into_ev().to_json() })
+            }
+            None => self.queue.push_back(timer.event.into_ev()),
+        }
         self.event = Ev::Internal { event_type: Cow::Borrowed("xstate.timer"), data: Map::new() };
         true
     }
@@ -2159,6 +2212,13 @@ where
                 seq: t.get("seq").and_then(Value::as_u64),
                 delay: t.get("delay").and_then(Value::as_u64).unwrap_or(0),
                 event: TimerEv::new(event),
+                // A delayed `sendTo` names its target; a raise, `"self"`.
+                target: match t.get("target") {
+                    Some(target @ Value::Object(_)) => {
+                        Some(Box::new(ActorRef::from_json(target).ok_or_else(|| bad("timer target"))?))
+                    }
+                    _ => None,
+                },
             });
         }
         st.next_timer_id = data.get("_nextTimerId").and_then(Value::as_u64).unwrap_or(0);

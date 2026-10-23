@@ -104,6 +104,28 @@ pub fn register(r: &mut Registry<Value, Value>) {
             }
         })
         .expr("doneToEven", |a| json!({ "target": "even", "context": { "result": a.event.field("output") } }))
+        // Sending and stopping.
+        .expr("sendPing", |a| {
+            a.enq().unwrap().send_to("c", json!({ "type": "PING" }));
+            Value::Null
+        })
+        .expr("sendPingLater", |a| {
+            a.enq().unwrap().send_to_delayed("c", json!({ "type": "PING" }), 100, Some("ping"));
+            Value::Null
+        })
+        .expr("sendMissing", |a| {
+            a.enq().unwrap().send_to("nope", json!({ "type": "PING" }));
+            Value::Null
+        })
+        .expr("replyParent", |a| {
+            a.enq().unwrap().send_parent(json!({ "type": "PONG" }));
+            Value::Null
+        })
+        .expr("stopChild", |a| {
+            a.enq().unwrap().stop("c");
+            Value::Null
+        })
+        .expr("pongsPlusOne", |a| js(num(a.context.get("pongs")) + 1.0))
         // State input.
         .expr("stateInput", |a| a.input.cloned().unwrap_or(Value::Null))
         .expr("hasInput", |a| Value::Bool(a.input.is_some()))
