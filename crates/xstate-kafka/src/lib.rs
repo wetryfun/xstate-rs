@@ -20,9 +20,10 @@ pub mod codec;
 pub mod config;
 pub mod engine;
 pub mod metrics;
+mod msgpack;
 #[cfg(feature = "kafka")]
 pub mod service;
 
 pub use codec::Codec;
-pub use engine::{DeadLetter, EffectRequest, Emitted, EngineConfig, Output, Partition, EFFECT_RESULT};
+pub use engine::{DeadLetter, EffectRequest, Emitted, EngineConfig, Output, Partition, SnapshotFormat, EFFECT_RESULT};
 pub use metrics::{Metrics, MetricsSnapshot};

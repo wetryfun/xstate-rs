@@ -73,7 +73,8 @@ fn bench(c: &mut Criterion) {
             g.bench_function(format!("batch_{records}_records_{keys}_keys/{codec:?}"), |b| {
                 b.iter_batched(
                     || {
-                        let mut p = Partition::new(m.clone(), EngineConfig { codec, evict_final: true });
+                        let mut p =
+                            Partition::new(m.clone(), EngineConfig { codec, evict_final: true, ..Default::default() });
                         // Warm: every key already has an actor.
                         for (key, payload) in batch.iter().take(keys) {
                             p.handle(Some(key), payload, 0);

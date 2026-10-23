@@ -120,6 +120,16 @@ fn run(fixture: &Value, expected: &[Value]) -> Result<(), String> {
                         "{label}: the view differs from to_json\n  view:    {viewed}\n  to_json: {actual}"
                     ));
                 }
+                // The compact snapshot restores to the same system.
+                let compact = serde_json::to_value(sys.unwrap().compact_view()).unwrap();
+                let from_compact = System::from_json(&logic, &compact, 10_000)
+                    .map_err(|e| format!("{label}: restoring the compact snapshot failed: {e}"))?;
+                let restored_text = from_compact.to_json().to_string();
+                if restored_text != text {
+                    return Err(format!(
+                        "{label}: the compact snapshot restores differently\n  compact:  {compact}\n  restored: {restored_text}\n  to_json:  {actual}"
+                    ));
+                }
                 // XState's own snapshot data restores into an equal Rust system.
                 let restored = System::from_json(&logic, &exp["snapshot"], 10_000)
                     .map_err(|e| format!("{label}: restoring XState's snapshot failed: {e}"))?;

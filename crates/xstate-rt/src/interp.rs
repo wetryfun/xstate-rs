@@ -361,6 +361,8 @@ impl<E: EventType> Serialize for TimerData<'_, E> {
 struct SnapshotView<'a, C, E> {
     m: &'a Machine<C, E>,
     st: &'a State<C, E>,
+    /// Leave out what restore rebuilds identically (`System::compact_view`).
+    compact: bool,
 }
 
 impl<C, E> Serialize for SnapshotView<'_, C, E>
@@ -395,13 +397,37 @@ where
         struct Children<'a>(&'a IndexMap<String, ActorRef>);
         impl Serialize for Children<'_> {
             fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-                s.collect_map(self.0.iter().map(|(k, r)| (k, r.to_json())))
+                struct RefView<'a>(&'a ActorRef);
+                impl Serialize for RefView<'_> {
+                    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+                        use serde::ser::SerializeMap as _;
+                        let mut m = s.serialize_map(Some(2))?;
+                        m.serialize_entry("$actor", &*self.0.address)?;
+                        m.serialize_entry("incarnation", &self.0.incarnation.to_string())?;
+                        m.end()
+                    }
+                }
+                s.collect_map(self.0.iter().map(|(k, r)| (k, RefView(r))))
             }
         }
-        let (m, st) = (self.m, self.st);
+        let (m, st, compact) = (self.m, self.st, self.compact);
+        // Compact leaves out what restore rebuilds: the value (from
+        // `nodeIds`), empty children, timers and history, the always-empty
+        // `_stateInputs` and a zero `_nextTimerId`.
+        let keep = |non_empty: bool| !compact || non_empty;
+        let (keep_children, keep_timers, keep_history, keep_next) = (
+            keep(!st.children.is_empty()),
+            keep(!st.timers.is_empty()),
+            keep(!st.history.is_empty()),
+            keep(st.next_timer_id != 0),
+        );
         // Exact lengths let encoders such as MessagePack write maps directly
         // instead of buffering them.
-        let len = 9 + usize::from(st.output.is_some()) + usize::from(st.error.is_some());
+        let len = 3
+            + usize::from(st.output.is_some())
+            + usize::from(st.error.is_some())
+            + if compact { 0 } else { 2 }
+            + [keep_children, keep_timers, keep_history, keep_next].iter().filter(|k| **k).count();
         let mut map = s.serialize_map(Some(len))?;
         map.serialize_entry("status", st.status.as_str())?;
         if let Some(o) = &st.output {
@@ -414,18 +440,30 @@ where
             Some(v) => map.serialize_entry("context", &JsNumbers(v))?,
             None => map.serialize_entry("context", &context_json(&st.context))?,
         }
-        map.serialize_entry("value", &m.state_value(&st.nodes))?;
-        map.serialize_entry("children", &Children(&st.children))?;
+        if !compact {
+            map.serialize_entry("value", &m.state_value(&st.nodes))?;
+        }
+        if keep_children {
+            map.serialize_entry("children", &Children(&st.children))?;
+        }
         struct Timers<'a, E>(&'a [LogicalTimer<E>]);
         impl<E: EventType> Serialize for Timers<'_, E> {
             fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
                 s.collect_seq(self.0.iter().map(TimerData))
             }
         }
-        map.serialize_entry("timers", &Timers(&st.timers))?;
-        map.serialize_entry("historyValue", &History(m, &st.history))?;
-        map.serialize_entry("_stateInputs", &Map::new())?;
-        map.serialize_entry("_nextTimerId", &st.next_timer_id)?;
+        if keep_timers {
+            map.serialize_entry("timers", &Timers(&st.timers))?;
+        }
+        if keep_history {
+            map.serialize_entry("historyValue", &History(m, &st.history))?;
+        }
+        if !compact {
+            map.serialize_entry("_stateInputs", &Map::new())?;
+        }
+        if keep_next {
+            map.serialize_entry("_nextTimerId", &st.next_timer_id)?;
+        }
         map.serialize_entry("nodeIds", &Ids(m, &st.nodes))?;
         map.end()
     }
@@ -1407,9 +1445,13 @@ where
         }
     }
 
-    fn snapshot_serialize<'a>(&'a self, snapshot: &'a dyn AnySnapshot) -> Box<dyn erased_serde::Serialize + 'a> {
+    fn snapshot_serialize<'a>(
+        &'a self,
+        snapshot: &'a dyn AnySnapshot,
+        compact: bool,
+    ) -> Box<dyn erased_serde::Serialize + 'a> {
         match snapshot.as_any().downcast_ref::<State<C, E>>() {
-            Some(st) => Box::new(SnapshotView { m: self, st }),
+            Some(st) => Box::new(SnapshotView { m: self, st, compact }),
             None => Box::new(Value::Null),
         }
     }

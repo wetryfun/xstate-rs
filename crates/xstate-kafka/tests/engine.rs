@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use serde_json::{json, Value};
-use xstate_kafka::{Codec, EngineConfig, Partition};
+use xstate_kafka::{Codec, EngineConfig, Partition, SnapshotFormat};
 use xstate_rt::{Machine, Registry, Status};
 
 fn order_machine() -> Arc<Machine<Value, Value>> {
@@ -32,7 +32,7 @@ fn order_machine() -> Arc<Machine<Value, Value>> {
 }
 
 fn partition(evict_final: bool) -> Partition<Value, Value> {
-    Partition::new(order_machine(), EngineConfig { codec: Codec::MessagePack, evict_final })
+    Partition::new(order_machine(), EngineConfig { codec: Codec::MessagePack, evict_final, ..Default::default() })
 }
 
 #[test]
@@ -99,8 +99,9 @@ fn bad_records_become_dead_letters() {
 
 #[test]
 fn restore_from_the_changelog_continues_where_it_left() {
-    for codec in [Codec::Json, Codec::MessagePack] {
-        let mut p = Partition::new(order_machine(), EngineConfig { codec, evict_final: true });
+    let formats = [SnapshotFormat::Compact, SnapshotFormat::XState];
+    for (codec, snapshots) in [Codec::Json, Codec::MessagePack].into_iter().flat_map(|c| formats.map(|f| (c, f))) {
+        let mut p = Partition::new(order_machine(), EngineConfig { codec, evict_final: true, snapshots });
         p.handle(Some("a"), br#"{"type":"add"}"#, 10);
         p.handle(Some("b"), br#"{"type":"pay"}"#, 20);
         p.handle(Some("gone"), br#"{"type":"pay"}"#, 20);
@@ -109,11 +110,12 @@ fn restore_from_the_changelog_continues_where_it_left() {
         // A compacted changelog keeps the latest record per key.
         log.dedup_by(|x, y| x.0 == y.0);
 
-        let mut q = Partition::new(order_machine(), EngineConfig { codec, evict_final: true });
+        // Records are read whatever the configured codec and format.
+        let mut q = Partition::new(order_machine(), EngineConfig::default());
         for (key, record) in &log {
             q.restore(key, record.as_deref()).unwrap();
         }
-        assert_eq!(q.len(), 1, "{codec:?}: b and gone finished");
+        assert_eq!(q.len(), 1, "{codec:?} {snapshots:?}: b and gone finished");
         let a = q.actor("a").unwrap();
         assert_eq!(a.context(), &json!({ "items": 1 }));
         // The restored timer still expires the order.
@@ -149,7 +151,7 @@ fn lookup_machine() -> Arc<Machine<Value, Value>> {
 
 #[test]
 fn external_work_is_published_once_and_resolved_by_records() {
-    let config = EngineConfig { codec: Codec::MessagePack, evict_final: true };
+    let config = EngineConfig { codec: Codec::MessagePack, evict_final: true, ..Default::default() };
     let mut p = Partition::new(lookup_machine(), config.clone());
     p.handle(Some("u1"), br#"{"type":"go"}"#, 10);
     let out = p.flush();

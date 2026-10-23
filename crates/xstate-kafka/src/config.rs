@@ -13,6 +13,7 @@
 //!   "transactionalId": "orders",
 //!   "codec": "messagepack",
 //!   "evictFinal": true,
+//!   "snapshots": "compact",
 //!   "client": { "compression.type": "lz4" },
 //!   "stateDir": "/var/lib/xstate", "checkpointIntervalMs": 60000,
 //!   "metricsAddress": "0.0.0.0:9464",
@@ -37,7 +38,7 @@ use xstate_rt::step::async_logic;
 use xstate_rt::{Machine, Registry};
 
 use crate::codec::Codec;
-use crate::engine::EngineConfig;
+use crate::engine::{EngineConfig, SnapshotFormat};
 use crate::service::ServiceConfig;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -78,6 +79,9 @@ pub struct FileConfig {
     pub codec: Option<String>,
     #[serde(default)]
     pub evict_final: Option<bool>,
+    /// `"compact"` (default) or `"xstate"` (XState's full `SystemSnapshot`).
+    #[serde(default)]
+    pub snapshots: Option<String>,
     #[serde(default)]
     pub client: serde_json::Map<String, Value>,
     #[serde(default)]
@@ -140,7 +144,14 @@ impl FileConfig {
             Some("json") => Codec::Json,
             Some(other) => return Err(format!("unknown codec \"{other}\" (expected \"messagepack\" or \"json\")")),
         };
-        c.engine = EngineConfig { codec, evict_final: self.evict_final.unwrap_or(true) };
+        let snapshots = match self.snapshots.as_deref() {
+            None | Some("compact") => SnapshotFormat::Compact,
+            Some("xstate") => SnapshotFormat::XState,
+            Some(other) => {
+                return Err(format!("unknown snapshot format \"{other}\" (expected \"compact\" or \"xstate\")"))
+            }
+        };
+        c.engine = EngineConfig { codec, evict_final: self.evict_final.unwrap_or(true), snapshots };
         for (k, v) in &self.client {
             let v = match v {
                 Value::String(s) => s.clone(),
@@ -215,12 +226,13 @@ mod tests {
             r#"{ "machine": "m.json", "bootstrapServers": "b:9092", "groupId": "g",
                  "topics": { "input": "i", "output": "o", "changelog": "c" },
                  "workers": 3, "codec": "json", "batchLingerMs": 5, "client": { "linger.ms": 7 },
-                 "stateDir": "state", "checkpointIntervalMs": 1000 }"#,
+                 "stateDir": "state", "checkpointIntervalMs": 1000, "snapshots": "xstate" }"#,
         );
         let config = FileConfig::load(&path).unwrap();
         let service = config.service().unwrap();
         assert_eq!(service.workers, 3);
         assert_eq!(service.engine.codec, Codec::Json);
+        assert_eq!(service.engine.snapshots, SnapshotFormat::XState);
         assert_eq!(service.batch_linger, Duration::from_millis(5));
         assert_eq!(service.state_dir, Some(dir.join("state")));
         assert_eq!(service.checkpoint_interval, Duration::from_secs(1));

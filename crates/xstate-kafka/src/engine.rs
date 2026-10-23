@@ -36,12 +36,26 @@ pub struct EngineConfig {
     /// the compacted changelog forgets it. A later event for the same key
     /// starts a new actor. When false, final snapshots are kept.
     pub evict_final: bool,
+    /// What a changelog snapshot holds.
+    pub snapshots: SnapshotFormat,
 }
 
 impl Default for EngineConfig {
     fn default() -> Self {
-        Self { codec: Codec::default(), evict_final: true }
+        Self { codec: Codec::default(), evict_final: true, snapshots: SnapshotFormat::default() }
     }
+}
+
+/// The shape of changelog snapshots. Restore reads either.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum SnapshotFormat {
+    /// XState's `SystemSnapshot` without what restore rebuilds identically
+    /// (`xstate_rt::System::compact_view`): smaller and faster to write,
+    /// but not for XState's own restore.
+    #[default]
+    Compact,
+    /// XState's full `SystemSnapshot`.
+    XState,
 }
 
 /// An event an actor emitted.
@@ -319,15 +333,23 @@ where
         }
     }
 
+    fn encode(&self, actor: &Actor<C, E>) -> Vec<u8> {
+        Self::encode_with(&self.config, actor)
+    }
+
+    fn encode_with(config: &EngineConfig, actor: &Actor<C, E>) -> Vec<u8> {
+        match config.snapshots {
+            SnapshotFormat::Compact => config.codec.encode_serialize(&actor.persist_compact()),
+            SnapshotFormat::XState => config.codec.encode_serialize(&actor.persist_view()),
+        }
+    }
+
     /// The changelog record of every live actor, for a checkpoint. Call it
     /// right after a flush whose output was committed: the records then
     /// equal the latest committed changelog record of each key.
     pub fn snapshot_records(&self) -> Vec<(String, Vec<u8>)> {
-        let mut records: Vec<(String, Vec<u8>)> = self
-            .actors
-            .iter()
-            .map(|(key, slot)| (key.clone(), self.config.codec.encode_serialize(&slot.actor.persist_view())))
-            .collect();
+        let mut records: Vec<(String, Vec<u8>)> =
+            self.actors.iter().map(|(key, slot)| (key.clone(), self.encode(&slot.actor))).collect();
         records.sort_by(|a, b| a.0.cmp(&b.0));
         records
     }
@@ -343,7 +365,7 @@ where
                 self.actors.remove(&key);
                 self.output.changelog.push((key, None));
             } else {
-                let record = self.config.codec.encode_serialize(&slot.actor.persist_view());
+                let record = Self::encode_with(&self.config, &slot.actor);
                 self.output.changelog.push((key, Some(record)));
             }
         }

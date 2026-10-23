@@ -214,7 +214,13 @@ pub trait Logic: Send + Sync + 'static {
     fn snapshot_data(&self, snapshot: &dyn AnySnapshot) -> Value;
     /// [`Logic::snapshot_data`] as something that serializes to the same
     /// data, so a snapshot can be written without building it as a `Value`.
-    fn snapshot_serialize<'a>(&'a self, snapshot: &'a dyn AnySnapshot) -> Box<dyn erased_serde::Serialize + 'a> {
+    /// With `compact`, fields that [`Logic::restore`] rebuilds identically
+    /// when they are missing may be left out (see [`System::compact_view`]).
+    fn snapshot_serialize<'a>(
+        &'a self,
+        snapshot: &'a dyn AnySnapshot,
+        _compact: bool,
+    ) -> Box<dyn erased_serde::Serialize + 'a> {
         Box::new(self.snapshot_data(snapshot))
     }
     /// The initial snapshot and effects for `input`.
@@ -1504,7 +1510,10 @@ pub fn downcast<T: 'static>(snapshot: &dyn AnySnapshot) -> Option<&T> {
 /// A borrowed view of a [`System`] that serializes exactly as
 /// [`System::to_json`] does, without building the `Value` first: snapshots
 /// are written straight into the output encoding.
-pub struct SystemView<'a>(&'a System);
+pub struct SystemView<'a> {
+    sys: &'a System,
+    compact: bool,
+}
 
 struct RefView<'a>(&'a ActorRef);
 
@@ -1517,12 +1526,13 @@ impl Serialize for RefView<'_> {
     }
 }
 
-struct EntryView<'a>(&'a System, &'a ActorEntry);
+struct EntryView<'a>(&'a System, &'a ActorEntry, bool);
 
 impl Serialize for EntryView<'_> {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        let (sys, a) = (self.0, self.1);
-        let len = 6
+        let (sys, a, compact) = (self.0, self.1, self.2);
+        // Compact: the address is the key of the entry already.
+        let len = 6 - usize::from(compact)
             + usize::from(a.logic_version.is_some())
             + usize::from(a.parent.is_some())
             + usize::from(a.registry_key.is_some())
@@ -1530,7 +1540,9 @@ impl Serialize for EntryView<'_> {
             + usize::from(a.input.is_some());
         let mut m = s.serialize_map(Some(len))?;
         m.serialize_entry("id", &a.id)?;
-        m.serialize_entry("address", &*a.address)?;
+        if !compact {
+            m.serialize_entry("address", &*a.address)?;
+        }
         m.serialize_entry("incarnation", &a.incarnation.to_string())?;
         m.serialize_entry("src", &a.src)?;
         if let Some(v) = &a.logic_version {
@@ -1551,20 +1563,20 @@ impl Serialize for EntryView<'_> {
         }
         let logic = sys.logic_of(&a.src);
         match (&a.snapshot, &logic) {
-            (Some(snap), Some(l)) => m.serialize_entry("snapshot", &*l.snapshot_serialize(&**snap))?,
+            (Some(snap), Some(l)) => m.serialize_entry("snapshot", &*l.snapshot_serialize(&**snap, compact))?,
             _ => m.serialize_entry("snapshot", &a.snapshot_data(logic.as_ref()))?,
         }
         m.end()
     }
 }
 
-struct ActorsView<'a>(&'a System);
+struct ActorsView<'a>(&'a System, bool);
 
 impl Serialize for ActorsView<'_> {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         let mut m = s.serialize_map(Some(self.0.actors.len()))?;
         for (address, a) in &self.0.actors {
-            m.serialize_entry(&**address, &EntryView(self.0, a))?;
+            m.serialize_entry(&**address, &EntryView(self.0, a, self.1))?;
         }
         m.end()
     }
@@ -1605,31 +1617,74 @@ impl<I: Iterator<Item = T>, T: Serialize> Serialize for Seq<I> {
 
 impl Serialize for SystemView<'_> {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        let sys = self.0;
-        let mut m = s.serialize_map(Some(9))?;
+        let (sys, compact) = (self.sys, self.compact);
+        // Compact leaves out what restore defaults to: the default execution
+        // id and empty registry, messages, timers and external effects.
+        let keep_execution_id = !compact || sys.execution_id != "system";
+        let (keep_registry, keep_messages, keep_timers, keep_effects) = if compact {
+            (
+                !sys.registry.is_empty(),
+                !sys.messages.is_empty(),
+                !sys.timers.is_empty(),
+                !sys.external_effects.is_empty(),
+            )
+        } else {
+            (true, true, true, true)
+        };
+        let len = 4 + [keep_execution_id, keep_registry, keep_messages, keep_timers, keep_effects]
+            .iter()
+            .filter(|k| **k)
+            .count();
+        let mut m = s.serialize_map(Some(len))?;
         m.serialize_entry("root", &*sys.root)?;
-        m.serialize_entry("executionId", &sys.execution_id)?;
+        if keep_execution_id {
+            m.serialize_entry("executionId", &sys.execution_id)?;
+        }
         m.serialize_entry("now", &sys.now)?;
-        m.serialize_entry("actors", &ActorsView(sys))?;
-        let registry: Map<String, Value> = sys.registry.iter().map(|(k, v)| (k.clone(), v.to_json())).collect();
-        m.serialize_entry("registry", &registry)?;
+        m.serialize_entry("actors", &ActorsView(sys, compact))?;
+        if keep_registry {
+            m.serialize_entry("registry", &RegistryView(&sys.registry))?;
+        }
         // Messages and external effects are rare at rest; reuse `to_json`'s.
         let rest = if sys.messages.is_empty() && sys.external_effects.is_empty() { None } else { Some(sys.to_json()) };
-        match &rest {
-            Some(v) => m.serialize_entry("messages", &v["messages"])?,
-            None => m.serialize_entry("messages", &[(); 0])?,
+        if keep_messages {
+            match &rest {
+                Some(v) => m.serialize_entry("messages", &v["messages"])?,
+                None => m.serialize_entry("messages", &[(); 0])?,
+            }
         }
-        m.serialize_entry("timers", &Seq(std::cell::RefCell::new(Some(sys.timers.values().map(TimerView)))))?;
-        match &rest {
-            Some(v) => m.serialize_entry("externalEffects", &v["externalEffects"])?,
-            None => m.serialize_entry("externalEffects", &Map::new())?,
+        if keep_timers {
+            m.serialize_entry("timers", &Seq(std::cell::RefCell::new(Some(sys.timers.values().map(TimerView)))))?;
         }
-        let mut counters = Map::with_capacity(4);
-        counters.insert("actor".into(), Value::from(sys.counters.actor));
-        counters.insert("timer".into(), Value::from(sys.counters.timer));
-        counters.insert("sequence".into(), Value::from(sys.counters.sequence));
-        counters.insert("effect".into(), Value::from(sys.counters.effect));
-        m.serialize_entry("counters", &counters)?;
+        if keep_effects {
+            match &rest {
+                Some(v) => m.serialize_entry("externalEffects", &v["externalEffects"])?,
+                None => m.serialize_entry("externalEffects", &Map::new())?,
+            }
+        }
+        m.serialize_entry("counters", &CountersView(&sys.counters))?;
+        m.end()
+    }
+}
+
+struct RegistryView<'a>(&'a IndexMap<String, ActorRef>);
+
+impl Serialize for RegistryView<'_> {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        s.collect_map(self.0.iter().map(|(k, r)| (k, RefView(r))))
+    }
+}
+
+struct CountersView<'a>(&'a Counters);
+
+impl Serialize for CountersView<'_> {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        let c = self.0;
+        let mut m = s.serialize_map(Some(4))?;
+        m.serialize_entry("actor", &c.actor)?;
+        m.serialize_entry("timer", &c.timer)?;
+        m.serialize_entry("sequence", &c.sequence)?;
+        m.serialize_entry("effect", &c.effect)?;
         m.end()
     }
 }
@@ -1638,7 +1693,18 @@ impl System {
     /// The system snapshot as a [`SystemView`]: serializes to the same data
     /// as [`System::to_json`], without building it.
     pub fn view(&self) -> SystemView<'_> {
-        SystemView(self)
+        SystemView { sys: self, compact: false }
+    }
+
+    /// A smaller snapshot that [`System::from_json`] restores to the same
+    /// system: XState's `SystemSnapshot` without the fields restore rebuilds
+    /// identically when they are missing (empty collections, the default
+    /// execution id, actor addresses, which are the keys of `actors`, and in
+    /// machine snapshots the state `value`, derived from `nodeIds`, and
+    /// empty `children`, `historyValue`, `timers` and `_stateInputs`). It is
+    /// not meant for XState's own restore.
+    pub fn compact_view(&self) -> SystemView<'_> {
+        SystemView { sys: self, compact: true }
     }
 }
 

@@ -29,14 +29,21 @@ impl Codec {
     pub fn encode_serialize<T: serde::Serialize + ?Sized>(self, snapshot: &T) -> Vec<u8> {
         match self {
             Codec::Json => {
-                let mut out = vec![JSON];
+                let mut out = Vec::with_capacity(512);
+                out.push(JSON);
                 serde_json::to_writer(&mut out, snapshot).expect("snapshots serialize");
                 out
             }
             Codec::MessagePack => {
-                let mut out = vec![MESSAGE_PACK];
+                let mut out = Vec::with_capacity(512);
+                out.push(MESSAGE_PACK);
                 // Maps as maps with string keys, so any reader can decode it.
-                rmp_serde::encode::write_named(&mut out, snapshot).expect("snapshots serialize");
+                // The dedicated writer needs every length up front; anything
+                // else goes through rmp_serde, which buffers.
+                if crate::msgpack::write(&mut out, snapshot).is_err() {
+                    out.truncate(1);
+                    rmp_serde::encode::write_named(&mut out, snapshot).expect("snapshots serialize");
+                }
                 out
             }
         }

@@ -53,8 +53,13 @@ fn record(actor: &mut Actor<Value, Value>, label: &str) -> Value {
     if let Some(output) = actor.output() {
         entry["output"] = output.clone();
     }
+    let persisted = actor.persist().to_string();
     let viewed = serde_json::to_string(&actor.persist_view()).unwrap();
-    assert_eq!(viewed, actor.persist().to_string(), "the persist view differs from persist");
+    assert_eq!(viewed, persisted, "the persist view differs from persist");
+    // The compact snapshot restores to the same actor.
+    let compact = serde_json::to_value(actor.persist_compact()).unwrap();
+    let restored = Actor::restore(actor.machine().clone(), &compact).expect("the compact snapshot restores");
+    assert_eq!(restored.persist().to_string(), persisted, "the compact snapshot restores differently: {compact}");
     entry
 }
 

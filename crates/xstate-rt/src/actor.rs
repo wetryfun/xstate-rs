@@ -274,6 +274,12 @@ where
         self.system.view()
     }
 
+    /// A smaller snapshot that [`Actor::restore`] restores to the same actor
+    /// (see [`System::compact_view`]); not meant for XState's own restore.
+    pub fn persist_compact(&self) -> crate::system::SystemView<'_> {
+        self.system.compact_view()
+    }
+
     pub fn machine(&self) -> &Arc<Machine<C, E>> {
         &self.machine
     }
