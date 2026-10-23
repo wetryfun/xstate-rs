@@ -108,6 +108,9 @@ impl<E: EventType> LogicalTimer<E> {
     }
 }
 
+/// Recorded history: each history state and its recorded states.
+pub(crate) type HistoryValues = Vec<(Nid, Vec<Nid>)>;
+
 /// A machine actor's snapshot.
 pub(crate) struct State<C, E> {
     /// The configuration, in XState's order.
@@ -118,12 +121,15 @@ pub(crate) struct State<C, E> {
     pub error: Option<Value>,
     /// `historyValue`, in key order. Copy-on-write (`Arc::make_mut`) like
     /// `children` and `timers`, so a macrostep's rollback copy is cheap.
-    pub history: Arc<Vec<(Nid, Vec<Nid>)>>,
+    pub history: Arc<HistoryValues>,
     /// `snapshot.children`, in order.
     pub children: Arc<IndexMap<String, ActorRef>>,
     /// `snapshot.timers`, in order.
     pub timers: Arc<Vec<LogicalTimer<E>>>,
     pub next_timer_id: u64,
+    /// For an untyped context: known to need no number normalization
+    /// (`js_numbers`), so merges need not check it again. Not persisted.
+    pub context_normalized: bool,
 }
 
 impl<C: Clone, E: Clone> Clone for State<C, E> {
@@ -138,6 +144,7 @@ impl<C: Clone, E: Clone> Clone for State<C, E> {
             children: self.children.clone(),
             timers: self.timers.clone(),
             next_timer_id: self.next_timer_id,
+            context_normalized: self.context_normalized,
         }
     }
 }
@@ -154,6 +161,7 @@ impl<C, E> State<C, E> {
             children: Arc::default(),
             timers: Arc::default(),
             next_timer_id: 0,
+            context_normalized: false,
         }
     }
 }
@@ -212,56 +220,71 @@ enum Op<E> {
 /// and the raised events.
 struct Outcome<E> {
     context: Option<Map<String, Value>>,
+    /// Instead of `context`: the merge is this transition's static
+    /// `context` patch, read from the machine when merged (not copied).
+    static_patch: Option<Tid>,
     ops: Vec<Op<E>>,
     internal: Vec<Ev<E>>,
 }
 
 impl<E> Outcome<E> {
     fn empty() -> Self {
-        Self { context: None, ops: Vec::new(), internal: Vec::new() }
+        Self { context: None, static_patch: None, ops: Vec::new(), internal: Vec::new() }
     }
 }
 
-/// The parts of a snapshot a failed macrostep restores (the context is
-/// saved separately, on its first write).
-struct Saved<E> {
+/// The parts of a snapshot a failed macrostep restores. The context, the
+/// history, the children and the timers are saved separately, by the host,
+/// just before the macrostep first writes them (`SavedParts`).
+struct Saved {
     nodes: core::Buf<Nid>,
     status: Status,
     output: Option<Value>,
     error: Option<Value>,
-    history: Arc<Vec<(Nid, Vec<Nid>)>>,
-    children: Arc<IndexMap<String, ActorRef>>,
-    timers: Arc<Vec<LogicalTimer<E>>>,
     next_timer_id: u64,
 }
 
-impl<E: Clone> Saved<E> {
-    fn of<C>(st: &State<C, E>) -> Self {
+impl Saved {
+    fn of<C, E>(st: &State<C, E>) -> Self {
         Saved {
             nodes: core::Buf::from_slice(&st.nodes),
             status: st.status,
             output: st.output.clone(),
             error: st.error.clone(),
-            history: st.history.clone(),
-            children: st.children.clone(),
-            timers: st.timers.clone(),
             next_timer_id: st.next_timer_id,
         }
     }
 
-    fn restore<C>(self, st: &mut State<C, E>, context: Option<C>) {
+    fn restore<C, E>(self, st: &mut State<C, E>, parts: SavedParts<E>) {
         st.nodes.clear();
         st.nodes.extend_from_slice(&self.nodes);
         st.status = self.status;
         st.output = self.output;
         st.error = self.error;
-        st.history = self.history;
-        st.children = self.children;
-        st.timers = self.timers;
         st.next_timer_id = self.next_timer_id;
-        if let Some(context) = context {
-            st.context = context;
+        if let Some(history) = parts.history {
+            st.history = history;
         }
+        if let Some(children) = parts.children {
+            st.children = children;
+        }
+        if let Some(timers) = parts.timers {
+            st.timers = timers;
+        }
+    }
+}
+
+/// The copy-on-write parts of a snapshot as they were before a macrostep
+/// first wrote them (`None`: not written).
+struct SavedParts<E> {
+    history: Option<Arc<HistoryValues>>,
+    children: Option<Arc<IndexMap<String, ActorRef>>>,
+    timers: Option<Arc<Vec<LogicalTimer<E>>>>,
+}
+
+impl<E> Default for SavedParts<E> {
+    fn default() -> Self {
+        Self { history: None, children: None, timers: None }
     }
 }
 
@@ -502,6 +525,10 @@ struct NativeHost<'a, C, E> {
     /// written key and the value it replaced, `None` for a key it added).
     context_undo_active: bool,
     context_undo: Vec<(String, Option<Value>)>,
+    /// Whether a failure rolls the macrostep back (not for the initial one),
+    /// and the parts saved for it.
+    rollback: bool,
+    saved_parts: SavedParts<E>,
 }
 
 impl<C, E> NativeHost<'_, C, E>
@@ -525,8 +552,33 @@ where
         }
     }
 
+    /// The timers, to write (saving them first for a rollback).
+    fn timers_mut(&mut self) -> &mut Vec<LogicalTimer<E>> {
+        if self.rollback && self.saved_parts.timers.is_none() {
+            self.saved_parts.timers = Some(self.st.timers.clone());
+        }
+        Arc::make_mut(&mut self.st.timers)
+    }
+
+    /// The children, to write (saving them first for a rollback).
+    fn children_mut(&mut self) -> &mut IndexMap<String, ActorRef> {
+        if self.rollback && self.saved_parts.children.is_none() {
+            self.saved_parts.children = Some(self.st.children.clone());
+        }
+        Arc::make_mut(&mut self.st.children)
+    }
+
+    /// The history, to write (saving it first for a rollback).
+    fn history_mut(&mut self) -> &mut HistoryValues {
+        if self.rollback && self.saved_parts.history.is_none() {
+            self.saved_parts.history = Some(self.st.history.clone());
+        }
+        Arc::make_mut(&mut self.st.history)
+    }
+
     /// `mergeContextPatch`.
     fn merge_context(&mut self, patch: &Map<String, Value>) -> Result<(), SystemError> {
+        let normalized = self.st.context_normalized;
         if let Some(v) = (&mut self.st.context as &mut dyn Any).downcast_mut::<Value>() {
             // An untyped context is patched in place. To roll back a failed
             // macrostep, an undo log keeps each overwritten value (no copy
@@ -535,7 +587,7 @@ where
             // on the macrostep's first write.
             let first_write = self.context_backup.is_none() && !self.context_undo_active;
             if first_write {
-                if v.as_object().is_some_and(|m| !m.values().any(crate::event::needs_js_numbers)) {
+                if v.as_object().is_some_and(|m| normalized || !m.values().any(crate::event::needs_js_numbers)) {
                     self.context_undo_active = true;
                 } else {
                     let copy = v.clone();
@@ -552,11 +604,15 @@ where
             for (k, val) in patch {
                 let mut val = val.clone();
                 crate::event::js_numbers(&mut val);
-                let old = map.insert(k.clone(), val);
+                let old = match map.get_mut(k) {
+                    Some(slot) => Some(std::mem::replace(slot, val)),
+                    None => map.insert(k.clone(), val),
+                };
                 if self.context_undo_active {
                     self.context_undo.push((k.clone(), old));
                 }
             }
+            self.st.context_normalized = true;
             self.cloned = true;
             return Ok(());
         }
@@ -632,15 +688,19 @@ where
         }
         let mut out = if tr.context.is_some() || !tr.actions.is_empty() {
             let mut base = self.action_base(&tr.actions)?;
-            if let Some(patch) = &tr.context {
+            // Only `@xstate.assign` reads the base (`action_base` is empty
+            // otherwise), so only then does it need the patch.
+            if let Some(patch) =
+                tr.context.as_ref().filter(|_| tr.actions.iter().any(|a| matches!(a, Action::Assign(_))))
+            {
                 for (k, v) in patch {
                     base.insert(k.clone(), v.clone());
                 }
             }
             let mut out =
                 if tr.actions.is_empty() { Outcome::empty() } else { self.execute_actions(&tr.actions, &base) };
-            if out.context.is_none() {
-                out.context = tr.context.clone();
+            if out.context.is_none() && tr.context.is_some() {
+                out.static_patch = Some(t);
             }
             out
         } else {
@@ -667,17 +727,21 @@ where
                     };
                     let timer = LogicalTimer { id, seq, delay, event };
                     let key = timer.key();
-                    let timers = Arc::make_mut(&mut self.st.timers);
+                    let timers = self.timers_mut();
                     match timers.iter_mut().find(|t| t.matches(&key)) {
                         Some(existing) => *existing = timer,
-                        None => timers.push(timer),
+                        None => {
+                            // Snapshots hold few timers: no spare capacity.
+                            timers.reserve_exact(1);
+                            timers.push(timer);
+                        }
                     }
                     self.cloned = true;
                     self.effects.push(Effect::DelayedRaise { key, delay });
                 }
                 Op::Cancel(key) => {
                     if self.st.timers.iter().any(|t| t.matches(&key)) {
-                        Arc::make_mut(&mut self.st.timers).retain(|t| !t.matches(&key));
+                        self.timers_mut().retain(|t| !t.matches(&key));
                         self.cloned = true;
                     }
                     self.effects.push(Effect::Cancel(key));
@@ -692,13 +756,13 @@ where
                     exec: None,
                 })),
                 Op::Emit(event) => {
-                    let mut params = event.as_object().cloned().unwrap_or_default();
-                    params.remove("type");
                     let ty = event.get("type").and_then(Value::as_str).unwrap_or("").to_owned();
                     self.effects.push(Effect::External(ExternalSpec {
                         kind: EffectKind::Emit,
                         ty: EffectType::Fixed(ty),
-                        params: Some(Value::Object(params)),
+                        // The system derives the params (the event without
+                        // `type`) when it keeps the effect.
+                        params: None,
                         args: Vec::new(),
                         event: Some(event),
                         reason: None,
@@ -722,7 +786,7 @@ where
                     // XState's `applyChildUpdate`: the child leaves `children`
                     // and the registry at once, and counts as stopping.
                     if self.st.children.values().any(|c| *c == r) {
-                        Arc::make_mut(&mut self.st.children).retain(|_, c| *c != r);
+                        self.children_mut().retain(|_, c| *c != r);
                     }
                     self.cx.unregister(&r);
                     self.cloned = true;
@@ -846,7 +910,7 @@ where
         {
             return;
         }
-        Arc::make_mut(&mut self.st.children).shift_remove(&actor_id);
+        self.children_mut().shift_remove(&actor_id);
         self.cx.unregister(&child);
         self.token += 1;
     }
@@ -963,6 +1027,9 @@ where
             };
             if let Some(ctx) = &outcome.context {
                 self.merge_context(ctx)?;
+            } else if let Some(t) = outcome.static_patch {
+                let m = self.m;
+                self.merge_context(m.transition(t).context.as_ref().expect("a static patch"))?;
             }
             ops.extend(outcome.ops);
             internal.extend(outcome.internal);
@@ -1002,7 +1069,7 @@ where
                     },
                 )?;
                 ops.push(Op::Spawn(child.clone()));
-                Arc::make_mut(&mut self.st.children).insert(inv.id.clone(), child);
+                self.children_mut().insert(inv.id.clone(), child);
                 self.cloned = true;
             }
         }
@@ -1101,7 +1168,7 @@ where
                 self.st.nodes.clear();
                 self.st.nodes.extend_from_slice(&r.nodes);
                 for (h, nodes) in r.history_updates {
-                    let history = Arc::make_mut(&mut self.st.history);
+                    let history = self.history_mut();
                     match history.iter_mut().find(|(x, _)| *x == h) {
                         Some(entry) => entry.1 = nodes,
                         None => history.push((h, nodes)),
@@ -1204,12 +1271,19 @@ where
             context_backup: None,
             context_undo_active: false,
             context_undo: Vec::new(),
+            rollback: !initial,
+            saved_parts: SavedParts::default(),
         };
         if let Err(e) = self.macrostep_body(&mut h, event) {
             let context = h.context_backup.take();
             let undo = std::mem::take(&mut h.context_undo);
+            let parts = std::mem::take(&mut h.saved_parts);
             if let Some(saved) = saved {
-                saved.restore(st, context);
+                saved.restore(st, parts);
+                st.context_normalized = false;
+                if let Some(context) = context {
+                    st.context = context;
+                }
                 if let Some(Value::Object(map)) = (&mut st.context as &mut dyn Any).downcast_mut::<Value>() {
                     // In reverse: a replaced value goes back to its place,
                     // and an added key (the last one at that point) leaves.
@@ -1273,7 +1347,7 @@ where
                 let key = crate::system::read_timer_key(&event);
                 let index = key.as_ref().and_then(|k| h.st.timers.iter().position(|t| t.matches(k)));
                 let Some(index) = index else { return Ok(()) };
-                let timer = Arc::make_mut(&mut h.st.timers).remove(index);
+                let timer = h.timers_mut().remove(index);
                 h.token += 1;
                 h.queue.push_back(timer.event);
                 h.event = Ev::Internal { event_type: Cow::Borrowed("xstate.timer"), data: Map::new() };

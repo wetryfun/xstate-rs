@@ -152,6 +152,7 @@ pub enum EffectType {
 pub struct ExternalSpec {
     pub kind: EffectKind,
     pub ty: EffectType,
+    /// For an emit, `None` means the event without `type`.
     pub params: Option<Value>,
     pub args: Vec<Value>,
     pub event: Option<Value>,
@@ -309,6 +310,8 @@ pub struct SystemTimer {
 /// External work for the host, with a stable id.
 #[derive(Clone)]
 pub struct ExternalEffect {
+    /// Empty (and `params` of an emit `None`) only for the effects
+    /// [`crate::Actor`] handles as it receives them, which are never pending.
     pub id: String,
     pub source: ActorRef,
     pub ty: String,
@@ -386,6 +389,8 @@ struct ActorEntry {
     address: Arc<str>,
     incarnation: u64,
     src: String,
+    /// The logic `src` names, resolved once (no lookup per event).
+    logic: Arc<dyn Logic>,
     logic_version: Option<String>,
     parent: Option<ActorRef>,
     registry_key: Option<String>,
@@ -706,6 +711,9 @@ impl System {
     }
 
     fn begin(&mut self) {
+        if self.messages.capacity() == 0 {
+            self.messages = take_message_queue();
+        }
         self.remaining = self.max_steps;
         self.out.clear();
         self.initial_effects.clear();
@@ -732,7 +740,15 @@ impl System {
 
     /// The earliest pending deadline.
     pub fn next_deadline(&self) -> Option<u64> {
-        self.timers.values().map(|t| t.due_at).min()
+        // `deadlines` holds exactly the pending timers (see `forget_deadline`).
+        self.deadlines.peek().map(|Reverse((due, _, _))| *due)
+    }
+
+    /// Removes a timer's entry from `deadlines`, so the heap holds exactly
+    /// the pending timers.
+    fn forget_deadline(&mut self, timer: &SystemTimer) {
+        let entry = (timer.due_at, timer.sequence, timer.occurrence);
+        self.deadlines.retain(|Reverse(e)| *e != entry);
     }
 
     /// Pending external work, by id.
@@ -757,10 +773,6 @@ impl System {
 
     fn current(&self, r: &ActorRef) -> Option<&ActorEntry> {
         self.actors.get(&*r.address).filter(|a| a.incarnation == r.incarnation)
-    }
-
-    fn logic_of(&self, src: &str) -> Option<Arc<dyn Logic>> {
-        self.defs.iter().find(|(k, _)| k == src).map(|(_, l)| l.clone())
     }
 
     fn allocate(&mut self, logic: &Arc<dyn Logic>, options: AllocateOptions) -> Result<ActorRef, SystemError> {
@@ -790,6 +802,7 @@ impl System {
             address: address.clone(),
             incarnation,
             src,
+            logic: logic.clone(),
             logic_version: logic.version().map(str::to_owned),
             parent: options.parent.clone(),
             registry_key: options.registry_key.clone(),
@@ -799,6 +812,10 @@ impl System {
             snapshot: None,
             status: Status::Active,
         };
+        // Most systems hold one actor: no spare capacity per system.
+        if self.actors.len() == self.actors.capacity() {
+            self.actors.reserve_exact(1);
+        }
         self.actors.insert(address.clone(), entry);
         if let Some(key) = &options.registry_key {
             if self.registry.contains_key(key) {
@@ -831,23 +848,32 @@ impl System {
                 format!("{src}/actions/{}", encode_address_segment(&name))
             }
         };
-        let id = format!("{}:{}", self.execution_id, self.counters.effect);
+        let transient = self.transient_effects
+            && (spec.kind == EffectKind::Emit
+                || spec.exec.is_some()
+                || matches!(ty.as_str(), "@xstate.log" | "@xstate.cancelEffect" | "@xstate.cleanup"));
+        // A transient effect is never looked up, so it gets no id string
+        // (the counter still advances, as the effect id would).
+        let id = if transient { String::new() } else { format!("{}:{}", self.execution_id, self.counters.effect) };
         self.counters.effect += 1;
+        let mut params = spec.params;
+        if spec.kind == EffectKind::Emit && params.is_none() && !transient {
+            // An emit's params are its event without `type`.
+            let mut p = spec.event.as_ref().and_then(Value::as_object).cloned().unwrap_or_default();
+            p.remove("type");
+            params = Some(Value::Object(p));
+        }
         let effect = ExternalEffect {
             id: id.clone(),
             source: r.clone(),
             ty,
             kind: spec.kind,
-            params: spec.params,
+            params,
             args: Some(spec.args),
             event: spec.event,
             reason: spec.reason,
             exec: spec.exec,
         };
-        let transient = self.transient_effects
-            && (effect.kind == EffectKind::Emit
-                || effect.exec.is_some()
-                || matches!(effect.ty.as_str(), "@xstate.log" | "@xstate.cancelEffect" | "@xstate.cleanup"));
         if transient {
             self.out.push(effect);
         } else {
@@ -869,8 +895,17 @@ impl System {
 
     fn cancel(&mut self, r: &ActorRef, key: Option<&Value>) {
         let cancelled = key.map(|k| system_timer_key_for(r, k));
-        self.timers
-            .retain(|timer_key, timer| !(timer.source == *r && cancelled.as_ref().map_or(true, |c| c == timer_key)));
+        let mut removed = Vec::new();
+        self.timers.retain(|timer_key, timer| {
+            let keep = !(timer.source == *r && cancelled.as_ref().map_or(true, |c| c == timer_key));
+            if !keep {
+                removed.push((timer.due_at, timer.sequence, timer.occurrence));
+            }
+            keep
+        });
+        if !removed.is_empty() {
+            self.deadlines.retain(|Reverse(e)| !removed.contains(e));
+        }
     }
 
     fn effects_for(&mut self, r: &ActorRef, effects: Vec<Effect>) -> Result<(), SystemError> {
@@ -910,8 +945,13 @@ impl System {
         self.counters.timer += 1;
         self.counters.sequence += 1;
         let key = system_timer_key(r, &timer.event);
-        self.timers.shift_remove(&key);
+        if let Some(replaced) = self.timers.shift_remove(&key) {
+            self.forget_deadline(&replaced);
+        }
         self.deadlines.push(Reverse((timer.due_at, timer.sequence, timer.occurrence)));
+        if self.timers.len() == self.timers.capacity() {
+            self.timers.reserve_exact(1);
+        }
         self.timers.insert(key, timer);
         Ok(())
     }
@@ -921,13 +961,13 @@ impl System {
         if actor.started || actor.status == Status::Stopped {
             return Ok(());
         }
-        let src = actor.src.clone();
+        let logic = actor.logic.clone();
         self.actors.get_mut(&*r.address).expect("current").started = true;
         let effects = self.initial_effects.remove(r).unwrap_or_default();
         self.effects_for(r, effects)?;
         let active = self.current(r).is_some_and(|a| a.status == Status::Active);
         if active {
-            if let Some((timeout, delay)) = self.logic_of(&src).and_then(|l| l.async_timeout()) {
+            if let Some((timeout, delay)) = logic.async_timeout() {
                 let shown = match &timeout {
                     Value::String(s) => s.clone(),
                     other => other.to_string(),
@@ -1036,9 +1076,7 @@ impl System {
         if event_type == "xstate.timer" && message.timer_occurrence.is_none() {
             return Err(SystemError::Failed("Only the system scheduler may deliver a timer occurrence.".into()));
         }
-        let Some(logic) = self.logic_of(&actor.src) else {
-            return Err(SystemError::Failed(format!("Missing actor definition '{}'.", actor.src)));
-        };
+        let logic = actor.logic.clone();
         if logic.is_internal_event_type(&event_type) && message.source.as_ref() != Some(&message.target) {
             return Err(SystemError::Failed(format!(
                 "Internal event '{event_type}' cannot be injected into a pure system."
@@ -1113,6 +1151,11 @@ impl System {
     /// completes its work. Returns whether an occurrence was due.
     fn fire_one(&mut self, time: u64) -> Result<bool, SystemError> {
         while let Some(&Reverse((due, sequence, occurrence))) = self.deadlines.peek() {
+            // Nothing is due when the earliest deadline, current or stale,
+            // is later (the common case: no lookup).
+            if due > time {
+                return Ok(false);
+            }
             let current_key = self
                 .timers
                 .iter()
@@ -1282,7 +1325,7 @@ impl System {
             if let Some(i) = &a.input {
                 m.insert("input".into(), i.clone());
             }
-            m.insert("snapshot".into(), a.snapshot_data(self.logic_of(&a.src).as_ref()));
+            m.insert("snapshot".into(), a.snapshot_data(Some(&a.logic)));
             actors.insert(address.to_string(), Value::Object(m));
         }
         let registry: Map<String, Value> = self.registry.iter().map(|(k, v)| (k.clone(), v.to_json())).collect();
@@ -1367,6 +1410,7 @@ impl System {
                         .and_then(|s| s.parse().ok())
                         .ok_or_else(|| bad("incarnation"))?,
                     src,
+                    logic: l,
                     logic_version,
                     parent: a.get("parent").and_then(ActorRef::from_json),
                     registry_key: a.get("registryKey").and_then(Value::as_str).map(str::to_owned),
@@ -1447,9 +1491,40 @@ impl System {
 }
 
 fn sys_end(sys: &mut System) -> Vec<ExternalEffect> {
-    sys.initial_effects.clear();
-    sys.stopping.clear();
+    // Between calls an actor keeps no scratch capacity: idle actors are
+    // what a partition holds most of, so their memory counts. The message
+    // queue goes back to a per-thread pool; the rest is rarely used.
+    if sys.messages.is_empty() {
+        return_message_queue(std::mem::take(&mut sys.messages));
+    }
+    if sys.initial_effects.capacity() > 0 {
+        sys.initial_effects = HashMap::new();
+    }
+    if sys.stopping.capacity() > 0 {
+        sys.stopping = HashSet::new();
+    }
     std::mem::take(&mut sys.out)
+}
+
+thread_local! {
+    /// Empty message queues lent to systems for the length of a call.
+    static MESSAGE_QUEUES: std::cell::RefCell<Vec<VecDeque<Message>>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+fn take_message_queue() -> VecDeque<Message> {
+    MESSAGE_QUEUES.with(|p| p.borrow_mut().pop()).unwrap_or_default()
+}
+
+fn return_message_queue(queue: VecDeque<Message>) {
+    if queue.capacity() > 0 && queue.capacity() <= 64 {
+        // `try_with`: thread-local storage may already be gone at exit.
+        let _ = MESSAGE_QUEUES.try_with(|p| {
+            let mut pool = p.borrow_mut();
+            if pool.len() < 16 {
+                pool.push(queue);
+            }
+        });
+    }
 }
 
 /// XState's `finalizeTransitionResult`: a newly terminal snapshot gets one
@@ -1526,11 +1601,11 @@ impl Serialize for RefView<'_> {
     }
 }
 
-struct EntryView<'a>(&'a System, &'a ActorEntry, bool);
+struct EntryView<'a>(&'a ActorEntry, bool);
 
 impl Serialize for EntryView<'_> {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        let (sys, a, compact) = (self.0, self.1, self.2);
+        let (a, compact) = (self.0, self.1);
         // Compact: the address is the key of the entry already.
         let len = 6 - usize::from(compact)
             + usize::from(a.logic_version.is_some())
@@ -1561,10 +1636,9 @@ impl Serialize for EntryView<'_> {
         if let Some(i) = &a.input {
             m.serialize_entry("input", i)?;
         }
-        let logic = sys.logic_of(&a.src);
-        match (&a.snapshot, &logic) {
-            (Some(snap), Some(l)) => m.serialize_entry("snapshot", &*l.snapshot_serialize(&**snap, compact))?,
-            _ => m.serialize_entry("snapshot", &a.snapshot_data(logic.as_ref()))?,
+        match &a.snapshot {
+            Some(snap) => m.serialize_entry("snapshot", &*a.logic.snapshot_serialize(&**snap, compact))?,
+            None => m.serialize_entry("snapshot", &a.snapshot_data(Some(&a.logic)))?,
         }
         m.end()
     }
@@ -1576,7 +1650,7 @@ impl Serialize for ActorsView<'_> {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         let mut m = s.serialize_map(Some(self.0.actors.len()))?;
         for (address, a) in &self.0.actors {
-            m.serialize_entry(&**address, &EntryView(self.0, a, self.1))?;
+            m.serialize_entry(&**address, &EntryView(a, self.1))?;
         }
         m.end()
     }

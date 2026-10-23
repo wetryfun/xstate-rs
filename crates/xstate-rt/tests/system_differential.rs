@@ -120,6 +120,15 @@ fn run(fixture: &Value, expected: &[Value]) -> Result<(), String> {
                         "{label}: the view differs from to_json\n  view:    {viewed}\n  to_json: {actual}"
                     ));
                 }
+                // The next deadline is the earliest pending timer's.
+                let earliest =
+                    actual["timers"].as_array().and_then(|t| t.iter().filter_map(|t| t["dueAt"].as_u64()).min());
+                if sys.unwrap().next_deadline() != earliest {
+                    return Err(format!(
+                        "{label}: next_deadline {:?}, timers due {earliest:?}",
+                        sys.unwrap().next_deadline()
+                    ));
+                }
                 // The compact snapshot restores to the same system.
                 let compact = serde_json::to_value(sys.unwrap().compact_view()).unwrap();
                 let from_compact = System::from_json(&logic, &compact, 10_000)
