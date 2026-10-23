@@ -1,0 +1,17 @@
+[package]
+name = "xstate-wasi"
+version = "0.1.0"
+description = "WASI 0.2 component that runs XState v6 machine definitions, with guards and actions from the host"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+xstate-rt = { path = "../xstate-rt" }
+serde_json.workspace = true
+wit-bindgen = "0.63"

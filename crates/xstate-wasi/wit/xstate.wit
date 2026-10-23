@@ -1,0 +1,82 @@
+package xstate:runtime@0.1.0;
+
+/// What the host implements for the names a definition references but does
+/// not define. Every JSON value crosses the boundary as a string.
+interface implementations {
+  /// A custom guard (`{ "type": name, "params"?: ... }`). `params` is absent
+  /// when the reference has none.
+  guard: func(name: string, params: option<string>, context: string, event: string) -> bool;
+
+  /// A custom action. It runs as an effect after the step that enqueued it,
+  /// in order with the step's other effects, and receives only its params.
+  action: func(name: string, params: option<string>);
+
+  /// A named delay in milliseconds, computed when the timer is scheduled.
+  delay: func(name: string, context: string, event: string) -> u64;
+}
+
+/// Machines as actors. The runtime never reads a clock: every call that can
+/// fire timers takes the current time in milliseconds.
+interface actors {
+  /// A running machine and its invoked children.
+  ///
+  /// Start options (JSON, all optional):
+  ///
+  ///   { "input": any,               // the root's input
+  ///     "id": string,               // the root's actor id (defaults to the machine id)
+  ///     "children": { "<src>": MachineJSON },  // child machines for `invoke.src`
+  ///     "maxSteps": number }        // bound on work per call (default 10000)
+  ///
+  /// An `invoke.src` without a child machine is async work done by the host:
+  /// it appears in `pending-effects` as an `@xstate.effect` and completes
+  /// when the host calls `resolve-effect` with
+  /// `{ "type": "xstate.async.resolve", "data": ... }` or
+  /// `{ "type": "xstate.async.reject", "data": ... }`.
+  resource actor {
+    /// Loads `definition` (MachineJSON) and starts it at `now`.
+    start: static func(definition: string, options: string, now: u64) -> result<actor, string>;
+
+    /// Restores an actor from `persist` output. Runs no actions.
+    restore: static func(definition: string, options: string, snapshot: string) -> result<actor, string>;
+
+    /// Sends an event (`{ "type": ..., ... }`) to the root at `now`. When time
+    /// moved forward, due timers fire first.
+    send: func(event: string, now: u64) -> result<_, string>;
+
+    /// Sends an event to any actor in the system by address: the root's is
+    /// its id, an invoked child's is `<parent address>/<invoke id>`.
+    send-to: func(address: string, event: string, now: u64) -> result<_, string>;
+
+    /// Fires every timer due at or before `now`.
+    advance: func(now: u64) -> result<_, string>;
+
+    /// When the next timer is due.
+    next-deadline: func() -> option<u64>;
+
+    /// The root's snapshot: `{ "status", "value", "context", "output"?, "error"? }`.
+    snapshot: func() -> string;
+
+    /// The whole system (XState's `SystemSnapshot` shape), for `restore`.
+    persist: func() -> string;
+
+    /// Events the root emitted since the last call, oldest first.
+    take-emitted: func() -> list<string>;
+
+    /// Argument lists of the root's `@xstate.log` actions since the last call.
+    take-logs: func() -> list<string>;
+
+    /// External work waiting for the host (XState's external effect data).
+    pending-effects: func() -> list<string>;
+
+    /// Completes a pending effect, optionally with a result event.
+    resolve-effect: func(id: string, event: option<string>) -> result<_, string>;
+
+    /// Stops the root and its children.
+    stop: func() -> result<_, string>;
+  }
+}
+
+world runtime {
+  import implementations;
+  export actors;
+}

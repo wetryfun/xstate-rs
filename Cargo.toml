@@ -1,6 +1,21 @@
 [workspace]
 resolver = "2"
-members = ["crates/xstate-rt", "crates/xstate-wasm", "crates/xstate-codegen", "examples/checkout"]
+members = [
+    "crates/xstate-rt",
+    "crates/xstate-wasm",
+    "crates/xstate-codegen",
+    "crates/xstate-wasi",
+    "crates/xstate-wasi-host",
+    "examples/checkout",
+]
+# xstate-wasi-host builds Wasmtime; test it explicitly with `cargo test -p xstate-wasi-host`.
+default-members = [
+    "crates/xstate-rt",
+    "crates/xstate-wasm",
+    "crates/xstate-codegen",
+    "crates/xstate-wasi",
+    "examples/checkout",
+]
 
 [workspace.package]
 edition = "2021"

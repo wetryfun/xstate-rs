@@ -117,6 +117,18 @@ where
         Ok(())
     }
 
+    /// Sends a JSON event to any actor in the system by address (the root's
+    /// is its id; an invoked child's is `<parent>/<invoke id>`), as
+    /// [`Actor::send_json`] does for the root.
+    pub fn send_to(&mut self, address: &str, event: Value, now_ms: u64) -> Result<(), SystemError> {
+        if now_ms > self.system.now() {
+            self.advance(now_ms)?;
+        }
+        let effects = self.system.send(address, event)?;
+        self.handle(effects);
+        Ok(())
+    }
+
     /// Fires every timer due at or before `now_ms`, chronologically. Each
     /// timer is its own step, as with a live XState actor: when a later
     /// timer fails, the effects of the earlier ones have already run.

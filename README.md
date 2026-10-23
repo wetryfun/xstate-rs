@@ -12,6 +12,8 @@ Milestone 2 (actors) is a port of XState's pure system API: `invoke` of machines
 
 Milestone 3 (codegen) turns a machine authored in TypeScript with Zod schemas into typed Rust: `tools/extract/extract.mjs` writes a `<name>.xstate.json` bundle, and `xstate-codegen` (from `build.rs`) generates context, event and params types plus an implementation trait. See [`examples/checkout`](examples/checkout).
 
+Milestone 5 (WASI) is a WASI 0.2 component, `crates/xstate-wasi` (WIT in `crates/xstate-wasi/wit/xstate.wit`), that loads any definition at run time and calls the host for guards, actions and delays. Hosts in any language with a component runtime can run machines with it.
+
 Not yet supported (rejected at load time with the JSON path): choice and route states, state and transition `input`, and any `@code` / `@expr`.
 
 ## Example
@@ -81,7 +83,8 @@ actor.send(Event::Checkout { total: 120.0 }, 10)?;
 ```sh
 cargo test                       # unit, runtime and differential tests
 tools/xstate-suite/run.sh        # XState's own test suite on the Rust core (needs pnpm)
-cargo clippy --all-targets
+cargo clippy --all-targets --workspace
+cargo test -p xstate-wasi-host      # the WASI component, run in Wasmtime
 cd tools/differential && npm install && npm run generate   # regenerate expected traces from XState
 node tools/differential/generate-system.mjs                 # regenerate system-level traces
 tools/differential/fuzz.sh 1000 10                          # random machines and actor systems vs XState

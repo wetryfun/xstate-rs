@@ -41,12 +41,12 @@ flowchart TD
   USER --> SVC[Deployment adapters: native service, WASI component, Redpanda]
 ```
 
-Workspace crates (`xstate-rt`, `xstate-wasm` and `xstate-codegen` exist so far):
+Workspace crates (all but `xstate-redpanda` exist so far):
 
 - `xstate-rt`: the core. `core.rs` is the structural statechart algorithm behind a `Host` trait; the native host (`interp.rs`) parses `MachineJSON`, compiles it, and runs it. Later also the actor runtime. Generic, with nothing machine-specific.
 - `xstate-wasm`: exposes `core.rs` to JavaScript over a plain integer wasm ABI, so XState's own runtime can use it (see Testing strategy).
 - `xstate-codegen`: build-time generator. Reads a `<name>.xstate.json` bundle (definition plus JSON Schemas) and emits typed Rust (context, events, params, the implementation trait, and the registry wiring).
-- `xstate-wasi`: a WASI component adapter exposing the runtime through WIT.
+- `xstate-wasi`: a WASI 0.2 component (`wasm32-wasip2`) exposing the runtime through WIT; `xstate-wasi-host` (not a default member, it builds Wasmtime) tests it.
 - `xstate-redpanda`: the co-located, partition-sharded service.
 
 Other directories: `fixtures/` (shared differential fixtures), `tools/differential/` (the JS side of differential testing), `tools/extract/` (the TS extract script), `examples/checkout/` (a machine authored in TS, run through codegen).
@@ -147,7 +147,7 @@ Mapping rules (custom generator in `crates/xstate-codegen/src/types.rs`, no typi
 
 ## Deployment targets
 
-- **WASI component:** a sync, host-driven core works on WASI 0.2 and 0.3. Export a WIT `actor` resource with `send`, `snapshot`, `persist`, `restore`, `next-deadline`, `advance`, and `take-emitted`, passing JSON strings. Target `wasm32-wasip2` with `wit-bindgen`. Adopt WASI 0.3 async for host-provided invoked actors once Rust guest tooling stabilizes.
+- **WASI component (milestone 5, done):** `crates/xstate-wasi/wit/xstate.wit`, world `runtime`. It exports a `actor` resource (`start` / `restore` static functions, `send`, `send-to` (any address), `advance`, `next-deadline`, `snapshot`, `persist`, `take-emitted`, `take-logs`, `pending-effects`, `resolve-effect`, `stop`), passing JSON strings, and imports `implementations` (`guard`, `action`, `delay`). **Decision: the component is generic.** It loads any `MachineJSON` at run time and wires every name the definition references (`Machine::references`) to the host imports; start options supply child machines for `invoke.src` (`children`), and any other source is async work the host completes through `resolve-effect` (`xstate.async.resolve` / `reject`). Host calls happen while the actor is borrowed; the host must not re-enter the same actor from a guard or action. Exports are compiled only for wasm32 (component export names do not link natively). Build with `cargo build -p xstate-wasi --target wasm32-wasip2 --release` (about 1 MB); `cargo test -p xstate-wasi-host` builds it into `target/wasi` and drives it from Wasmtime 50. A per-machine typed component (codegen'd trait implemented in the guest) and WASI 0.3 async for host-provided actors are possible follow-ups.
 - **Redpanda (performance target):** a native Rust service co-located on each broker node, not in-broker Data Transforms, which have no network or disk access and only support single-record transforms. Use follower fetching (`enable_rack_awareness`, per-node `rack`, `client.rack`) to read the local replica. Shard by partition with one thread per core. Keep actors in memory, back them with a compacted changelog topic per machine (binary snapshots via postcard or rkyv) plus a local embedded store, and use Kafka transactions to commit emitted events, changelog writes, and offsets atomically in batches. Persist timer firings through the changelog in the same transaction. Use `rdkafka`.
 
 ## Testing strategy
@@ -185,7 +185,7 @@ When v6 behavior is uncertain, add a fixture before choosing semantics.
 2. ~~Actor runtime: invoke, system, done and error propagation, timeouts.~~ Done as a port of XState's pure system API, with system differential fixtures. Still open: `spawn` / `sendTo` from JSON actions (no JSON-portable form in alpha.70), listeners and subscriptions.
 3. ~~Codegen pipeline and the TS extract script.~~ Done (`tools/extract`, `xstate-codegen`, `examples/checkout`). Open: typed `ActorRef<Child>` handles from `schemas.children`.
 4. ~~Differential test harness: extend fixtures to actors; add generated random event sequences.~~ Done: random machines and actor systems (`gen.mjs`, `fuzz.mjs`, `fuzz-system.mjs`, `fuzz.sh`), committed corpora, and the fixes they found.
-5. WASI component adapter.
+5. ~~WASI component adapter.~~ Done (`xstate-wasi`, tested from Wasmtime in `xstate-wasi-host`).
 6. Redpanda co-located service with benchmarks.
 
 ## Conventions
@@ -194,4 +194,4 @@ When v6 behavior is uncertain, add a fixture before choosing semantics.
 - No `unsafe` in `xstate-rt`. No platform clocks, threads, or I/O in the core.
 - Every unsupported v6 feature produces a clear error naming the feature and its JSON path.
 - When v6 behavior is uncertain, write a differential test before choosing semantics, and record the decision in this file.
-- `cargo fmt`, `cargo clippy --all-targets` clean, `cargo test` green before pushing; after touching `core.rs`, also `tools/xstate-suite/run.sh`.
+- `cargo fmt`, `cargo clippy --all-targets --workspace` clean, `cargo test` green before pushing; after touching `core.rs`, also `tools/xstate-suite/run.sh`; after touching `xstate-wasi` or the actor API, also `cargo test -p xstate-wasi-host`.
