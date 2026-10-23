@@ -6,6 +6,9 @@
 //!   xstate-kafka proto events <file>        print the input events' .proto
 //!                                           (file: a bundle or a config)
 //!   xstate-kafka proto snapshot             print the snapshot .proto
+//!   xstate-kafka avro <events|emitted|snapshot> <file>
+//!                                           print an Avro schema (file: a
+//!                                           bundle or a config)
 //!
 //! `XSTATE_KAFKA_DEBUG=1` traces worker batches on stderr.
 
@@ -56,10 +59,35 @@ fn proto(args: &[String]) -> Result<(), String> {
     }
 }
 
+/// Prints an Avro schema (`.avsc` JSON) for producers and other readers.
+fn avro(args: &[String]) -> Result<(), String> {
+    let usage = "usage: xstate-kafka avro <events | emitted | snapshot> <bundle.xstate.json | config.json>";
+    let [what, path] = args else { return Err(usage.into()) };
+    let text = std::fs::read_to_string(path).map_err(|e| format!("{path}: {e}"))?;
+    let mut json: serde_json::Value = serde_json::from_str(&text).map_err(|e| format!("{path}: {e}"))?;
+    if json.get("bootstrapServers").is_some() {
+        json = FileConfig::load(path.as_ref())?.read_machine_file()?;
+    }
+    let registry = Arc::new(xstate_kafka::avro::registry::MemoryRegistry::default());
+    let schemas = xstate_kafka::avro::AvroSchemas::from_bundle(&json, registry).map_err(|e| format!("{path}: {e}"))?;
+    let root = match what.as_str() {
+        "events" => schemas.events.as_ref().ok_or("the bundle has no schemas.events")?,
+        "emitted" => schemas.emitted.as_ref().ok_or("the bundle has no schemas.emitted")?,
+        "snapshot" => &schemas.snapshot,
+        _ => return Err(usage.into()),
+    };
+    let pretty: serde_json::Value = serde_json::from_str(root.schema()).map_err(|e| e.to_string())?;
+    println!("{}", serde_json::to_string_pretty(&pretty).map_err(|e| e.to_string())?);
+    Ok(())
+}
+
 fn run() -> Result<(), String> {
     let args: Vec<String> = std::env::args().skip(1).collect();
     if args.first().map(String::as_str) == Some("proto") {
         return proto(&args[1..]);
+    }
+    if args.first().map(String::as_str) == Some("avro") {
+        return avro(&args[1..]);
     }
     let (check, path) = match args.as_slice() {
         [flag, path] if flag == "--check" => (true, path),

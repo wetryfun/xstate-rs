@@ -41,6 +41,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use xstate_rt::{Actor, EventType, InitOptions, Machine, Migration, Status};
 
+use crate::avro::AvroSchemas;
 use crate::codec::{self, Codec, Mark};
 use crate::proto::events::EventSchema;
 
@@ -65,6 +66,20 @@ pub struct EngineConfig {
     pub dedupe: Option<Dedupe>,
     /// What a changelog record that cannot be restored does.
     pub restore_errors: RestoreErrors,
+    /// Avro schemas, for Avro events, outputs and snapshots.
+    pub avro: Option<Arc<AvroSchemas>>,
+    /// How output records are encoded.
+    pub outputs: OutputFormat,
+}
+
+/// How output (emitted event) records are encoded.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum OutputFormat {
+    #[default]
+    Json,
+    /// Avro (`schemas.emitted`) in the Schema Registry wire format. An event
+    /// its schema does not describe is a dead letter.
+    Avro,
 }
 
 /// What happens to a changelog record that cannot be restored (an unknown
@@ -90,6 +105,8 @@ impl Default for EngineConfig {
             event_schema: None,
             dedupe: None,
             restore_errors: RestoreErrors::default(),
+            avro: None,
+            outputs: OutputFormat::default(),
         }
     }
 }
@@ -152,12 +169,17 @@ pub enum EventFormat {
     Protobuf,
     /// The JSON event as MessagePack.
     MessagePack,
+    /// Avro in the Schema Registry wire format, written with any registered
+    /// schema compatible with `schemas.events` ([`AvroSchemas`]).
+    Avro,
 }
 
 impl EventFormat {
     /// The format a `content-type` header names: `application/json`,
     /// `application/x-protobuf` (or `application/protobuf`,
-    /// `application/vnd.google.protobuf`) and `application/msgpack` (or
+    /// `application/vnd.google.protobuf`), `application/avro` (or
+    /// `avro/binary`, `application/vnd.apache.avro+binary`) and
+    /// `application/msgpack` (or
     /// `application/x-msgpack`), parameters ignored.
     pub fn from_content_type(content_type: &str) -> Option<Self> {
         let media = content_type.split(';').next().unwrap_or("").trim().to_ascii_lowercase();
@@ -165,6 +187,9 @@ impl EventFormat {
             "application/json" | "text/json" => Some(EventFormat::Json),
             "application/x-protobuf" | "application/protobuf" | "application/vnd.google.protobuf" => {
                 Some(EventFormat::Protobuf)
+            }
+            "application/avro" | "avro/binary" | "application/vnd.apache.avro+binary" | "application/x-avro-binary" => {
+                Some(EventFormat::Avro)
             }
             "application/msgpack" | "application/x-msgpack" | "application/vnd.msgpack" => {
                 Some(EventFormat::MessagePack)
@@ -192,6 +217,8 @@ pub enum SnapshotFormat {
 pub struct Emitted {
     pub key: String,
     pub event: Value,
+    /// The output record, when outputs are not JSON (Avro).
+    pub payload: Option<Vec<u8>>,
 }
 
 /// A record the partition could not process, and why.
@@ -479,7 +506,10 @@ where
             return Ok(());
         }
         self.retired.remove(key);
-        let snapshot = Codec::decode(body)?;
+        let snapshot = match (body.first(), &self.config.avro) {
+            (Some(&crate::avro::MAGIC), Some(avro)) => avro.decode_snapshot(body)?,
+            _ => Codec::decode(body)?,
+        };
         let (actor, migrated) = self.machines.restore(snapshot)?;
         self.now = self.now.max(actor.now());
         let mut slot = Slot::new(actor);
@@ -529,6 +559,18 @@ where
                 Ok(e) => e,
                 Err(e) => return self.output.dead_letters.push(dead(format!("not MessagePack: {e}"))),
             },
+            EventFormat::Avro => {
+                let Some(avro) = &self.config.avro else {
+                    return self
+                        .output
+                        .dead_letters
+                        .push(dead("an Avro event, but no schema registry is configured".into()));
+                };
+                match avro.decode_event(payload) {
+                    Ok(e) => e,
+                    Err(e) => return self.output.dead_letters.push(dead(format!("not an Avro event: {e}"))),
+                }
+            }
             EventFormat::Protobuf => {
                 let Some(schema) = &self.config.event_schema else {
                     return self
@@ -636,7 +678,7 @@ where
                 slot.scheduled = None;
             }
             let actor = &mut slot.actor;
-            if actor.next_deadline().map_or(true, |d| d > self.now) {
+            if actor.next_deadline().is_none_or(|d| d > self.now) {
                 continue; // stale: the timer was cancelled or already fired
             }
             if let Err(e) = actor.advance(self.now) {
@@ -668,7 +710,7 @@ where
         let slot = self.actors.get_mut(key).expect("present");
         let actor = &mut slot.actor;
         for event in actor.take_emitted() {
-            self.output.emitted.push(Emitted { key: key.to_owned(), event });
+            self.output.emitted.push(Emitted { key: key.to_owned(), event, payload: None });
         }
         actor.take_logs();
         match actor.next_deadline() {
@@ -715,6 +757,28 @@ where
         if let Some(mark) = slot.mark.filter(|_| config.dedupe.is_some()) {
             codec::write_mark(&mut out, mark);
         }
+        if config.codec == Codec::Avro {
+            let start = out.len();
+            let snapshot = match config.snapshots {
+                SnapshotFormat::Compact => serde_json::to_value(slot.actor.persist_compact()),
+                SnapshotFormat::XState => serde_json::to_value(slot.actor.persist_view()),
+            };
+            let written = match (&config.avro, snapshot) {
+                (Some(avro), Ok(snapshot)) => avro.encode_snapshot(&snapshot, &mut out),
+                (None, _) => Err("no schema registry is configured".into()),
+                (_, Err(e)) => Err(e.to_string()),
+            };
+            match written {
+                Ok(()) => return out,
+                Err(e) => {
+                    // Restore reads any codec: keep the state.
+                    eprintln!("xstate-kafka: an Avro snapshot failed ({e}); writing MessagePack");
+                    out.truncate(start);
+                    Codec::MessagePack.encode_into(&mut out, &slot.actor.persist_view());
+                    return out;
+                }
+            }
+        }
         // Protobuf records always hold the compact form: they are not for
         // XState's own restore anyway.
         match (config.snapshots, config.codec) {
@@ -724,6 +788,29 @@ where
             (SnapshotFormat::XState, _) => config.codec.encode_into(&mut out, &slot.actor.persist_view()),
         }
         out
+    }
+
+    /// Encodes the emitted events as Avro records; one its schema does not
+    /// describe becomes a dead letter instead.
+    fn encode_outputs(&mut self) {
+        let emitted = std::mem::take(&mut self.output.emitted);
+        for mut e in emitted {
+            let encoded = match &self.config.avro {
+                Some(avro) => avro.encode_emitted(&e.event),
+                None => Err("no schema registry is configured".into()),
+            };
+            match encoded {
+                Ok(payload) => {
+                    e.payload = Some(payload);
+                    self.output.emitted.push(e);
+                }
+                Err(reason) => self.output.dead_letters.push(DeadLetter {
+                    key: Some(e.key),
+                    payload: e.event.to_string().into_bytes(),
+                    reason: format!("an emitted event has no Avro form: {reason}"),
+                }),
+            }
+        }
     }
 
     fn retired_record(mark: Mark, at: u64) -> Vec<u8> {
@@ -772,6 +859,9 @@ where
     /// Takes the output since the last flush, with the snapshots of the
     /// actors that changed.
     pub fn flush(&mut self) -> Output {
+        if self.config.outputs == OutputFormat::Avro {
+            self.encode_outputs();
+        }
         for (key, dead) in std::mem::take(&mut self.restore_failed) {
             self.output.restore_failures += 1;
             self.output.dead_letters.push(dead);

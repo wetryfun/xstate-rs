@@ -23,6 +23,8 @@
 //!   ],
 //!   "onRestoreError": "deadLetter",
 //!   "rebalance": "cooperative", "statsIntervalMs": 5000,
+//!   "outputs": "json",
+//!   "schemaRegistry": { "url": "http://localhost:8081", "username": "u", "password": { "env": "SR_PASSWORD" } },
 //!   "client": {
 //!     "compression.type": "zstd",
 //!     "security.protocol": "SASL_SSL", "sasl.mechanisms": "SCRAM-SHA-256",
@@ -56,6 +58,11 @@
 //! `client` passes librdkafka settings through (TLS and SASL PLAIN, SCRAM
 //! and OAUTHBEARER are built in); a value can name a secret instead of
 //! holding it: `{ "env": "NAME" }` or `{ "file": "/run/secrets/name" }`.
+//!
+//! Avro (`"events"`, `"outputs"` or `"codec": "avro"`) needs
+//! `schemaRegistry` and a bundle; the generated schemas are registered at
+//! start (or looked up, with `"autoRegister": false`) under the topics'
+//! `<topic>-value` subjects (see `xstate_kafka::avro`).
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -66,8 +73,10 @@ use serde_json::Value;
 use xstate_rt::step::async_logic;
 use xstate_rt::{Machine, Migration, Registry};
 
+use crate::avro::registry::HttpRegistry;
+use crate::avro::AvroSchemas;
 use crate::codec::Codec;
-use crate::engine::{Dedupe, EngineConfig, EventFormat, MachineSet, RestoreErrors, SnapshotFormat};
+use crate::engine::{Dedupe, EngineConfig, EventFormat, MachineSet, OutputFormat, RestoreErrors, SnapshotFormat};
 use crate::proto::events::EventSchema;
 use crate::service::ServiceConfig;
 
@@ -81,6 +90,26 @@ pub struct Topics {
     pub dead_letter: Option<String>,
     #[serde(default)]
     pub effects: Option<String>,
+}
+
+/// Where Avro schemas are registered and looked up (the Confluent REST API,
+/// as Redpanda's built-in registry serves it).
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct SchemaRegistryConfig {
+    /// Like `http://redpanda:8081`.
+    pub url: String,
+    /// Basic auth (strings or `{ "env" }` / `{ "file" }` secrets).
+    #[serde(default)]
+    pub username: Option<Value>,
+    #[serde(default)]
+    pub password: Option<Value>,
+    /// Register the generated schemas at start (default), or only look
+    /// them up (registered by a deployment pipeline).
+    #[serde(default)]
+    pub auto_register: Option<bool>,
+    #[serde(default)]
+    pub timeout_ms: Option<u64>,
 }
 
 /// An earlier version of the machine.
@@ -143,6 +172,12 @@ pub struct FileConfig {
     /// `"deadLetter"` or `"fail"`.
     #[serde(default)]
     pub on_restore_error: Option<String>,
+    /// How output records are encoded: `"json"` (default) or `"avro"`.
+    #[serde(default)]
+    pub outputs: Option<String>,
+    /// The Schema Registry, for Avro events, outputs and snapshots.
+    #[serde(default)]
+    pub schema_registry: Option<SchemaRegistryConfig>,
     /// `"cooperative"` (default) or `"eager"`.
     #[serde(default)]
     pub rebalance: Option<String>,
@@ -232,8 +267,11 @@ impl FileConfig {
             None | Some("messagepack") => Codec::MessagePack,
             Some("json") => Codec::Json,
             Some("protobuf") => Codec::Protobuf,
+            Some("avro") => Codec::Avro,
             Some(other) => {
-                return Err(format!("unknown codec \"{other}\" (expected \"messagepack\", \"json\" or \"protobuf\")"))
+                return Err(format!(
+                    "unknown codec \"{other}\" (expected \"messagepack\", \"json\", \"protobuf\" or \"avro\")"
+                ))
             }
         };
         let snapshots = match self.snapshots.as_deref() {
@@ -247,11 +285,17 @@ impl FileConfig {
             None | Some("json") => EventFormat::Json,
             Some("protobuf") => EventFormat::Protobuf,
             Some("messagepack") => EventFormat::MessagePack,
+            Some("avro") => EventFormat::Avro,
             Some(other) => {
                 return Err(format!(
-                    "unknown event format \"{other}\" (expected \"json\", \"protobuf\" or \"messagepack\")"
+                    "unknown event format \"{other}\" (expected \"json\", \"protobuf\", \"messagepack\" or \"avro\")"
                 ))
             }
+        };
+        let outputs = match self.outputs.as_deref() {
+            None | Some("json") => OutputFormat::Json,
+            Some("avro") => OutputFormat::Avro,
+            Some(other) => return Err(format!("unknown output format \"{other}\" (expected \"json\" or \"avro\")")),
         };
         let bundle = self.read_machine_file()?;
         // A bundle with event schemas can always take protobuf records
@@ -277,6 +321,7 @@ impl FileConfig {
                 return Err(format!("unknown onRestoreError \"{other}\" (expected \"deadLetter\" or \"fail\")"))
             }
         };
+        let avro = self.avro(&bundle, events, outputs, codec)?;
         c.engine = EngineConfig {
             codec,
             evict_final: self.evict_final.unwrap_or(true),
@@ -285,6 +330,8 @@ impl FileConfig {
             event_schema,
             dedupe: self.dedupe.clone(),
             restore_errors,
+            avro,
+            outputs,
         };
         for (k, v) in &self.client {
             let v = match v {
@@ -295,6 +342,56 @@ impl FileConfig {
             c.client_config.push((k.clone(), v));
         }
         Ok(c)
+    }
+
+    /// The Avro schemas, registered under `<topic>-value` subjects: the
+    /// input topic's (whenever the bundle has `schemas.events`, so records
+    /// can announce Avro by their content type), and the output and
+    /// changelog topics' when those are Avro.
+    fn avro(
+        &self,
+        bundle: &Value,
+        events: EventFormat,
+        outputs: OutputFormat,
+        codec: Codec,
+    ) -> Result<Option<Arc<AvroSchemas>>, String> {
+        let used = events == EventFormat::Avro || outputs == OutputFormat::Avro || codec == Codec::Avro;
+        let Some(r) = &self.schema_registry else {
+            return if used { Err("Avro needs \"schemaRegistry\"".into()) } else { Ok(None) };
+        };
+        let text = |v: &Option<Value>, what: &str| -> Result<Option<String>, String> {
+            match v {
+                None => Ok(None),
+                Some(Value::String(s)) => Ok(Some(s.clone())),
+                Some(Value::Object(o)) => secret(o).map(Some).map_err(|e| format!("schemaRegistry.{what}: {e}")),
+                Some(_) => Err(format!("schemaRegistry.{what}: expected a string or a secret")),
+            }
+        };
+        let credentials = match (text(&r.username, "username")?, text(&r.password, "password")?) {
+            (Some(u), Some(p)) => Some((u, p)),
+            (None, None) => None,
+            _ => return Err("schemaRegistry needs both username and password".into()),
+        };
+        let timeout = Duration::from_millis(r.timeout_ms.unwrap_or(10_000));
+        let registry = Arc::new(HttpRegistry::new(&r.url, credentials, timeout));
+        let mut schemas =
+            AvroSchemas::from_bundle(bundle, registry).map_err(|e| format!("{}: {e}", self.machine.display()))?;
+        if events == EventFormat::Avro && schemas.events.is_none() {
+            return Err("\"events\": \"avro\" needs a bundle with schemas.events".into());
+        }
+        if outputs == OutputFormat::Avro && schemas.emitted.is_none() {
+            return Err("\"outputs\": \"avro\" needs a bundle with schemas.emitted".into());
+        }
+        let t = &self.topics;
+        let subject = |topic: &str| format!("{topic}-value");
+        let (input, output, changelog) = (subject(&t.input), subject(&t.output), subject(&t.changelog));
+        let subjects = [
+            schemas.events.as_ref().map(|_| input.as_str()),
+            (outputs == OutputFormat::Avro).then_some(output.as_str()),
+            (codec == Codec::Avro).then_some(changelog.as_str()),
+        ];
+        schemas.register(subjects, r.auto_register.unwrap_or(true)).map_err(|e| format!("schemaRegistry: {e}"))?;
+        Ok(Some(Arc::new(schemas)))
     }
 
     /// The machine file: a `MachineJSON` definition or a bundle.

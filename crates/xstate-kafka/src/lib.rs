@@ -14,6 +14,7 @@
 //!
 //! [`engine`] is deterministic and has no Kafka dependency.
 
+pub mod avro;
 pub mod checkpoint;
 pub mod codec;
 #[cfg(feature = "kafka")]
@@ -29,7 +30,7 @@ pub mod service;
 
 pub use codec::{Codec, Mark};
 pub use engine::{
-    DeadLetter, Dedupe, EffectRequest, Emitted, EngineConfig, EventFormat, MachineSet, Output, Partition,
+    DeadLetter, Dedupe, EffectRequest, Emitted, EngineConfig, EventFormat, MachineSet, Output, OutputFormat, Partition,
     RestoreErrors, SnapshotFormat, EFFECT_RESULT,
 };
 pub use metrics::{BatchCounts, Metrics, MetricsSnapshot};

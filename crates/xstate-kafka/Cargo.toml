@@ -5,7 +5,9 @@ description = "Runs XState machines as partition-sharded actors next to a Kafka-
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
-rust-version.workspace = true
+# apache-avro 0.20+ needs 1.85 (0.19 enabled serde_json's
+# `arbitrary_precision` for the whole build); the core keeps the workspace's.
+rust-version = "1.85"
 publish = false
 
 [features]
@@ -18,6 +20,7 @@ kafka = [
     "dep:rdkafka",
     "dep:ctrlc",
     "dep:mimalloc",
+    "dep:ureq",
     "rdkafka/ssl-vendored",
     "rdkafka/zstd",
     "rdkafka/libz-static",
@@ -35,6 +38,10 @@ rdkafka = { version = "0.39", default-features = false, optional = true }
 ctrlc = { version = "3.5", optional = true, features = ["termination"] }
 # The binary's allocator: allocation is a large share of each event.
 mimalloc = { version = "0.1", optional = true, default-features = false }
+# Avro events, outputs and snapshots (Schema Registry wire format).
+apache-avro = { version = "0.21", default-features = false }
+# The Schema Registry client (blocking HTTP, rustls).
+ureq = { version = "3.2.1", optional = true }
 
 [dev-dependencies]
 criterion = { version = "0.8", default-features = false }

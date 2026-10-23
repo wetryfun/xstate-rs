@@ -24,6 +24,10 @@ pub enum Codec {
     /// instead of names. Always the compact snapshot form; not for XState's
     /// own restore.
     Protobuf,
+    /// Avro in the Schema Registry wire format (`crate::avro`). Written and
+    /// read by a partition, which holds the schemas: the other codecs'
+    /// functions do not handle it.
+    Avro,
 }
 
 const JSON: u8 = 1;
@@ -131,6 +135,7 @@ impl Codec {
                 out.push(PROTOBUF);
                 crate::proto::snapshot::encode(out, snapshot).expect("snapshots serialize");
             }
+            Codec::Avro => panic!("Avro snapshots need the schema registry: a partition writes them"),
         }
     }
 
@@ -147,6 +152,7 @@ impl Codec {
             Some((&PROTOBUF, payload)) => {
                 crate::proto::snapshot::decode(payload).map_err(|e| format!("invalid protobuf snapshot: {e}"))
             }
+            Some((&crate::avro::MAGIC, _)) => Err("an Avro snapshot needs the schema registry".into()),
             Some((format, _)) => Err(format!("unknown snapshot format {format}")),
             None => Err("empty snapshot record".into()),
         }

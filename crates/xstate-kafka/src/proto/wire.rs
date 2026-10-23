@@ -241,7 +241,7 @@ mod tests {
         }
         let mut out = Vec::new();
         let start = begin_len(&mut out, 7);
-        out.extend(std::iter::repeat(1u8).take(200));
+        out.extend(std::iter::repeat_n(1u8, 200));
         end_len(&mut out, start);
         let (f, raw) = Reader::new(&out).next().unwrap().unwrap();
         assert_eq!((f, raw.bytes().unwrap().len()), (7, 200));

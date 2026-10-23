@@ -93,7 +93,7 @@ fn read(bootstrap: &str, topic: &str, count: usize) -> Vec<Record> {
     let mut out = Vec::new();
     let deadline = Instant::now() + Duration::from_secs(30);
     let mut quiet_until: Option<Instant> = None;
-    while Instant::now() < deadline && quiet_until.map_or(true, |q| Instant::now() < q) {
+    while Instant::now() < deadline && quiet_until.is_none_or(|q| Instant::now() < q) {
         if let Some(Ok(m)) = consumer.poll(Duration::from_millis(50)) {
             let reason = m
                 .headers()
@@ -528,5 +528,73 @@ fn an_effects_worker_completes_invoked_work() {
     assert_eq!(by_key["u1"], vec!["found"]);
     assert_eq!(by_key["u2"], vec!["found"]);
     assert_eq!(by_key["bad1"], vec!["failed"]);
+    assert!(read(&bootstrap, "dead", 0).is_empty());
+}
+
+/// Avro events in, Avro outputs and changelog out, and a restart that
+/// restores actors from the Avro changelog.
+#[test]
+fn avro_events_outputs_and_snapshots_end_to_end() {
+    use xstate_kafka::avro::{registry::MemoryRegistry, AvroSchemas};
+    use xstate_kafka::{Codec, EventFormat, OutputFormat};
+
+    let bundle = json!({
+        "machine": {
+            "id": "counter", "initial": "counting", "context": { "count": 0 },
+            "states": {
+                "counting": { "on": { "add": { "target": "counted", "actions": [{ "type": "@xstate.emit", "event": { "type": "at", "state": "counted" } }] } } },
+                "counted": { "on": { "add": { "target": "done", "actions": [{ "type": "@xstate.emit", "event": { "type": "at", "state": "done" } }] } } },
+                "done": { "type": "final" }
+            }
+        },
+        "schemas": {
+            "events": { "add": { "type": "object", "properties": { "n": { "type": "integer" } }, "required": ["n"] } },
+            "emitted": { "at": { "type": "object", "properties": { "state": { "type": "string" } }, "required": ["state"] } }
+        }
+    });
+    let mut avro = AvroSchemas::from_bundle(&bundle, Arc::new(MemoryRegistry::default())).unwrap();
+    avro.register([Some("input-value"), Some("output-value"), Some("changelog-value")], true).unwrap();
+    let avro = Arc::new(avro);
+    let machine = Arc::new(Machine::<Value, Value>::from_json(&bundle["machine"], &Registry::new()).unwrap());
+
+    let cluster = MockCluster::new(3).unwrap();
+    for topic in ["input", "output", "changelog", "dead"] {
+        cluster.create_topic(topic, PARTITIONS, 3).unwrap();
+    }
+    let bootstrap = cluster.bootstrap_servers();
+    let avro_config = || {
+        let mut c = config(&bootstrap);
+        c.engine.codec = Codec::Avro;
+        c.engine.events = EventFormat::Avro;
+        c.engine.outputs = OutputFormat::Avro;
+        c.engine.evict_final = false;
+        c.engine.avro = Some(avro.clone());
+        c
+    };
+    let add = avro.encode_event(&json!({ "type": "add", "n": 1 })).unwrap();
+    for key in ["a", "b"] {
+        produce_typed(&bootstrap, key, &add, "application/avro");
+    }
+    let service = Service::start(avro_config(), machine.clone()).unwrap();
+    let output = read(&bootstrap, "output", 2);
+    service.stop().unwrap();
+    for (_, payload, _) in &output {
+        assert_eq!(
+            avro.decode_emitted(payload.as_deref().unwrap()).unwrap(),
+            json!({ "type": "at", "state": "counted" })
+        );
+    }
+    let changelog = read(&bootstrap, "changelog", 2);
+    assert!(changelog.iter().all(|r| r.1.as_ref().unwrap()[0] == xstate_kafka::avro::MAGIC));
+    commit_processed(&bootstrap);
+
+    // Restored from the Avro changelog, `a` goes on from `counted`.
+    produce_typed(&bootstrap, "a", &add, "application/avro");
+    let service = Service::start(avro_config(), machine).unwrap();
+    let output = read(&bootstrap, "output", 3);
+    service.stop().unwrap();
+    let states: Vec<Value> =
+        output.iter().map(|r| avro.decode_emitted(r.1.as_deref().unwrap()).unwrap()["state"].clone()).collect();
+    assert_eq!(states.iter().filter(|s| **s == "done").count(), 1, "{states:?}");
     assert!(read(&bootstrap, "dead", 0).is_empty());
 }

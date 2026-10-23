@@ -80,3 +80,14 @@ docker compose down -v   # also delete the Redpanda data and checkpoints
 - **Restore.** The service restores actors from `sensor-changelog`, a compacted topic, plus the local checkpoints in the `xstate` volume. Restart it with `docker compose restart xstate` and an actor continues where it left off.
 - **Debug tracing.** `XSTATE_KAFKA_DEBUG=1 docker compose up -d xstate` traces each batch in `docker compose logs -f xstate`.
 - **Image versions.** The tags are pinned: Redpanda v26.2.6, Redpanda Connect 4.115.0, Mosquitto 2.0.22, and Rust 1.97 for the build.
+
+## Avro
+
+Redpanda serves a Schema Registry on port 8081 (inside the compose network, `http://redpanda:8081`). To use Avro, add to `service.json`:
+
+```json
+"schemaRegistry": { "url": "http://redpanda:8081" },
+"events": "avro", "outputs": "avro", "codec": "avro"
+```
+
+The service registers its schemas at start under `sensor-events-value`, `sensor-out-value` and `sensor-changelog-value`; `xstate-kafka avro events machine/sensor.xstate.json` prints the input schema for producers. Avro needs a bundle with `schemas.events` (and `schemas.emitted` for Avro outputs). The demo machine has no emitted schemas, so leave `"outputs"` out with it, or add them.

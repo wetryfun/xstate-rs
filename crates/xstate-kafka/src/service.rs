@@ -818,8 +818,15 @@ fn commit_transaction(producer: &BaseProducer, config: &ServiceConfig, job: Job)
     producer.begin_transaction()?;
     for (partition, out) in &outputs {
         for e in &out.emitted {
-            let payload = e.event.to_string();
-            send(producer, BaseRecord::to(&config.output_topic).key(&e.key).payload(&payload))?;
+            let (payload, content_type) = match &e.payload {
+                Some(p) => (std::borrow::Cow::Borrowed(p.as_slice()), "application/avro"),
+                None => (std::borrow::Cow::Owned(e.event.to_string().into_bytes()), "application/json"),
+            };
+            let headers = OwnedHeaders::new().insert(Header { key: "content-type", value: Some(content_type) });
+            send(
+                producer,
+                BaseRecord::<str, [u8]>::to(&config.output_topic).key(&e.key).payload(&payload[..]).headers(headers),
+            )?;
         }
         if let Some(topic) = &config.effects_topic {
             for e in &out.effects {
