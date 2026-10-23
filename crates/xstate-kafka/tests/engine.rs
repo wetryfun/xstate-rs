@@ -137,6 +137,7 @@ fn lookup_machine() -> Arc<Machine<Value, Value>> {
                 "invoke": {
                     "id": "fetch",
                     "src": "fetchUser",
+                    "input": { "user": 7 },
                     "onDone": { "target": "found", "actions": [{ "type": "@xstate.emit", "event": { "type": "found" } }] },
                     "onError": { "target": "idle" }
                 },
@@ -160,6 +161,8 @@ fn external_work_is_published_once_and_resolved_by_records() {
     let effect = &out.effects[0];
     assert_eq!(effect.key, "u1");
     assert_eq!(effect.effect["type"], "@xstate.effect");
+    assert_eq!(effect.effect["logic"], "fetchUser");
+    assert_eq!(effect.effect["input"], json!({ "user": 7 }));
     let id = effect.effect["id"].as_str().unwrap().to_owned();
     let snapshot = out.changelog[0].1.clone().unwrap();
 

@@ -18,6 +18,8 @@ pub mod checkpoint;
 pub mod codec;
 #[cfg(feature = "kafka")]
 pub mod config;
+#[cfg(feature = "kafka")]
+pub mod effects;
 pub mod engine;
 pub mod metrics;
 mod msgpack;

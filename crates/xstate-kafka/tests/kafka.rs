@@ -470,3 +470,63 @@ fn partitions_move_cooperatively_and_probes_report_it() {
     assert!(metrics.contains("xstate_consumer_lag{partition="), "{metrics}");
     assert_eq!(http_get(address, "/health").0, 503, "stopped");
 }
+
+/// Invoked async work goes out on the effects topic, a worker does it, and
+/// its result brings the actor to its final state.
+#[test]
+fn an_effects_worker_completes_invoked_work() {
+    use std::sync::atomic::{AtomicBool, Ordering};
+    use xstate_kafka::effects::{self, Outcome, WorkerConfig};
+
+    let cluster = MockCluster::new(3).unwrap();
+    for topic in ["input", "output", "changelog", "dead", "effects"] {
+        cluster.create_topic(topic, PARTITIONS, 3).unwrap();
+    }
+    let bootstrap = cluster.bootstrap_servers();
+    let definition = json!({
+        "id": "lookup", "initial": "fetching",
+        "states": {
+            "fetching": {
+                "invoke": {
+                    "src": "fetchUser", "input": { "user": 7 },
+                    "onDone": { "target": "found", "actions": [{ "type": "@xstate.emit", "event": { "type": "at", "state": "found" } }] },
+                    "onError": { "target": "failed", "actions": [{ "type": "@xstate.emit", "event": { "type": "at", "state": "failed" } }] }
+                }
+            },
+            "found": { "type": "final" },
+            "failed": { "type": "final" }
+        }
+    });
+    let mut registry = Registry::<Value, Value>::new();
+    registry.actor("fetchUser", Arc::new(xstate_rt::step::async_logic(Some("fetchUser".into()), None).unwrap()));
+    let machine = Arc::new(Machine::from_json(&definition, &registry).unwrap());
+    let mut service_config = config(&bootstrap);
+    service_config.effects_topic = Some("effects".into());
+    let service = Service::start(service_config, machine).unwrap();
+
+    let stop = Arc::new(AtomicBool::new(false));
+    let worker = {
+        let (stop, bootstrap) = (stop.clone(), bootstrap.clone());
+        std::thread::spawn(move || {
+            let config = WorkerConfig::new(bootstrap, "workers", "effects", "input");
+            effects::run(&config, &stop, |work| match (work.logic.as_deref(), &work.input) {
+                // `bad` keys fail.
+                (Some("fetchUser"), Some(input)) if !work.key.starts_with("bad") => Outcome::Resolve(input.clone()),
+                _ => Outcome::Reject(json!({ "message": "no" })),
+            })
+        })
+    };
+    produce(
+        &bootstrap,
+        &[(Some("u1"), r#"{"type":"go"}"#), (Some("u2"), r#"{"type":"go"}"#), (Some("bad1"), r#"{"type":"go"}"#)],
+    );
+    let output = read(&bootstrap, "output", 3);
+    stop.store(true, Ordering::Relaxed);
+    worker.join().unwrap().unwrap();
+    service.stop().unwrap();
+    let by_key = states(&output);
+    assert_eq!(by_key["u1"], vec!["found"]);
+    assert_eq!(by_key["u2"], vec!["found"]);
+    assert_eq!(by_key["bad1"], vec!["failed"]);
+    assert!(read(&bootstrap, "dead", 0).is_empty());
+}

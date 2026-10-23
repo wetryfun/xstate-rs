@@ -10,7 +10,8 @@
 //! External work is what the runtime leaves to the host, chiefly the async
 //! actors a machine invokes (`@xstate.effect`). Each piece of work is
 //! published once, as XState's `SystemExternalEffect` JSON (`id`, `source`,
-//! `type`, `params`, ...), and stays pending in the actor's snapshot. Its
+//! `type`, `params`, ...) with the source actor's `logic` and `input` added,
+//! and stays pending in the actor's snapshot. Its
 //! result comes back as an input record for the same key, in XState's own
 //! shape: `{ "type": "xstate.system.effect.result", "effectId": "system:3",
 //! "event": { "type": "xstate.async.resolve", "data": ... } }` (or
@@ -205,7 +206,9 @@ pub struct DeadLetter {
 #[derive(Debug, Clone, PartialEq)]
 pub struct EffectRequest {
     pub key: String,
-    /// XState's `SystemExternalEffect` data.
+    /// XState's `SystemExternalEffect` data (`id`, `source`, `type`, ...),
+    /// plus the source actor's `logic` (its id: for invoked async logic, the
+    /// invoke's `src`) and `input`, when it has them.
     pub effect: Value,
 }
 
@@ -682,7 +685,20 @@ where
             let mut current = Vec::new();
             for effect in pending {
                 if !slot.published.contains(&effect.id) {
-                    self.output.effects.push(EffectRequest { key: key.to_owned(), effect: effect.to_json() });
+                    let mut json = effect.to_json();
+                    // What a worker needs to do it, which XState's own host
+                    // reads from the source actor: its logic and input.
+                    if let (Value::Object(o), Some((logic, input))) =
+                        (&mut json, actor.system().actor_logic(&effect.source.address))
+                    {
+                        if let Some(logic) = logic {
+                            o.insert("logic".into(), Value::String(logic));
+                        }
+                        if let Some(input) = input {
+                            o.insert("input".into(), input.clone());
+                        }
+                    }
+                    self.output.effects.push(EffectRequest { key: key.to_owned(), effect: json });
                 }
                 current.push(effect.id.clone());
             }

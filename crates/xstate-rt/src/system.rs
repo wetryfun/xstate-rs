@@ -1115,12 +1115,19 @@ impl System {
         self.registry.iter().map(|(k, v)| (k.as_str(), v))
     }
 
-    /// The snapshot of the actor at `address`.
     /// The logic the system was created with.
     pub fn logic(&self) -> &SystemLogic {
         &self.logic
     }
 
+    /// The logic id ([`Logic::logic_id`]: for async logic, the name it was
+    /// registered under) and the input of the actor at `address`.
+    pub fn actor_logic(&self, address: &str) -> Option<(Option<String>, Option<&Value>)> {
+        let actor = self.actors.get(address)?;
+        Some((actor.logic.logic_id(), actor.input.as_deref()))
+    }
+
+    /// The snapshot of the actor at `address`.
     pub fn snapshot(&self, address: &str) -> Option<&dyn AnySnapshot> {
         self.actors.get(address)?.snapshot.as_deref()
     }
