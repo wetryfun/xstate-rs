@@ -15,6 +15,7 @@
 //!   "evictFinal": true,
 //!   "snapshots": "xstate",
 //!   "events": "json",
+//!   "dedupe": { "sequence": "seq", "epoch": "boot" },
 //!   "client": { "compression.type": "lz4" },
 //!   "stateDir": "/var/lib/xstate", "checkpointIntervalMs": 60000,
 //!   "metricsAddress": "0.0.0.0:9464",
@@ -27,7 +28,9 @@
 //! a relative `stateDir` is relative to the configuration file too. Every
 //! actor the machine invokes (`invoke.src`) runs as async work published to
 //! `topics.effects` (required then), completed by results on the input
-//! topic (see `xstate_kafka::engine`).
+//! topic (see `xstate_kafka::engine`). `dedupe` skips events an actor
+//! already took, by their `sequence` (and optional `epoch`) fields (see
+//! `xstate_kafka::Dedupe`).
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -39,7 +42,7 @@ use xstate_rt::step::async_logic;
 use xstate_rt::{Machine, Registry};
 
 use crate::codec::Codec;
-use crate::engine::{EngineConfig, EventFormat, SnapshotFormat};
+use crate::engine::{Dedupe, EngineConfig, EventFormat, SnapshotFormat};
 use crate::proto::events::EventSchema;
 use crate::service::ServiceConfig;
 
@@ -91,6 +94,9 @@ pub struct FileConfig {
     /// `schemas.events`) or `"messagepack"`.
     #[serde(default)]
     pub events: Option<String>,
+    /// Skip input events an actor already took.
+    #[serde(default)]
+    pub dedupe: Option<Dedupe>,
     #[serde(default)]
     pub client: serde_json::Map<String, Value>,
     #[serde(default)]
@@ -183,8 +189,19 @@ impl FileConfig {
             }
             Err(_) => None,
         };
-        c.engine =
-            EngineConfig { codec, evict_final: self.evict_final.unwrap_or(true), snapshots, events, event_schema };
+        if let Some(d) = &self.dedupe {
+            if d.sequence.is_empty() || d.epoch.as_ref().is_some_and(|e| e.is_empty() || *e == d.sequence) {
+                return Err("\"dedupe\" needs a \"sequence\" field name and a different \"epoch\" one".into());
+            }
+        }
+        c.engine = EngineConfig {
+            codec,
+            evict_final: self.evict_final.unwrap_or(true),
+            snapshots,
+            events,
+            event_schema,
+            dedupe: self.dedupe.clone(),
+        };
         for (k, v) in &self.client {
             let v = match v {
                 Value::String(s) => s.clone(),
@@ -271,13 +288,15 @@ mod tests {
             r#"{ "machine": "m.json", "bootstrapServers": "b:9092", "groupId": "g",
                  "topics": { "input": "i", "output": "o", "changelog": "c" },
                  "workers": 3, "codec": "json", "batchLingerMs": 5, "client": { "linger.ms": 7 },
-                 "stateDir": "state", "checkpointIntervalMs": 1000, "snapshots": "compact" }"#,
+                 "stateDir": "state", "checkpointIntervalMs": 1000, "snapshots": "compact",
+                 "dedupe": { "sequence": "seq" } }"#,
         );
         let config = FileConfig::load(&path).unwrap();
         let service = config.service().unwrap();
         assert_eq!(service.workers, 3);
         assert_eq!(service.engine.codec, Codec::Json);
         assert_eq!(service.engine.snapshots, SnapshotFormat::Compact);
+        assert_eq!(service.engine.dedupe, Some(Dedupe { sequence: "seq".into(), epoch: None }));
         assert_eq!(service.batch_linger, Duration::from_millis(5));
         assert_eq!(service.state_dir, Some(dir.join("state")));
         assert_eq!(service.checkpoint_interval, Duration::from_secs(1));

@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use serde_json::{json, Value};
-use xstate_kafka::{Codec, EngineConfig, Partition, SnapshotFormat};
+use xstate_kafka::{Codec, Dedupe, EngineConfig, Mark, Partition, SnapshotFormat};
 use xstate_rt::{Machine, Registry, Status};
 
 fn order_machine() -> Arc<Machine<Value, Value>> {
@@ -205,4 +205,91 @@ fn external_work_is_published_once_and_resolved_by_records() {
     assert_eq!(out.dead_letters.len(), 1);
     assert!(out.dead_letters[0].reason.contains("not pending"), "{}", out.dead_letters[0].reason);
     assert_eq!(p.actor("u2").unwrap().value(), json!("fetching"));
+}
+
+fn deduping(dedupe: Option<Dedupe>) -> Partition<Value, Value> {
+    Partition::new(order_machine(), EngineConfig { dedupe, ..Default::default() })
+}
+
+fn seq_and_boot() -> Option<Dedupe> {
+    Some(Dedupe { sequence: "seq".into(), epoch: Some("boot".into()) })
+}
+
+#[test]
+fn duplicate_events_are_skipped_by_sequence_and_epoch() {
+    let mut p = deduping(seq_and_boot());
+    let add =
+        |seq: Value, boot: Value| serde_json::to_vec(&json!({ "type": "add", "seq": seq, "boot": boot })).unwrap();
+    p.handle(Some("o"), &add(json!(1), Value::Null), 1);
+    p.handle(Some("o"), &add(json!(2), Value::Null), 2);
+    p.handle(Some("o"), &add(json!(2), Value::Null), 3); // redelivered
+    p.handle(Some("o"), &add(json!(1), Value::Null), 4); // older
+    p.handle(Some("o"), br#"{ "type": "add" }"#, 5); // no sequence: always taken
+    p.handle(Some("o"), &add(json!(1), json!(2)), 6); // rebooted: a greater epoch
+    p.handle(Some("o"), &add(json!(9), json!(1)), 7); // from before the reboot
+    p.handle(Some("o"), &add(json!(2.0), json!(2)), 8); // whole floats count
+    p.handle(Some("o"), &add(json!("3"), json!(2)), 9);
+    p.handle(Some("o"), &add(json!(-1), json!(2)), 10);
+    let out = p.flush();
+    assert_eq!(out.emitted.len(), 5, "1, 2, unsequenced, (2, 1), (2, 2)");
+    assert_eq!(out.duplicates, 3);
+    assert_eq!(out.dead_letters.len(), 2);
+    assert!(out.dead_letters[0].reason.contains("\"seq\" must be a non-negative integer"), "{:?}", out.dead_letters);
+
+    // The mark is in the changelog record, so a restored actor still knows it.
+    let mut q = deduping(seq_and_boot());
+    for (key, record) in &out.changelog {
+        q.restore(key, record.as_deref()).unwrap();
+    }
+    q.handle(Some("o"), &add(json!(2), json!(2)), 11);
+    q.handle(Some("o"), &add(json!(3), json!(2)), 12);
+    let out = q.flush();
+    assert_eq!((out.emitted.len(), out.duplicates), (1, 1));
+}
+
+#[test]
+fn evicted_actors_keep_their_mark() {
+    let mut p = deduping(Some(Dedupe { sequence: "seq".into(), epoch: None }));
+    p.handle(Some("o"), br#"{ "type": "pay", "seq": 1 }"#, 0);
+    p.tick(100); // paid: final, evicted at the flush
+    let out = p.flush();
+    assert_eq!(p.len(), 0);
+    assert_eq!(p.retired(), 1);
+    let record = out.changelog.last().unwrap().1.clone().expect("a record of the mark, not a tombstone");
+    assert_eq!(xstate_kafka::codec::split_mark(&record).unwrap(), (Some(Mark { epoch: 0, sequence: 1 }), &[][..]));
+
+    // A late duplicate does not start a new actor; a new event does.
+    p.handle(Some("o"), br#"{ "type": "pay", "seq": 1 }"#, 200);
+    assert_eq!((p.len(), p.flush().duplicates), (0, 1));
+    p.handle(Some("o"), br#"{ "type": "add", "seq": 2 }"#, 300);
+    assert_eq!((p.len(), p.retired()), (1, 0));
+
+    // Checkpoints carry retired marks too.
+    p.handle(Some("o"), br#"{ "type": "pay", "seq": 3 }"#, 300);
+    p.tick(400);
+    p.handle(Some("x"), br#"{ "type": "add", "seq": 7 }"#, 400);
+    p.flush();
+    let records = p.snapshot_records();
+    assert_eq!(records.len(), 2);
+    let mut q = deduping(Some(Dedupe { sequence: "seq".into(), epoch: None }));
+    for (key, record) in &records {
+        q.restore(key, Some(record)).unwrap();
+    }
+    assert_eq!((q.len(), q.retired()), (1, 1));
+    q.handle(Some("o"), br#"{ "type": "pay", "seq": 3 }"#, 500);
+    q.handle(Some("x"), br#"{ "type": "add", "seq": 7 }"#, 500);
+    assert_eq!(q.flush().duplicates, 2);
+
+    // Without deduplication, marks are ignored: the record of a mark alone
+    // removes the key, and an actor's mark is dropped from its next record.
+    let mut r = deduping(None);
+    for (key, record) in &records {
+        r.restore(key, Some(record)).unwrap();
+    }
+    assert_eq!((r.len(), r.retired()), (1, 0));
+    r.handle(Some("x"), br#"{ "type": "add", "seq": 7 }"#, 500);
+    let out = r.flush();
+    assert_eq!(out.emitted.len(), 1);
+    let record = out.changelog[0].1.as_deref().unwrap();
+    assert_eq!(xstate_kafka::codec::split_mark(record).unwrap().0, None);
 }

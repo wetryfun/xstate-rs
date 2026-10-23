@@ -3,6 +3,11 @@
 //! A record is one format byte followed by the payload, so the encoding can
 //! change without breaking existing changelogs: records are decoded by their
 //! own format byte, whatever the configured encoding is.
+//!
+//! With deduplication on (`engine::Dedupe`), a record starts with the
+//! actor's [`Mark`] instead: [`MARK`], the epoch and the sequence as
+//! varints, then the snapshot record. A record of the mark alone keeps the
+//! mark of a finished, evicted actor.
 
 use serde_json::Value;
 
@@ -23,6 +28,43 @@ pub enum Codec {
 const JSON: u8 = 1;
 const MESSAGE_PACK: u8 = 2;
 const PROTOBUF: u8 = 3;
+/// The format byte of a record that starts with a [`Mark`].
+pub const MARK: u8 = 16;
+
+/// The latest input event an actor took, by its `(epoch, sequence)`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
+pub struct Mark {
+    pub epoch: u64,
+    pub sequence: u64,
+}
+
+/// Writes the prefix of a record with a mark.
+pub fn write_mark(out: &mut Vec<u8>, mark: Mark) {
+    out.push(MARK);
+    crate::proto::wire::put_varint(out, mark.epoch);
+    crate::proto::wire::put_varint(out, mark.sequence);
+}
+
+/// Splits a record into its mark (if it has one) and its snapshot record,
+/// which is empty for a record of the mark alone.
+pub fn split_mark(record: &[u8]) -> Result<(Option<Mark>, &[u8]), String> {
+    let Some((&MARK, mut rest)) = record.split_first() else { return Ok((None, record)) };
+    let mut varint = || -> Result<u64, String> {
+        let mut v = 0u64;
+        for i in 0..10 {
+            let (&b, tail) = rest.split_first().ok_or("truncated record mark")?;
+            rest = tail;
+            v |= u64::from(b & 0x7f) << (7 * i);
+            if b < 0x80 {
+                return Ok(v);
+            }
+        }
+        Err("invalid record mark".into())
+    };
+    let epoch = varint()?;
+    let sequence = varint()?;
+    Ok((Some(Mark { epoch, sequence }), rest))
+}
 
 impl Codec {
     pub fn encode(self, snapshot: &Value) -> Vec<u8> {
@@ -32,36 +74,39 @@ impl Codec {
     /// Encodes anything that serializes as JSON data would, such as
     /// [`xstate_rt::Actor::persist_view`], without building a `Value`.
     pub fn encode_serialize<T: serde::Serialize + ?Sized>(self, snapshot: &T) -> Vec<u8> {
+        let mut out = Vec::with_capacity(if self == Codec::Protobuf { 256 } else { 512 });
+        self.encode_into(&mut out, snapshot);
+        out
+    }
+
+    /// [`Codec::encode_serialize`], appending to `out`.
+    pub fn encode_into<T: serde::Serialize + ?Sized>(self, out: &mut Vec<u8>, snapshot: &T) {
+        let start = out.len();
         match self {
             Codec::Json => {
-                let mut out = Vec::with_capacity(512);
                 out.push(JSON);
-                serde_json::to_writer(&mut out, snapshot).expect("snapshots serialize");
-                out
+                serde_json::to_writer(&mut *out, snapshot).expect("snapshots serialize");
             }
             Codec::MessagePack => {
-                let mut out = Vec::with_capacity(512);
                 out.push(MESSAGE_PACK);
                 // Maps as maps with string keys, so any reader can decode it.
                 // The dedicated writer needs every length up front; anything
                 // else goes through rmp_serde, which buffers.
-                if crate::msgpack::write(&mut out, snapshot).is_err() {
-                    out.truncate(1);
-                    rmp_serde::encode::write_named(&mut out, snapshot).expect("snapshots serialize");
+                if crate::msgpack::write(out, snapshot).is_err() {
+                    out.truncate(start + 1);
+                    rmp_serde::encode::write_named(out, snapshot).expect("snapshots serialize");
                 }
-                out
             }
             Codec::Protobuf => {
-                let mut out = Vec::with_capacity(256);
                 out.push(PROTOBUF);
-                crate::proto::snapshot::encode(&mut out, snapshot).expect("snapshots serialize");
-                out
+                crate::proto::snapshot::encode(out, snapshot).expect("snapshots serialize");
             }
         }
     }
 
-    /// Decodes a record written by any codec.
+    /// Decodes a record written by any codec (skipping its mark, if any).
     pub fn decode(record: &[u8]) -> Result<Value, String> {
+        let (_, record) = split_mark(record)?;
         match record.split_first() {
             Some((&JSON, payload)) => {
                 serde_json::from_slice(payload).map_err(|e| format!("invalid JSON snapshot: {e}"))
@@ -94,5 +139,22 @@ mod tests {
         }
         assert!(Codec::decode(&[]).is_err());
         assert!(Codec::decode(&[9, 1, 2]).is_err());
+    }
+
+    #[test]
+    fn marks_prefix_records() {
+        let v = serde_json::json!({ "a": 1 });
+        let mark = Mark { epoch: 3, sequence: 300 };
+        let mut record = Vec::new();
+        write_mark(&mut record, mark);
+        let prefix = record.len();
+        Codec::MessagePack.encode_into(&mut record, &v);
+        assert_eq!(split_mark(&record).unwrap(), (Some(mark), &record[prefix..]));
+        assert_eq!(Codec::decode(&record).unwrap(), v);
+        assert_eq!(split_mark(&record[..prefix]).unwrap(), (Some(mark), &[][..]));
+        assert!(split_mark(&record[..2]).is_err());
+        let plain = Codec::Json.encode(&v);
+        assert_eq!(split_mark(&plain).unwrap(), (None, &plain[..]));
+        assert!(Mark { epoch: 1, sequence: 0 } > Mark { epoch: 0, sequence: 9 });
     }
 }

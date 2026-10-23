@@ -25,8 +25,9 @@ pub mod proto;
 #[cfg(feature = "kafka")]
 pub mod service;
 
-pub use codec::Codec;
+pub use codec::{Codec, Mark};
 pub use engine::{
-    DeadLetter, EffectRequest, Emitted, EngineConfig, EventFormat, Output, Partition, SnapshotFormat, EFFECT_RESULT,
+    DeadLetter, Dedupe, EffectRequest, Emitted, EngineConfig, EventFormat, Output, Partition, SnapshotFormat,
+    EFFECT_RESULT,
 };
-pub use metrics::{Metrics, MetricsSnapshot};
+pub use metrics::{BatchCounts, Metrics, MetricsSnapshot};

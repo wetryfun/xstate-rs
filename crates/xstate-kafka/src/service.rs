@@ -64,7 +64,7 @@ use xstate_rt::{EventType, Machine};
 
 use crate::checkpoint::{self, Checkpoint};
 use crate::engine::{EngineConfig, EventFormat, Output, Partition};
-use crate::metrics::{Metrics, MetricsSnapshot};
+use crate::metrics::{BatchCounts, Metrics, MetricsSnapshot};
 
 /// How the service connects and batches.
 #[derive(Debug, Clone)]
@@ -259,11 +259,7 @@ struct Worker<C, E> {
 
 /// A batch handed to the committer: what to count once it commits.
 struct InFlight {
-    records: u64,
-    emitted: u64,
-    dead_letters: u64,
-    changelog: u64,
-    effects: u64,
+    counts: BatchCounts,
     /// When the batch started, for the debug trace.
     started: Instant,
 }
@@ -479,16 +475,18 @@ where
             )
         });
         let count = |f: fn(&Output) -> usize| outputs.iter().map(|(_, o)| f(o) as u64).sum::<u64>();
-        let (emitted, dead, changelog, effects) = (
-            count(|o| o.emitted.len()),
-            count(|o| o.dead_letters.len()),
-            count(|o| o.changelog.len()),
-            count(|o| o.effects.len()),
-        );
+        let counts = BatchCounts {
+            records: polled as u64,
+            emitted: count(|o| o.emitted.len()),
+            dead_letters: count(|o| o.dead_letters.len()),
+            changelog: count(|o| o.changelog.len()),
+            effects: count(|o| o.effects.len()),
+            duplicates: outputs.iter().map(|(_, o)| o.duplicates).sum(),
+        };
         let touched: HashSet<i32> = outputs.iter().filter(|(_, o)| !o.changelog.is_empty()).map(|(p, _)| *p).collect();
         self.changed.extend(&touched);
         let group = self.consumer.group_metadata().ok_or_else(|| ServiceError("no consumer group metadata".into()))?;
-        let in_flight = InFlight { records: polled as u64, emitted, dead_letters: dead, changelog, effects, started };
+        let in_flight = InFlight { counts, started };
         self.metrics.set_actors(self.index, self.partitions.values().map(|p| p.len() as u64).sum());
         // Checkpoints need the state right after a commit, so a batch that
         // writes checkpoints commits before the worker goes on.
@@ -650,7 +648,7 @@ fn abort_with_retries(producer: &BaseProducer, config: &ServiceConfig) -> Result
 fn finish_in_flight(in_flight: &mut Option<InFlight>, metrics: &Metrics, result: Result<u64>) -> Result<()> {
     let b = in_flight.take().expect("a batch in flight");
     let micros = result?;
-    metrics.committed(b.records, b.emitted, b.dead_letters, b.changelog, b.effects, micros);
+    metrics.committed(&b.counts, micros);
     debug(|| format!("committed after {:?}", b.started.elapsed()));
     Ok(())
 }

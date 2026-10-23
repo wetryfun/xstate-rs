@@ -15,17 +15,25 @@
 //! shape: `{ "type": "xstate.system.effect.result", "effectId": "system:3",
 //! "event": { "type": "xstate.async.resolve", "data": ... } }` (or
 //! `xstate.async.reject` with `data`; no `event` just retires the work).
+//!
+//! Input can arrive more than once (MQTT QoS 1, producer retries). With
+//! [`Dedupe`], events carry a sequence number (and optionally an epoch) and
+//! an actor takes each `(epoch, sequence)` only if it is greater than the
+//! last one it took; others are counted as duplicates and skipped. The mark
+//! is part of the actor's changelog record, and a finished actor that is
+//! evicted leaves a record of its mark alone, so a late duplicate cannot
+//! start a new actor.
 
 use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashSet};
 use std::sync::Arc;
 
 use serde::de::DeserializeOwned;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use xstate_rt::{Actor, EventType, InitOptions, Machine, Status};
 
-use crate::codec::Codec;
+use crate::codec::{self, Codec, Mark};
 use crate::proto::events::EventSchema;
 
 /// How a partition treats its actors.
@@ -45,6 +53,8 @@ pub struct EngineConfig {
     /// The protobuf form of the machine's input events, for
     /// [`EventFormat::Protobuf`] records.
     pub event_schema: Option<Arc<EventSchema>>,
+    /// Skip input events an actor already took.
+    pub dedupe: Option<Dedupe>,
 }
 
 impl Default for EngineConfig {
@@ -55,7 +65,50 @@ impl Default for EngineConfig {
             snapshots: SnapshotFormat::default(),
             events: EventFormat::default(),
             event_schema: None,
+            dedupe: None,
         }
+    }
+}
+
+/// Which event fields order an actor's input. An event without the
+/// `sequence` field is always taken (results of external work are never
+/// deduplicated: they are matched to pending work by id). Values are
+/// non-negative integers; an event is new when its `(epoch, sequence)` is
+/// greater than the last one its actor took, so a device whose counter
+/// restarts at boot sends a greater epoch (a boot counter, or the boot
+/// time). A missing epoch is 0.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Dedupe {
+    pub sequence: String,
+    #[serde(default)]
+    pub epoch: Option<String>,
+}
+
+impl Dedupe {
+    /// The event's mark, `None` when it has no sequence.
+    fn mark(&self, event: &Value) -> Result<Option<Mark>, String> {
+        let counter = |field: &str| -> Result<Option<u64>, String> {
+            match event.get(field) {
+                None | Some(Value::Null) => Ok(None),
+                Some(v) => v
+                    .as_u64()
+                    .or_else(|| {
+                        // Whole floats (protobuf `double` fields, say) up to 2^53.
+                        v.as_f64()
+                            .filter(|f| *f >= 0.0 && f.fract() == 0.0 && *f <= 9_007_199_254_740_991.0)
+                            .map(|f| f as u64)
+                    })
+                    .map(Some)
+                    .ok_or_else(|| format!("\"{field}\" must be a non-negative integer, not {v}")),
+            }
+        };
+        let Some(sequence) = counter(&self.sequence)? else { return Ok(None) };
+        let epoch = match &self.epoch {
+            Some(field) => counter(field)?.unwrap_or(0),
+            None => 0,
+        };
+        Ok(Some(Mark { epoch, sequence }))
     }
 }
 
@@ -136,16 +189,23 @@ pub const EFFECT_RESULT: &str = "xstate.system.effect.result";
 pub struct Output {
     pub emitted: Vec<Emitted>,
     /// Changelog records, one per changed actor: its encoded snapshot, or
-    /// `None` (a tombstone) when it was evicted.
+    /// `None` (a tombstone) when it was evicted (with [`Dedupe`], a record
+    /// of its mark alone).
     pub changelog: Vec<(String, Option<Vec<u8>>)>,
     pub dead_letters: Vec<DeadLetter>,
     /// New external work, in the order it was requested.
     pub effects: Vec<EffectRequest>,
+    /// Input events skipped as duplicates ([`Dedupe`]).
+    pub duplicates: u64,
 }
 
 impl Output {
     pub fn is_empty(&self) -> bool {
-        self.emitted.is_empty() && self.changelog.is_empty() && self.dead_letters.is_empty() && self.effects.is_empty()
+        self.emitted.is_empty()
+            && self.changelog.is_empty()
+            && self.dead_letters.is_empty()
+            && self.effects.is_empty()
+            && self.duplicates == 0
     }
 }
 
@@ -162,11 +222,13 @@ struct Slot<C, E> {
     scheduled: Option<u64>,
     /// Ids of the actor's pending external work that was already published.
     published: HashSet<String>,
+    /// The latest input event the actor took ([`Dedupe`]).
+    mark: Option<Mark>,
 }
 
 impl<C, E> Slot<C, E> {
     fn new(actor: Actor<C, E>) -> Self {
-        Self { actor, dirty: false, scheduled: None, published: HashSet::new() }
+        Self { actor, dirty: false, scheduled: None, published: HashSet::new(), mark: None }
     }
 }
 
@@ -175,6 +237,9 @@ pub struct Partition<C, E> {
     machine: Arc<Machine<C, E>>,
     config: EngineConfig,
     actors: HashMap<String, Slot<C, E>>,
+    /// Marks of evicted actors ([`Dedupe`]): a key's next actor takes only
+    /// events past it.
+    retired: HashMap<String, Mark>,
     /// Due times of actor timers. Entries can be stale; each is checked
     /// against the actor's own next deadline when it comes due.
     timers: BinaryHeap<Reverse<(u64, String)>>,
@@ -195,6 +260,7 @@ where
             machine,
             config,
             actors: HashMap::default(),
+            retired: HashMap::default(),
             timers: BinaryHeap::new(),
             dirty: Vec::new(),
             output: Output::default(),
@@ -211,21 +277,41 @@ where
         self.actors.is_empty()
     }
 
+    /// Number of evicted actors whose marks are kept ([`Dedupe`]).
+    pub fn retired(&self) -> usize {
+        self.retired.len()
+    }
+
     pub fn actor(&self, key: &str) -> Option<&Actor<C, E>> {
         self.actors.get(key).map(|s| &s.actor)
     }
 
     /// Applies one changelog record while restoring: a snapshot replaces the
-    /// key's actor, a tombstone removes it. Produces no output.
+    /// key's actor, a tombstone removes it, and a mark alone removes it but
+    /// keeps the mark. Produces no output.
     pub fn restore(&mut self, key: &str, record: Option<&[u8]>) -> Result<(), String> {
         let Some(record) = record else {
             self.actors.remove(key);
+            self.retired.remove(key);
             return Ok(());
         };
-        let snapshot = Codec::decode(record)?;
+        let (mark, body) = codec::split_mark(record)?;
+        // Marks count only while deduplication is on.
+        let mark = mark.filter(|_| self.config.dedupe.is_some());
+        if body.is_empty() {
+            self.actors.remove(key);
+            match mark {
+                Some(mark) => self.retired.insert(key.to_owned(), mark),
+                None => self.retired.remove(key),
+            };
+            return Ok(());
+        }
+        self.retired.remove(key);
+        let snapshot = Codec::decode(body)?;
         let actor = Actor::restore(self.machine.clone(), &snapshot).map_err(|e| format!("key {key:?}: {e}"))?;
         self.now = self.now.max(actor.now());
         let mut slot = Slot::new(actor);
+        slot.mark = mark;
         if let Some(due) = slot.actor.next_deadline() {
             self.timers.push(Reverse((due, key.to_owned())));
             slot.scheduled = Some(due);
@@ -287,7 +373,27 @@ where
             }
             return;
         }
-        if let Err(reason) = self.send(key, event, now) {
+        let mark = match self.config.dedupe.as_ref().map(|d| d.mark(&event)) {
+            Some(Ok(mark)) => mark,
+            Some(Err(reason)) => return self.output.dead_letters.push(dead(reason)),
+            None => None,
+        };
+        if let Some(mark) = mark {
+            let seen = match self.actors.get(key) {
+                Some(slot) => slot.mark,
+                None => self.retired.get(key).copied(),
+            };
+            if seen.is_some_and(|seen| mark <= seen) {
+                self.output.duplicates += 1;
+                return;
+            }
+        }
+        let result = self.send(key, event, now);
+        // Taken even when the step failed: a redelivery is still a duplicate.
+        if let (Some(mark), Some(slot)) = (mark, self.actors.get_mut(key)) {
+            slot.mark = Some(mark);
+        }
+        if let Err(reason) = result {
             self.output.dead_letters.push(dead(reason));
         }
     }
@@ -302,7 +408,9 @@ where
             None => {
                 let actor = Actor::start_with(self.machine.clone(), InitOptions { time: now, ..Default::default() })
                     .map_err(|e| format!("starting the actor failed: {e}"))?;
-                self.actors.entry(key.to_owned()).or_insert(Slot::new(actor))
+                let mut slot = Slot::new(actor);
+                slot.mark = self.retired.remove(key);
+                self.actors.entry(key.to_owned()).or_insert(slot)
             }
         };
         let result = slot.actor.send_json(event, now).map_err(|e| e.to_string());
@@ -409,27 +517,36 @@ where
         }
     }
 
-    fn encode(&self, actor: &Actor<C, E>) -> Vec<u8> {
-        Self::encode_with(&self.config, actor)
-    }
-
-    fn encode_with(config: &EngineConfig, actor: &Actor<C, E>) -> Vec<u8> {
+    fn encode(config: &EngineConfig, slot: &Slot<C, E>) -> Vec<u8> {
+        let mut out = Vec::with_capacity(if config.codec == Codec::Protobuf { 256 } else { 512 });
+        if let Some(mark) = slot.mark.filter(|_| config.dedupe.is_some()) {
+            codec::write_mark(&mut out, mark);
+        }
         // Protobuf records always hold the compact form: they are not for
         // XState's own restore anyway.
         match (config.snapshots, config.codec) {
             (SnapshotFormat::Compact, _) | (_, Codec::Protobuf) => {
-                config.codec.encode_serialize(&actor.persist_compact())
+                config.codec.encode_into(&mut out, &slot.actor.persist_compact())
             }
-            (SnapshotFormat::XState, _) => config.codec.encode_serialize(&actor.persist_view()),
+            (SnapshotFormat::XState, _) => config.codec.encode_into(&mut out, &slot.actor.persist_view()),
         }
+        out
     }
 
-    /// The changelog record of every live actor, for a checkpoint. Call it
-    /// right after a flush whose output was committed: the records then
-    /// equal the latest committed changelog record of each key.
+    fn mark_record(mark: Mark) -> Vec<u8> {
+        let mut out = Vec::with_capacity(21);
+        codec::write_mark(&mut out, mark);
+        out
+    }
+
+    /// The changelog record of every live actor (and the mark of every
+    /// evicted one), for a checkpoint. Call it right after a flush whose
+    /// output was committed: the records then equal the latest committed
+    /// changelog record of each key.
     pub fn snapshot_records(&self) -> Vec<(String, Vec<u8>)> {
         let mut records: Vec<(String, Vec<u8>)> =
-            self.actors.iter().map(|(key, slot)| (key.clone(), self.encode(&slot.actor))).collect();
+            self.actors.iter().map(|(key, slot)| (key.clone(), Self::encode(&self.config, slot))).collect();
+        records.extend(self.retired.iter().map(|(key, mark)| (key.clone(), Self::mark_record(*mark))));
         records.sort_by(|a, b| a.0.cmp(&b.0));
         records
     }
@@ -442,10 +559,17 @@ where
             slot.dirty = false;
             let finished = matches!(slot.actor.status(), Status::Done | Status::Stopped);
             if finished && self.config.evict_final {
+                let mark = slot.mark.filter(|_| self.config.dedupe.is_some());
                 self.actors.remove(&key);
-                self.output.changelog.push((key, None));
+                match mark {
+                    Some(mark) => {
+                        self.retired.insert(key.clone(), mark);
+                        self.output.changelog.push((key, Some(Self::mark_record(mark))));
+                    }
+                    None => self.output.changelog.push((key, None)),
+                }
             } else {
-                let record = Self::encode_with(&self.config, &slot.actor);
+                let record = Self::encode(&self.config, slot);
                 self.output.changelog.push((key, Some(record)));
             }
         }

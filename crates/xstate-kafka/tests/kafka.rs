@@ -15,6 +15,7 @@ use rdkafka::producer::{BaseProducer, BaseRecord, Producer};
 use rdkafka::{Offset, TopicPartitionList};
 use serde_json::{json, Value};
 use xstate_kafka::service::{Service, ServiceConfig};
+use xstate_kafka::Dedupe;
 use xstate_rt::{Machine, Registry};
 
 const PARTITIONS: i32 = 4;
@@ -162,6 +163,8 @@ fn exactly_once_actors_with_restore() {
             (Some("b"), r#"{"type":"wait"}"#),
             (None, r#"{"type":"next"}"#),
             (Some("c"), "not json"),
+            (Some("e"), r#"{"type":"next","seq":1}"#),
+            (Some("e"), r#"{"type":"next","seq":1}"#),
         ],
     );
     // The `content-type` header selects the event format.
@@ -172,9 +175,15 @@ fn exactly_once_actors_with_restore() {
         "application/msgpack",
     );
     produce_typed(&bootstrap, "d", b"next", "text/plain");
-    let service = Service::start(config(&bootstrap), machine()).unwrap();
-    // a: s1, s2; b: s1, then s2 when its 200 ms timer fires; c: s1; d: s1.
-    let output = read(&bootstrap, "output", 6);
+    let deduping = || {
+        let mut c = config(&bootstrap);
+        c.engine.dedupe = Some(Dedupe { sequence: "seq".into(), epoch: None });
+        c
+    };
+    let service = Service::start(deduping(), machine()).unwrap();
+    // a: s1, s2; b: s1, then s2 when its 200 ms timer fires; c: s1; d: s1;
+    // e: s1 (its second record is a duplicate).
+    let output = read(&bootstrap, "output", 7);
     assert!(service.is_running());
     service.stop().unwrap();
     let by_key = states(&output);
@@ -182,7 +191,8 @@ fn exactly_once_actors_with_restore() {
     assert_eq!(by_key["b"], vec!["s1", "s2"]);
     assert_eq!(by_key["c"], vec!["s1"]);
     assert_eq!(by_key["d"], vec!["s1"]);
-    assert_eq!(output.len(), 6, "{output:?}");
+    assert_eq!(by_key["e"], vec!["s1"]);
+    assert_eq!(output.len(), 7, "{output:?}");
 
     let dead = read(&bootstrap, "dead", 3);
     assert_eq!(dead.len(), 3);
@@ -198,14 +208,24 @@ fn exactly_once_actors_with_restore() {
     commit_processed(&bootstrap);
 
     // A new service instance continues from the changelog.
-    produce(&bootstrap, &[(Some("a"), r#"{"type":"next"}"#), (Some("c"), r#"{"type":"next"}"#)]);
-    let service = Service::start(config(&bootstrap), machine()).unwrap();
-    let output = read(&bootstrap, "output", 8);
+    // e's mark was restored with it: seq 1 again is a duplicate.
+    produce(
+        &bootstrap,
+        &[
+            (Some("a"), r#"{"type":"next"}"#),
+            (Some("c"), r#"{"type":"next"}"#),
+            (Some("e"), r#"{"type":"next","seq":1}"#),
+            (Some("e"), r#"{"type":"next","seq":2}"#),
+        ],
+    );
+    let service = Service::start(deduping(), machine()).unwrap();
+    let output = read(&bootstrap, "output", 10);
     service.stop().unwrap();
     let by_key = states(&output);
     assert_eq!(by_key["a"], vec!["s1", "s2", "s3"], "{output:?}");
     assert_eq!(by_key["c"], vec!["s1", "s2"]);
-    assert_eq!(output.len(), 8, "no duplicates: {output:?}");
+    assert_eq!(by_key["e"], vec!["s1", "s2"]);
+    assert_eq!(output.len(), 10, "no duplicates: {output:?}");
 
     // `a` finished: its latest changelog record is a tombstone.
     let changelog = read(&bootstrap, "changelog", 1);

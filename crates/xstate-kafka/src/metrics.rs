@@ -4,6 +4,17 @@
 use std::fmt::{self, Write};
 use std::sync::atomic::{AtomicU64, Ordering};
 
+/// What one committed transaction adds to the counters.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct BatchCounts {
+    pub records: u64,
+    pub emitted: u64,
+    pub dead_letters: u64,
+    pub changelog: u64,
+    pub effects: u64,
+    pub duplicates: u64,
+}
+
 /// Counters updated by the workers.
 #[derive(Debug)]
 pub struct Metrics {
@@ -12,6 +23,7 @@ pub struct Metrics {
     dead_letters: AtomicU64,
     changelog_records: AtomicU64,
     effects: AtomicU64,
+    duplicates: AtomicU64,
     transactions: AtomicU64,
     aborted_transactions: AtomicU64,
     restored_partitions: AtomicU64,
@@ -32,6 +44,7 @@ pub struct MetricsSnapshot {
     pub dead_letters: u64,
     pub changelog_records: u64,
     pub effects: u64,
+    pub duplicates: u64,
     pub transactions: u64,
     pub aborted_transactions: u64,
     pub restored_partitions: u64,
@@ -52,6 +65,7 @@ impl Metrics {
             dead_letters: zero(),
             changelog_records: zero(),
             effects: zero(),
+            duplicates: zero(),
             transactions: zero(),
             aborted_transactions: zero(),
             restored_partitions: zero(),
@@ -64,12 +78,13 @@ impl Metrics {
         }
     }
 
-    pub fn committed(&self, records: u64, emitted: u64, dead_letters: u64, changelog: u64, effects: u64, micros: u64) {
-        self.records.fetch_add(records, Ordering::Relaxed);
-        self.emitted.fetch_add(emitted, Ordering::Relaxed);
-        self.dead_letters.fetch_add(dead_letters, Ordering::Relaxed);
-        self.changelog_records.fetch_add(changelog, Ordering::Relaxed);
-        self.effects.fetch_add(effects, Ordering::Relaxed);
+    pub fn committed(&self, batch: &BatchCounts, micros: u64) {
+        self.records.fetch_add(batch.records, Ordering::Relaxed);
+        self.emitted.fetch_add(batch.emitted, Ordering::Relaxed);
+        self.dead_letters.fetch_add(batch.dead_letters, Ordering::Relaxed);
+        self.changelog_records.fetch_add(batch.changelog, Ordering::Relaxed);
+        self.effects.fetch_add(batch.effects, Ordering::Relaxed);
+        self.duplicates.fetch_add(batch.duplicates, Ordering::Relaxed);
         self.transactions.fetch_add(1, Ordering::Relaxed);
         self.commit_micros_total.fetch_add(micros, Ordering::Relaxed);
         self.commit_micros_max.fetch_max(micros, Ordering::Relaxed);
@@ -105,6 +120,7 @@ impl Metrics {
             dead_letters: get(&self.dead_letters),
             changelog_records: get(&self.changelog_records),
             effects: get(&self.effects),
+            duplicates: get(&self.duplicates),
             transactions: get(&self.transactions),
             aborted_transactions: get(&self.aborted_transactions),
             restored_partitions: get(&self.restored_partitions),
@@ -130,6 +146,7 @@ impl MetricsSnapshot {
         metric("dead_letters_total", "counter", "Records that could not be processed.", self.dead_letters);
         metric("changelog_records_total", "counter", "Snapshots and tombstones written.", self.changelog_records);
         metric("effects_total", "counter", "External work requested (effects topic).", self.effects);
+        metric("duplicates_total", "counter", "Input events skipped as duplicates.", self.duplicates);
         metric("transactions_total", "counter", "Committed transactions.", self.transactions);
         metric("aborted_transactions_total", "counter", "Aborted transactions.", self.aborted_transactions);
         metric(
@@ -153,10 +170,11 @@ impl fmt::Display for MetricsSnapshot {
         let avg = self.commit_micros_total.checked_div(self.transactions).unwrap_or(0);
         write!(
             f,
-            "records={} emitted={} dead_letters={} changelog={} transactions={} aborted={} actors={} commit_avg_us={} commit_max_us={}",
+            "records={} emitted={} dead_letters={} duplicates={} changelog={} transactions={} aborted={} actors={} commit_avg_us={} commit_max_us={}",
             self.records,
             self.emitted,
             self.dead_letters,
+            self.duplicates,
             self.changelog_records,
             self.transactions,
             self.aborted_transactions,
@@ -212,8 +230,16 @@ mod tests {
     #[test]
     fn counts_and_renders() {
         let m = Metrics::new(2);
-        m.committed(10, 3, 1, 4, 0, 500);
-        m.committed(5, 0, 0, 2, 1, 900);
+        let batch = |records, emitted, dead_letters, changelog, effects, duplicates| BatchCounts {
+            records,
+            emitted,
+            dead_letters,
+            changelog,
+            effects,
+            duplicates,
+        };
+        m.committed(&batch(10, 3, 1, 4, 0, 2), 500);
+        m.committed(&batch(5, 0, 0, 2, 1, 0), 900);
         m.aborted();
         m.set_actors(0, 7);
         m.set_actors(1, 2);
@@ -221,6 +247,7 @@ mod tests {
         assert_eq!((s.records, s.transactions, s.commit_micros_max, s.actors), (15, 2, 900, 9));
         let text = s.prometheus();
         assert!(text.contains("xstate_records_total 15\n"), "{text}");
+        assert!(text.contains("xstate_duplicates_total 2\n"), "{text}");
         assert!(text.contains("# TYPE xstate_actors gauge\nxstate_actors 9\n"), "{text}");
         assert!(s.to_string().contains("commit_avg_us=700"));
     }

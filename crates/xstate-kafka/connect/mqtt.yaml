@@ -13,9 +13,11 @@
 # (records without the header use the config's `events` format).
 #
 # MQTT QoS 1 is at-least-once: a message can reach Kafka twice (after a
-# reconnect, say), and the service handles each record it reads. Use QoS 2
-# on the device side, or make events idempotent in the machine (guards on a
-# sequence number in context, say), when duplicates matter.
+# reconnect, say). Have devices number their events and turn on the
+# service's `"dedupe": { "sequence": "seq", "epoch": "boot" }`: an actor
+# then skips any event whose (boot, seq) is not greater than the last one it
+# took. `boot` (optional) is a counter or timestamp a device raises when its
+# `seq` restarts.
 
 input:
   mqtt:
