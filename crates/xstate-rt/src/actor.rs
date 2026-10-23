@@ -56,7 +56,8 @@ where
     /// registry key, execution id, time, step bound).
     pub fn start_with(machine: Arc<Machine<C, E>>, options: InitOptions) -> Result<Self, SystemError> {
         let logic = SystemLogic::new(machine.clone());
-        let (system, effects) = System::initialize(&logic, options)?;
+        let (mut system, effects) = System::initialize(&logic, options)?;
+        system.set_transient_effects(true);
         let root = Arc::from(system.root());
         let mut actor =
             Self { machine, logic, system, root, emitted: Vec::new(), logs: Vec::new(), _event: PhantomData };
@@ -67,7 +68,8 @@ where
     /// Restores an actor from [`Actor::persist`] data. Runs no actions.
     pub fn restore(machine: Arc<Machine<C, E>>, data: &Value) -> Result<Self, SystemError> {
         let logic = SystemLogic::new(machine.clone());
-        let system = System::from_json(&logic, data, InitOptions::default().max_steps)?;
+        let mut system = System::from_json(&logic, data, InitOptions::default().max_steps)?;
+        system.set_transient_effects(true);
         if system.snapshot(system.root()).and_then(|s| s.as_any().downcast_ref::<State<C, E>>()).is_none() {
             return Err(SystemError::Rejected("the snapshot's root is not this machine".into()));
         }
@@ -77,20 +79,20 @@ where
 
     fn handle(&mut self, effects: Vec<ExternalEffect>) {
         let root = self.root.clone();
-        for effect in effects {
+        for mut effect in effects {
             let from_root = *effect.source.address == *root;
             let done = match effect.kind {
                 EffectKind::Emit => {
                     if from_root {
-                        if let Some(e) = &effect.event {
-                            self.emitted.push(e.clone());
+                        if let Some(e) = effect.event.take() {
+                            self.emitted.push(e);
                         }
                     }
                     true
                 }
                 _ if effect.ty == "@xstate.log" => {
                     if from_root {
-                        self.logs.push(effect.args.clone().unwrap_or_default());
+                        self.logs.push(effect.args.take().unwrap_or_default());
                     }
                     true
                 }

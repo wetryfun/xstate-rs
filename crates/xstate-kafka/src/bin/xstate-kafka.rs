@@ -6,6 +6,9 @@
 //!
 //! `XSTATE_KAFKA_DEBUG=1` traces worker batches on stderr.
 
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
+
 use std::process::ExitCode;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;

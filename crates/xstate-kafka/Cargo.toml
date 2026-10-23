@@ -11,18 +11,22 @@ publish = false
 [features]
 default = []
 # The Kafka driver (librdkafka, built from source).
-kafka = ["dep:rdkafka", "dep:ctrlc"]
+kafka = ["dep:rdkafka", "dep:ctrlc", "dep:mimalloc"]
 
 [dependencies]
 xstate-rt = { path = "../xstate-rt" }
 serde.workspace = true
 serde_json.workspace = true
 rmp-serde = "1.3"
+foldhash = "0.2"
 rdkafka = { version = "0.39", default-features = false, optional = true }
 ctrlc = { version = "3.5", optional = true, features = ["termination"] }
+# The binary's allocator: allocation is a large share of each event.
+mimalloc = { version = "0.1", optional = true, default-features = false }
 
 [dev-dependencies]
 criterion = { version = "0.8", default-features = false }
+mimalloc = { version = "0.1", default-features = false }
 
 [[bench]]
 name = "engine"

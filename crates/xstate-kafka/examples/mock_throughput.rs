@@ -8,9 +8,13 @@
 //!
 //! The mock cluster has no network or disk, so this measures the client
 //! side: the actors, encoding, and librdkafka's produce/consume/transaction
-//! path. The single reader thread that counts committed output shares the
-//! cores with the workers and is usually the bottleneck; run with
+//! path. "End to end" includes the consumer group join and the restore (a
+//! few seconds on the mock); "steady state" counts from the moment every
+//! partition is restored to the last committed record. Run with
 //! `XSTATE_KAFKA_DEBUG=1` to see each worker's batch and commit times.
+
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -89,16 +93,35 @@ fn main() {
     }
     reader.assign(&tpl).unwrap();
     let mut seen = 0;
+    // Steady state: from every partition being assigned and restored
+    // (consumer group joined) to every record committed, from the service's
+    // own counters, so neither startup nor this reader is measured.
+    let (mut ready, mut done): (Option<Instant>, Option<Instant>) = (None, None);
     let deadline = Instant::now() + Duration::from_secs(600);
-    while seen < events && Instant::now() < deadline {
-        if let Some(Ok(_)) = reader.poll(Duration::from_millis(100)) {
-            seen += 1;
+    while (seen < events || done.is_none()) && Instant::now() < deadline {
+        if seen < events {
+            if let Some(Ok(_)) = reader.poll(Duration::from_millis(1)) {
+                seen += 1;
+            }
+        } else {
+            std::thread::sleep(Duration::from_millis(1));
+        }
+        let m = service.metrics();
+        if ready.is_none() && m.restored_partitions >= partitions as u64 {
+            ready = Some(Instant::now());
+        }
+        if done.is_none() && m.records >= events as u64 {
+            done = Some(Instant::now());
         }
     }
     let elapsed = started.elapsed();
+    let steady = match (ready, done) {
+        (Some(r), Some(d)) => format!("{:.0} events/s steady state", events as f64 / (d - r).as_secs_f64()),
+        _ => "no steady state measured".into(),
+    };
     service.stop().unwrap();
     println!(
-        "{seen} of {events} events over {} keys, {partitions} partitions, {workers} workers, batches of {max_batch}: {:.2?}, {:.0} events/s end to end",
+        "{seen} of {events} events over {} keys, {partitions} partitions, {workers} workers, batches of {max_batch}: {:.2?}, {:.0} events/s end to end including startup; {steady}",
         keys.len(),
         elapsed,
         seen as f64 / elapsed.as_secs_f64()

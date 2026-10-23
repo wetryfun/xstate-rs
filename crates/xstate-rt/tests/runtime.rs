@@ -235,6 +235,36 @@ fn runaway_eventless_loop_is_an_error() {
 }
 
 #[test]
+fn a_failed_macrostep_rolls_back_an_untyped_context() {
+    // Patches replace and add keys, then the macrostep fails: the context
+    // goes back to the previous one, key order included. One case starts
+    // from a context with a whole-number float (copied, not logged).
+    for initial in [json!({ "n": 0, "tags": ["a"], "z": "keep" }), json!({ "n": 1.0, "z": "keep" })] {
+        let m = Arc::new(
+            Machine::<Value, Value>::from_json_with_options(
+                &json!({
+                    "initial": "a",
+                    "context": initial,
+                    "states": {
+                        "a": { "on": { "go": { "target": "b", "context": { "n": 5, "added": true } } } },
+                        "b": { "always": { "target": "c", "context": { "tags": [], "more": 1 } } },
+                        "c": { "always": { "target": "b" } }
+                    }
+                }),
+                &Registry::new(),
+                MachineOptions { max_iterations: 20 },
+            )
+            .unwrap(),
+        );
+        let mut a = Actor::start(m, 0).unwrap();
+        let before = a.context().to_string();
+        assert!(a.send(json!({ "type": "go" }), 0).is_err());
+        assert_eq!(a.status(), Status::Error);
+        assert_eq!(a.context().to_string(), before);
+    }
+}
+
+#[test]
 fn raised_event_loop_is_an_error() {
     let m = machine(json!({
         "initial": "a",

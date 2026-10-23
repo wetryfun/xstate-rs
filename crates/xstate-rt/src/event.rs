@@ -59,6 +59,20 @@ pub fn js_numbers(value: &mut Value) {
     }
 }
 
+/// Whether [`js_numbers`] would change `value`.
+pub(crate) fn needs_js_numbers(value: &Value) -> bool {
+    const MAX_SAFE: f64 = 9_007_199_254_740_991.0;
+    match value {
+        Value::Number(n) if n.is_f64() => {
+            let f = n.as_f64().unwrap_or(f64::NAN);
+            f.fract() == 0.0 && f.abs() <= MAX_SAFE
+        }
+        Value::Array(items) => items.iter().any(needs_js_numbers),
+        Value::Object(map) => map.values().any(needs_js_numbers),
+        _ => false,
+    }
+}
+
 impl EventType for Value {
     fn event_type(&self) -> &str {
         self.get("type").and_then(Value::as_str).unwrap_or("")

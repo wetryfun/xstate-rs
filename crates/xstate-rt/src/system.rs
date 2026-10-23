@@ -648,6 +648,11 @@ pub struct System {
     timers: IndexMap<String, SystemTimer>,
     deadlines: BinaryHeap<Reverse<(u64, u64, u64)>>,
     external_effects: IndexMap<String, ExternalEffect>,
+    /// Set by [`crate::Actor`], which handles emits, logs, cancellations,
+    /// cleanups and Rust-implemented actions as soon as a call returns them:
+    /// such effects are returned without being stored as pending (the
+    /// acknowledgement would remove them right away).
+    transient_effects: bool,
     counters: Counters,
     max_steps: usize,
     // Per-call state.
@@ -672,6 +677,7 @@ impl System {
             timers: IndexMap::new(),
             deadlines: BinaryHeap::new(),
             external_effects: IndexMap::new(),
+            transient_effects: false,
             counters: Counters::default(),
             max_steps: options.max_steps.max(1),
             out: Vec::new(),
@@ -798,7 +804,7 @@ impl System {
             let mut cx = Cx { sys: self, self_ref: r.clone() };
             logic.initial_transition(options.input.as_ref(), &mut cx)?
         };
-        let effects = finalize(Status::Active, true, &result);
+        let effects = finalize(Status::Active, true, result.snapshot.status(), result.effects);
         self.store(&r, result.snapshot);
         self.initial_effects.insert(r.clone(), effects);
         Ok(r)
@@ -832,8 +838,21 @@ impl System {
             reason: spec.reason,
             exec: spec.exec,
         };
-        self.out.push(effect.clone());
-        self.external_effects.insert(id, effect);
+        let transient = self.transient_effects
+            && (effect.kind == EffectKind::Emit
+                || effect.exec.is_some()
+                || matches!(effect.ty.as_str(), "@xstate.log" | "@xstate.cancelEffect" | "@xstate.cleanup"));
+        if transient {
+            self.out.push(effect);
+        } else {
+            self.out.push(effect.clone());
+            self.external_effects.insert(id, effect);
+        }
+    }
+
+    /// See the `transient_effects` field; for [`crate::Actor`].
+    pub(crate) fn set_transient_effects(&mut self, on: bool) {
+        self.transient_effects = on;
     }
 
     fn enqueue(&mut self, source: Option<ActorRef>, target: ActorRef, event: Value, timer_occurrence: Option<u64>) {
@@ -1042,15 +1061,14 @@ impl System {
                 return Err(e);
             }
         };
-        let result = Transition { snapshot, effects };
-        let effects = finalize(previous_status, false, &result);
-        let status = result.snapshot.status();
+        let status = snapshot.status();
+        let effects = finalize(previous_status, false, status, effects);
         // Only a child invoked with `onSnapshot` reports its snapshot.
         let reports_snapshot = self
             .current(&target)
             .is_some_and(|a| a.sync_snapshot == Some(true) && a.parent.is_some() && status == Status::Active);
-        let data_for_parent = reports_snapshot.then(|| logic.snapshot_data(&*result.snapshot));
-        self.store(&target, result.snapshot);
+        let data_for_parent = reports_snapshot.then(|| logic.snapshot_data(&*snapshot));
+        self.store(&target, snapshot);
         self.effects_for(&target, effects)?;
         if let Some(actor) = self.current(&target) {
             if actor.sync_snapshot == Some(true) && status == Status::Active {
@@ -1230,7 +1248,7 @@ impl System {
     /// `xstate.system.effect.result` without `event`). Returns whether it
     /// was pending.
     pub fn acknowledge(&mut self, effect_id: &str) -> bool {
-        self.external_effects.shift_remove(effect_id).is_some()
+        !self.external_effects.is_empty() && self.external_effects.shift_remove(effect_id).is_some()
     }
 
     /// XState's `SystemSnapshot` as JSON.
@@ -1406,6 +1424,7 @@ impl System {
             timers,
             deadlines,
             external_effects,
+            transient_effects: false,
             counters: Counters {
                 actor: counter("actor"),
                 timer: counter("timer"),
@@ -1429,9 +1448,7 @@ fn sys_end(sys: &mut System) -> Vec<ExternalEffect> {
 
 /// XState's `finalizeTransitionResult`: a newly terminal snapshot gets one
 /// termination effect.
-fn finalize(previous: Status, initial: bool, result: &Transition) -> Vec<Effect> {
-    let mut effects = result.effects.clone();
-    let status = result.snapshot.status();
+fn finalize(previous: Status, initial: bool, status: Status, mut effects: Vec<Effect>) -> Vec<Effect> {
     let became_terminal = matches!(status, Status::Done | Status::Error);
     let was_terminal = !initial && matches!(previous, Status::Done | Status::Error);
     if became_terminal && !was_terminal && !effects.iter().any(|e| matches!(e, Effect::Terminate)) {
@@ -1505,7 +1522,13 @@ struct EntryView<'a>(&'a System, &'a ActorEntry);
 impl Serialize for EntryView<'_> {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         let (sys, a) = (self.0, self.1);
-        let mut m = s.serialize_map(None)?;
+        let len = 6
+            + usize::from(a.logic_version.is_some())
+            + usize::from(a.parent.is_some())
+            + usize::from(a.registry_key.is_some())
+            + usize::from(a.sync_snapshot.is_some())
+            + usize::from(a.input.is_some());
+        let mut m = s.serialize_map(Some(len))?;
         m.serialize_entry("id", &a.id)?;
         m.serialize_entry("address", &*a.address)?;
         m.serialize_entry("incarnation", &a.incarnation.to_string())?;
@@ -1568,7 +1591,11 @@ struct Seq<I>(std::cell::RefCell<Option<I>>);
 impl<I: Iterator<Item = T>, T: Serialize> Serialize for Seq<I> {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         let items = self.0.borrow_mut().take().expect("serialized once");
-        let mut seq = s.serialize_seq(None)?;
+        let len = match items.size_hint() {
+            (low, Some(high)) if low == high => Some(low),
+            _ => None,
+        };
+        let mut seq = s.serialize_seq(len)?;
         for item in items {
             seq.serialize_element(&item)?;
         }

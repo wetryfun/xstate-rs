@@ -116,12 +116,13 @@ pub(crate) struct State<C, E> {
     pub status: Status,
     pub output: Option<Value>,
     pub error: Option<Value>,
-    /// `historyValue`, in key order.
-    pub history: Vec<(Nid, Vec<Nid>)>,
+    /// `historyValue`, in key order. Copy-on-write (`Arc::make_mut`) like
+    /// `children` and `timers`, so a macrostep's rollback copy is cheap.
+    pub history: Arc<Vec<(Nid, Vec<Nid>)>>,
     /// `snapshot.children`, in order.
-    pub children: IndexMap<String, ActorRef>,
+    pub children: Arc<IndexMap<String, ActorRef>>,
     /// `snapshot.timers`, in order.
-    pub timers: Vec<LogicalTimer<E>>,
+    pub timers: Arc<Vec<LogicalTimer<E>>>,
     pub next_timer_id: u64,
 }
 
@@ -149,9 +150,9 @@ impl<C, E> State<C, E> {
             status: Status::Active,
             output: None,
             error: None,
-            history: Vec::new(),
-            children: IndexMap::new(),
-            timers: Vec::new(),
+            history: Arc::default(),
+            children: Arc::default(),
+            timers: Arc::default(),
             next_timer_id: 0,
         }
     }
@@ -228,9 +229,9 @@ struct Saved<E> {
     status: Status,
     output: Option<Value>,
     error: Option<Value>,
-    history: Vec<(Nid, Vec<Nid>)>,
-    children: IndexMap<String, ActorRef>,
-    timers: Vec<LogicalTimer<E>>,
+    history: Arc<Vec<(Nid, Vec<Nid>)>>,
+    children: Arc<IndexMap<String, ActorRef>>,
+    timers: Arc<Vec<LogicalTimer<E>>>,
     next_timer_id: u64,
 }
 
@@ -277,6 +278,85 @@ fn context_json<C: Serialize + 'static>(context: &C) -> Value {
     v
 }
 
+/// A JSON value that serializes with whole-number floats written as
+/// integers, as [`crate::event::js_numbers`] would leave it, without
+/// copying it.
+struct JsNumbers<'a>(&'a Value);
+
+impl Serialize for JsNumbers<'_> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::{SerializeMap as _, SerializeSeq as _};
+        const MAX_SAFE: f64 = 9_007_199_254_740_991.0;
+        match self.0 {
+            Value::Number(n) if n.is_f64() => {
+                let f = n.as_f64().unwrap_or(f64::NAN);
+                if f.fract() == 0.0 && f.abs() <= MAX_SAFE {
+                    serializer.serialize_i64(f as i64)
+                } else {
+                    serializer.serialize_f64(f)
+                }
+            }
+            Value::Array(items) => {
+                let mut seq = serializer.serialize_seq(Some(items.len()))?;
+                for item in items {
+                    seq.serialize_element(&JsNumbers(item))?;
+                }
+                seq.end()
+            }
+            Value::Object(map) => {
+                let mut out = serializer.serialize_map(Some(map.len()))?;
+                for (k, v) in map {
+                    out.serialize_entry(k, &JsNumbers(v))?;
+                }
+                out.end()
+            }
+            other => other.serialize(serializer),
+        }
+    }
+}
+
+/// An event that serializes as [`Ev::to_json`] builds it.
+struct EvView<'a, E>(&'a Ev<E>);
+
+impl<E: EventType> Serialize for EvView<'_, E> {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeMap as _;
+        match self.0 {
+            Ev::Internal { event_type, data } if !data.contains_key("type") => {
+                let mut map = s.serialize_map(Some(data.len() + 1))?;
+                map.serialize_entry("type", &**event_type)?;
+                for (k, v) in data {
+                    map.serialize_entry(k, v)?;
+                }
+                map.end()
+            }
+            other => other.to_json().serialize(s),
+        }
+    }
+}
+
+/// A logical timer that serializes as [`LogicalTimer::to_data`] builds it.
+struct TimerData<'a, E>(&'a LogicalTimer<E>);
+
+impl<E: EventType> Serialize for TimerData<'_, E> {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeMap as _;
+        let t = self.0;
+        let mut map = s.serialize_map(Some(4 + usize::from(t.id.is_some()) + usize::from(t.seq.is_some())))?;
+        if let Some(id) = &t.id {
+            map.serialize_entry("id", id)?;
+        }
+        if let Some(seq) = t.seq {
+            map.serialize_entry("seq", &seq)?;
+        }
+        map.serialize_entry("delay", &t.delay)?;
+        map.serialize_entry("type", "@xstate.raise")?;
+        map.serialize_entry("event", &EvView(&t.event))?;
+        map.serialize_entry("target", "self")?;
+        map.end()
+    }
+}
+
 /// A machine snapshot that serializes as [`Machine::snapshot_data`] builds it.
 struct SnapshotView<'a, C, E> {
     m: &'a Machine<C, E>,
@@ -319,7 +399,10 @@ where
             }
         }
         let (m, st) = (self.m, self.st);
-        let mut map = s.serialize_map(None)?;
+        // Exact lengths let encoders such as MessagePack write maps directly
+        // instead of buffering them.
+        let len = 9 + usize::from(st.output.is_some()) + usize::from(st.error.is_some());
+        let mut map = s.serialize_map(Some(len))?;
         map.serialize_entry("status", st.status.as_str())?;
         if let Some(o) = &st.output {
             map.serialize_entry("output", o)?;
@@ -327,10 +410,19 @@ where
         if let Some(e) = &st.error {
             map.serialize_entry("error", e)?;
         }
-        map.serialize_entry("context", &context_json(&st.context))?;
+        match (&st.context as &dyn Any).downcast_ref::<Value>() {
+            Some(v) => map.serialize_entry("context", &JsNumbers(v))?,
+            None => map.serialize_entry("context", &context_json(&st.context))?,
+        }
         map.serialize_entry("value", &m.state_value(&st.nodes))?;
         map.serialize_entry("children", &Children(&st.children))?;
-        map.serialize_entry("timers", &st.timers.iter().map(LogicalTimer::to_data).collect::<Vec<_>>())?;
+        struct Timers<'a, E>(&'a [LogicalTimer<E>]);
+        impl<E: EventType> Serialize for Timers<'_, E> {
+            fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+                s.collect_seq(self.0.iter().map(TimerData))
+            }
+        }
+        map.serialize_entry("timers", &Timers(&st.timers))?;
         map.serialize_entry("historyValue", &History(m, &st.history))?;
         map.serialize_entry("_stateInputs", &Map::new())?;
         map.serialize_entry("_nextTimerId", &st.next_timer_id)?;
@@ -367,6 +459,11 @@ struct NativeHost<'a, C, E> {
     /// The context before this macrostep's first write, to roll back to
     /// when the macrostep fails.
     context_backup: Option<C>,
+    /// For an untyped context patched in place: whether the undo log, not
+    /// `context_backup`, records this macrostep's writes, and the log (each
+    /// written key and the value it replaced, `None` for a key it added).
+    context_undo_active: bool,
+    context_undo: Vec<(String, Option<Value>)>,
 }
 
 impl<C, E> NativeHost<'_, C, E>
@@ -392,6 +489,39 @@ where
 
     /// `mergeContextPatch`.
     fn merge_context(&mut self, patch: &Map<String, Value>) -> Result<(), SystemError> {
+        if let Some(v) = (&mut self.st.context as &mut dyn Any).downcast_mut::<Value>() {
+            // An untyped context is patched in place. To roll back a failed
+            // macrostep, an undo log keeps each overwritten value (no copy
+            // of the context) while the context is an object whose numbers
+            // are already normalized; otherwise the whole context is copied
+            // on the macrostep's first write.
+            let first_write = self.context_backup.is_none() && !self.context_undo_active;
+            if first_write {
+                if v.as_object().is_some_and(|m| !m.values().any(crate::event::needs_js_numbers)) {
+                    self.context_undo_active = true;
+                } else {
+                    let copy = v.clone();
+                    self.context_backup = Some(*(Box::new(copy) as Box<dyn Any>).downcast::<C>().expect("C is Value"));
+                }
+            }
+            if !v.is_object() {
+                *v = Value::Object(Map::new());
+            }
+            let map = v.as_object_mut().expect("an object");
+            if !self.context_undo_active {
+                map.values_mut().for_each(crate::event::js_numbers);
+            }
+            for (k, val) in patch {
+                let mut val = val.clone();
+                crate::event::js_numbers(&mut val);
+                let old = map.insert(k.clone(), val);
+                if self.context_undo_active {
+                    self.context_undo.push((k.clone(), old));
+                }
+            }
+            self.cloned = true;
+            return Ok(());
+        }
         let mut map = self.context_object()?;
         for (k, v) in patch {
             map.insert(k.clone(), v.clone());
@@ -499,17 +629,17 @@ where
                     };
                     let timer = LogicalTimer { id, seq, delay, event };
                     let key = timer.key();
-                    match self.st.timers.iter_mut().find(|t| t.matches(&key)) {
+                    let timers = Arc::make_mut(&mut self.st.timers);
+                    match timers.iter_mut().find(|t| t.matches(&key)) {
                         Some(existing) => *existing = timer,
-                        None => self.st.timers.push(timer),
+                        None => timers.push(timer),
                     }
                     self.cloned = true;
                     self.effects.push(Effect::DelayedRaise { key, delay });
                 }
                 Op::Cancel(key) => {
-                    let before = self.st.timers.len();
-                    self.st.timers.retain(|t| !t.matches(&key));
-                    if self.st.timers.len() != before {
+                    if self.st.timers.iter().any(|t| t.matches(&key)) {
+                        Arc::make_mut(&mut self.st.timers).retain(|t| !t.matches(&key));
                         self.cloned = true;
                     }
                     self.effects.push(Effect::Cancel(key));
@@ -553,7 +683,9 @@ where
                 Op::Stop(r) => {
                     // XState's `applyChildUpdate`: the child leaves `children`
                     // and the registry at once, and counts as stopping.
-                    self.st.children.retain(|_, c| *c != r);
+                    if self.st.children.values().any(|c| *c == r) {
+                        Arc::make_mut(&mut self.st.children).retain(|_, c| *c != r);
+                    }
                     self.cx.unregister(&r);
                     self.cloned = true;
                     self.effects.push(Effect::Stop(r));
@@ -676,7 +808,7 @@ where
         {
             return;
         }
-        self.st.children.shift_remove(&actor_id);
+        Arc::make_mut(&mut self.st.children).shift_remove(&actor_id);
         self.cx.unregister(&child);
         self.token += 1;
     }
@@ -832,7 +964,7 @@ where
                     },
                 )?;
                 ops.push(Op::Spawn(child.clone()));
-                self.st.children.insert(inv.id.clone(), child);
+                Arc::make_mut(&mut self.st.children).insert(inv.id.clone(), child);
                 self.cloned = true;
             }
         }
@@ -931,9 +1063,10 @@ where
                 self.st.nodes.clear();
                 self.st.nodes.extend_from_slice(&r.nodes);
                 for (h, nodes) in r.history_updates {
-                    match self.st.history.iter_mut().find(|(x, _)| *x == h) {
+                    let history = Arc::make_mut(&mut self.st.history);
+                    match history.iter_mut().find(|(x, _)| *x == h) {
                         Some(entry) => entry.1 = nodes,
-                        None => self.st.history.push((h, nodes)),
+                        None => history.push((h, nodes)),
                     }
                 }
                 self.cloned = true;
@@ -1031,11 +1164,28 @@ where
             stopped_ids: Vec::new(),
             microstep_token_value: 0,
             context_backup: None,
+            context_undo_active: false,
+            context_undo: Vec::new(),
         };
         if let Err(e) = self.macrostep_body(&mut h, event) {
             let context = h.context_backup.take();
+            let undo = std::mem::take(&mut h.context_undo);
             if let Some(saved) = saved {
                 saved.restore(st, context);
+                if let Some(Value::Object(map)) = (&mut st.context as &mut dyn Any).downcast_mut::<Value>() {
+                    // In reverse: a replaced value goes back to its place,
+                    // and an added key (the last one at that point) leaves.
+                    for (key, old) in undo.into_iter().rev() {
+                        match old {
+                            Some(old) => {
+                                map.insert(key, old);
+                            }
+                            None => {
+                                map.shift_remove(&key);
+                            }
+                        }
+                    }
+                }
             }
             st.status = Status::Error;
             st.error = Some(Value::String(e.to_string()));
@@ -1085,7 +1235,7 @@ where
                 let key = crate::system::read_timer_key(&event);
                 let index = key.as_ref().and_then(|k| h.st.timers.iter().position(|t| t.matches(k)));
                 let Some(index) = index else { return Ok(()) };
-                let timer = h.st.timers.remove(index);
+                let timer = Arc::make_mut(&mut h.st.timers).remove(index);
                 h.token += 1;
                 h.queue.push_back(timer.event);
                 h.event = Ev::Internal { event_type: Cow::Borrowed("xstate.timer"), data: Map::new() };
@@ -1177,15 +1327,15 @@ where
                 .iter()
                 .map(|r| lookup(r.get("$stateNode").and_then(Value::as_str).unwrap_or("")))
                 .collect::<Result<_, _>>()?;
-            st.history.push((h, nodes));
+            Arc::make_mut(&mut st.history).push((h, nodes));
         }
         for (k, r) in data.get("children").and_then(Value::as_object).into_iter().flatten() {
-            st.children.insert(k.clone(), ActorRef::from_json(r).ok_or_else(|| bad("children"))?);
+            Arc::make_mut(&mut st.children).insert(k.clone(), ActorRef::from_json(r).ok_or_else(|| bad("children"))?);
         }
         for t in data.get("timers").and_then(Value::as_array).into_iter().flatten() {
             let event =
                 Ev::from_json(t.get("event").cloned().unwrap_or(Value::Null)).ok_or_else(|| bad("timer event"))?;
-            st.timers.push(LogicalTimer {
+            Arc::make_mut(&mut st.timers).push(LogicalTimer {
                 id: t.get("id").and_then(Value::as_str).map(str::to_owned),
                 seq: t.get("seq").and_then(Value::as_u64),
                 delay: t.get("delay").and_then(Value::as_u64).unwrap_or(0),

@@ -326,12 +326,16 @@ where
             None => config.poll_timeout,
         };
         let started = Instant::now();
-        let mut first: Option<std::time::Instant> = None;
+        let mut first: Option<Instant> = None;
         let mut polled = 0;
+        // Where the batch's time goes, for the debug trace.
+        let (mut polling, mut handling) = (Duration::ZERO, Duration::ZERO);
         while polled < config.max_batch {
+            let poll_started = Instant::now();
             let Some(message) = self.consumer.poll(timeout) else { break };
+            polling += poll_started.elapsed();
             polled += 1;
-            let first = *first.get_or_insert_with(std::time::Instant::now);
+            let first = *first.get_or_insert_with(Instant::now);
             timeout = config.batch_linger.saturating_sub(first.elapsed());
             let message = message?;
             let partition = message.partition();
@@ -347,12 +351,15 @@ where
                     &[partition],
                 )?;
             }
-            let key = message.key().map(|k| String::from_utf8_lossy(k).into_owned());
+            let handle_started = Instant::now();
+            let key = message.key().map(String::from_utf8_lossy);
             let p = self.partitions.get_mut(&partition).expect("restored");
             p.handle(key.as_deref(), message.payload().unwrap_or_default(), clock_ms());
+            handling += handle_started.elapsed();
             offsets.insert(partition, message.offset());
         }
 
+        let flush_started = Instant::now();
         let now = clock_ms();
         let mut outputs: Vec<(i32, Output)> = Vec::new();
         for (&id, p) in &mut self.partitions {
@@ -369,9 +376,10 @@ where
             return Ok(());
         }
         let processed = started.elapsed();
+        let flushing = flush_started.elapsed();
         debug(|| {
             format!(
-                "committing {polled} records after {processed:?}: offsets {offsets:?}, output of partitions {:?}",
+                "committing {polled} records after {processed:?} (polling {polling:?}, handling {handling:?}, flushing {flushing:?}): offsets {offsets:?}, output of partitions {:?}",
                 outputs.iter().map(|o| o.0).collect::<Vec<_>>()
             )
         });

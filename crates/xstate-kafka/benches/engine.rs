@@ -5,6 +5,9 @@
 //!   cargo bench -p xstate-kafka --bench engine
 
 use std::hint::black_box;
+
+#[global_allocator]
+static GLOBAL: mimalloc::MiMalloc = mimalloc::MiMalloc;
 use std::sync::Arc;
 
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion, Throughput};
@@ -54,38 +57,44 @@ fn bench(c: &mut Criterion) {
     }
     g.finish();
 
-    // 1000 records over 100 keys per batch, then one flush (100 snapshots).
-    let mut g = c.benchmark_group("partition");
-    g.throughput(Throughput::Elements(1000));
-    let records: Vec<(String, Vec<u8>)> = (0..1000)
-        .map(|i| {
-            let event = if i % 2 == 0 { r#"{"type":"add"}"# } else { r#"{"type":"pay"}"# };
-            (format!("order-{}", i % 100), event.as_bytes().to_vec())
-        })
-        .collect();
-    for codec in [Codec::Json, Codec::MessagePack] {
-        g.bench_function(format!("batch_1000_records_100_keys/{codec:?}"), |b| {
-            b.iter_batched(
-                || {
-                    let mut p = Partition::new(m.clone(), EngineConfig { codec, evict_final: true });
-                    // Warm: every key already has an actor.
-                    for (key, payload) in records.iter().take(100) {
-                        p.handle(Some(key), payload, 0);
-                    }
-                    p.flush();
-                    p
-                },
-                |mut p| {
-                    for (i, (key, payload)) in records.iter().enumerate() {
-                        p.handle(Some(key), payload, i as u64);
-                    }
-                    black_box(p.flush())
-                },
-                BatchSize::LargeInput,
-            )
-        });
+    // A batch of records over `keys` warm actors, then one flush (one
+    // snapshot per key). Few keys stay in cache; many keys (one event per
+    // actor per batch) measure the cost of touching cold actors.
+    for (records, keys) in [(1000usize, 100usize), (10_000, 10_000)] {
+        let mut g = c.benchmark_group("partition");
+        g.throughput(Throughput::Elements(records as u64));
+        let batch: Vec<(String, Vec<u8>)> = (0..records)
+            .map(|i| {
+                let event = if i % 2 == 0 { r#"{"type":"add"}"# } else { r#"{"type":"pay"}"# };
+                (format!("order-{}", i % keys), event.as_bytes().to_vec())
+            })
+            .collect();
+        for codec in [Codec::Json, Codec::MessagePack] {
+            g.bench_function(format!("batch_{records}_records_{keys}_keys/{codec:?}"), |b| {
+                b.iter_batched(
+                    || {
+                        let mut p = Partition::new(m.clone(), EngineConfig { codec, evict_final: true });
+                        // Warm: every key already has an actor.
+                        for (key, payload) in batch.iter().take(keys) {
+                            p.handle(Some(key), payload, 0);
+                        }
+                        p.flush();
+                        p
+                    },
+                    |mut p| {
+                        for (i, (key, payload)) in batch.iter().enumerate() {
+                            p.handle(Some(key), payload, i as u64);
+                        }
+                        let out = p.flush();
+                        // Returned, so dropping the actors is not timed.
+                        (black_box(out), p)
+                    },
+                    BatchSize::LargeInput,
+                )
+            });
+        }
+        g.finish();
     }
-    g.finish();
 }
 
 criterion_group!(benches, bench);

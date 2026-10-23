@@ -17,7 +17,7 @@
 //! `xstate.async.reject` with `data`; no `event` just retires the work).
 
 use std::cmp::Reverse;
-use std::collections::{BinaryHeap, HashMap, HashSet};
+use std::collections::{BinaryHeap, HashSet};
 use std::sync::Arc;
 
 use serde::de::DeserializeOwned;
@@ -88,22 +88,40 @@ impl Output {
     }
 }
 
+/// Record keys are external input: hash them with a fast, randomly seeded
+/// hasher.
+type HashMap<K, V> = std::collections::HashMap<K, V, foldhash::fast::RandomState>;
+
+/// An actor and the partition's bookkeeping for it.
+struct Slot<C, E> {
+    actor: Actor<C, E>,
+    /// Changed since the last flush (and listed in `Partition::dirty`).
+    dirty: bool,
+    /// The deadline last pushed to `Partition::timers`.
+    scheduled: Option<u64>,
+    /// Ids of the actor's pending external work that was already published.
+    published: HashSet<String>,
+}
+
+impl<C, E> Slot<C, E> {
+    fn new(actor: Actor<C, E>) -> Self {
+        Self { actor, dirty: false, scheduled: None, published: HashSet::new() }
+    }
+}
+
 /// The actors of one input partition, keyed by record key.
 pub struct Partition<C, E> {
     machine: Arc<Machine<C, E>>,
     config: EngineConfig,
-    actors: HashMap<String, Actor<C, E>>,
+    actors: HashMap<String, Slot<C, E>>,
     /// Due times of actor timers. Entries can be stale; each is checked
     /// against the actor's own next deadline when it comes due.
     timers: BinaryHeap<Reverse<(u64, String)>>,
     /// Actors changed since the last flush, in order of first change.
     dirty: Vec<String>,
-    dirty_set: HashSet<String>,
     output: Output,
     /// The partition's clock: never moves backwards.
     now: u64,
-    /// Ids of each actor's pending external work that was already published.
-    published: HashMap<String, HashSet<String>>,
 }
 
 impl<C, E> Partition<C, E>
@@ -115,13 +133,11 @@ where
         Self {
             machine,
             config,
-            actors: HashMap::new(),
+            actors: HashMap::default(),
             timers: BinaryHeap::new(),
             dirty: Vec::new(),
-            dirty_set: HashSet::new(),
             output: Output::default(),
             now: 0,
-            published: HashMap::new(),
         }
     }
 
@@ -135,7 +151,7 @@ where
     }
 
     pub fn actor(&self, key: &str) -> Option<&Actor<C, E>> {
-        self.actors.get(key)
+        self.actors.get(key).map(|s| &s.actor)
     }
 
     /// Applies one changelog record while restoring: a snapshot replaces the
@@ -143,23 +159,19 @@ where
     pub fn restore(&mut self, key: &str, record: Option<&[u8]>) -> Result<(), String> {
         let Some(record) = record else {
             self.actors.remove(key);
-            self.published.remove(key);
             return Ok(());
         };
         let snapshot = Codec::decode(record)?;
         let actor = Actor::restore(self.machine.clone(), &snapshot).map_err(|e| format!("key {key:?}: {e}"))?;
         self.now = self.now.max(actor.now());
-        if let Some(due) = actor.next_deadline() {
+        let mut slot = Slot::new(actor);
+        if let Some(due) = slot.actor.next_deadline() {
             self.timers.push(Reverse((due, key.to_owned())));
+            slot.scheduled = Some(due);
         }
         // Pending work in a committed snapshot was published with it.
-        let pending: HashSet<String> = actor.system().external_effects().map(|e| e.id.clone()).collect();
-        if pending.is_empty() {
-            self.published.remove(key);
-        } else {
-            self.published.insert(key.to_owned(), pending);
-        }
-        self.actors.insert(key.to_owned(), actor);
+        slot.published = slot.actor.system().external_effects().map(|e| e.id.clone()).collect();
+        self.actors.insert(key.to_owned(), slot);
         Ok(())
     }
 
@@ -195,13 +207,15 @@ where
         self.now = self.now.max(now);
         let now = self.now;
         // Due timers of this actor fire before the event.
-        if !self.actors.contains_key(key) {
-            let actor = Actor::start_with(self.machine.clone(), InitOptions { time: now, ..Default::default() })
-                .map_err(|e| format!("starting the actor failed: {e}"))?;
-            self.actors.insert(key.to_owned(), actor);
-        }
-        let actor = self.actors.get_mut(key).expect("present");
-        let result = actor.send_json(event, now).map_err(|e| e.to_string());
+        let slot = match self.actors.get_mut(key) {
+            Some(slot) => slot,
+            None => {
+                let actor = Actor::start_with(self.machine.clone(), InitOptions { time: now, ..Default::default() })
+                    .map_err(|e| format!("starting the actor failed: {e}"))?;
+                self.actors.entry(key.to_owned()).or_insert(Slot::new(actor))
+            }
+        };
+        let result = slot.actor.send_json(event, now).map_err(|e| e.to_string());
         self.after_step(key);
         result
     }
@@ -217,7 +231,8 @@ where
             .to_owned();
         self.now = self.now.max(now);
         let now = self.now;
-        let actor = self.actors.get_mut(key).ok_or_else(|| format!("no actor {key:?} for effect {effect_id}"))?;
+        let actor =
+            &mut self.actors.get_mut(key).ok_or_else(|| format!("no actor {key:?} for effect {effect_id}"))?.actor;
         if !actor.system().external_effects().any(|e| e.id == effect_id) {
             return Err(format!("effect {effect_id} of {key:?} is not pending (cancelled or already resolved)"));
         }
@@ -237,8 +252,12 @@ where
             if *due > self.now {
                 break;
             }
-            let Reverse((_, key)) = self.timers.pop().expect("peeked");
-            let Some(actor) = self.actors.get_mut(&key) else { continue };
+            let Reverse((due, key)) = self.timers.pop().expect("peeked");
+            let Some(slot) = self.actors.get_mut(&key) else { continue };
+            if slot.scheduled == Some(due) {
+                slot.scheduled = None;
+            }
+            let actor = &mut slot.actor;
             if actor.next_deadline().map_or(true, |d| d > self.now) {
                 continue; // stale: the timer was cancelled or already fired
             }
@@ -257,7 +276,7 @@ where
     pub fn next_deadline(&mut self) -> Option<u64> {
         // Drop stale entries so the answer is exact.
         while let Some(Reverse((due, key))) = self.timers.peek() {
-            match self.actors.get(key).and_then(|a| a.next_deadline()) {
+            match self.actors.get(key).and_then(|s| s.actor.next_deadline()) {
                 Some(d) if d == *due => return Some(*due),
                 _ => {
                     self.timers.pop();
@@ -268,32 +287,34 @@ where
     }
 
     fn after_step(&mut self, key: &str) {
-        let actor = self.actors.get_mut(key).expect("present");
+        let slot = self.actors.get_mut(key).expect("present");
+        let actor = &mut slot.actor;
         for event in actor.take_emitted() {
             self.output.emitted.push(Emitted { key: key.to_owned(), event });
         }
         actor.take_logs();
-        if let Some(due) = actor.next_deadline() {
-            self.timers.push(Reverse((due, key.to_owned())));
+        match actor.next_deadline() {
+            Some(due) if slot.scheduled != Some(due) => {
+                self.timers.push(Reverse((due, key.to_owned())));
+                slot.scheduled = Some(due);
+            }
+            Some(_) => {}
+            None => slot.scheduled = None,
         }
         // Publish new external work once.
         let mut pending = actor.system().external_effects().peekable();
-        if pending.peek().is_some() || self.published.contains_key(key) {
-            let published = self.published.entry(key.to_owned()).or_default();
+        if pending.peek().is_some() || !slot.published.is_empty() {
             let mut current = HashSet::new();
             for effect in pending {
-                if !published.contains(&effect.id) {
+                if !slot.published.contains(&effect.id) {
                     self.output.effects.push(EffectRequest { key: key.to_owned(), effect: effect.to_json() });
                 }
                 current.insert(effect.id.clone());
             }
-            if current.is_empty() {
-                self.published.remove(key);
-            } else {
-                *published = current;
-            }
+            slot.published = current;
         }
-        if self.dirty_set.insert(key.to_owned()) {
+        if !slot.dirty {
+            slot.dirty = true;
             self.dirty.push(key.to_owned());
         }
     }
@@ -305,7 +326,7 @@ where
         let mut records: Vec<(String, Vec<u8>)> = self
             .actors
             .iter()
-            .map(|(key, actor)| (key.clone(), self.config.codec.encode_serialize(&actor.persist_view())))
+            .map(|(key, slot)| (key.clone(), self.config.codec.encode_serialize(&slot.actor.persist_view())))
             .collect();
         records.sort_by(|a, b| a.0.cmp(&b.0));
         records
@@ -315,15 +336,14 @@ where
     /// actors that changed.
     pub fn flush(&mut self) -> Output {
         for key in std::mem::take(&mut self.dirty) {
-            self.dirty_set.remove(&key);
-            let Some(actor) = self.actors.get(&key) else { continue };
-            let finished = matches!(actor.status(), Status::Done | Status::Stopped);
+            let Some(slot) = self.actors.get_mut(&key) else { continue };
+            slot.dirty = false;
+            let finished = matches!(slot.actor.status(), Status::Done | Status::Stopped);
             if finished && self.config.evict_final {
                 self.actors.remove(&key);
-                self.published.remove(&key);
                 self.output.changelog.push((key, None));
             } else {
-                let record = self.config.codec.encode_serialize(&actor.persist_view());
+                let record = self.config.codec.encode_serialize(&slot.actor.persist_view());
                 self.output.changelog.push((key, Some(record)));
             }
         }
