@@ -161,6 +161,9 @@ pub struct Machine<C, E> {
     /// Why starting fails although the definition loads: a root `initial`
     /// without child states, which XState accepts and fails on at start.
     pub(crate) start_error: Option<String>,
+    /// Empty snapshot parts that new snapshots share until they first write
+    /// them (copy-on-write), so an actor allocates none it does not use.
+    pub(crate) empty: crate::interp::EmptyParts<E>,
 }
 
 impl<C, E> Machine<C, E> {

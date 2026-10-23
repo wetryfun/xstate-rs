@@ -319,6 +319,7 @@ where
         options,
         start_error: (root_json.contains_key("initial") && obj_is_empty(root_json.get("states")))
             .then(|| "Initial state not found on \"#\"".to_owned()),
+        empty: Default::default(),
     };
     Ok((machine, refs))
 }

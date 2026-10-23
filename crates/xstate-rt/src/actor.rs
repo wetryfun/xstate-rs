@@ -24,10 +24,7 @@ use crate::system::{EffectKind, ExternalEffect, InitOptions, Status, System, Sys
 /// resolves it with [`Actor::resolve_effect`].
 pub struct Actor<C, E> {
     machine: Arc<Machine<C, E>>,
-    logic: SystemLogic,
     system: System,
-    /// The root's address (it never changes).
-    root: Arc<str>,
     emitted: Vec<Value>,
     logs: Vec<Vec<Value>>,
     _event: PhantomData<fn(E)>,
@@ -58,9 +55,7 @@ where
         let logic = SystemLogic::new(machine.clone());
         let (mut system, effects) = System::initialize(&logic, options)?;
         system.set_transient_effects(true);
-        let root = Arc::from(system.root());
-        let mut actor =
-            Self { machine, logic, system, root, emitted: Vec::new(), logs: Vec::new(), _event: PhantomData };
+        let mut actor = Self { machine, system, emitted: Vec::new(), logs: Vec::new(), _event: PhantomData };
         actor.handle(effects);
         Ok(actor)
     }
@@ -73,12 +68,11 @@ where
         if system.snapshot(system.root()).and_then(|s| s.as_any().downcast_ref::<State<C, E>>()).is_none() {
             return Err(SystemError::Rejected("the snapshot's root is not this machine".into()));
         }
-        let root = Arc::from(system.root());
-        Ok(Self { machine, logic, system, root, emitted: Vec::new(), logs: Vec::new(), _event: PhantomData })
+        Ok(Self { machine, system, emitted: Vec::new(), logs: Vec::new(), _event: PhantomData })
     }
 
     fn handle(&mut self, effects: Vec<ExternalEffect>) {
-        let root = self.root.clone();
+        let root = self.system.root_address().clone();
         for mut effect in effects {
             let from_root = *effect.source.address == *root;
             let done = match effect.kind {
@@ -118,7 +112,7 @@ where
         if now_ms > self.system.now() {
             self.advance(now_ms)?;
         }
-        let root = self.root.clone();
+        let root = self.system.root_address().clone();
         let effects = self.system.send(&root, event)?;
         self.handle(effects);
         Ok(())
@@ -164,7 +158,7 @@ where
 
     /// Stops the root and its children, as XState's `actor.stop()`.
     pub fn stop(&mut self) -> Result<(), SystemError> {
-        let root = self.root.clone();
+        let root = self.system.root_address().clone();
         let effects = self.system.send(&root, serde_json::json!({ "type": "xstate.stop" }))?;
         self.handle(effects);
         Ok(())
@@ -192,12 +186,12 @@ where
 
     /// The actor's output, once it is done.
     pub fn output(&self) -> Option<&Value> {
-        self.state().output.as_ref()
+        self.state().output.as_deref()
     }
 
     /// The error of an actor in the `error` status.
     pub fn error(&self) -> Option<&Value> {
-        self.state().error.as_ref()
+        self.state().error.as_deref()
     }
 
     /// The system's virtual time.
@@ -291,6 +285,6 @@ where
 
     /// The system's definitions.
     pub fn system_logic(&self) -> &SystemLogic {
-        &self.logic
+        self.system.logic()
     }
 }

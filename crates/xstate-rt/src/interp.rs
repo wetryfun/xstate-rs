@@ -39,7 +39,82 @@ pub(crate) struct LogicalTimer<E> {
     pub id: Option<String>,
     pub seq: Option<u64>,
     pub delay: u64,
-    pub event: Ev<E>,
+    pub event: TimerEv<E>,
+}
+
+/// A logical timer's event. `after` events (most timers) are kept without
+/// their JSON object, which costs several allocations per pending timer.
+#[derive(Clone)]
+pub(crate) enum TimerEv<E> {
+    /// `{ type: "xstate.after", delay, stateId }`.
+    After {
+        delay: Value,
+        state_id: String,
+    },
+    Ev(Ev<E>),
+}
+
+impl<E: EventType> TimerEv<E> {
+    fn new(event: Ev<E>) -> Self {
+        let after = |data: &Map<String, Value>| {
+            data.len() == 2 && data.keys().zip(["delay", "stateId"]).all(|(k, n)| k == n) && data["stateId"].is_string()
+        };
+        match event {
+            Ev::Internal { event_type, mut data } if event_type == AFTER && after(&data) => {
+                let Some(Value::String(state_id)) = data.swap_remove("stateId") else { unreachable!() };
+                TimerEv::After { delay: data.swap_remove("delay").expect("checked"), state_id }
+            }
+            // A restored untyped event.
+            Ev::User(e) if e.event_type() == AFTER => match e.to_json() {
+                Value::Object(mut data) if data.keys().next().map(String::as_str) == Some("type") => {
+                    data.shift_remove("type");
+                    if after(&data) {
+                        let Some(Value::String(state_id)) = data.swap_remove("stateId") else { unreachable!() };
+                        TimerEv::After { delay: data.swap_remove("delay").expect("checked"), state_id }
+                    } else {
+                        TimerEv::Ev(Ev::User(e))
+                    }
+                }
+                _ => TimerEv::Ev(Ev::User(e)),
+            },
+            other => TimerEv::Ev(other),
+        }
+    }
+
+    fn event_type(&self) -> &str {
+        match self {
+            TimerEv::After { .. } => AFTER,
+            TimerEv::Ev(e) => e.event_type(),
+        }
+    }
+
+    fn field(&self, key: &str) -> Option<Value> {
+        match (self, key) {
+            (TimerEv::After { delay, .. }, "delay") => Some(delay.clone()),
+            (TimerEv::After { state_id, .. }, "stateId") => Some(Value::String(state_id.clone())),
+            (TimerEv::After { .. }, _) => None,
+            (TimerEv::Ev(e), _) => e.field(key),
+        }
+    }
+
+    fn to_json(&self) -> Value {
+        match self {
+            TimerEv::After { delay, state_id } => json!({ "type": AFTER, "delay": delay, "stateId": state_id }),
+            TimerEv::Ev(e) => e.to_json(),
+        }
+    }
+
+    fn into_ev(self) -> Ev<E> {
+        match self {
+            TimerEv::After { delay, state_id } => {
+                let mut data = Map::with_capacity(2);
+                data.insert("delay".into(), delay);
+                data.insert("stateId".into(), Value::String(state_id));
+                Ev::Internal { event_type: Cow::Borrowed(AFTER), data }
+            }
+            TimerEv::Ev(e) => e,
+        }
+    }
 }
 
 impl<E: EventType> LogicalTimer<E> {
@@ -117,8 +192,9 @@ pub(crate) struct State<C, E> {
     pub nodes: Vec<Nid>,
     pub context: C,
     pub status: Status,
-    pub output: Option<Value>,
-    pub error: Option<Value>,
+    /// Boxed, like `error`: rarely set, and a `Value` is large inline.
+    pub output: Option<Box<Value>>,
+    pub error: Option<Box<Value>>,
     /// `historyValue`, in key order. Copy-on-write (`Arc::make_mut`) like
     /// `children` and `timers`, so a macrostep's rollback copy is cheap.
     pub history: Arc<HistoryValues>,
@@ -149,17 +225,30 @@ impl<C: Clone, E: Clone> Clone for State<C, E> {
     }
 }
 
+/// Shared empty `history`, `children` and `timers` (see [`Machine`]).
+pub(crate) struct EmptyParts<E> {
+    history: Arc<HistoryValues>,
+    children: Arc<IndexMap<String, ActorRef>>,
+    timers: Arc<Vec<LogicalTimer<E>>>,
+}
+
+impl<E> Default for EmptyParts<E> {
+    fn default() -> Self {
+        Self { history: Arc::default(), children: Arc::default(), timers: Arc::default() }
+    }
+}
+
 impl<C, E> State<C, E> {
-    pub fn new(context: C) -> Self {
+    pub fn new(context: C, empty: &EmptyParts<E>) -> Self {
         Self {
             nodes: vec![ROOT],
             context,
             status: Status::Active,
             output: None,
             error: None,
-            history: Arc::default(),
-            children: Arc::default(),
-            timers: Arc::default(),
+            history: empty.history.clone(),
+            children: empty.children.clone(),
+            timers: empty.timers.clone(),
             next_timer_id: 0,
             context_normalized: false,
         }
@@ -176,11 +265,11 @@ where
     }
 
     fn output(&self) -> Option<Value> {
-        self.output.clone()
+        self.output.as_deref().cloned()
     }
 
     fn error(&self) -> Option<Value> {
-        self.error.clone()
+        self.error.as_deref().cloned()
     }
 
     fn timer_pending(&self, key: &Value) -> bool {
@@ -239,8 +328,8 @@ impl<E> Outcome<E> {
 struct Saved {
     nodes: core::Buf<Nid>,
     status: Status,
-    output: Option<Value>,
-    error: Option<Value>,
+    output: Option<Box<Value>>,
+    error: Option<Box<Value>>,
     next_timer_id: u64,
 }
 
@@ -358,6 +447,20 @@ impl<E: EventType> Serialize for EvView<'_, E> {
     }
 }
 
+/// `{ type: "xstate.after", delay, stateId }`.
+struct AfterView<'a>(&'a Value, &'a str);
+
+impl Serialize for AfterView<'_> {
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeMap as _;
+        let mut map = s.serialize_map(Some(3))?;
+        map.serialize_entry("type", AFTER)?;
+        map.serialize_entry("delay", self.0)?;
+        map.serialize_entry("stateId", self.1)?;
+        map.end()
+    }
+}
+
 /// A logical timer that serializes as [`LogicalTimer::to_data`] builds it.
 struct TimerData<'a, E>(&'a LogicalTimer<E>);
 
@@ -374,7 +477,10 @@ impl<E: EventType> Serialize for TimerData<'_, E> {
         }
         map.serialize_entry("delay", &t.delay)?;
         map.serialize_entry("type", "@xstate.raise")?;
-        map.serialize_entry("event", &EvView(&t.event))?;
+        match &t.event {
+            TimerEv::After { delay, state_id } => map.serialize_entry("event", &AfterView(delay, state_id))?,
+            TimerEv::Ev(e) => map.serialize_entry("event", &EvView(e))?,
+        }
         map.serialize_entry("target", "self")?;
         map.end()
     }
@@ -725,7 +831,7 @@ where
                     } else {
                         None
                     };
-                    let timer = LogicalTimer { id, seq, delay, event };
+                    let timer = LogicalTimer { id, seq, delay, event: TimerEv::new(event) };
                     let key = timer.key();
                     let timers = self.timers_mut();
                     match timers.iter_mut().find(|t| t.matches(&key)) {
@@ -1128,8 +1234,8 @@ where
         };
         self.st.status = Status::Done;
         self.st.output = match &self.m.output {
-            Some(output) => Some(output.clone()),
-            None if tree.node(completion).parent == Some(ROOT) => completion_output,
+            Some(output) => Some(Box::new(output.clone())),
+            None if tree.node(completion).parent == Some(ROOT) => completion_output.map(Box::new),
             None => None,
         };
         self.cloned = true;
@@ -1300,7 +1406,7 @@ where
                 }
             }
             st.status = Status::Error;
-            st.error = Some(Value::String(e.to_string()));
+            st.error = Some(Box::new(Value::String(e.to_string())));
             return Err(e);
         }
         let mut effects = std::mem::take(&mut h.effects);
@@ -1349,7 +1455,7 @@ where
                 let Some(index) = index else { return Ok(()) };
                 let timer = h.timers_mut().remove(index);
                 h.token += 1;
-                h.queue.push_back(timer.event);
+                h.queue.push_back(timer.event.into_ev());
                 h.event = Ev::Internal { event_type: Cow::Borrowed("xstate.timer"), data: Map::new() };
             }
             _ => {
@@ -1366,7 +1472,7 @@ where
                         }
                     }
                     h.st.status = Status::Error;
-                    h.st.error = h.event.field("error");
+                    h.st.error = h.event.field("error").map(Box::new);
                     h.remove_terminated_child();
                     return Ok(());
                 }
@@ -1382,10 +1488,10 @@ where
         let mut m = Map::new();
         m.insert("status".into(), json!(st.status.as_str()));
         if let Some(o) = &st.output {
-            m.insert("output".into(), o.clone());
+            m.insert("output".into(), (**o).clone());
         }
         if let Some(e) = &st.error {
-            m.insert("error".into(), e.clone());
+            m.insert("error".into(), (**e).clone());
         }
         m.insert("context".into(), context_json(&st.context));
         m.insert("value".into(), self.state_value(&st.nodes));
@@ -1419,10 +1525,10 @@ where
         };
         let context = C::deserialize(data.get("context").unwrap_or(&Value::Null))
             .map_err(|e| SystemError::Rejected(format!("context does not fit the context type: {e}")))?;
-        let mut st = State::new(context);
+        let mut st = State::new(context, &self.empty);
         st.status = crate::system::parse_status(data)?;
-        st.output = data.get("output").cloned();
-        st.error = data.get("error").cloned();
+        st.output = data.get("output").cloned().map(Box::new);
+        st.error = data.get("error").cloned().map(Box::new);
         st.nodes = data
             .get("nodeIds")
             .and_then(Value::as_array)
@@ -1451,7 +1557,7 @@ where
                 id: t.get("id").and_then(Value::as_str).map(str::to_owned),
                 seq: t.get("seq").and_then(Value::as_u64),
                 delay: t.get("delay").and_then(Value::as_u64).unwrap_or(0),
-                event,
+                event: TimerEv::new(event),
             });
         }
         st.next_timer_id = data.get("_nextTimerId").and_then(Value::as_u64).unwrap_or(0);
@@ -1494,7 +1600,7 @@ where
         if let Some(e) = &self.start_error {
             return Err(SystemError::Failed(e.clone()));
         }
-        let mut st = State::new(self.initial_context.clone());
+        let mut st = State::new(self.initial_context.clone(), &self.empty);
         let effects = self.run_macrostep(&mut st, cx, MacroEvent::Init)?;
         Ok(Transition { snapshot: Box::new(st), effects })
     }

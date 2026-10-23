@@ -304,7 +304,173 @@ pub struct SystemTimer {
     pub scheduled_at: u64,
     pub due_at: u64,
     pub sequence: u64,
-    pub event: Value,
+    pub event: TimerEvent,
+}
+
+/// A system timer's event. A machine's timers (`{ type: "xstate.timer",
+/// ...key }`) keep their key in typed form for the common shapes and build
+/// the event only when it is delivered or persisted: a JSON object costs
+/// several allocations, and an idle actor typically has an `after` timer.
+#[derive(Debug, Clone, PartialEq)]
+pub enum TimerEvent {
+    /// `{ type: "xstate.timer", id }`.
+    Id(String),
+    /// `{ type: "xstate.timer", seq }`.
+    Seq(serde_json::Number),
+    /// `{ type: "xstate.timer", event: { type: "xstate.after", delay, stateId } }`.
+    After { delay: Value, state_id: String },
+    /// `{ type: "xstate.timer", event: { type: "xstate.timeout.state", stateId } }`.
+    StateTimeout { state_id: String },
+    /// Any other event, as it is.
+    Other(Value),
+}
+
+const TIMER: &str = "xstate.timer";
+
+impl TimerEvent {
+    /// `{ type: "xstate.timer", ...key }` for a machine timer `key`.
+    fn for_key(key: Value) -> Self {
+        Self::typed(&key).unwrap_or_else(|| Self::Other(timer_event(&key)))
+    }
+
+    /// Reads a persisted event (any event, kept as it is unless it has one
+    /// of the typed shapes exactly).
+    pub fn from_value(event: Value) -> Self {
+        if let Value::Object(m) = &event {
+            let mut entries = m.iter();
+            if entries.next().is_some_and(|(k, v)| k == "type" && v.as_str() == Some(TIMER)) {
+                let key: Map<String, Value> = entries.map(|(k, v)| (k.clone(), v.clone())).collect();
+                if let Some(typed) = Self::typed(&Value::Object(key)) {
+                    return typed;
+                }
+            }
+        }
+        Self::Other(event)
+    }
+
+    fn typed(key: &Value) -> Option<Self> {
+        let key = key.as_object()?;
+        let only =
+            |m: &Map<String, Value>, names: &[&str]| m.len() == names.len() && m.keys().zip(names).all(|(k, n)| k == n);
+        if only(key, &["id"]) {
+            return key["id"].as_str().map(|id| Self::Id(id.to_owned()));
+        }
+        if only(key, &["seq"]) {
+            return key["seq"].as_number().map(|n| Self::Seq(n.clone()));
+        }
+        if !only(key, &["event"]) {
+            return None;
+        }
+        let event = key["event"].as_object()?;
+        match event.get("type")?.as_str()? {
+            "xstate.after" if only(event, &["type", "delay", "stateId"]) => {
+                Some(Self::After { delay: event["delay"].clone(), state_id: event["stateId"].as_str()?.to_owned() })
+            }
+            "xstate.timeout.state" if only(event, &["type", "stateId"]) => {
+                Some(Self::StateTimeout { state_id: event["stateId"].as_str()?.to_owned() })
+            }
+            _ => None,
+        }
+    }
+
+    /// The event as JSON.
+    pub fn to_value(&self) -> Value {
+        match self {
+            Self::Other(v) => v.clone(),
+            _ => serde_json::to_value(self).expect("timer events serialize"),
+        }
+    }
+
+    /// The machine timer key (`{ id } | { seq } | { event }`) of an
+    /// `xstate.timer` event (XState's `readTimerKey`).
+    fn machine_key(&self) -> Option<Value> {
+        match self {
+            Self::Id(id) => Some(json!({ "id": id })),
+            Self::Seq(n) => Some(json!({ "seq": n })),
+            Self::After { delay, state_id } => {
+                Some(json!({ "event": { "type": "xstate.after", "delay": delay, "stateId": state_id } }))
+            }
+            Self::StateTimeout { state_id } => {
+                Some(json!({ "event": { "type": "xstate.timeout.state", "stateId": state_id } }))
+            }
+            Self::Other(v) if v.get("type").and_then(Value::as_str) == Some(TIMER) => read_timer_key(v),
+            Self::Other(_) => None,
+        }
+    }
+
+    fn is_machine_timer(&self) -> bool {
+        match self {
+            Self::Other(v) => v.get("type").and_then(Value::as_str) == Some(TIMER),
+            _ => true,
+        }
+    }
+
+    /// Appends the part of the system timer key the event decides (see
+    /// [`system_timer_key`]).
+    fn push_key(&self, out: &mut String) {
+        match self {
+            Self::Id(id) => {
+                out.push_str("id,");
+                push_json_str(out, id);
+            }
+            Self::Seq(n) => {
+                out.push_str("seq,");
+                out.push_str(&n.to_string());
+            }
+            Self::After { delay, state_id } => {
+                out.push_str("event,{\"type\":\"xstate.after\",\"delay\":");
+                push_json(out, delay);
+                out.push_str(",\"stateId\":");
+                push_json_str(out, state_id);
+                out.push('}');
+            }
+            Self::StateTimeout { state_id } => {
+                out.push_str("event,{\"type\":\"xstate.timeout.state\",\"stateId\":");
+                push_json_str(out, state_id);
+                out.push('}');
+            }
+            Self::Other(event) => {
+                let ty = event.get("type").and_then(Value::as_str);
+                if ty != Some(TIMER) || !push_timer_event_key(out, event) {
+                    push_json_str(out, ty.unwrap_or(""));
+                }
+            }
+        }
+    }
+}
+
+impl Serialize for TimerEvent {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        struct Inner<'a>(&'static str, Option<&'a Value>, &'a str);
+        impl Serialize for Inner<'_> {
+            fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+                let mut m = s.serialize_map(Some(2 + usize::from(self.1.is_some())))?;
+                m.serialize_entry("type", self.0)?;
+                if let Some(delay) = self.1 {
+                    m.serialize_entry("delay", delay)?;
+                }
+                m.serialize_entry("stateId", self.2)?;
+                m.end()
+            }
+        }
+        if let Self::Other(v) = self {
+            return v.serialize(s);
+        }
+        let mut m = s.serialize_map(Some(2))?;
+        m.serialize_entry("type", TIMER)?;
+        match self {
+            Self::Id(id) => m.serialize_entry("id", id)?,
+            Self::Seq(n) => m.serialize_entry("seq", n)?,
+            Self::After { delay, state_id } => {
+                m.serialize_entry("event", &Inner("xstate.after", Some(delay), state_id))?
+            }
+            Self::StateTimeout { state_id } => {
+                m.serialize_entry("event", &Inner("xstate.timeout.state", None, state_id))?
+            }
+            Self::Other(_) => unreachable!(),
+        }
+        m.end()
+    }
 }
 
 /// External work for the host, with a stable id.
@@ -396,7 +562,8 @@ struct ActorEntry {
     registry_key: Option<String>,
     sync_snapshot: Option<bool>,
     started: bool,
-    input: Option<Value>,
+    /// Boxed: rarely set, and a `Value` is large inline.
+    input: Option<Box<Value>>,
     /// `None` while the actor's own transition runs.
     snapshot: Option<Box<dyn AnySnapshot>>,
     status: Status,
@@ -567,16 +734,14 @@ fn push_event_identity(out: &mut String, event: &Value) {
 }
 
 /// XState's `systemTimerKey`: the source actor and the timer's key.
-fn system_timer_key(source: &ActorRef, event: &Value) -> String {
+fn system_timer_key(source: &ActorRef, event: &TimerEvent) -> String {
     let mut out = String::with_capacity(64);
     push_json_str(&mut out, &source.address);
     out.push(',');
     out.push_str(&source.incarnation.to_string());
     out.push(',');
-    let ty = event.get("type").and_then(Value::as_str);
-    if ty != Some("xstate.timer") || !push_timer_event_key(&mut out, event) {
-        push_json_str(&mut out, ty.unwrap_or(""));
-    }
+    event.push_key(&mut out);
+    out.shrink_to_fit();
     out
 }
 
@@ -647,18 +812,35 @@ impl Default for InitOptions {
     }
 }
 
+fn execution_id(id: String) -> std::borrow::Cow<'static, str> {
+    if id == "system" {
+        std::borrow::Cow::Borrowed("system")
+    } else {
+        std::borrow::Cow::Owned(id)
+    }
+}
+
+/// The hasher of a system's maps: stateless (a `RandomState` is 16 bytes in
+/// every map of every idle system), with fixed keys. Each map holds one
+/// system's few actors, timers and effects.
+type Fixed = std::hash::BuildHasherDefault<std::collections::hash_map::DefaultHasher>;
+
 /// A running actor system.
 pub struct System {
-    defs: Vec<(String, Arc<dyn Logic>)>,
-    execution_id: String,
-    root: String,
+    /// Definitions are derived from it when an actor is allocated (rarely),
+    /// so a system holds no copy of them.
+    logic: SystemLogic,
+    /// Borrowed for the default, `system`.
+    execution_id: std::borrow::Cow<'static, str>,
+    /// The root's address, shared with its actor entry.
+    root: Arc<str>,
     now: u64,
-    actors: IndexMap<Arc<str>, ActorEntry>,
-    registry: IndexMap<String, ActorRef>,
+    actors: IndexMap<Arc<str>, ActorEntry, Fixed>,
+    registry: IndexMap<String, ActorRef, Fixed>,
     messages: VecDeque<Message>,
-    timers: IndexMap<String, SystemTimer>,
+    timers: IndexMap<String, SystemTimer, Fixed>,
     deadlines: BinaryHeap<Reverse<(u64, u64, u64)>>,
-    external_effects: IndexMap<String, ExternalEffect>,
+    external_effects: IndexMap<String, ExternalEffect, Fixed>,
     /// Set by [`crate::Actor`], which handles emits, logs, cancellations,
     /// cleanups and Rust-implemented actions as soon as a call returns them:
     /// such effects are returned without being stored as pending (the
@@ -667,10 +849,17 @@ pub struct System {
     counters: Counters,
     max_steps: usize,
     // Per-call state.
+    scratch: Option<Box<Scratch>>,
+    remaining: usize,
+}
+
+/// Per-call state, lent from a per-thread pool for the length of a call
+/// (idle systems are most of a partition's memory).
+#[derive(Default)]
+struct Scratch {
     out: Vec<ExternalEffect>,
     initial_effects: HashMap<ActorRef, Vec<Effect>>,
     stopping: HashSet<ActorRef>,
-    remaining: usize,
 }
 
 impl System {
@@ -678,22 +867,20 @@ impl System {
     /// Returns the system and the external effects produced.
     pub fn initialize(logic: &SystemLogic, options: InitOptions) -> Result<(Self, Vec<ExternalEffect>), SystemError> {
         let mut sys = Self {
-            defs: definitions(logic),
-            execution_id: options.execution_id.clone(),
-            root: String::new(),
+            logic: logic.clone(),
+            execution_id: execution_id(options.execution_id.clone()),
+            root: Arc::from(""),
             now: options.time,
-            actors: IndexMap::new(),
-            registry: IndexMap::new(),
+            actors: IndexMap::default(),
+            registry: IndexMap::default(),
             messages: VecDeque::new(),
-            timers: IndexMap::new(),
+            timers: IndexMap::default(),
             deadlines: BinaryHeap::new(),
-            external_effects: IndexMap::new(),
+            external_effects: IndexMap::default(),
             transient_effects: false,
             counters: Counters::default(),
             max_steps: options.max_steps.max(1),
-            out: Vec::new(),
-            initial_effects: HashMap::new(),
-            stopping: HashSet::new(),
+            scratch: None,
             remaining: 0,
         };
         sys.begin();
@@ -703,7 +890,7 @@ impl System {
             &root_logic,
             AllocateOptions { id, input: options.input, registry_key: options.registry_key, ..Default::default() },
         )?;
-        sys.root = root.address.to_string();
+        sys.root = root.address.clone();
         sys.start(&root)?;
         sys.settle()?;
         let effects = sys_end(&mut sys);
@@ -715,9 +902,14 @@ impl System {
             self.messages = take_message_queue();
         }
         self.remaining = self.max_steps;
-        self.out.clear();
-        self.initial_effects.clear();
-        self.stopping.clear();
+        let scratch = self.scratch();
+        scratch.out.clear();
+        scratch.initial_effects.clear();
+        scratch.stopping.clear();
+    }
+
+    fn scratch(&mut self) -> &mut Scratch {
+        self.scratch.get_or_insert_with(take_scratch)
     }
 
     fn step(&mut self) -> Result<(), SystemError> {
@@ -730,6 +922,11 @@ impl System {
 
     /// The root actor's address.
     pub fn root(&self) -> &str {
+        &self.root
+    }
+
+    /// [`System::root`], shared.
+    pub fn root_address(&self) -> &Arc<str> {
         &self.root
     }
 
@@ -767,6 +964,11 @@ impl System {
     }
 
     /// The snapshot of the actor at `address`.
+    /// The logic the system was created with.
+    pub fn logic(&self) -> &SystemLogic {
+        &self.logic
+    }
+
     pub fn snapshot(&self, address: &str) -> Option<&dyn AnySnapshot> {
         self.actors.get(address)?.snapshot.as_deref()
     }
@@ -777,7 +979,7 @@ impl System {
 
     fn allocate(&mut self, logic: &Arc<dyn Logic>, options: AllocateOptions) -> Result<ActorRef, SystemError> {
         self.step()?;
-        let Some((src, _)) = self.defs.iter().find(|(_, l)| same_logic(l, logic)).cloned() else {
+        let Some((src, _)) = definitions(&self.logic).into_iter().find(|(_, l)| same_logic(l, logic)) else {
             return Err(SystemError::Failed("Register dynamically spawned logic in systemLogic.actors.".into()));
         };
         let segment = encode_address_segment(&options.id);
@@ -788,7 +990,7 @@ impl System {
         if let Some(occupied) = self.actors.get(&address) {
             if occupied.status == Status::Active {
                 let previous = occupied.reference();
-                if !self.stopping.contains(&previous) {
+                if !self.scratch.as_ref().is_some_and(|s| s.stopping.contains(&previous)) {
                     return Err(SystemError::Failed(format!("Actor address '{address}' is already occupied.")));
                 }
                 self.stop(&previous)?;
@@ -808,7 +1010,7 @@ impl System {
             registry_key: options.registry_key.clone(),
             sync_snapshot: options.sync_snapshot,
             started: false,
-            input: options.input.clone(),
+            input: options.input.clone().map(Box::new),
             snapshot: None,
             status: Status::Active,
         };
@@ -829,7 +1031,7 @@ impl System {
         };
         let effects = finalize(Status::Active, true, result.snapshot.status(), result.effects);
         self.store(&r, result.snapshot);
-        self.initial_effects.insert(r.clone(), effects);
+        self.scratch().initial_effects.insert(r.clone(), effects);
         Ok(r)
     }
 
@@ -875,9 +1077,9 @@ impl System {
             exec: spec.exec,
         };
         if transient {
-            self.out.push(effect);
+            self.scratch().out.push(effect);
         } else {
-            self.out.push(effect.clone());
+            self.scratch().out.push(effect.clone());
             self.external_effects.insert(id, effect);
         }
     }
@@ -919,7 +1121,7 @@ impl System {
                     let pending =
                         self.current(r).and_then(|a| a.snapshot.as_ref()).is_some_and(|s| s.timer_pending(&key));
                     if pending {
-                        self.schedule(r, delay, timer_event(&key))?;
+                        self.schedule(r, delay, TimerEvent::for_key(key))?;
                     }
                 }
                 Effect::SendTo { target, event } => self.enqueue(Some(r.clone()), target, event, None),
@@ -930,7 +1132,7 @@ impl System {
         Ok(())
     }
 
-    fn schedule(&mut self, r: &ActorRef, delay: u64, event: Value) -> Result<(), SystemError> {
+    fn schedule(&mut self, r: &ActorRef, delay: u64, event: TimerEvent) -> Result<(), SystemError> {
         let due_at = self.now.checked_add(delay).ok_or_else(|| {
             SystemError::Failed("System timer deadlines must be finite and delays nonnegative.".into())
         })?;
@@ -948,6 +1150,9 @@ impl System {
         if let Some(replaced) = self.timers.shift_remove(&key) {
             self.forget_deadline(&replaced);
         }
+        if self.deadlines.len() == self.deadlines.capacity() {
+            self.deadlines.reserve_exact(1);
+        }
         self.deadlines.push(Reverse((timer.due_at, timer.sequence, timer.occurrence)));
         if self.timers.len() == self.timers.capacity() {
             self.timers.reserve_exact(1);
@@ -963,7 +1168,7 @@ impl System {
         }
         let logic = actor.logic.clone();
         self.actors.get_mut(&*r.address).expect("current").started = true;
-        let effects = self.initial_effects.remove(r).unwrap_or_default();
+        let effects = self.scratch.as_mut().and_then(|s| s.initial_effects.remove(r)).unwrap_or_default();
         self.effects_for(r, effects)?;
         let active = self.current(r).is_some_and(|a| a.status == Status::Active);
         if active {
@@ -974,7 +1179,7 @@ impl System {
                 };
                 let error =
                     json!({ "$error": "TimeoutError", "message": format!("Async logic timed out after {shown}.") });
-                self.schedule(r, delay, json!({ "type": "xstate.async.reject", "data": error }))?;
+                self.schedule(r, delay, TimerEvent::Other(json!({ "type": "xstate.async.reject", "data": error })))?;
             }
         }
         Ok(())
@@ -1001,7 +1206,7 @@ impl System {
     }
 
     fn unregister(&mut self, r: &ActorRef) {
-        self.stopping.insert(r.clone());
+        self.scratch().stopping.insert(r.clone());
         self.registry.retain(|_, v| v != r);
     }
 
@@ -1032,7 +1237,7 @@ impl System {
                 reason: None,
                 exec: None,
             };
-            self.out.push(cancellation.clone());
+            self.scratch().out.push(cancellation.clone());
             self.external_effects.insert(cid, cancellation);
         }
     }
@@ -1176,9 +1381,8 @@ impl System {
             if actor.status != Status::Active {
                 return Ok(true);
             }
-            let ty = timer.event.get("type").and_then(Value::as_str);
-            if ty == Some("xstate.timer") {
-                let key = read_timer_key(&timer.event);
+            if timer.event.is_machine_timer() {
+                let key = timer.event.machine_key();
                 let pending = match (&key, &actor.snapshot) {
                     (Some(k), Some(s)) => s.timer_pending(k),
                     _ => false,
@@ -1187,7 +1391,11 @@ impl System {
                     return Ok(true);
                 }
             }
-            self.enqueue(Some(timer.source.clone()), timer.source.clone(), timer.event, Some(timer.occurrence));
+            let event = match timer.event {
+                TimerEvent::Other(event) => event,
+                typed => typed.to_value(),
+            };
+            self.enqueue(Some(timer.source.clone()), timer.source.clone(), event, Some(timer.occurrence));
             self.settle()?;
             return Ok(true);
         }
@@ -1323,7 +1531,7 @@ impl System {
             }
             m.insert("started".into(), Value::Bool(a.started));
             if let Some(i) = &a.input {
-                m.insert("input".into(), i.clone());
+                m.insert("input".into(), (**i).clone());
             }
             m.insert("snapshot".into(), a.snapshot_data(Some(&a.logic)));
             actors.insert(address.to_string(), Value::Object(m));
@@ -1339,7 +1547,7 @@ impl System {
                     "scheduledAt": t.scheduled_at,
                     "dueAt": t.due_at,
                     "sequence": t.sequence,
-                    "event": t.event,
+                    "event": t.event.to_value(),
                 })
             })
             .collect();
@@ -1370,7 +1578,7 @@ impl System {
         counters.insert("effect".into(), Value::from(self.counters.effect));
         let mut out = Map::with_capacity(9);
         out.insert("root".into(), Value::String(self.root.to_string()));
-        out.insert("executionId".into(), Value::String(self.execution_id.clone()));
+        out.insert("executionId".into(), Value::String(self.execution_id.to_string()));
         out.insert("now".into(), Value::from(self.now));
         out.insert("actors".into(), Value::Object(actors));
         out.insert("registry".into(), Value::Object(registry));
@@ -1385,7 +1593,7 @@ impl System {
     pub fn from_json(logic: &SystemLogic, data: &Value, max_steps: usize) -> Result<Self, SystemError> {
         let bad = |what: &str| SystemError::Rejected(format!("invalid system snapshot: {what}"));
         let defs = definitions(logic);
-        let mut actors = IndexMap::new();
+        let mut actors = IndexMap::default();
         for (address, a) in data.get("actors").and_then(Value::as_object).ok_or_else(|| bad("actors"))? {
             let src = a.get("src").and_then(Value::as_str).ok_or_else(|| bad("src"))?.to_owned();
             let l = defs
@@ -1416,7 +1624,7 @@ impl System {
                     registry_key: a.get("registryKey").and_then(Value::as_str).map(str::to_owned),
                     sync_snapshot: a.get("syncSnapshot").and_then(Value::as_bool),
                     started: a.get("started").and_then(Value::as_bool).unwrap_or(false),
-                    input: a.get("input").cloned(),
+                    input: a.get("input").cloned().map(Box::new),
                     status: snapshot.status(),
                     snapshot: Some(snapshot),
                 },
@@ -1427,7 +1635,7 @@ impl System {
             .and_then(Value::as_object)
             .map(|m| m.iter().filter_map(|(k, v)| Some((k.clone(), ActorRef::from_json(v)?))).collect())
             .unwrap_or_default();
-        let mut timers = IndexMap::new();
+        let mut timers = IndexMap::default();
         let mut deadlines = BinaryHeap::new();
         for t in data.get("timers").and_then(Value::as_array).into_iter().flatten() {
             let timer = SystemTimer {
@@ -1437,12 +1645,12 @@ impl System {
                 scheduled_at: t.get("scheduledAt").and_then(Value::as_u64).unwrap_or(0),
                 due_at: t.get("dueAt").and_then(Value::as_u64).ok_or_else(|| bad("dueAt"))?,
                 sequence: t.get("sequence").and_then(Value::as_u64).unwrap_or(0),
-                event: t.get("event").cloned().ok_or_else(|| bad("timer event"))?,
+                event: TimerEvent::from_value(t.get("event").cloned().ok_or_else(|| bad("timer event"))?),
             };
             deadlines.push(Reverse((timer.due_at, timer.sequence, timer.occurrence)));
             timers.insert(system_timer_key(&timer.source, &timer.event), timer);
         }
-        let mut external_effects = IndexMap::new();
+        let mut external_effects = IndexMap::default();
         for (id, e) in data.get("externalEffects").and_then(Value::as_object).into_iter().flatten() {
             external_effects.insert(id.clone(), ExternalEffect::from_json(e).ok_or_else(|| bad("effect"))?);
         }
@@ -1464,9 +1672,12 @@ impl System {
         let c = data.get("counters").ok_or_else(|| bad("counters"))?;
         let counter = |k: &str| c.get(k).and_then(Value::as_u64).unwrap_or(0);
         Ok(Self {
-            defs,
-            execution_id: data.get("executionId").and_then(Value::as_str).unwrap_or("system").to_owned(),
-            root: data.get("root").and_then(Value::as_str).unwrap_or("").to_owned(),
+            logic: logic.clone(),
+            execution_id: execution_id(data.get("executionId").and_then(Value::as_str).unwrap_or("system").to_owned()),
+            root: {
+                let root = data.get("root").and_then(Value::as_str).unwrap_or("");
+                actors.get_key_value(root).map_or_else(|| Arc::from(root), |(k, _)| k.clone())
+            },
             now: data.get("now").and_then(Value::as_u64).unwrap_or(0),
             actors,
             registry,
@@ -1482,9 +1693,7 @@ impl System {
                 effect: counter("effect"),
             },
             max_steps: max_steps.max(1),
-            out: Vec::new(),
-            initial_effects: HashMap::new(),
-            stopping: HashSet::new(),
+            scratch: None,
             remaining: 0,
         })
     }
@@ -1497,13 +1706,36 @@ fn sys_end(sys: &mut System) -> Vec<ExternalEffect> {
     if sys.messages.is_empty() {
         return_message_queue(std::mem::take(&mut sys.messages));
     }
-    if sys.initial_effects.capacity() > 0 {
-        sys.initial_effects = HashMap::new();
+    let Some(mut scratch) = sys.scratch.take() else { return Vec::new() };
+    let out = std::mem::take(&mut scratch.out);
+    return_scratch(scratch);
+    out
+}
+
+thread_local! {
+    /// Per-call state lent to systems for the length of a call (boxed: a
+    /// system holds the box itself while it runs).
+    #[allow(clippy::vec_box)]
+    static SCRATCH: std::cell::RefCell<Vec<Box<Scratch>>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+fn take_scratch() -> Box<Scratch> {
+    SCRATCH.with(|p| p.borrow_mut().pop()).unwrap_or_default()
+}
+
+fn return_scratch(mut scratch: Box<Scratch>) {
+    if scratch.initial_effects.capacity() > 64 || scratch.stopping.capacity() > 64 {
+        return;
     }
-    if sys.stopping.capacity() > 0 {
-        sys.stopping = HashSet::new();
-    }
-    std::mem::take(&mut sys.out)
+    scratch.initial_effects.clear();
+    scratch.stopping.clear();
+    // `try_with`: thread-local storage may already be gone at exit.
+    let _ = SCRATCH.try_with(|p| {
+        let mut pool = p.borrow_mut();
+        if pool.len() < 16 {
+            pool.push(scratch);
+        }
+    });
 }
 
 thread_local! {
@@ -1741,7 +1973,7 @@ impl Serialize for SystemView<'_> {
     }
 }
 
-struct RegistryView<'a>(&'a IndexMap<String, ActorRef>);
+struct RegistryView<'a>(&'a IndexMap<String, ActorRef, Fixed>);
 
 impl Serialize for RegistryView<'_> {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
@@ -1789,13 +2021,32 @@ mod tests {
     #[test]
     fn timer_keys() {
         let r = ActorRef { address: "a".into(), incarnation: 0 };
-        let seq = system_timer_key(&r, &json!({"type":"xstate.timer","seq":0}));
+        let key = |event: Value| system_timer_key(&r, &TimerEvent::from_value(event));
+        let seq = key(json!({"type":"xstate.timer","seq":0}));
         assert_eq!(seq, system_timer_key_for(&r, &json!({"seq":0})));
-        assert_ne!(seq, system_timer_key(&r, &json!({"type":"xstate.timer","id":"0"})));
+        assert_ne!(seq, key(json!({"type":"xstate.timer","id":"0"})));
         let after = json!({"type":"xstate.after","delay":10,"stateId":"m.a","extra":1});
-        let k = system_timer_key(&r, &json!({"type":"xstate.timer","event":after}));
+        let k = key(json!({"type":"xstate.timer","event":after}));
         assert_eq!(k, system_timer_key_for(&r, &json!({"event":{"stateId":"m.a","type":"xstate.after","delay":10}})));
         assert_eq!(k, r#""a",0,event,{"type":"xstate.after","delay":10,"stateId":"m.a"}"#);
+        // Typed shapes give the same keys and events as their JSON.
+        let typed = json!({"type":"xstate.timer","event":{"type":"xstate.after","delay":"short","stateId":"m.a"}});
+        assert!(matches!(TimerEvent::from_value(typed.clone()), TimerEvent::After { .. }));
+        assert_eq!(key(typed.clone()), r#""a",0,event,{"type":"xstate.after","delay":"short","stateId":"m.a"}"#);
+        for event in [
+            typed,
+            json!({"type":"xstate.timer","id":"t"}),
+            json!({"type":"xstate.timer","seq":3}),
+            json!({"type":"xstate.timer","event":{"type":"xstate.timeout.state","stateId":"m.b"}}),
+            json!({"type":"xstate.timer","event":{"type":"xstate.timeout.actor","actorId":"c","sessionId":"1"}}),
+            json!({"type":"xstate.async.reject","data":{}}),
+            json!({"seq":3,"type":"xstate.timer"}),
+        ] {
+            let parsed = TimerEvent::from_value(event.clone());
+            assert_eq!(parsed.to_value().to_string(), event.to_string());
+            assert_eq!(serde_json::to_string(&parsed).unwrap(), event.to_string());
+            assert_eq!(parsed.machine_key(), read_timer_key(&event).filter(|_| event["type"] == TIMER));
+        }
         assert_eq!(read_timer_key(&json!({"type":"xstate.timer","id":"t"})), Some(json!({"id":"t"})));
         assert_eq!(encode_address_segment("a/b%"), "a%2Fb%25");
     }

@@ -25,7 +25,7 @@
 //! start a new actor.
 
 use std::cmp::Reverse;
-use std::collections::{BinaryHeap, HashSet};
+use std::collections::BinaryHeap;
 use std::sync::Arc;
 
 use serde::de::DeserializeOwned;
@@ -220,15 +220,16 @@ struct Slot<C, E> {
     dirty: bool,
     /// The deadline last pushed to `Partition::timers`.
     scheduled: Option<u64>,
-    /// Ids of the actor's pending external work that was already published.
-    published: HashSet<String>,
+    /// Ids of the actor's pending external work that was already published
+    /// (a few at most: a list is smaller than a set).
+    published: Vec<String>,
     /// The latest input event the actor took ([`Dedupe`]).
     mark: Option<Mark>,
 }
 
 impl<C, E> Slot<C, E> {
-    fn new(actor: Actor<C, E>) -> Self {
-        Self { actor, dirty: false, scheduled: None, published: HashSet::new(), mark: None }
+    fn new(actor: Actor<C, E>) -> Box<Self> {
+        Box::new(Self { actor, dirty: false, scheduled: None, published: Vec::new(), mark: None })
     }
 }
 
@@ -236,7 +237,10 @@ impl<C, E> Slot<C, E> {
 pub struct Partition<C, E> {
     machine: Arc<Machine<C, E>>,
     config: EngineConfig,
-    actors: HashMap<String, Slot<C, E>>,
+    /// Boxed: a slot is several hundred bytes, and the table keeps spare
+    /// capacity (up to half of it after growing), which would hold that
+    /// much per empty bucket inline.
+    actors: HashMap<String, Box<Slot<C, E>>>,
     /// Marks of evicted actors ([`Dedupe`]): a key's next actor takes only
     /// events past it.
     retired: HashMap<String, Mark>,
@@ -502,12 +506,12 @@ where
         // Publish new external work once.
         let mut pending = actor.system().external_effects().peekable();
         if pending.peek().is_some() || !slot.published.is_empty() {
-            let mut current = HashSet::new();
+            let mut current = Vec::new();
             for effect in pending {
                 if !slot.published.contains(&effect.id) {
                     self.output.effects.push(EffectRequest { key: key.to_owned(), effect: effect.to_json() });
                 }
-                current.insert(effect.id.clone());
+                current.push(effect.id.clone());
             }
             slot.published = current;
         }
