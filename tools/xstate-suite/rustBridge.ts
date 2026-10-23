@@ -5,7 +5,9 @@
 // through the `xs` imports; hosts form a stack because calls re-enter (a
 // guard may run another actor). A hook that throws stashes its exception and
 // returns -1; Rust unwinds and the export returns -1, and we rethrow here.
-import { readFileSync } from 'node:fs';
+//
+// The package's sources are type-checked without Node typings, so Node's
+// `fs` and `process` are reached through `globalThis.process`.
 
 export interface CoreResolved {
   targets: number[] | undefined;
@@ -19,6 +21,8 @@ export interface CoreHost {
   history(h: number): number[] | undefined;
   staticInitial(n: number): number[];
   beginSelection(): void;
+  firstCandidates(node: number, eventType: string): boolean;
+  warn(message: string): void;
   evalCandidate(t: number, node: number, eventless: boolean): boolean;
   resolve(resolver: 0 | 1 | 2, tref: number): CoreResolved;
   beginMicrostep(): void;
@@ -57,7 +61,8 @@ export const TREF_INITIAL = 0x80000000;
 export const TREF_HISTORY_DEFAULT = 0x40000000;
 export const TREF_MASK = 0x3fffffff;
 
-const wasmPath = process.env.XSTATE_RS_WASM;
+const wasmPath: string | undefined = (globalThis as any).process?.env
+  ?.XSTATE_RS_WASM;
 
 export function rsEnabled(): boolean {
   return !!wasmPath;
@@ -130,6 +135,17 @@ const imports = {
     },
     static_initial: (n: number) => writeOut(host().staticInitial(n)),
     begin_selection: hook((h) => (h.beginSelection(), ok())),
+    first_candidates: (node: number, len: number) =>
+      host().firstCandidates(
+        node,
+        decoder.decode(bytes().subarray(byteBase, byteBase + len))
+      )
+        ? 1
+        : 0,
+    warn: (ptr: number, len: number) => {
+      host().warn(decoder.decode(bytes().slice(ptr, ptr + len)));
+      return 0;
+    },
     eval_candidate: hook((h, t: number, node: number, eventless: number) =>
       h.evalCandidate(t, node, eventless === 1) ? 1 : 0
     ),
@@ -242,6 +258,9 @@ function load() {
   if (exports) {
     return;
   }
+  const { readFileSync } = (globalThis as any).process.getBuiltinModule(
+    'node:fs'
+  );
   const module = new WebAssembly.Module(readFileSync(wasmPath!));
   const instance = new WebAssembly.Instance(module, imports as any);
   exports = instance.exports;

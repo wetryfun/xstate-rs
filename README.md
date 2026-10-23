@@ -6,14 +6,14 @@ This is an independent project, not an official Stately package. It targets `xst
 
 ## Status
 
-Milestone 1 (`xstate-rt` core) is in place: loading and validating `MachineJSON`, compound, parallel, final and history states, guards (including `@xstate.not` and `@xstate.stateIn`), built-in and custom actions, `always`, `after`, delayed `@xstate.raise` and `@xstate.cancel`, `@xstate.emit`, host-driven timers, and persist/restore. Behavior is checked against XState itself with shared fixtures.
+The statechart algorithm is a port of XState's own (`crates/xstate-rt/src/core.rs`), shared by the native interpreter and by XState's JavaScript runtime through WebAssembly: XState's core test suite runs on it (`tools/xstate-suite/run.sh`). Milestone 1 (`xstate-rt` core) is in place: loading and validating `MachineJSON`, compound, parallel, final and history states, guards (including `@xstate.not` and `@xstate.stateIn`), built-in and custom actions, `always`, `after`, delayed `@xstate.raise` and `@xstate.cancel`, `@xstate.emit`, host-driven timers, and persist/restore. Behavior is checked against XState itself with shared fixtures.
 
 Not yet supported (rejected at load time with the JSON path): `invoke` and actors, `onError`, `timeout`/`onTimeout`, choice and route states, state input, and any `@code` / `@expr`.
 
 ## Example
 
 ```rust
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use serde_json::{json, Value};
 use xstate_rt::{Actor, Machine, Registry};
 
@@ -24,7 +24,7 @@ let definition = json!({
     "states": {
         "green": {
             "after": { "1000": { "target": "yellow" } },
-            "on": { "car": { "actions": [{ "type": "countCar" }] } }
+            "on": { "car": { "context": { "cars": 1 }, "actions": [{ "type": "honk", "params": "beep" }] } }
         },
         "yellow": { "on": { "next": { "target": "red", "guard": { "type": "busy", "params": { "min": 1 } } } } },
         "red": { "type": "final" }
@@ -34,17 +34,18 @@ let definition = json!({
 #[derive(serde::Deserialize)]
 struct Busy { min: u64 }
 
+let honks = Arc::new(Mutex::new(Vec::new()));
+let sink = honks.clone();
 let mut registry: Registry<Value, Value> = Registry::new();
 registry
-    .action("countCar", |args| {
-        let cars = args.context()["cars"].as_u64().unwrap_or(0);
-        args.context_mut()["cars"] = json!(cars + 1);
-    })
+    // Custom actions are effects: they run after the step, with their params only.
+    .action_with("honk", move |sound: &String| sink.lock().unwrap().push(sound.clone()))
     .guard_with("busy", |args, p: &Busy| args.context["cars"].as_u64().unwrap_or(0) >= p.min);
 
 let machine = Arc::new(Machine::from_json(&definition, &registry)?);
 let mut actor = Actor::start(machine, 0)?;
 actor.send(json!({ "type": "car" }), 10)?;
+assert_eq!(*honks.lock().unwrap(), vec!["beep"]);
 assert_eq!(actor.next_deadline(), Some(1000));
 actor.advance(1000)?;                                // the host drives time
 actor.send(json!({ "type": "next" }), 1200)?;
@@ -57,6 +58,7 @@ Typed contexts and events work the same way: any `C: Serialize + DeserializeOwne
 
 ```sh
 cargo test                       # unit, runtime and differential tests
+tools/xstate-suite/run.sh        # XState's own test suite on the Rust core (needs pnpm)
 cargo clippy --all-targets
 cd tools/differential && npm install && npm run generate   # regenerate expected traces from XState
 ```

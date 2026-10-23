@@ -41,9 +41,10 @@ flowchart TD
   USER --> SVC[Deployment adapters: native service, WASI component, Redpanda]
 ```
 
-Workspace crates (only `xstate-rt` exists so far):
+Workspace crates (`xstate-rt` and `xstate-wasm` exist so far):
 
-- `xstate-rt`: the core. Parses `MachineJSON`, compiles it into an indexed state tree, runs the interpreter and (later) the actor runtime. Generic, with nothing machine-specific.
+- `xstate-rt`: the core. `core.rs` is the structural statechart algorithm behind a `Host` trait; the native host (`interp.rs`) parses `MachineJSON`, compiles it, and runs it. Later also the actor runtime. Generic, with nothing machine-specific.
+- `xstate-wasm`: exposes `core.rs` to JavaScript over a plain integer wasm ABI, so XState's own runtime can use it (see Testing strategy).
 - `xstate-codegen`: build-time generator. Reads `machine.json` plus JSON Schemas and emits typed Rust (context, events, params, the implementation trait, and the `Machine` trait impl).
 - `xstate-wasi`: a WASI component adapter exposing the runtime through WIT.
 - `xstate-redpanda`: the co-located, partition-sharded service.
@@ -52,7 +53,9 @@ Other directories: `fixtures/` (shared differential fixtures), `tools/differenti
 
 ## Core runtime design (`xstate-rt`)
 
-Module map: `load.rs` (validation and compilation), `machine.rs` (compiled arena), `interp.rs` (selection, microstep, macrostep, timers), `actor.rs` (public `Actor` API), `snapshot.rs` (persist/restore), `registry.rs` (Rust implementations), `event.rs`, `delay.rs`, `error.rs`.
+Module map: `core.rs` (the shared structural algorithm), `load.rs` (validation and compilation), `machine.rs` (compiled tree and values), `interp.rs` (the native host: values, effects, timers, macrostep), `actor.rs` (public `Actor` API), `snapshot.rs` (persist/restore), `registry.rs` (Rust implementations), `event.rs`, `delay.rs`, `error.rs`.
+
+**Decision: internals are XState-true.** `core.rs` is a port of the structural half of XState's `stateUtils.ts` (`transitionNode`, `selectEventlessTransitions`, `removeConflictingTransitions`, `getTransitionDomain`, `computeExitSet`, `microstep`, `initialMicrostep`, the `macrostep` loop). Everything value-level goes through `Host` hooks, called at exactly the points and in exactly the order XState does that work (including its separate transition-result resolvers). Any host gets XState's behavior for free; the native host and XState's own JS (through `xstate-wasm`) both run on it, and XState's test suite is the conformance check. Changing `core.rs` means running that suite.
 
 ### Compilation
 
@@ -85,16 +88,17 @@ Event descriptor matching (verified): exact names, `prefix.*` (which also matche
 
 ### Interpreter
 
-A port of XState's `macrostep` / `microstep`:
+`core.rs` (structure) plus the native host (values), together a port of XState's `macrostep` / `microstep`:
+
+- The configuration is an insertion-ordered set, exactly like XState's `snapshot.nodes`: exits remove, entries append, and a microstep that leaves membership and history unchanged keeps the old order. State values, parallel region order, and therefore selection and effect order follow it, so re-entering a region can move it after its siblings (verified; fixture `region_order`). A completed machine's node list is sorted in descending document order, as XState sorts it in place.
 
 - Selection is XState's `transitionNode`: recurse into the active configuration; a node's own candidates are tried only if none of its active descendants selected a transition (for a parallel node, none of its regions). Final states are inert. Then conflicting transitions are removed (a descendant source preempts its ancestor when exit sets intersect).
 - Transition domain: as XState's `getTransitionDomain`. Targetless transitions exit and enter nothing. If all effective targets are the source or its descendants, the domain is the source (with `reenter`) or the source narrowed past parallel states. Otherwise it is the least common ancestor, again narrowed past parallel states unless `reenter`, so a transition confined to one region never exits sibling regions. A non-reentering self-target on a compound state exits and re-enters its children (back to `initial`).
 - Exit: record history (shallow means active children, deep means active atomic descendants), cancel the state's `after` timers, run exit actions, remove from the configuration. Delayed raises are not cancelled on exit.
 - Then transition content: the `context` patch, then `actions`.
 - Entry: compute the entry set (targets, initial descendants, all regions of parallel states, history defaults or recorded values, ancestors inside the domain), enter in document order, run entry actions, then schedule `after` timers. Entering a final state queues `xstate.done.state` for its compound parent with its `output`; completing parallel ancestors queue their own done events with an output object keyed by region. A final child of the root sets status `done` and the output (root `output` if declared, else the final state's `output`); then every active state's exit actions run and all timers are cleared. The configuration is kept so the final value remains visible.
-- Macrostep: microstep for the external event, then loop: select eventless transitions; if none, take the next internal event. After an eventless microstep that changed nothing a guard could observe (configuration, history, context, timers), eventless transitions are not re-selected until another event is processed, as in XState. More than `max_iterations` (default 1000) microsteps is `RuntimeError::InfiniteLoop` and the actor goes to `error`.
-- Actions run in order and take effect immediately. `@xstate.assign` and transition `context` patches shallow-merge through `serde_json::Value` (slow path).
-- **Extension:** in XState, custom JSON actions are effects that receive only their params and run after the snapshot is computed. Here custom Rust actions run inline, in order, and can read and write the context (`ActionArgs::context_mut`, which marks the context as changed), emit, and raise. Differential fixtures only use custom actions that do nothing observable.
+- Macrostep: microstep for the external event, then loop: select eventless transitions; if none, take the next internal event. Eventless transitions are re-selected only when the last eventless microstep produced a new snapshot object (XState's `nextSnapshot !== previousState`); the native host tracks that with a token bumped whenever XState would clone the snapshot (context written, timers changed, structure or status changed). More than `max_iterations` (default 1000) microsteps is `RuntimeError::InfiniteLoop` and the actor goes to `error`.
+- **Effect model (decision: mirror v6 exactly).** A transition's result (its `context` patch, then its actions as `machineFromJSON`'s `executeActions`) is computed against the snapshot at the start of the microstep and merged after exits, as XState's transition functions are; an action list with `@xstate.assign` yields the full context at that point plus the patches, which can overwrite exit-action changes, as in XState. `@xstate.raise` without delay goes to the internal queue; delayed raises and cancels update the snapshot's logical timers during resolution; emits, logs and custom actions are effects executed after the macrostep, in order. Custom Rust actions receive only their params (`Registry::action_with`) and cannot touch context; context changes only via `@xstate.assign` and transition `context`. The earlier `&mut C` extension is gone.
 
 ### Time and scheduling
 
@@ -141,7 +145,13 @@ Mapping rules to enforce: `z.number()` is `f64` unless `.int()` (then `i64`); `x
 
 ## Testing strategy
 
-Differential testing against XState itself is the main correctness tool:
+**XState's own test suite runs on the Rust core.** `tools/xstate-suite/run.sh` clones `xstate@6.0.0-alpha.70`, applies `xstate-core.patch` (to `stateUtils.ts` and `StateMachine.ts`) and installs `rustBridge.ts`, builds `xstate-wasm`, and runs `packages/core/test` with vitest. With `XSTATE_RS_WASM` set, selection, `selectEventlessTransitions`, `microstep`, `initialMicrostep` and the macrostep loop run in Rust; the patch's `RsHost` class is XState's original microstep code split into the `Host` hooks. `XSTATE_RS=0 tools/xstate-suite/run.sh` runs the unpatched algorithm for comparison. Pass `--reporter=dot` or a file filter as extra arguments. To change the patch: edit `tools/xstate-suite/.xstate/packages/core/src`, then `git -C tools/xstate-suite/.xstate diff -- packages/core/src > tools/xstate-suite/xstate-core.patch`.
+
+The wasm ABI: hooks are `xs.*` imports returning `-1` when JS threw (the exception is stashed and rethrown after Rust unwinds); arrays go to JS as pointers into wasm memory and come back through fixed exchange buffers; calls may re-enter (a guard can run another actor), so hosts form a stack and buffers are read immediately.
+
+Development warnings XState logs while matching wildcard descriptors are produced by the Rust matcher with the same text and order, on the first candidate lookup per node and event type (mirroring `StateNode._candidateCache`).
+
+Native differential testing:
 
 - `fixtures/<name>.json` holds `{ machine, steps }`, where each step is `{ at, send? }`: advance the clock to `at` (firing due timers), then send `send`.
 - `tools/differential/generate.mjs` runs each fixture through `machineFromJSON` with stub guards (`yes`, `no`, `ctxEquals`, `ctxAtLeast`, `eventEquals`), a `noop` action and delays `short`/`long`, and writes `<name>.expected.json`: value, context, status, output and emitted events after start and after every step. Regenerate with `cd tools/differential && npm install && npm run generate` (or `node generate.mjs <name>`).
@@ -154,7 +164,7 @@ When v6 behavior is uncertain, add a fixture before choosing semantics.
 
 ## Milestones
 
-1. ~~`xstate-rt` core: parsing, validation, compilation, interpreter, built-in actions, registry, host-driven timers, persist and restore, unit tests.~~ Done, with the differential harness (originally milestone 4) started early.
+1. ~~`xstate-rt` core: parsing, validation, compilation, interpreter, built-in actions, registry, host-driven timers, persist and restore, unit tests.~~ Done, with the differential harness (originally milestone 4) started early. ~~XState-true core shared with XState's JS runtime; XState's core test suite passes on it.~~
 2. Actor runtime: invoke, spawn, system, done and error propagation.
 3. Codegen pipeline and the TS extract script.
 4. Differential test harness: extend fixtures to actors; add generated random event sequences.
@@ -163,8 +173,8 @@ When v6 behavior is uncertain, add a fixture before choosing semantics.
 
 ## Conventions
 
-- Prefer clarity over cleverness in the interpreter; correctness against XState comes first, then optimize with benchmarks. Known allocation hot spots to revisit: per-microstep `Vec<bool>` sets and transition lists, and `Ev::Internal` payload maps for lifecycle events.
+- Prefer clarity over cleverness in the interpreter; correctness against XState comes first, then optimize with benchmarks. Known costs to revisit: candidate lookup scans descriptor strings per node (intern them), per-microstep `Vec`/`OrderedSet` allocations, `Host::config()` cloning the configuration, context merges through `serde_json::Value`, and `Ev::Internal` payload maps for lifecycle events.
 - No `unsafe` in `xstate-rt`. No platform clocks, threads, or I/O in the core.
 - Every unsupported v6 feature produces a clear error naming the feature and its JSON path.
 - When v6 behavior is uncertain, write a differential test before choosing semantics, and record the decision in this file.
-- `cargo fmt`, `cargo clippy --all-targets` clean, `cargo test` green before pushing.
+- `cargo fmt`, `cargo clippy --all-targets` clean, `cargo test` green before pushing; after touching `core.rs`, also `tools/xstate-suite/run.sh`.

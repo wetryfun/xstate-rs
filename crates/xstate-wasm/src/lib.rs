@@ -44,6 +44,8 @@ extern "C" {
     fn history(h: u32) -> i32;
     fn static_initial(n: u32) -> i32;
     fn begin_selection() -> i32;
+    fn first_candidates(node: u32, len: u32) -> i32;
+    fn warn(ptr: *const u8, len: u32) -> i32;
     fn eval_candidate(t: u32, node: u32, eventless: u32) -> i32;
     fn resolve(resolver: u32, tref: u32) -> i32;
     fn begin_microstep() -> i32;
@@ -89,6 +91,7 @@ mod native_stubs {
     }
     stub! {
         config(); history(h: u32); static_initial(n: u32); begin_selection();
+        first_candidates(n: u32, l: u32); warn(p: *const u8, l: u32);
         eval_candidate(t: u32, node: u32, eventless: u32); resolve(resolver: u32, tref: u32);
         begin_microstep(); exit_state(n: u32); transition_content(ptr: *const u32, len: u32);
         begin_entry(a: *const u32, b: u32, c: *const u32, d: u32);
@@ -165,6 +168,18 @@ impl Host for JsHost {
 
     fn begin_selection(&mut self) -> Result<(), ()> {
         ck(unsafe { begin_selection() }).map(drop)
+    }
+
+    fn first_candidates(&mut self, node: Nid, event_type: &str) -> bool {
+        let bytes = event_type.as_bytes();
+        let buf = unsafe { &mut *std::ptr::addr_of_mut!(BYTEBUF) };
+        let n = bytes.len().min(BUF_LEN);
+        buf[..n].copy_from_slice(&bytes[..n]);
+        unsafe { first_candidates(node, n as u32) == 1 }
+    }
+
+    fn warn(&mut self, message: &str) {
+        unsafe { warn(message.as_ptr(), message.len() as u32) };
     }
 
     fn eval_candidate(&mut self, t: Tid, node: Nid, eventless: bool) -> Result<bool, ()> {

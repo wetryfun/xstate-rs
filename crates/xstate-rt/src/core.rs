@@ -157,10 +157,18 @@ impl Tree {
     /// XState's `getCandidates`: exact descriptor first, then the other
     /// matching descriptors, longest first.
     pub fn candidates(&self, node: Nid, event_type: &str) -> Vec<Tid> {
+        self.candidates_with_warnings(node, event_type, &mut |_| {})
+    }
+
+    /// [`Tree::candidates`], reporting the development warnings XState's
+    /// `matchesEventDescriptor` logs for misplaced wildcards, in order.
+    pub fn candidates_with_warnings(&self, node: Nid, event_type: &str, warn: &mut dyn FnMut(String)) -> Vec<Tid> {
         let on = &self.node(node).on;
         let mut out: Vec<Tid> = on.iter().find(|(d, _)| d == event_type).map(|(_, ts)| ts.clone()).unwrap_or_default();
-        let mut wild: Vec<&(String, Vec<Tid>)> =
-            on.iter().filter(|(d, _)| d != event_type && matches_event_descriptor(event_type, d)).collect();
+        let mut wild: Vec<&(String, Vec<Tid>)> = on
+            .iter()
+            .filter(|(d, _)| d != event_type && matches_event_descriptor_warn(event_type, d, &mut *warn))
+            .collect();
         wild.sort_by_key(|(d, _)| std::cmp::Reverse(d.len()));
         for (_, ts) in wild {
             out.extend_from_slice(ts);
@@ -193,18 +201,35 @@ impl Tree {
 
 /// XState's `matchesEventDescriptor`.
 pub fn matches_event_descriptor(event_type: &str, descriptor: &str) -> bool {
+    matches_event_descriptor_warn(event_type, descriptor, &mut |_| {})
+}
+
+/// XState's `matchesEventDescriptor`, including its development warnings.
+pub fn matches_event_descriptor_warn(event_type: &str, descriptor: &str, warn: &mut dyn FnMut(String)) -> bool {
     if descriptor == event_type || descriptor == "*" {
         return true;
     }
     if !descriptor.ends_with(".*") {
         return false;
     }
+    // `/.*\*.+/`: a `*` followed by anything.
+    if descriptor.find('*').is_some_and(|i| i + 1 < descriptor.len()) {
+        warn(format!(
+            "Wildcards can only be the last token of an event descriptor (e.g., \"event.*\") or the entire event descriptor (\"*\"). Check the \"{descriptor}\" event."
+        ));
+    }
     let mut event_tokens = event_type.split('.');
     let mut partial_tokens = descriptor.split('.').peekable();
     while let Some(partial) = partial_tokens.next() {
         let event_token = event_tokens.next();
         if partial == "*" {
-            return partial_tokens.peek().is_none();
+            let is_last = partial_tokens.peek().is_none();
+            if !is_last {
+                warn(format!(
+                    "Infix wildcards in transition events are not allowed. Check the \"{descriptor}\" transition."
+                ));
+            }
+            return is_last;
         }
         if Some(partial) != event_token {
             return false;
@@ -334,6 +359,15 @@ pub trait Host {
 
     /// `machine._microstepHooks?.begin(self)`, at the start of selection.
     fn begin_selection(&mut self) -> Result<(), Self::Error>;
+    /// Whether this is the first candidate lookup for `node` and
+    /// `event_type` (XState caches candidates per node and event type, so
+    /// its descriptor warnings appear only then). Hosts that do not report
+    /// warnings can return `false`.
+    fn first_candidates(&mut self, _node: Nid, _event_type: &str) -> bool {
+        false
+    }
+    /// A development warning, as XState logs with `console.warn`.
+    fn warn(&mut self, _message: &str) {}
     /// `evaluateCandidate`: `matches`, guard, and transition function selection.
     /// `eventless` tells whether the candidate is an `always` transition.
     fn eval_candidate(&mut self, t: Tid, node: Nid, eventless: bool) -> Result<bool, Self::Error>;
@@ -418,7 +452,17 @@ fn node_next<H: Host>(tree: &Tree, h: &mut H, node: Nid, event_type: &str) -> Re
     if tree.kind(node) == Kind::Final {
         return Ok(None);
     }
-    for t in tree.candidates(node, event_type) {
+    let candidates = if h.first_candidates(node, event_type) {
+        let mut warnings = Vec::new();
+        let candidates = tree.candidates_with_warnings(node, event_type, &mut |w| warnings.push(w));
+        for w in &warnings {
+            h.warn(w);
+        }
+        candidates
+    } else {
+        tree.candidates(node, event_type)
+    };
+    for t in candidates {
         if h.eval_candidate(t, node, false)? {
             return Ok(Some(t));
         }

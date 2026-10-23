@@ -31,7 +31,7 @@ index b58e2e7..5205d67 100644
      return (
        transitionNode(
 diff --git a/packages/core/src/stateUtils.ts b/packages/core/src/stateUtils.ts
-index 49efd21..86b10c9 100644
+index 49efd21..8176f28 100644
 --- a/packages/core/src/stateUtils.ts
 +++ b/packages/core/src/stateUtils.ts
 @@ -85,6 +85,8 @@ import {
@@ -128,7 +128,7 @@ index 49efd21..86b10c9 100644
    snapshot.machine._microstepHooks?.begin(actorScope.self);
    const enabledTransitionSet: Set<AnyTransitionDefinition> = new Set();
    const atomicStates = snapshot.nodes.filter(isAtomicStateNode);
-@@ -3013,3 +3072,985 @@ export function evaluateCandidate(
+@@ -3013,3 +3072,1013 @@ export function evaluateCandidate(
  
    return true;
  }
@@ -242,6 +242,7 @@ index 49efd21..86b10c9 100644
 +  return m;
 +}
 +
++const rsCandidateTypes = new WeakMap<AnyStateNode, Set<string>>();
 +const rsSnapshotIds = new WeakMap<object, number>();
 +let rsNextSnapshotId = 1;
 +function rsToken(snapshot: object): number {
@@ -310,7 +311,9 @@ index 49efd21..86b10c9 100644
 +      return this.node(tref & rs.TREF_MASK).initial;
 +    }
 +    if ((tref & rs.TREF_HISTORY_DEFAULT) !== 0) {
-+      return resolveHistoryDefaultTransition(this.node(tref & rs.TREF_MASK));
++      return resolveHistoryDefaultTransition(
++        this.node(tref & rs.TREF_MASK) as AnyStateNode & { type: 'history' }
++      );
 +    }
 +    return this.m.defs[tref];
 +  }
@@ -341,6 +344,26 @@ index 49efd21..86b10c9 100644
 +  beginSelection(): void {
 +    this.machine._microstepHooks?.begin(this.actorScope.self);
 +    this.eventlessResolver = undefined;
++  }
++
++  // XState computes a node's candidates once per event type
++  // (`StateNode._candidateCache`), so descriptor warnings appear only then.
++  firstCandidates(node: number, eventType: string): boolean {
++    const stateNode = this.node(node);
++    let seen = rsCandidateTypes.get(stateNode);
++    if (!seen) {
++      seen = new Set();
++      rsCandidateTypes.set(stateNode, seen);
++    }
++    if (seen.has(eventType)) {
++      return false;
++    }
++    seen.add(eventType);
++    return isDevelopment;
++  }
++
++  warn(message: string): void {
++    console.warn(message);
 +  }
 +
 +  evalCandidate(t: number, node: number, eventless: boolean): boolean {
@@ -718,7 +741,9 @@ index 49efd21..86b10c9 100644
 +      const defaultTransitions = [
 +        stateNodeToEnter.initial,
 +        ...historyDefaults.map((h) =>
-+          resolveHistoryDefaultTransition(this.node(h))
++          resolveHistoryDefaultTransition(
++            this.node(h) as AnyStateNode & { type: 'history' }
++          )
 +        )
 +      ].filter(Boolean);
 +      for (const defaultTransition of defaultTransitions) {
@@ -970,10 +995,13 @@ index 49efd21..86b10c9 100644
 +    } else {
 +      let historyValue = this.currentSnapshot.historyValue;
 +      if (result.history.length) {
-+        historyValue = { ...historyValue };
++        const changedHistory: Record<string, AnyStateNode[]> = {
++          ...historyValue
++        };
 +        for (const [h, recorded] of result.history) {
-+          historyValue[this.node(h).id] = recorded.map((i) => this.node(i));
++          changedHistory[this.node(h).id] = recorded.map((i) => this.node(i));
 +        }
++        historyValue = changedHistory as typeof historyValue;
 +      }
 +      step = [
 +        cloneMachineSnapshot(this.nextState, {
