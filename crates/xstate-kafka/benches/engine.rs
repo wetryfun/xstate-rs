@@ -12,6 +12,7 @@ use std::sync::Arc;
 
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion, Throughput};
 use serde_json::{json, Value};
+use xstate_kafka::avro::{registry::MemoryRegistry, AvroSchemas};
 use xstate_kafka::{Codec, EngineConfig, Partition};
 use xstate_rt::{Actor, Machine, Registry};
 
@@ -34,6 +35,12 @@ fn machine() -> Arc<Machine<Value, Value>> {
         }
     });
     Arc::new(Machine::from_json(&definition, &Registry::new()).unwrap())
+}
+
+fn avro_schemas(bundle: &Value) -> Arc<AvroSchemas> {
+    let mut s = AvroSchemas::from_bundle(bundle, Arc::new(MemoryRegistry::default())).unwrap();
+    s.register([Some("in-value"), Some("out-value"), Some("changelog-value")], true).unwrap();
+    Arc::new(s)
 }
 
 fn bench(c: &mut Criterion) {
@@ -65,6 +72,52 @@ fn bench(c: &mut Criterion) {
             b.iter(|| Codec::decode(black_box(&encoded)).unwrap())
         });
     }
+    // Avro (Schema Registry wire format), the snapshot through `Value`.
+    let avro = avro_schemas(&json!({ "machine": { "id": "order" }, "schemas": {} }));
+    let mut encoded = Vec::new();
+    avro.encode_snapshot(&snapshot, &mut encoded).unwrap();
+    eprintln!("Avro: {} bytes per snapshot", encoded.len());
+    g.bench_function("Avro/encode", |b| {
+        b.iter(|| {
+            let mut out = Vec::with_capacity(512);
+            avro.encode_snapshot(black_box(&snapshot), &mut out).unwrap();
+            out
+        })
+    });
+    g.bench_function("Avro/decode", |b| b.iter(|| avro.decode_snapshot(black_box(&encoded)).unwrap()));
+    g.finish();
+
+    // One input event (the checkout example's `cart.add`) decoded from each
+    // format into the JSON event the engine runs.
+    let bundle: Value = serde_json::from_str(
+        &std::fs::read_to_string(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../examples/checkout/machines/checkout.xstate.json"
+        ))
+        .unwrap(),
+    )
+    .unwrap();
+    let event = json!({ "type": "cart.add", "line": { "sku": "A-1", "quantity": 3 } });
+    let proto = xstate_kafka::proto::events::EventSchema::from_bundle(&bundle).unwrap();
+    let avro_events = avro_schemas(&bundle);
+    let records = [
+        ("Json", serde_json::to_vec(&event).unwrap()),
+        ("MessagePack", rmp_serde::to_vec_named(&event).unwrap()),
+        ("Protobuf", proto.encode(&event).unwrap()),
+        ("Avro", avro_events.encode_event(&event).unwrap()),
+    ];
+    let mut g = c.benchmark_group("events");
+    for (name, record) in &records {
+        eprintln!("{name}: {} bytes per event", record.len());
+        let decode: Box<dyn Fn(&[u8]) -> Value> = match *name {
+            "Json" => Box::new(|b| serde_json::from_slice(b).unwrap()),
+            "MessagePack" => Box::new(|b| rmp_serde::from_slice(b).unwrap()),
+            "Protobuf" => Box::new(|b| proto.decode(b).unwrap()),
+            _ => Box::new(|b| avro_events.decode_event(b).unwrap()),
+        };
+        assert_eq!(decode(record), event);
+        g.bench_function(format!("{name}/decode"), |b| b.iter(|| decode(black_box(record))));
+    }
     g.finish();
 
     // A batch of records over `keys` warm actors, then one flush (one
@@ -79,12 +132,14 @@ fn bench(c: &mut Criterion) {
                 (format!("order-{}", i % keys), event.as_bytes().to_vec())
             })
             .collect();
-        for codec in [Codec::Json, Codec::MessagePack, Codec::Protobuf] {
+        for codec in [Codec::Json, Codec::MessagePack, Codec::Protobuf, Codec::Avro] {
+            let avro = (codec == Codec::Avro).then(|| avro.clone());
             g.bench_function(format!("batch_{records}_records_{keys}_keys/{codec:?}"), |b| {
                 b.iter_batched(
                     || {
-                        let mut p =
-                            Partition::new(m.clone(), EngineConfig { codec, evict_final: true, ..Default::default() });
+                        let config =
+                            EngineConfig { codec, evict_final: true, avro: avro.clone(), ..Default::default() };
+                        let mut p = Partition::new(m.clone(), config);
                         // Warm: every key already has an actor.
                         for (key, payload) in batch.iter().take(keys) {
                             p.handle(Some(key), payload, 0);

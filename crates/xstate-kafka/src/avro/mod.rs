@@ -186,6 +186,9 @@ fn number(f: f64) -> Result<Value, String> {
     Number::from_f64(f).map(Value::Number).ok_or_else(|| format!("{f} is not a JSON number"))
 }
 
+/// The `apache-avro` value of `v` (the reference the direct writer is
+/// tested against).
+#[cfg(test)]
 fn to_avro(shape: &Shape, v: &Value) -> Result<Avro, String> {
     let mismatch = || format!("{v} does not fit {}", schema_json(shape, &mut HashSet::new()));
     Ok(match shape {
@@ -251,6 +254,7 @@ fn to_avro(shape: &Shape, v: &Value) -> Result<Avro, String> {
 
 /// A record from a JSON object (`skip`: a union's tag key). A record with
 /// `extra` keeps what its fields cannot hold in the `extra` list.
+#[cfg(test)]
 fn record_to_avro(r: &RecordShape, o: &Map<String, Value>, skip: Option<&str>) -> Result<Avro, String> {
     let mut fields = Vec::with_capacity(r.fields.len() + 1);
     let mut extra = Vec::new();
@@ -367,6 +371,272 @@ fn record_from_avro(r: &RecordShape, fields: Vec<(String, Avro)>) -> Result<Map<
                 o.insert(f.key.clone(), from_avro(shape, a).map_err(|e| format!("\"{}\": {e}", f.key))?);
             }
         }
+    }
+    Ok(o)
+}
+
+// The binary encoding, written and read straight from the shapes, for
+// records with the generated schemas' own ids (snapshots, outputs, and
+// events from producers using the registered schema): no `Value` tree, no
+// schema validation per record.
+
+fn put_long(out: &mut Vec<u8>, v: i64) {
+    crate::proto::wire::put_varint(out, crate::proto::wire::zigzag(v));
+}
+
+fn put_str(out: &mut Vec<u8>, s: &str) {
+    put_long(out, s.len() as i64);
+    out.extend_from_slice(s.as_bytes());
+}
+
+/// Writes `v` as `shape`. On an error, part of it may have been written:
+/// the caller truncates.
+fn write(shape: &Shape, v: &Value, out: &mut Vec<u8>) -> Result<(), String> {
+    let mismatch = || format!("{v} does not fit {}", schema_json(shape, &mut HashSet::new()));
+    match shape {
+        Shape::Bool => out.push(u8::from(v.as_bool().ok_or_else(mismatch)?)),
+        Shape::Long => put_long(
+            out,
+            match v.as_i64() {
+                Some(i) => i,
+                None => v
+                    .as_f64()
+                    .filter(|f| f.fract() == 0.0 && f.abs() < 9.2e18)
+                    .map(|f| f as i64)
+                    .ok_or_else(mismatch)?,
+            },
+        ),
+        Shape::Double => out.extend_from_slice(&v.as_f64().ok_or_else(mismatch)?.to_le_bytes()),
+        Shape::Str => put_str(out, v.as_str().ok_or_else(mismatch)?),
+        Shape::Json => put_str(out, &v.to_string()),
+        Shape::Enum(e) => {
+            let s = v.as_str().ok_or_else(mismatch)?;
+            put_long(out, e.symbols.iter().position(|x| x == s).ok_or_else(mismatch)? as i64);
+        }
+        Shape::Array(items) => {
+            let a = v.as_array().ok_or_else(mismatch)?;
+            if !a.is_empty() {
+                put_long(out, a.len() as i64);
+                for x in a {
+                    write(items, x, out)?;
+                }
+            }
+            put_long(out, 0);
+        }
+        Shape::Map(values) => {
+            let o = v.as_object().ok_or_else(mismatch)?;
+            if !o.is_empty() {
+                put_long(out, o.len() as i64);
+                for (k, x) in o {
+                    put_str(out, k);
+                    write(values, x, out)?;
+                }
+            }
+            put_long(out, 0);
+        }
+        Shape::Entries(entry) => {
+            let o = v.as_object().ok_or_else(mismatch)?;
+            if !o.is_empty() {
+                put_long(out, o.len() as i64);
+                for (k, x) in o {
+                    put_str(out, k);
+                    write(&entry.fields[1].shape, x, out)?;
+                }
+            }
+            put_long(out, 0);
+        }
+        Shape::Record(r) => write_record(r, v.as_object().ok_or_else(mismatch)?, None, out)?,
+        Shape::Optional(inner) | Shape::Nullable(inner) => match v {
+            Value::Null => put_long(out, 0),
+            v => {
+                put_long(out, 1);
+                write(inner, v, out)?;
+            }
+        },
+        Shape::Union(u) => {
+            let o = v.as_object().ok_or_else(mismatch)?;
+            let tag =
+                o.get(&u.key).and_then(Value::as_str).ok_or_else(|| format!("{v} has no string \"{}\"", u.key))?;
+            let (i, (_, r)) = u
+                .branches
+                .iter()
+                .enumerate()
+                .find(|(_, (t, _))| t == tag)
+                .ok_or_else(|| format!("\"{}\": \"{tag}\" is not in the schema", u.key))?;
+            put_long(out, i as i64);
+            write_record(r, o, Some(&u.key), out)?;
+        }
+    }
+    Ok(())
+}
+
+fn write_record(r: &RecordShape, o: &Map<String, Value>, skip: Option<&str>, out: &mut Vec<u8>) -> Result<(), String> {
+    let mut extra: Vec<(&str, &Value)> = Vec::new();
+    for f in &r.fields {
+        match (&f.shape, o.get(&f.key)) {
+            (Shape::Optional(_), None) => put_long(out, 0),
+            (Shape::Optional(inner), Some(v)) if r.extra => {
+                let mark = out.len();
+                put_long(out, 1);
+                if write(inner, v, out).is_err() {
+                    out.truncate(mark);
+                    put_long(out, 0);
+                    extra.push((&f.key, v));
+                }
+            }
+            (shape, Some(v)) => write(shape, v, out).map_err(|e| format!("\"{}\": {e}", f.key))?,
+            (_, None) => return Err(format!("missing \"{}\"", f.key)),
+        }
+    }
+    for (k, v) in o {
+        if Some(k.as_str()) == skip || r.fields.iter().any(|f| &f.key == k) {
+            continue;
+        }
+        if !r.extra {
+            return Err(format!("\"{k}\" is not in the schema of {}", r.name));
+        }
+        extra.push((k, v));
+    }
+    if r.extra {
+        if !extra.is_empty() {
+            put_long(out, extra.len() as i64);
+            for (k, v) in extra {
+                put_str(out, k);
+                put_str(out, &v.to_string());
+            }
+        }
+        put_long(out, 0);
+    }
+    Ok(())
+}
+
+/// A datum being read.
+struct Reader<'a>(&'a [u8]);
+
+impl<'a> Reader<'a> {
+    fn long(&mut self) -> Result<i64, String> {
+        let mut v = 0u64;
+        for i in 0..10 {
+            let (&b, rest) = self.0.split_first().ok_or("truncated Avro datum")?;
+            self.0 = rest;
+            v |= u64::from(b & 0x7f) << (7 * i);
+            if b < 0x80 {
+                return Ok(crate::proto::wire::unzigzag(v));
+            }
+        }
+        Err("an Avro long is too long".into())
+    }
+
+    fn take(&mut self, n: usize) -> Result<&'a [u8], String> {
+        if self.0.len() < n {
+            return Err("truncated Avro datum".into());
+        }
+        let (head, rest) = self.0.split_at(n);
+        self.0 = rest;
+        Ok(head)
+    }
+
+    fn str(&mut self) -> Result<&'a str, String> {
+        let n = usize::try_from(self.long()?).map_err(|_| "a negative string length")?;
+        std::str::from_utf8(self.take(n)?).map_err(|_| "a string is not UTF-8".into())
+    }
+
+    /// Calls `item` for each item of an array or map (blocks of items).
+    fn blocks(&mut self, mut item: impl FnMut(&mut Self) -> Result<(), String>) -> Result<(), String> {
+        loop {
+            let mut n = self.long()?;
+            if n == 0 {
+                return Ok(());
+            }
+            if n < 0 {
+                n = -n;
+                self.long()?; // the block's size in bytes
+            }
+            for _ in 0..n {
+                item(self)?;
+            }
+        }
+    }
+}
+
+fn read(shape: &Shape, r: &mut Reader<'_>) -> Result<Value, String> {
+    Ok(match shape {
+        Shape::Bool => Value::Bool(r.take(1)?[0] != 0),
+        Shape::Long => Value::from(r.long()?),
+        Shape::Double => number(f64::from_le_bytes(r.take(8)?.try_into().expect("8 bytes")))?,
+        Shape::Str => Value::String(r.str()?.to_owned()),
+        Shape::Json => serde_json::from_str(r.str()?).map_err(|e| format!("not JSON text: {e}"))?,
+        Shape::Enum(e) => {
+            let i = r.long()?;
+            Value::String(e.symbols.get(i as usize).ok_or("an enum index out of range")?.clone())
+        }
+        Shape::Array(items) => {
+            let mut a = Vec::new();
+            r.blocks(|r| {
+                a.push(read(items, r)?);
+                Ok(())
+            })?;
+            Value::Array(a)
+        }
+        Shape::Map(values) => {
+            let mut entries = Vec::new();
+            r.blocks(|r| {
+                let k = r.str()?.to_owned();
+                entries.push((k, read(values, r)?));
+                Ok(())
+            })?;
+            // Avro maps are unordered: sort the keys for a stable result.
+            entries.sort_by(|a, b| a.0.cmp(&b.0));
+            Value::Object(entries.into_iter().collect())
+        }
+        Shape::Entries(entry) => {
+            let mut o = Map::new();
+            r.blocks(|r| {
+                let k = r.str()?.to_owned();
+                o.insert(k, read(&entry.fields[1].shape, r)?);
+                Ok(())
+            })?;
+            Value::Object(o)
+        }
+        Shape::Record(rec) => Value::Object(read_record(rec, r)?),
+        Shape::Optional(inner) | Shape::Nullable(inner) => match r.long()? {
+            0 => Value::Null,
+            1 => read(inner, r)?,
+            _ => return Err("a union index out of range".into()),
+        },
+        Shape::Union(u) => {
+            let (tag, rec) = u.branches.get(r.long()? as usize).ok_or("a union index out of range")?;
+            let mut o = Map::with_capacity(rec.fields.len() + 1);
+            o.insert(u.key.clone(), Value::String(tag.clone()));
+            o.extend(read_record(rec, r)?);
+            Value::Object(o)
+        }
+    })
+}
+
+fn read_record(rec: &RecordShape, r: &mut Reader<'_>) -> Result<Map<String, Value>, String> {
+    let mut o = Map::with_capacity(rec.fields.len());
+    for f in &rec.fields {
+        match &f.shape {
+            Shape::Optional(inner) => match r.long()? {
+                0 => {}
+                1 => {
+                    o.insert(f.key.clone(), read(inner, r).map_err(|e| format!("\"{}\": {e}", f.key))?);
+                }
+                _ => return Err("a union index out of range".into()),
+            },
+            shape => {
+                o.insert(f.key.clone(), read(shape, r).map_err(|e| format!("\"{}\": {e}", f.key))?);
+            }
+        }
+    }
+    if rec.extra {
+        r.blocks(|r| {
+            let k = r.str()?.to_owned();
+            let v = serde_json::from_str(r.str()?).map_err(|e| format!("extra \"{k}\": {e}"))?;
+            o.insert(k, v);
+            Ok(())
+        })?;
     }
     Ok(o)
 }
@@ -732,6 +1002,7 @@ pub fn split(record: &[u8]) -> Result<(u32, &[u8]), String> {
     }
 }
 
+#[cfg(test)]
 fn frame(id: u32, datum: &[u8], out: &mut Vec<u8>) {
     out.push(MAGIC);
     out.extend_from_slice(&id.to_be_bytes());
@@ -794,10 +1065,16 @@ impl AvroSchemas {
 
     fn decode(&self, root: &Root, record: &[u8]) -> Result<Value, String> {
         let (id, mut datum) = split(record)?;
+        if Some(id) == root.id {
+            let mut r = Reader(datum);
+            let value = read(&root.shape, &mut r).map_err(|e| format!("Avro datum (schema {id}): {e}"))?;
+            if !r.0.is_empty() {
+                return Err(format!("Avro datum (schema {id}): {} bytes left over", r.0.len()));
+            }
+            return Ok(value);
+        }
         let writer = self.writer(id)?;
-        let value = if Some(id) == root.id {
-            apache_avro::from_avro_datum(&writer, &mut datum, None)
-        } else if let (Schema::Record(w), Shape::Union(_)) = (&*writer, &root.shape) {
+        let value = if let (Schema::Record(w), Shape::Union(_)) = (&*writer, &root.shape) {
             // One record per event type: resolve against that branch.
             let name = w.name.fullname(None);
             let index = root
@@ -816,10 +1093,10 @@ impl AvroSchemas {
 
     fn encode(root: &Root, value: &Value, out: &mut Vec<u8>) -> Result<(), String> {
         let id = root.id.ok_or("the schema is not registered")?;
-        let avro = to_avro(&root.shape, value)?;
-        let datum = apache_avro::to_avro_datum(&root.schema, avro).map_err(|e| e.to_string())?;
-        frame(id, &datum, out);
-        Ok(())
+        let start = out.len();
+        out.push(MAGIC);
+        out.extend_from_slice(&id.to_be_bytes());
+        write(&root.shape, value, out).inspect_err(|_| out.truncate(start))
     }
 
     /// An input event (`{ "type", ... }`) from a record.
@@ -921,6 +1198,52 @@ mod tests {
         let mut record = Vec::new();
         s.encode_snapshot(&snapshot, &mut record).unwrap();
         assert_eq!(s.decode_snapshot(&record).unwrap(), snapshot);
+    }
+
+    /// The direct writer writes exactly what `apache-avro` writes for the
+    /// same value, and `apache-avro` reads it back: over every recorded
+    /// snapshot and the checkout example's events.
+    #[test]
+    fn the_direct_codec_matches_apache_avro() {
+        let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures");
+        let mut snapshots = Vec::new();
+        let mut add = |records: &Value| {
+            for r in records.as_array().into_iter().flatten() {
+                if let Some(s) = r.get("snapshot").filter(|s| s.is_object()) {
+                    snapshots.push(s.clone());
+                }
+            }
+        };
+        for entry in std::fs::read_dir(root.join("system")).unwrap() {
+            let path = entry.unwrap().path();
+            if path.to_string_lossy().ends_with(".expected.json") {
+                add(&serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap());
+            }
+        }
+        let corpus: Value =
+            serde_json::from_str(&std::fs::read_to_string(root.join("fuzz/system-corpus.json")).unwrap()).unwrap();
+        for case in corpus.as_array().unwrap() {
+            add(&case["expected"]);
+        }
+        let s = schemas();
+        let events = [
+            json!({ "type": "cart.add", "line": { "sku": "A-1", "quantity": 3 } }),
+            json!({ "type": "payment.method", "method": { "kind": "invoice" } }),
+            json!({ "type": "checkout", "total": 120.5 }),
+        ];
+        let cases =
+            snapshots.iter().map(|v| (&s.snapshot, v)).chain(events.iter().map(|v| (s.events.as_ref().unwrap(), v)));
+        let mut n = 0;
+        for (root, v) in cases {
+            let mut direct = Vec::new();
+            write(&root.shape, v, &mut direct).unwrap();
+            let reference = apache_avro::to_avro_datum(&root.schema, to_avro(&root.shape, v).unwrap()).unwrap();
+            assert_eq!(direct, reference, "{v}");
+            let back = apache_avro::from_avro_datum(&root.schema, &mut &direct[..], None).unwrap();
+            assert_eq!(&from_avro(&root.shape, back).unwrap(), v);
+            n += 1;
+        }
+        assert!(n > 400, "{n} cases");
     }
 
     fn s_context() -> Value {
