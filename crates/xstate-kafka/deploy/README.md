@@ -90,4 +90,4 @@ Redpanda serves a Schema Registry on port 8081 (inside the compose network, `htt
 "events": "avro", "outputs": "avro", "codec": "avro"
 ```
 
-The service registers its schemas at start under `sensor-events-value`, `sensor-out-value` and `sensor-changelog-value`; `xstate-kafka avro events machine/sensor.xstate.json` prints the input schema for producers. Avro needs a bundle with `schemas.events` (and `schemas.emitted` for Avro outputs). The demo machine has no emitted schemas, so leave `"outputs"` out with it, or add them.
+The service registers its schemas at start under `sensor-events-value`, `sensor-out-value` and `sensor-changelog-value`; `xstate-kafka avro events machine/sensor.xstate.json` prints the input schema for producers. Avro needs a bundle with `schemas.events` (and `schemas.emitted` for Avro outputs); the demo sensor bundle has both. `smoke.sh` publishes JSON over MQTT and reads JSON outputs, so it checks the JSON setup.
