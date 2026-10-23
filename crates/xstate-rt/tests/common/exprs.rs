@@ -4,7 +4,7 @@
 //! whole).
 
 use serde_json::{json, Value};
-use xstate_rt::Registry;
+use xstate_rt::{Registry, SpawnOptions};
 
 fn num(v: Option<&Value>) -> f64 {
     v.and_then(Value::as_f64).unwrap_or(f64::NAN)
@@ -124,6 +124,35 @@ pub fn register(r: &mut Registry<Value, Value>) {
         .expr("stopChild", |a| {
             a.enq().unwrap().stop("c");
             Value::Null
+        })
+        .expr("spawnKid", |a| {
+            let options = SpawnOptions { input: Some(json!({ "start": 10 })), ..Default::default() };
+            let id = a.enq().unwrap().spawn("kid", options);
+            json!({ "context": { "last": id } })
+        })
+        .expr("spawnNamed", |a| {
+            let options =
+                SpawnOptions { id: Some("named".into()), input: Some(json!({ "start": 5 })), ..Default::default() };
+            a.enq().unwrap().spawn("kid", options);
+            Value::Null
+        })
+        .expr("pingLast", |a| {
+            let last = a.context["last"].as_str().unwrap_or_default();
+            a.enq().unwrap().send_to(last, json!({ "type": "PING" }));
+            Value::Null
+        })
+        .expr("finishLast", |a| {
+            let last = a.context["last"].as_str().unwrap_or_default();
+            a.enq().unwrap().send_to(last, json!({ "type": "STOP" }));
+            Value::Null
+        })
+        .expr("stopLast", |a| {
+            a.enq().unwrap().stop(a.context["last"].as_str().unwrap_or_default());
+            Value::Null
+        })
+        .expr("spawnInTransition", |a| {
+            let id = a.enq().unwrap().spawn("kid", SpawnOptions::default());
+            json!({ "context": { "last": id } })
         })
         .expr("pongsPlusOne", |a| js(num(a.context.get("pongs")) + 1.0))
         // State input.

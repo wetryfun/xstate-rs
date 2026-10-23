@@ -70,7 +70,7 @@ pub struct ExprArgs<'a, C, E> {
     pub input: Option<&'a Value>,
     pub(crate) machine: &'a Machine<C, E>,
     pub(crate) config: &'a [Nid],
-    pub(crate) enq: Option<&'a Enq>,
+    pub(crate) enq: Option<&'a Enq<'a>>,
 }
 
 impl<C, E> ExprArgs<'_, C, E> {
@@ -83,27 +83,74 @@ impl<C, E> ExprArgs<'_, C, E> {
 
     /// XState's `enq`, for expressions that are actions or transitions (in
     /// other places XState's scope has none).
-    pub fn enq(&self) -> Option<&Enq> {
+    pub fn enq(&self) -> Option<&Enq<'_>> {
         self.enq
     }
 }
 
 /// XState's `enq` for Rust expressions: what an action or a transition
 /// function enqueues, run in order with the actions around it.
-#[derive(Debug, Default)]
-pub struct Enq {
+#[derive(Default)]
+pub struct Enq<'a> {
     pub(crate) ops: RefCell<Vec<EnqOp>>,
+    /// The host's child id allocation, for `spawn`.
+    pub(crate) ids: Option<&'a dyn ChildIds>,
+}
+
+/// The host side of `enq.spawn`: XState's child id allocation.
+pub(crate) trait ChildIds {
+    /// The id a spawn of `src` gets (the explicit `id`, or `<src>:<n>`).
+    /// With `commit`, the id is allocated now (actions); otherwise it is
+    /// only predicted (transitions, which allocate when they are taken).
+    fn spawn_id(&self, src: &str, id: Option<&str>, commit: bool) -> Result<String, String>;
+    /// Whether ids allocated now are committed (see `spawn_id`).
+    fn commits(&self) -> bool;
+}
+
+/// Options for [`Enq::spawn`] (XState's spawn options).
+#[derive(Debug, Clone, Default)]
+pub struct SpawnOptions {
+    /// The child's id; `<src>:<n>` when absent.
+    pub id: Option<String>,
+    pub input: Option<Value>,
+    /// The key the child is registered under in the system (`systemId`).
+    pub system_id: Option<String>,
+    /// Whether the child reports its snapshots to the parent.
+    pub sync_snapshot: Option<bool>,
 }
 
 #[derive(Debug, Clone)]
 pub(crate) enum EnqOp {
-    Raise { event: Value, delay: Option<u64>, id: Option<String> },
+    Raise {
+        event: Value,
+        delay: Option<u64>,
+        id: Option<String>,
+    },
     Emit(Value),
     Cancel(String),
     Log(Vec<Value>),
-    Action { name: String, params: Value },
-    SendTo { to: SendTarget, event: Value, delay: Option<u64>, id: Option<String> },
+    Action {
+        name: String,
+        params: Value,
+    },
+    SendTo {
+        to: SendTarget,
+        event: Value,
+        delay: Option<u64>,
+        id: Option<String>,
+    },
     Stop(String),
+    /// `id` is the predicted id when not `committed` (allocated again when
+    /// the operation is applied).
+    Spawn {
+        src: String,
+        id: String,
+        committed: bool,
+        explicit: bool,
+        options: SpawnOptions,
+    },
+    /// An `enq` call that failed (XState throws from it).
+    Fail(String),
 }
 
 /// Who `enq.sendTo` sends to.
@@ -115,7 +162,13 @@ pub(crate) enum SendTarget {
     Parent,
 }
 
-impl Enq {
+impl std::fmt::Debug for Enq<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Enq").field("ops", &self.ops).finish_non_exhaustive()
+    }
+}
+
+impl Enq<'_> {
     /// `enq.raise(event)`: the event goes to the internal queue.
     pub fn raise(&self, event: Value) {
         self.ops.borrow_mut().push(EnqOp::Raise { event, delay: None, id: None });
@@ -176,6 +229,33 @@ impl Enq {
 
     fn push_send(&self, to: SendTarget, event: Value, delay: Option<u64>, id: Option<&str>) {
         self.ops.borrow_mut().push(EnqOp::SendTo { to, event, delay, id: id.map(str::to_owned) });
+    }
+
+    /// `enq.spawn(src, options)`: a child running the registered actor
+    /// logic `src` (an invoke source of this machine), started after the
+    /// step. Returns its id. An explicit id already in use fails the step.
+    pub fn spawn(&self, src: &str, options: SpawnOptions) -> String {
+        let explicit = options.id.is_some();
+        let (commit, result) = match self.ids {
+            Some(ids) => (ids.commits(), ids.spawn_id(src, options.id.as_deref(), ids.commits())),
+            None => (false, Ok(options.id.clone().unwrap_or_else(|| format!("{src}:0")))),
+        };
+        match result {
+            Ok(id) => {
+                self.ops.borrow_mut().push(EnqOp::Spawn {
+                    src: src.to_owned(),
+                    id: id.clone(),
+                    committed: commit,
+                    explicit,
+                    options,
+                });
+                id
+            }
+            Err(message) => {
+                self.ops.borrow_mut().push(EnqOp::Fail(message));
+                options.id.unwrap_or_default()
+            }
+        }
     }
 
     pub(crate) fn take(&self) -> Vec<EnqOp> {

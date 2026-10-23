@@ -1,0 +1,189 @@
+{
+  "notes": "enq.spawn from Rust: generated ids (<src>:<n>, never reused), explicit ids with input, sending to and stopping spawned children, a spawned child's done event, a spawn in a transition function, and a duplicate explicit id (an error).",
+  "logic": [
+    {
+      "name": "kid",
+      "machine": {
+        "id": "kid",
+        "context": {
+          "@code": "contextFromInput",
+          "@lang": "rust"
+        },
+        "initial": "on",
+        "states": {
+          "on": {
+            "on": {
+              "PING": {
+                "context": {
+                  "count": {
+                    "@code": "countPlusOne",
+                    "@lang": "rust"
+                  }
+                },
+                "actions": [
+                  {
+                    "@code": "replyParent",
+                    "@lang": "rust"
+                  }
+                ]
+              },
+              "STOP": {
+                "target": "off"
+              }
+            }
+          },
+          "off": {
+            "type": "final",
+            "output": {
+              "@code": "summary",
+              "@lang": "rust"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "par",
+      "machine": {
+        "id": "par",
+        "context": {
+          "pongs": 0
+        },
+        "initial": "idle",
+        "states": {
+          "idle": {
+            "on": {
+              "SPAWN": {
+                "actions": [
+                  {
+                    "@code": "spawnKid",
+                    "@lang": "rust"
+                  }
+                ]
+              },
+              "NAMED": {
+                "actions": [
+                  {
+                    "@code": "spawnNamed",
+                    "@lang": "rust"
+                  }
+                ]
+              },
+              "PING": {
+                "actions": [
+                  {
+                    "@code": "pingLast",
+                    "@lang": "rust"
+                  }
+                ]
+              },
+              "FINISH": {
+                "actions": [
+                  {
+                    "@code": "finishLast",
+                    "@lang": "rust"
+                  }
+                ]
+              },
+              "KILL": {
+                "actions": [
+                  {
+                    "@code": "stopLast",
+                    "@lang": "rust"
+                  }
+                ]
+              },
+              "FN": {
+                "@code": "spawnInTransition",
+                "@lang": "rust"
+              },
+              "PONG": {
+                "context": {
+                  "pongs": {
+                    "@code": "pongsPlusOne",
+                    "@lang": "rust"
+                  }
+                }
+              },
+              "xstate.done.actor": {
+                "actions": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "child.done",
+                      "output": {
+                        "@code": "eventOutput",
+                        "@lang": "rust"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "actors": [
+        "kid"
+      ]
+    }
+  ],
+  "root": "par",
+  "init": {},
+  "steps": [
+    {
+      "send": "par",
+      "event": {
+        "type": "SPAWN"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "SPAWN"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "PING"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "KILL"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "SPAWN"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "NAMED"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "FN"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "FINISH"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "NAMED"
+      }
+    }
+  ]
+}

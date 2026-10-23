@@ -63,6 +63,26 @@ export const exprs = {
   stopChild: ({ enq, children }) => {
     enq.stop(children.c);
   },
+  spawnKid: ({ enq }) => {
+    const ref = enq.spawn('kid', { input: { start: 10 } });
+    return { context: { last: ref.id } };
+  },
+  spawnNamed: ({ enq }) => {
+    enq.spawn('kid', { id: 'named', input: { start: 5 } });
+  },
+  pingLast: ({ enq, context }) => {
+    enq.sendTo(context.last, { type: 'PING' });
+  },
+  finishLast: ({ enq, context }) => {
+    enq.sendTo(context.last, { type: 'STOP' });
+  },
+  stopLast: ({ enq, context, children }) => {
+    enq.stop(children[context.last]);
+  },
+  spawnInTransition: ({ enq }) => {
+    const ref = enq.spawn('kid');
+    return { context: { last: ref.id } };
+  },
   pongsPlusOne: ({ context }) => context.pongs + 1,
   // State input.
   stateInput: ({ input }) => input ?? null,

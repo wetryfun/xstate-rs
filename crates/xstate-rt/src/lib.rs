@@ -46,7 +46,7 @@ pub use event::{js_numbers, Ev, EventType};
 pub use load::{Reference, References};
 pub use machine::{Machine, MachineOptions, NodeId};
 pub use migrate::Migration;
-pub use registry::{ExprArgs, GuardArgs, Registry};
+pub use registry::{Enq, ExprArgs, GuardArgs, Registry, SpawnOptions};
 pub use system::{
     ActorRef, Effect, EffectKind, ExternalEffect, InitOptions, Logic, Status, System, SystemError, SystemLogic,
 };

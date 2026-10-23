@@ -16,7 +16,7 @@
 
 use std::any::Any;
 use std::borrow::Cow;
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use std::collections::VecDeque;
 use std::sync::Arc;
 
@@ -28,7 +28,7 @@ use serde_json::{json, Map, Value};
 use crate::core::{self, Host, MicrostepResult, Nid, RegionOutput, Resolved, Resolver, TRef, Tid};
 use crate::event::{Ev, EventType, AFTER, DONE_STATE};
 use crate::machine::*;
-use crate::registry::{ActionFn, Enq, EnqOp, ExprArgs, GuardArgs, SendTarget};
+use crate::registry::{ActionFn, ChildIds, Enq, EnqOp, ExprArgs, GuardArgs, SendTarget, SpawnOptions};
 use crate::system::{
     has_builtin_timer_identity, ActorRef, AfterDelay, AllocateOptions, AnySnapshot, Context, Effect, EffectKind,
     EffectType, ExternalSpec, Logic, Status, SystemError, TimerKey, Transition,
@@ -235,6 +235,10 @@ pub(crate) struct State<C, E> {
     /// machines have none.
     #[allow(clippy::box_collection)]
     pub inputs: Option<Box<Vec<(Nid, Value)>>>,
+    /// `_nextActorIds`: the next free index of each generated child id
+    /// prefix (`<src>:<n>`), so freed ids are never handed out again.
+    #[allow(clippy::box_collection)]
+    pub actor_ids: Option<Box<Vec<(String, u64)>>>,
     /// For an untyped context: known to need no number normalization
     /// (`js_numbers`), so merges need not check it again. Not persisted.
     pub context_normalized: bool,
@@ -253,6 +257,7 @@ impl<C: Clone, E: Clone> Clone for State<C, E> {
             timers: self.timers.clone(),
             next_timer_id: self.next_timer_id,
             inputs: self.inputs.clone(),
+            actor_ids: self.actor_ids.clone(),
             context_normalized: self.context_normalized,
         }
     }
@@ -284,6 +289,7 @@ impl<C, E> State<C, E> {
             timers: empty.timers.clone(),
             next_timer_id: 0,
             inputs: None,
+            actor_ids: None,
             context_normalized: false,
         }
     }
@@ -337,6 +343,14 @@ enum Op<E> {
         target: Option<ActorRef>,
     },
     SendTo(ActorRef, Value),
+    /// `enq.spawn`, applied (and, unless `committed`, allocated) in order.
+    SpawnChild {
+        src: String,
+        id: String,
+        committed: bool,
+        explicit: bool,
+        options: SpawnOptions,
+    },
     /// An event whose target is missing (`@xstate.deadLetter`).
     DeadLetter(Value),
     Cancel(TimerKey),
@@ -402,6 +416,8 @@ struct Saved {
     next_timer_id: u64,
     #[allow(clippy::box_collection)]
     inputs: Option<Box<Vec<(Nid, Value)>>>,
+    #[allow(clippy::box_collection)]
+    actor_ids: Option<Box<Vec<(String, u64)>>>,
 }
 
 impl Saved {
@@ -413,6 +429,7 @@ impl Saved {
             error: st.error.clone(),
             next_timer_id: st.next_timer_id,
             inputs: st.inputs.clone(),
+            actor_ids: st.actor_ids.clone(),
         }
     }
 
@@ -424,6 +441,7 @@ impl Saved {
         st.error = self.error;
         st.next_timer_id = self.next_timer_id;
         st.inputs = self.inputs;
+        st.actor_ids = self.actor_ids;
         if let Some(history) = parts.history {
             st.history = history;
         }
@@ -447,6 +465,96 @@ struct SavedParts<E> {
 impl<E> Default for SavedParts<E> {
     fn default() -> Self {
         Self { history: None, children: None, timers: None }
+    }
+}
+
+/// XState's spawn allocation for one macrostep: generated-id counters by
+/// prefix, and the explicit ids taken.
+#[derive(Default)]
+struct SpawnAlloc {
+    counters: Vec<(String, u64)>,
+    explicit: Vec<String>,
+}
+
+/// The prefix of a generated child id (`<prefix>:<n>`), as XState's
+/// `parseGeneratedActorId`.
+fn generated_prefix(id: &str) -> Option<&str> {
+    let (prefix, index) = id.rsplit_once(':')?;
+    (!prefix.is_empty()
+        && !index.is_empty()
+        && index.bytes().all(|b| b.is_ascii_digit())
+        && index.parse::<u64>().is_ok())
+    .then_some(prefix)
+}
+
+impl<C, E> ChildIds for NativeHost<'_, C, E>
+where
+    C: Serialize + DeserializeOwned + Clone + 'static,
+    E: EventType,
+{
+    fn commits(&self) -> bool {
+        !self.selecting.get()
+    }
+
+    /// XState's `allocateChildId` / `assertChildIdFree` + `reserveChildId`,
+    /// or, without `commit`, the id a speculative spawn would get.
+    fn spawn_id(&self, src: &str, id: Option<&str>, commit: bool) -> Result<String, String> {
+        if !self.m.actors.iter().any(|(name, _)| name == src) {
+            return Err(format!("Actor source '{src}' is not provided"));
+        }
+        // The children of the snapshot the macrostep started from.
+        let start_children = match &self.saved_parts.children {
+            Some(saved) => saved.clone(),
+            None if self.rollback => self.st.children.clone(),
+            None => self.m.empty.children.clone(),
+        };
+        let mut alloc = self.spawn_alloc.borrow_mut();
+        let next_index = |alloc: &SpawnAlloc, prefix: &str| {
+            let counter = alloc.counters.iter().find(|(p, _)| p == prefix).map_or(0, |(_, n)| *n);
+            let persisted =
+                self.st.actor_ids.iter().flat_map(|i| i.iter()).find(|(p, _)| p == prefix).map_or(0, |(_, n)| *n);
+            counter.max(persisted)
+        };
+        let set_counter = |alloc: &mut SpawnAlloc, prefix: &str, next: u64| match alloc
+            .counters
+            .iter_mut()
+            .find(|(p, _)| p == prefix)
+        {
+            Some(entry) => entry.1 = next,
+            None => alloc.counters.push((prefix.to_owned(), next)),
+        };
+        match id {
+            None => {
+                let mut next = next_index(&alloc, src);
+                while alloc.explicit.iter().any(|x| *x == format!("{src}:{next}"))
+                    || start_children.contains_key(&format!("{src}:{next}"))
+                {
+                    next += 1;
+                }
+                if commit {
+                    set_counter(&mut alloc, src, next + 1);
+                }
+                Ok(format!("{src}:{next}"))
+            }
+            Some(id) if !commit => Ok(id.to_owned()),
+            Some(id) => {
+                let occupied = start_children.get(id).is_some_and(|existing| {
+                    !self.stopped_ids.iter().any(|s| s == id) && self.cx.status_of(existing) == Status::Active
+                });
+                if occupied || alloc.explicit.iter().any(|x| x == id) {
+                    return Err(format!("Child actor id '{id}' is already in use"));
+                }
+                alloc.explicit.push(id.to_owned());
+                // A generated-shaped explicit id moves its prefix's counter
+                // past it (never back).
+                if let Some(prefix) = generated_prefix(id) {
+                    let index: u64 = id[prefix.len() + 1..].parse().expect("checked");
+                    let next = next_index(&alloc, prefix).max(index + 1);
+                    set_counter(&mut alloc, prefix, next);
+                }
+                Ok(id.to_owned())
+            }
+        }
     }
 }
 
@@ -673,6 +781,7 @@ where
             + usize::from(st.output.is_some())
             + usize::from(st.error.is_some())
             + if compact { 0 } else { 1 }
+            + usize::from(st.actor_ids.is_some())
             + [keep_children, keep_timers, keep_history, keep_inputs, keep_next].iter().filter(|k| **k).count();
         let mut map = s.serialize_map(Some(len))?;
         map.serialize_entry("status", st.status.as_str())?;
@@ -715,6 +824,15 @@ where
         }
         if keep_next {
             map.serialize_entry("_nextTimerId", &st.next_timer_id)?;
+        }
+        if let Some(ids) = &st.actor_ids {
+            struct Ids<'a>(&'a [(String, u64)]);
+            impl Serialize for Ids<'_> {
+                fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+                    s.collect_map(self.0.iter().map(|(p, n)| (p, n)))
+                }
+            }
+            map.serialize_entry("_nextActorIds", &Ids(ids))?;
         }
         map.serialize_entry("nodeIds", &Ids(m, &st.nodes))?;
         map.end()
@@ -777,6 +895,12 @@ struct NativeHost<'a, C, E> {
     scope: Cell<Option<Nid>>,
     /// The inputs of the transitions of this microstep, for `begin_entry`.
     pending_inputs: Vec<(Tid, Value)>,
+    /// XState's spawn allocation for this macrostep: generated-id counters
+    /// by prefix, and the explicit ids taken.
+    spawn_alloc: RefCell<SpawnAlloc>,
+    /// Whether spawns allocate their ids when enqueued (actions) rather
+    /// than when applied (transitions evaluated at selection).
+    selecting: Cell<bool>,
     /// The last configurations, for the infinite-loop error.
     recent: VecDeque<Vec<Nid>>,
     /// Children stopped in this macrostep (XState's `stoppedIds`).
@@ -1027,7 +1151,7 @@ where
                 }
                 Action::Expr(i) => {
                     let m = self.m;
-                    let enq = Enq::default();
+                    let enq = Enq { ops: RefCell::new(Vec::new()), ids: Some(self) };
                     let args = ExprArgs {
                         context,
                         event: &self.event,
@@ -1131,6 +1255,20 @@ where
         Ok(out)
     }
 
+    /// A candidate's evaluation at selection: `None` when it needs none
+    /// (a plain transition), `Some(None)` when its function is not enabled.
+    fn select(&self, t: Tid) -> Result<Option<Option<Selected<E>>>, SystemError> {
+        let tr = self.m.transition(t);
+        if tr.function.is_some() {
+            Ok(Some(self.eval_function(t)?))
+        } else if tr.evaluates() {
+            let outcome = self.transition_outcome(t)?;
+            Ok(Some(Some(Selected { targets: tr.targets.clone(), reenter: tr.reenter, outcome: Some(outcome) })))
+        } else {
+            Ok(None)
+        }
+    }
+
     /// What an `enq` recorded, appended to an outcome in order.
     fn push_enq_ops(&self, ops: Vec<EnqOp>, out: &mut Outcome<E>) -> Result<(), SystemError> {
         for op in ops {
@@ -1183,6 +1321,10 @@ where
                         out.ops.push(Op::Stop(child.clone()));
                     }
                 }
+                EnqOp::Spawn { src, id, committed, explicit, options } => {
+                    out.ops.push(Op::SpawnChild { src, id, committed, explicit, options })
+                }
+                EnqOp::Fail(message) => return Err(SystemError::Failed(message)),
             }
         }
         Ok(())
@@ -1195,7 +1337,7 @@ where
         let m = self.m;
         let tr = m.transition(t);
         let source = m.tree.transitions[t as usize].source;
-        let enq = Enq::default();
+        let enq = Enq { ops: RefCell::new(Vec::new()), ids: Some(self) };
         // Only a transition expression's scope has `enq`.
         let _scope = self.scoped(Some(source));
         let call = |expr: u32, enq: Option<&Enq>| {
@@ -1290,7 +1432,7 @@ where
 
     /// `resolveActionsWithContext`: logical timers update the snapshot now;
     /// everything becomes an effect.
-    fn resolve_ops(&mut self, ops: Vec<Op<E>>) {
+    fn resolve_ops(&mut self, ops: Vec<Op<E>>) -> Result<(), SystemError> {
         for op in ops {
             match op {
                 Op::Raise { event, id, delay, target } => {
@@ -1388,8 +1530,47 @@ where
                     self.cloned = true;
                     self.effects.push(Effect::Stop(r));
                 }
+                Op::SpawnChild { src, id, committed, explicit, options } => {
+                    // A predicted id is allocated now, as XState replays the
+                    // transition's spawn into a creating `enq`.
+                    let id = if committed {
+                        id
+                    } else {
+                        self.spawn_id(&src, explicit.then_some(id.as_str()), true).map_err(SystemError::Failed)?
+                    };
+                    let logic = self.m.actors.iter().find(|(name, _)| *name == src).map(|(_, l)| l.clone());
+                    let logic =
+                        logic.ok_or_else(|| SystemError::Failed(format!("Actor source '{src}' is not provided")))?;
+                    let child = self.cx.allocate(
+                        &logic,
+                        AllocateOptions {
+                            id: id.clone(),
+                            input: options.input,
+                            parent: Some(self.cx.self_ref()),
+                            registry_key: options.system_id,
+                            sync_snapshot: options.sync_snapshot,
+                        },
+                    )?;
+                    self.children_mut().insert(id.clone(), child.clone());
+                    // The transaction's counter for the id's prefix joins the
+                    // snapshot's (`mergeActorIdCounters`).
+                    if let Some(prefix) = generated_prefix(&id) {
+                        let next =
+                            self.spawn_alloc.borrow().counters.iter().find(|(p, _)| p == prefix).map(|(_, n)| *n);
+                        if let Some(next) = next {
+                            let ids = self.st.actor_ids.get_or_insert_with(Default::default);
+                            match ids.iter_mut().find(|(p, _)| p == prefix) {
+                                Some(entry) => entry.1 = entry.1.max(next),
+                                None => ids.push((prefix.to_owned(), next)),
+                            }
+                        }
+                    }
+                    self.cloned = true;
+                    self.effects.push(Effect::Spawn(child));
+                }
             }
         }
+        Ok(())
     }
 
     /// A state's exit function: its timers are cancelled (the wrappers
@@ -1507,7 +1688,7 @@ where
         }
         self.queue.extend(out.internal);
         ops.append(&mut out.ops);
-        self.resolve_ops(ops);
+        self.resolve_ops(ops)?;
         // The `initial` and history default transitions of JSON machines
         // carry no context or actions.
         Ok(())
@@ -1667,17 +1848,12 @@ where
         // XState evaluates transition functions (and `machineFromJSON`'s
         // functions for transitions with `context` or `actions`) here and
         // reuses the result when the transition is taken.
-        let selected = if tr.function.is_some() {
-            match self.eval_function(t)? {
-                Some(selected) => selected,
-                None => return Ok(false),
-            }
-        } else if tr.evaluates() {
-            let outcome = self.transition_outcome(t)?;
-            Selected { targets: tr.targets.clone(), reenter: tr.reenter, outcome: Some(outcome) }
-        } else {
-            return Ok(true);
-        };
+        // Spawns in transitions evaluated here only predict their ids.
+        self.selecting.set(true);
+        let selected = self.select(t);
+        self.selecting.set(false);
+        let Some(selected) = selected? else { return Ok(true) };
+        let Some(selected) = selected else { return Ok(false) };
         match self.selected.iter_mut().find(|(x, _)| *x == t) {
             Some(entry) => entry.1 = selected,
             None => self.selected.push((t, selected)),
@@ -1739,7 +1915,7 @@ where
         if let Some(ctx) = &out.context {
             self.merge_context(ctx)?;
         }
-        self.resolve_ops(out.ops);
+        self.resolve_ops(out.ops)?;
         let stops: Vec<Op<E>> = self
             .m
             .data(node)
@@ -1755,7 +1931,7 @@ where
                 }
             }
         }
-        self.resolve_ops(stops);
+        self.resolve_ops(stops)?;
         Ok(())
     }
 
@@ -1781,7 +1957,7 @@ where
             }
         }
         self.queue.extend(internal);
-        self.resolve_ops(ops);
+        self.resolve_ops(ops)?;
         Ok(())
     }
 
@@ -1895,11 +2071,11 @@ where
             ops.extend(out.ops);
             self.queue.extend(out.internal);
         }
-        self.resolve_ops(ops);
+        self.resolve_ops(ops)?;
         let stops = self.stop_children_ops();
-        self.resolve_ops(stops);
+        self.resolve_ops(stops)?;
         let cancels = self.cancel_timer_ops();
-        self.resolve_ops(cancels);
+        self.resolve_ops(cancels)?;
         Ok(())
     }
 
@@ -2014,6 +2190,8 @@ where
             selected: Vec::new(),
             scope: Cell::new(None),
             pending_inputs: Vec::new(),
+            spawn_alloc: RefCell::new(SpawnAlloc::default()),
+            selecting: Cell::new(false),
             recent: VecDeque::new(),
             stopped_ids: Vec::new(),
             microstep_token_value: 0,
@@ -2094,9 +2272,9 @@ where
         match ty {
             "xstate.stop" => {
                 let stops = h.stop_children_ops();
-                h.resolve_ops(stops);
+                h.resolve_ops(stops)?;
                 let cancels = h.cancel_timer_ops();
-                h.resolve_ops(cancels);
+                h.resolve_ops(cancels)?;
                 h.st.status = Status::Stopped;
                 return Ok(());
             }
@@ -2158,6 +2336,9 @@ where
         );
         m.insert("_stateInputs".into(), self.inputs_json(st));
         m.insert("_nextTimerId".into(), json!(st.next_timer_id));
+        if let Some(ids) = &st.actor_ids {
+            m.insert("_nextActorIds".into(), Value::Object(ids.iter().map(|(p, n)| (p.clone(), json!(n))).collect()));
+        }
         m.insert("nodeIds".into(), Value::Array(st.nodes.iter().map(|&n| json!(self.data(n).id)).collect()));
         Value::Object(m)
     }
@@ -2227,6 +2408,16 @@ where
             inputs.push((lookup(id)?, input.clone()));
         }
         st.inputs = (!inputs.is_empty()).then(|| Box::new(inputs));
+        // `_nextActorIds` as persisted (XState's pure system decodes it
+        // without folding in the children's ids).
+        let ids: Vec<(String, u64)> = data
+            .get("_nextActorIds")
+            .and_then(Value::as_object)
+            .into_iter()
+            .flatten()
+            .map(|(p, n)| (p.clone(), n.as_u64().unwrap_or(0)))
+            .collect();
+        st.actor_ids = (!ids.is_empty()).then(|| Box::new(ids));
         Ok(st)
     }
 
