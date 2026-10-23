@@ -37,6 +37,9 @@ fn machine() -> Arc<Machine<Value, Value>> {
     Arc::new(Machine::from_json(&definition, &Registry::new()).unwrap())
 }
 
+/// Decodes one input event record.
+type Decode<'a> = dyn Fn(&[u8]) -> Value + 'a;
+
 fn avro_schemas(bundle: &Value) -> Arc<AvroSchemas> {
     let mut s = AvroSchemas::from_bundle(bundle, Arc::new(MemoryRegistry::default())).unwrap();
     s.register([Some("in-value"), Some("out-value"), Some("changelog-value")], true).unwrap();
@@ -109,7 +112,7 @@ fn bench(c: &mut Criterion) {
     let mut g = c.benchmark_group("events");
     for (name, record) in &records {
         eprintln!("{name}: {} bytes per event", record.len());
-        let decode: Box<dyn Fn(&[u8]) -> Value> = match *name {
+        let decode: Box<Decode> = match *name {
             "Json" => Box::new(|b| serde_json::from_slice(b).unwrap()),
             "MessagePack" => Box::new(|b| rmp_serde::from_slice(b).unwrap()),
             "Protobuf" => Box::new(|b| proto.decode(b).unwrap()),
