@@ -74,8 +74,7 @@ const TRANSITION_KEYS: &[&str] =
     &["target", "matches", "context", "actions", "guard", "description", "reenter", "meta", "input"];
 
 /// State-node keys that name v6 features this runtime does not run yet.
-const UNSUPPORTED_STATE_KEYS: &[(&str, &str)] =
-    &[("choice", "choice states"), ("route", "route states"), ("input", "state input")];
+const UNSUPPORTED_STATE_KEYS: &[(&str, &str)] = &[("choice", "choice states"), ("input", "state input")];
 
 fn err(kind: K, path: &str, message: impl Into<String>) -> LoadError {
     LoadError::new(kind, path, message)
@@ -761,6 +760,17 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
         for (descriptor, ts) in delayed_transitions {
             add(&mut by_descriptor, descriptor, ts);
         }
+        if node == 0 {
+            // `formatRouteTransitions`: the root's `xstate.route` transitions,
+            // set after its other transitions (replacing any of its own).
+            let routes = self.compile_routes()?;
+            if !routes.is_empty() {
+                match by_descriptor.iter_mut().find(|(k, _)| k == "xstate.route") {
+                    Some((_, existing)) => *existing = routes,
+                    None => by_descriptor.push(("xstate.route".into(), routes)),
+                }
+            }
+        }
         let always = match json.get("always") {
             Some(value) => self.compile_transitions(node, value, &child_path(&path, "always"), &[])?,
             None => Vec::new(),
@@ -975,6 +985,55 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             sync_snapshot: obj.contains_key("onSnapshot"),
         };
         Ok((def, timeout))
+    }
+
+    /// One transition on the root per routable state (explicit `id` and a
+    /// `route`), in document order: `{ ...route, target: '#id' }`, enabled
+    /// when the event's `to` is `#id` (and the route's named `guard`, if any,
+    /// passes).
+    fn compile_routes(&mut self) -> Result<Vec<TransitionId>> {
+        let mut out = Vec::new();
+        for n in 1..self.nodes.len() {
+            let json = self.raw[n].json;
+            let Some(route) = json.get("route") else { continue };
+            let Some(Value::String(id)) = json.get("id") else { continue };
+            let path = child_path(&self.raw[n].path, "route");
+            let mut config = match route {
+                Value::Null | Value::Bool(false) => continue,
+                Value::Bool(true) => Map::new(),
+                Value::Object(o) => o.clone(),
+                _ => return Err(invalid(&path, "a route must be an object (or a code expression)")),
+            };
+            for k in config.keys() {
+                if !["context", "reenter", "meta", "description", "input", "guard"].contains(&k.as_str()) {
+                    return Err(err(K::UnknownKey, &path, format!("unknown key \"{k}\"")));
+                }
+            }
+            if config.contains_key("input") {
+                return Err(err(
+                    K::Unsupported,
+                    &child_path(&path, "input"),
+                    "route input (state input) is not supported yet",
+                ));
+            }
+            let named = match config.remove("guard") {
+                None | Some(Value::Null) => None,
+                Some(Value::String(g)) => Some(g),
+                Some(_) => return Err(invalid(&child_path(&path, "guard"), "a route guard is the name of a guard")),
+            };
+            let to = format!("#{id}");
+            config.insert("target".into(), Value::String(to.clone()));
+            let t = self.compile_transition(0, &Value::Object(config), &path, &[])?;
+            let mut guard = Guard::RouteTo(to);
+            if let Some(name) = named {
+                let named =
+                    self.compile_guard(&json!({ "type": name }), &child_path(&path, "guard"), &mut Vec::new())?;
+                guard = Guard::And(Box::new(guard), Box::new(named));
+            }
+            self.transitions[t as usize].guard = Some(guard);
+            out.push(t);
+        }
+        Ok(out)
     }
 
     fn compile_transitions(

@@ -16,7 +16,7 @@ Milestone 5 (WASI) is a WASI 0.2 component, `crates/xstate-wasi` (WIT in `crates
 
 Milestone 6 (Redpanda) is `crates/xstate-redpanda`: actors sharded by input partition, one worker thread per core, each batch committing emitted events, changelog snapshots (MessagePack, compacted topic) and input offsets in one Kafka transaction. It is tested against librdkafka's in-process mock cluster.
 
-Not yet supported (rejected at load time with the JSON path): choice and route states, state and transition `input`, and any `@code` / `@expr`.
+Not yet supported (rejected at load time with the JSON path): choice states, state and transition `input`, and any `@code` / `@expr` (including function `route`s).
 
 ## Example
 

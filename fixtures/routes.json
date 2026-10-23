@@ -1,0 +1,63 @@
+{
+  "machine": {
+    "id": "app",
+    "initial": "home",
+    "context": { "visits": 0, "ok": false },
+    "guards": { "isOk": { "when": { "type": "ctxEquals", "params": { "key": "ok", "value": true } } } },
+    "on": { "login": { "context": { "ok": true } } },
+    "states": {
+      "home": {
+        "id": "home",
+        "route": {},
+        "entry": [{ "type": "@xstate.emit", "event": { "type": "enter", "s": "home" } }],
+        "exit": [{ "type": "@xstate.emit", "event": { "type": "exit", "s": "home" } }]
+      },
+      "checkout": {
+        "id": "checkout",
+        "route": { "context": { "visits": 1 }, "description": "pay", "meta": { "step": 2 } },
+        "entry": [{ "type": "@xstate.emit", "event": { "type": "enter", "s": "checkout" } }],
+        "exit": [{ "type": "@xstate.emit", "event": { "type": "exit", "s": "checkout" } }]
+      },
+      "dash": {
+        "route": {},
+        "initial": "overview",
+        "entry": [{ "type": "@xstate.emit", "event": { "type": "enter", "s": "dash" } }],
+        "states": {
+          "overview": { "id": "overview", "route": {}, "entry": [{ "type": "@xstate.emit", "event": { "type": "enter", "s": "overview" } }] },
+          "settings": { "id": "settings", "route": { "guard": "isOk" }, "entry": [{ "type": "@xstate.emit", "event": { "type": "enter", "s": "settings" } }] },
+          "plain": { "id": "plain" }
+        }
+      },
+      "board": {
+        "type": "parallel",
+        "states": {
+          "a": { "initial": "a1", "states": { "a1": { "id": "a1", "route": {} }, "a2": { "id": "a2", "route": { "reenter": true } } } },
+          "b": {
+            "initial": "b1",
+            "states": {
+              "b1": { "id": "b1", "route": {}, "exit": [{ "type": "@xstate.emit", "event": { "type": "exit", "s": "b1" } }] },
+              "b2": { "id": "b2", "route": {}, "entry": [{ "type": "@xstate.emit", "event": { "type": "enter", "s": "b2" } }] }
+            }
+          }
+        }
+      }
+    }
+  },
+  "steps": [
+    { "at": 0, "send": { "type": "xstate.route", "to": "#checkout" } },
+    { "at": 0, "send": { "type": "xstate.route", "to": "#checkout" } },
+    { "at": 0, "send": { "type": "xstate.route", "to": "#overview" } },
+    { "at": 0, "send": { "type": "xstate.route", "to": "#settings" } },
+    { "at": 0, "send": { "type": "login" } },
+    { "at": 0, "send": { "type": "xstate.route", "to": "#settings" } },
+    { "at": 0, "send": { "type": "xstate.route", "to": "#plain" } },
+    { "at": 0, "send": { "type": "xstate.route", "to": "#app.dash" } },
+    { "at": 0, "send": { "type": "xstate.route", "to": "home" } },
+    { "at": 0, "send": { "type": "xstate.route", "to": "#a2" } },
+    { "at": 0, "send": { "type": "xstate.route", "to": "#b2" } },
+    { "at": 0, "send": { "type": "xstate.route", "to": "#a2" } },
+    { "at": 0, "send": { "type": "xstate.route", "to": "#a1" } },
+    { "at": 0, "send": { "type": "xstate.route", "to": "#home" } },
+    { "at": 0, "send": { "type": "xstate.route" } }
+  ]
+}

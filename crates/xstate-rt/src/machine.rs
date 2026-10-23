@@ -106,6 +106,10 @@ pub(crate) enum Guard {
     Custom(u32),
     Not(Box<Guard>),
     StateIn(Nid),
+    /// A route's match: the event's `to` is this `#id`.
+    RouteTo(String),
+    /// Both, in order (a route's match, then its named guard).
+    And(Box<Guard>, Box<Guard>),
 }
 
 #[derive(Debug, Clone)]

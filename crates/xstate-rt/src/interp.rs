@@ -649,6 +649,8 @@ where
             }
             Guard::Not(inner) => !self.eval_guard(inner),
             Guard::StateIn(node) => self.st.nodes.contains(node),
+            Guard::RouteTo(to) => self.event.field("to").as_ref().and_then(Value::as_str) == Some(to.as_str()),
+            Guard::And(a, b) => self.eval_guard(a) && self.eval_guard(b),
         }
     }
 

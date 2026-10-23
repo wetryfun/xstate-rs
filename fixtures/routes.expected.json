@@ -1,0 +1,264 @@
+[
+  {
+    "label": "start",
+    "value": "home",
+    "context": {
+      "visits": 0,
+      "ok": false
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter",
+        "s": "home"
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "value": "checkout",
+    "context": {
+      "visits": 1,
+      "ok": false
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "exit",
+        "s": "home"
+      },
+      {
+        "type": "enter",
+        "s": "checkout"
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "value": "checkout",
+    "context": {
+      "visits": 1,
+      "ok": false
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "exit",
+        "s": "checkout"
+      },
+      {
+        "type": "enter",
+        "s": "checkout"
+      }
+    ]
+  },
+  {
+    "label": "step 2",
+    "value": {
+      "dash": "overview"
+    },
+    "context": {
+      "visits": 1,
+      "ok": false
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "exit",
+        "s": "checkout"
+      },
+      {
+        "type": "enter",
+        "s": "dash"
+      },
+      {
+        "type": "enter",
+        "s": "overview"
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "value": {
+      "dash": "overview"
+    },
+    "context": {
+      "visits": 1,
+      "ok": false
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 4",
+    "value": {
+      "dash": "overview"
+    },
+    "context": {
+      "visits": 1,
+      "ok": true
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 5",
+    "value": {
+      "dash": "settings"
+    },
+    "context": {
+      "visits": 1,
+      "ok": true
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter",
+        "s": "dash"
+      },
+      {
+        "type": "enter",
+        "s": "settings"
+      }
+    ]
+  },
+  {
+    "label": "step 6",
+    "value": {
+      "dash": "settings"
+    },
+    "context": {
+      "visits": 1,
+      "ok": true
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 7",
+    "value": {
+      "dash": "settings"
+    },
+    "context": {
+      "visits": 1,
+      "ok": true
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 8",
+    "value": {
+      "dash": "settings"
+    },
+    "context": {
+      "visits": 1,
+      "ok": true
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 9",
+    "value": {
+      "board": {
+        "a": "a2",
+        "b": "b1"
+      }
+    },
+    "context": {
+      "visits": 1,
+      "ok": true
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 10",
+    "value": {
+      "board": {
+        "a": "a1",
+        "b": "b2"
+      }
+    },
+    "context": {
+      "visits": 1,
+      "ok": true
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "exit",
+        "s": "b1"
+      },
+      {
+        "type": "enter",
+        "s": "b2"
+      }
+    ]
+  },
+  {
+    "label": "step 11",
+    "value": {
+      "board": {
+        "a": "a2",
+        "b": "b1"
+      }
+    },
+    "context": {
+      "visits": 1,
+      "ok": true
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 12",
+    "value": {
+      "board": {
+        "a": "a1",
+        "b": "b1"
+      }
+    },
+    "context": {
+      "visits": 1,
+      "ok": true
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "exit",
+        "s": "b1"
+      }
+    ]
+  },
+  {
+    "label": "step 13",
+    "value": "home",
+    "context": {
+      "visits": 1,
+      "ok": true
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "exit",
+        "s": "b1"
+      },
+      {
+        "type": "enter",
+        "s": "home"
+      }
+    ]
+  },
+  {
+    "label": "step 14",
+    "value": "home",
+    "context": {
+      "visits": 1,
+      "ok": true
+    },
+    "status": "active",
+    "emitted": []
+  }
+]

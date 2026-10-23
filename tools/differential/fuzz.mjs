@@ -14,7 +14,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { machineFromJSON } from 'xstate';
 import { runFixture, guards, actions, delays } from './runner.mjs';
-import { prng, generator, steps } from './gen.mjs';
+import { prng, generator, steps, explicitIds } from './gen.mjs';
 
 const args = process.argv.slice(2);
 const opt = (name, fallback) => {
@@ -26,12 +26,12 @@ const count = Number(opt('count', 300));
 const out = opt('out', join(dirname(fileURLToPath(import.meta.url)), '../../fixtures/fuzz/corpus.json'));
 
 const rand = prng(seed);
-const makeMachine = generator(rand);
+const makeMachine = generator(rand, { routes: 0.12 });
 const cases = [];
 let rejected = 0;
 for (let i = 0; i < count; i++) {
   const machine = makeMachine();
-  const fixture = { machine, steps: steps(rand) };
+  const fixture = { machine, steps: steps(rand, explicitIds(machine)) };
   let expected;
   try {
     machineFromJSON(machine, { guards, actions, delays });

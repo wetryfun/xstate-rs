@@ -14,8 +14,13 @@ export function prng(a) {
 
 // Options: `id` (the machine id), `atLeast` (whether the ctxAtLeast stub
 // guard exists), `invoke` ({ sources, chance }: invoke these actor sources
-// with completion, error, snapshot and timeout transitions), `depth`.
-export function generator(rand, { id: machineId = 'm', atLeast = true, invoke = null, depth: maxDepth = 3 } = {}) {
+// with completion, error, snapshot and timeout transitions), `depth`,
+// `routes` (chance that a state is routable: an explicit `id`, equal to its
+// path id, and a `route`).
+export function generator(
+  rand,
+  { id: machineId = 'm', atLeast = true, invoke = null, depth: maxDepth = 3, routes = 0 } = {}
+) {
   const chance = (p) => rand() < p;
   const int = (n) => Math.floor(rand() * n);
   const pick = (xs) => xs[int(xs.length)];
@@ -111,6 +116,12 @@ export function generator(rand, { id: machineId = 'm', atLeast = true, invoke = 
       if (chance(0.5)) json.output = { v: int(3) };
     }
     if (node.kind === 'compound') json.initial = node.children[0].key;
+    if (routes && node.id !== machineId && chance(routes)) {
+      json.id = node.id;
+      const r = rand();
+      json.route =
+        r < 0.4 ? {} : r < 0.6 ? { context: { [pick(['x', 'y'])]: int(3) } } : r < 0.8 ? { reenter: true } : { guard: pick(['yes', 'no']) };
+    }
     if (chance(0.4)) json.entry = actionList(`${node.key}.entry`);
     if (chance(0.3)) json.exit = actionList(`${node.key}.exit`);
     if (node.kind !== 'final') {
@@ -163,13 +174,31 @@ export function generator(rand, { id: machineId = 'm', atLeast = true, invoke = 
   };
 }
 
-export function steps(rand) {
+/// Explicit ids in a definition (route targets).
+export function explicitIds(def) {
+  const ids = [];
+  const walk = (node) => {
+    for (const child of Object.values(node.states ?? {})) {
+      if (child.id) ids.push(child.id);
+      walk(child);
+    }
+  };
+  walk(def);
+  return ids;
+}
+
+export function steps(rand, routeIds = []) {
   const EVENTS = ['a', 'b', 'c', 'x.y', 'x.z'];
   const n = 4 + Math.floor(rand() * 12);
   let at = 0;
   const list = [];
   for (let i = 0; i < n; i++) {
     at += [0, 0, 30, 60, 120, 400, 1100][Math.floor(rand() * 7)];
+    if (routeIds.length && rand() < 0.2) {
+      const to = rand() < 0.9 ? `#${routeIds[Math.floor(rand() * routeIds.length)]}` : '#nowhere';
+      list.push({ at, send: { type: 'xstate.route', to } });
+      continue;
+    }
     list.push(rand() < 0.85 ? { at, send: { type: EVENTS[Math.floor(rand() * 5)], n: Math.floor(rand() * 3) } } : { at });
   }
   return list;
