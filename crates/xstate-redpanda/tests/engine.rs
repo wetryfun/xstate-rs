@@ -123,3 +123,83 @@ fn restore_from_the_changelog_continues_where_it_left() {
         assert_eq!(out.changelog, vec![("a".to_owned(), None)]);
     }
 }
+
+fn lookup_machine() -> Arc<Machine<Value, Value>> {
+    let definition = json!({
+        "id": "lookup",
+        "initial": "idle",
+        "states": {
+            "idle": { "on": { "go": { "target": "fetching" } } },
+            "fetching": {
+                "invoke": {
+                    "id": "fetch",
+                    "src": "fetchUser",
+                    "onDone": { "target": "found", "actions": [{ "type": "@xstate.emit", "event": { "type": "found" } }] },
+                    "onError": { "target": "idle" }
+                },
+                "on": { "cancel": { "target": "idle" } }
+            },
+            "found": { "type": "final" }
+        }
+    });
+    let mut registry = Registry::new();
+    registry.actor("fetchUser", Arc::new(xstate_rt::step::async_logic(Some("fetchUser".into()), None).unwrap()));
+    Arc::new(Machine::from_json(&definition, &registry).unwrap())
+}
+
+#[test]
+fn external_work_is_published_once_and_resolved_by_records() {
+    let config = EngineConfig { codec: Codec::MessagePack, evict_final: true };
+    let mut p = Partition::new(lookup_machine(), config.clone());
+    p.handle(Some("u1"), br#"{"type":"go"}"#, 10);
+    let out = p.flush();
+    assert_eq!(out.effects.len(), 1, "{out:?}");
+    let effect = &out.effects[0];
+    assert_eq!(effect.key, "u1");
+    assert_eq!(effect.effect["type"], "@xstate.effect");
+    let id = effect.effect["id"].as_str().unwrap().to_owned();
+    let snapshot = out.changelog[0].1.clone().unwrap();
+
+    // Other events don't publish it again.
+    p.handle(Some("u1"), br#"{"type":"unknown"}"#, 11);
+    assert!(p.flush().effects.is_empty());
+
+    // A restored partition knows the work was published with the snapshot.
+    let mut restored = Partition::new(lookup_machine(), config);
+    restored.restore("u1", Some(&snapshot)).unwrap();
+    for p in [&mut p, &mut restored] {
+        let result = json!({ "type": xstate_redpanda::EFFECT_RESULT, "effectId": id,
+                             "event": { "type": "xstate.async.resolve", "data": { "name": "Ada" } } });
+        p.handle(Some("u1"), result.to_string().as_bytes(), 20);
+        let out = p.flush();
+        assert!(out.dead_letters.is_empty(), "{:?}", out.dead_letters);
+        assert!(out.effects.is_empty());
+        assert_eq!(out.emitted.len(), 1);
+        assert_eq!(out.emitted[0].event, json!({ "type": "found" }));
+        assert_eq!(out.changelog, vec![("u1".to_owned(), None)], "done and evicted");
+
+        // A late duplicate result is a dead letter.
+        p.handle(Some("u1"), result.to_string().as_bytes(), 21);
+        let out = p.flush();
+        assert_eq!(out.dead_letters.len(), 1);
+        assert!(out.dead_letters[0].reason.contains("no actor"), "{}", out.dead_letters[0].reason);
+    }
+
+    // Leaving the invoking state cancels the work: its result is stale, and
+    // re-entering publishes new work.
+    let mut p = Partition::new(lookup_machine(), EngineConfig::default());
+    p.handle(Some("u2"), br#"{"type":"go"}"#, 10);
+    let first = p.flush().effects[0].effect["id"].as_str().unwrap().to_owned();
+    p.handle(Some("u2"), br#"{"type":"cancel"}"#, 11);
+    p.handle(Some("u2"), br#"{"type":"go"}"#, 12);
+    let out = p.flush();
+    assert_eq!(out.effects.len(), 1);
+    assert_ne!(out.effects[0].effect["id"].as_str().unwrap(), first);
+    let stale = json!({ "type": xstate_redpanda::EFFECT_RESULT, "effectId": first,
+                        "event": { "type": "xstate.async.resolve" } });
+    p.handle(Some("u2"), stale.to_string().as_bytes(), 13);
+    let out = p.flush();
+    assert_eq!(out.dead_letters.len(), 1);
+    assert!(out.dead_letters[0].reason.contains("not pending"), "{}", out.dead_letters[0].reason);
+    assert_eq!(p.actor("u2").unwrap().value(), json!("fetching"));
+}

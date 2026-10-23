@@ -24,5 +24,5 @@ pub mod kafka;
 pub mod metrics;
 
 pub use codec::Codec;
-pub use engine::{DeadLetter, Emitted, EngineConfig, Output, Partition};
+pub use engine::{DeadLetter, EffectRequest, Emitted, EngineConfig, Output, Partition, EFFECT_RESULT};
 pub use metrics::{Metrics, MetricsSnapshot};

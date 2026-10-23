@@ -9,6 +9,10 @@
 //! - the changelog topic: `cleanup.policy=compact`, with as many partitions
 //!   as the input topic; partition `p` holds the snapshots of the actors of
 //!   input partition `p`;
+//! - optionally an effects topic: external work the actors request (the
+//!   async actors they invoke), keyed by actor id, as XState's
+//!   `SystemExternalEffect` JSON. Whoever does the work produces the result
+//!   to the input topic under the same key (see [`crate::engine`]);
 //! - optionally a dead-letter topic, for records that are not events (the
 //!   reason is in the `reason` header).
 //!
@@ -63,6 +67,8 @@ pub struct ServiceConfig {
     pub output_topic: String,
     pub changelog_topic: String,
     pub dead_letter_topic: Option<String>,
+    /// Where requested external work goes; without it, work stays pending.
+    pub effects_topic: Option<String>,
     /// Prefix of the workers' `transactional.id`s; defaults to the group id.
     pub transactional_id: String,
     /// Worker threads (consumers); defaults to the number of cores.
@@ -105,6 +111,7 @@ impl ServiceConfig {
             output_topic: output_topic.into(),
             changelog_topic: changelog_topic.into(),
             dead_letter_topic: None,
+            effects_topic: None,
             workers: std::thread::available_parallelism().map_or(1, |n| n.get()),
             rack: None,
             max_batch: 10_000,
@@ -369,15 +376,19 @@ where
             )
         });
         let count = |f: fn(&Output) -> usize| outputs.iter().map(|(_, o)| f(o) as u64).sum::<u64>();
-        let (emitted, dead, changelog) =
-            (count(|o| o.emitted.len()), count(|o| o.dead_letters.len()), count(|o| o.changelog.len()));
+        let (emitted, dead, changelog, effects) = (
+            count(|o| o.emitted.len()),
+            count(|o| o.dead_letters.len()),
+            count(|o| o.changelog.len()),
+            count(|o| o.effects.len()),
+        );
         let touched: HashSet<i32> = outputs.iter().filter(|(_, o)| !o.changelog.is_empty()).map(|(p, _)| *p).collect();
         self.changed.extend(&touched);
         let checkpoints = self.checkpoints_due(false);
         let committing = Instant::now();
         self.commit(outputs, offsets)?;
         let micros = committing.elapsed().as_micros() as u64;
-        self.metrics.committed(polled as u64, emitted, dead, changelog, micros);
+        self.metrics.committed(polled as u64, emitted, dead, changelog, effects, micros);
         self.metrics.set_actors(self.index, self.partitions.values().map(|p| p.len() as u64).sum());
         self.write_checkpoints(checkpoints, &touched);
         debug(|| format!("committed after {:?}", started.elapsed()));
@@ -460,6 +471,12 @@ where
             for e in &out.emitted {
                 let payload = e.event.to_string();
                 send(producer, BaseRecord::to(&config.output_topic).key(&e.key).payload(&payload))?;
+            }
+            if let Some(topic) = &config.effects_topic {
+                for e in &out.effects {
+                    let payload = e.effect.to_string();
+                    send(producer, BaseRecord::to(topic).key(&e.key).payload(&payload))?;
+                }
             }
             for (key, record) in &out.changelog {
                 let mut r = BaseRecord::<str, [u8]>::to(&config.changelog_topic).partition(*partition).key(key);

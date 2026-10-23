@@ -210,6 +210,9 @@ fn restores_from_local_checkpoints() {
         let mut c = config(&bootstrap);
         c.state_dir = Some(dir.clone());
         c.checkpoint_interval = Duration::ZERO;
+        // One worker, so no rebalance restores a partition twice and the
+        // restore counters are exact.
+        c.workers = 1;
         c
     };
     let keys: Vec<String> = (0..30).map(|i| format!("k{i}")).collect();

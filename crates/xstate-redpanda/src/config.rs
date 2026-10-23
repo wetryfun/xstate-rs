@@ -6,7 +6,7 @@
 //!   "machine": "order.json",
 //!   "bootstrapServers": "localhost:9092",
 //!   "groupId": "orders",
-//!   "topics": { "input": "orders", "output": "orders-out", "changelog": "orders-changelog", "deadLetter": "orders-dead" },
+//!   "topics": { "input": "orders", "output": "orders-out", "changelog": "orders-changelog", "deadLetter": "orders-dead", "effects": "orders-effects" },
 //!   "workers": 4,
 //!   "rack": "rack-a",
 //!   "maxBatch": 10000, "batchLingerMs": 20, "pollTimeoutMs": 100, "requestTimeoutMs": 30000,
@@ -22,13 +22,18 @@
 //!
 //! `machine` is a path (relative to the configuration file) to a
 //! `MachineJSON` file or an extract bundle (`{ "machine", "schemas" }`);
-//! a relative `stateDir` is relative to the configuration file too.
+//! a relative `stateDir` is relative to the configuration file too. Every
+//! actor the machine invokes (`invoke.src`) runs as async work published to
+//! `topics.effects` (required then), completed by results on the input
+//! topic (see `xstate_redpanda::engine`).
 
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 use std::time::Duration;
 
 use serde::Deserialize;
 use serde_json::Value;
+use xstate_rt::step::async_logic;
 use xstate_rt::{Machine, Registry};
 
 use crate::codec::Codec;
@@ -43,6 +48,8 @@ pub struct Topics {
     pub changelog: String,
     #[serde(default)]
     pub dead_letter: Option<String>,
+    #[serde(default)]
+    pub effects: Option<String>,
 }
 
 /// The configuration file.
@@ -103,6 +110,7 @@ impl FileConfig {
         let t = &self.topics;
         let mut c = ServiceConfig::new(&self.bootstrap_servers, &self.group_id, &t.input, &t.output, &t.changelog);
         c.dead_letter_topic = t.dead_letter.clone();
+        c.effects_topic = t.effects.clone();
         if let Some(id) = &self.transactional_id {
             c.transactional_id = id.clone();
         }
@@ -144,33 +152,45 @@ impl FileConfig {
     }
 
     /// Loads the machine. The generic service has no Rust implementations,
-    /// so the definition must not reference custom guards, actions, delays
-    /// or actors (build a binary of your own with `Service::start` for those).
+    /// so the definition must not reference custom guards, actions or
+    /// delays (build a binary of your own with `Service::start` for those).
+    /// Invoked actors become async work on `topics.effects`.
     pub fn machine(&self) -> Result<Machine<Value, Value>, String> {
         let path = &self.machine;
-        let text = std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
-        let json: Value = serde_json::from_str(&text).map_err(|e| format!("{}: {e}", path.display()))?;
+        let at = |e: String| format!("{}: {e}", path.display());
+        let text = std::fs::read_to_string(path).map_err(|e| at(e.to_string()))?;
+        let json: Value = serde_json::from_str(&text).map_err(|e| at(e.to_string()))?;
         let definition = match json.get("machine") {
             Some(m) if json.get("states").is_none() => m.clone(),
             _ => json,
         };
-        let refs = Machine::<Value, Value>::references(&definition).map_err(|e| format!("{}: {e}", path.display()))?;
+        let refs = Machine::<Value, Value>::references(&definition).map_err(|e| at(e.to_string()))?;
         let mut needed: Vec<String> = Vec::new();
-        for (kind, list) in
-            [("guard", &refs.guards), ("action", &refs.actions), ("delay", &refs.delays), ("actor", &refs.actors)]
-        {
+        for (kind, list) in [("guard", &refs.guards), ("action", &refs.actions), ("delay", &refs.delays)] {
             for r in list {
                 needed.push(format!("{kind} \"{}\" at {}", r.name, r.path));
             }
         }
         if !needed.is_empty() {
-            return Err(format!(
-                "{}: the machine needs Rust implementations ({}); run it with xstate_redpanda::kafka::Service::start in a binary of your own",
-                path.display(),
+            return Err(at(format!(
+                "the machine needs Rust implementations ({}); run it with xstate_redpanda::kafka::Service::start in a binary of your own",
                 needed.join(", ")
-            ));
+            )));
         }
-        Machine::from_json(&definition, &Registry::new()).map_err(|e| format!("{}: {e}", path.display()))
+        let mut registry = Registry::new();
+        if let Some(r) = refs.actors.first() {
+            if self.topics.effects.is_none() {
+                return Err(at(format!(
+                    "the machine invokes \"{}\" at {}; set topics.effects so its work can be done outside",
+                    r.name, r.path
+                )));
+            }
+        }
+        for r in &refs.actors {
+            let logic = async_logic(Some(r.name.clone()), None).map_err(|e| at(e.to_string()))?;
+            registry.actor(r.name.clone(), Arc::new(logic));
+        }
+        Machine::from_json(&definition, &registry).map_err(|e| at(e.to_string()))
     }
 }
 

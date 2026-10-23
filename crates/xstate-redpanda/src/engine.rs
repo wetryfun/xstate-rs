@@ -4,8 +4,17 @@
 //! A partition never touches Kafka or a clock. The driver feeds it records
 //! and the current time, and takes an [`Output`] per transaction: the events
 //! the actors emitted, the changelog records for the actors that changed
-//! (their persisted snapshots, or tombstones), and dead letters for records
-//! that could not be processed.
+//! (their persisted snapshots, or tombstones), external work requested by
+//! the actors, and dead letters for records that could not be processed.
+//!
+//! External work is what the runtime leaves to the host, chiefly the async
+//! actors a machine invokes (`@xstate.effect`). Each piece of work is
+//! published once, as XState's `SystemExternalEffect` JSON (`id`, `source`,
+//! `type`, `params`, ...), and stays pending in the actor's snapshot. Its
+//! result comes back as an input record for the same key, in XState's own
+//! shape: `{ "type": "xstate.system.effect.result", "effectId": "system:3",
+//! "event": { "type": "xstate.async.resolve", "data": ... } }` (or
+//! `xstate.async.reject` with `data`; no `event` just retires the work).
 
 use std::cmp::Reverse;
 use std::collections::{BinaryHeap, HashMap, HashSet};
@@ -50,6 +59,17 @@ pub struct DeadLetter {
     pub reason: String,
 }
 
+/// External work an actor requested.
+#[derive(Debug, Clone, PartialEq)]
+pub struct EffectRequest {
+    pub key: String,
+    /// XState's `SystemExternalEffect` data.
+    pub effect: Value,
+}
+
+/// The input record type that delivers the result of external work.
+pub const EFFECT_RESULT: &str = "xstate.system.effect.result";
+
 /// What a partition produced since the last [`Partition::flush`].
 #[derive(Debug, Default)]
 pub struct Output {
@@ -58,11 +78,13 @@ pub struct Output {
     /// `None` (a tombstone) when it was evicted.
     pub changelog: Vec<(String, Option<Vec<u8>>)>,
     pub dead_letters: Vec<DeadLetter>,
+    /// New external work, in the order it was requested.
+    pub effects: Vec<EffectRequest>,
 }
 
 impl Output {
     pub fn is_empty(&self) -> bool {
-        self.emitted.is_empty() && self.changelog.is_empty() && self.dead_letters.is_empty()
+        self.emitted.is_empty() && self.changelog.is_empty() && self.dead_letters.is_empty() && self.effects.is_empty()
     }
 }
 
@@ -80,6 +102,8 @@ pub struct Partition<C, E> {
     output: Output,
     /// The partition's clock: never moves backwards.
     now: u64,
+    /// Ids of each actor's pending external work that was already published.
+    published: HashMap<String, HashSet<String>>,
 }
 
 impl<C, E> Partition<C, E>
@@ -97,6 +121,7 @@ where
             dirty_set: HashSet::new(),
             output: Output::default(),
             now: 0,
+            published: HashMap::new(),
         }
     }
 
@@ -118,6 +143,7 @@ where
     pub fn restore(&mut self, key: &str, record: Option<&[u8]>) -> Result<(), String> {
         let Some(record) = record else {
             self.actors.remove(key);
+            self.published.remove(key);
             return Ok(());
         };
         let snapshot = Codec::decode(record)?;
@@ -125,6 +151,13 @@ where
         self.now = self.now.max(actor.now());
         if let Some(due) = actor.next_deadline() {
             self.timers.push(Reverse((due, key.to_owned())));
+        }
+        // Pending work in a committed snapshot was published with it.
+        let pending: HashSet<String> = actor.system().external_effects().map(|e| e.id.clone()).collect();
+        if pending.is_empty() {
+            self.published.remove(key);
+        } else {
+            self.published.insert(key.to_owned(), pending);
         }
         self.actors.insert(key.to_owned(), actor);
         Ok(())
@@ -146,6 +179,12 @@ where
         if !event.get("type").is_some_and(Value::is_string) {
             return self.output.dead_letters.push(dead("an event needs a string \"type\"".into()));
         }
+        if event["type"] == EFFECT_RESULT {
+            if let Err(reason) = self.resolve(key, event, now) {
+                self.output.dead_letters.push(dead(reason));
+            }
+            return;
+        }
         if let Err(reason) = self.send(key, event, now) {
             self.output.dead_letters.push(dead(reason));
         }
@@ -165,6 +204,30 @@ where
         let result = actor.send_json(event, now).map_err(|e| e.to_string());
         self.after_step(key);
         result
+    }
+
+    /// Delivers the result of external work (an [`EFFECT_RESULT`] record)
+    /// to the actor at `key`. Fails for unknown actors and for work that is
+    /// no longer pending (cancelled, or already resolved).
+    pub fn resolve(&mut self, key: &str, result: Value, now: u64) -> Result<(), String> {
+        let effect_id = result
+            .get("effectId")
+            .and_then(Value::as_str)
+            .ok_or_else(|| format!("{EFFECT_RESULT} needs a string \"effectId\""))?
+            .to_owned();
+        self.now = self.now.max(now);
+        let now = self.now;
+        let actor = self.actors.get_mut(key).ok_or_else(|| format!("no actor {key:?} for effect {effect_id}"))?;
+        if !actor.system().external_effects().any(|e| e.id == effect_id) {
+            return Err(format!("effect {effect_id} of {key:?} is not pending (cancelled or already resolved)"));
+        }
+        // Timers due by now fire first, as for any event.
+        let outcome = actor
+            .advance(now)
+            .and_then(|()| actor.resolve_effect(&effect_id, result.get("event").cloned()))
+            .map_err(|e| e.to_string());
+        self.after_step(key);
+        outcome
     }
 
     /// Fires every timer due at or before `now`.
@@ -213,6 +276,23 @@ where
         if let Some(due) = actor.next_deadline() {
             self.timers.push(Reverse((due, key.to_owned())));
         }
+        // Publish new external work once.
+        let mut pending = actor.system().external_effects().peekable();
+        if pending.peek().is_some() || self.published.contains_key(key) {
+            let published = self.published.entry(key.to_owned()).or_default();
+            let mut current = HashSet::new();
+            for effect in pending {
+                if !published.contains(&effect.id) {
+                    self.output.effects.push(EffectRequest { key: key.to_owned(), effect: effect.to_json() });
+                }
+                current.insert(effect.id.clone());
+            }
+            if current.is_empty() {
+                self.published.remove(key);
+            } else {
+                *published = current;
+            }
+        }
         if self.dirty_set.insert(key.to_owned()) {
             self.dirty.push(key.to_owned());
         }
@@ -240,6 +320,7 @@ where
             let finished = matches!(actor.status(), Status::Done | Status::Stopped);
             if finished && self.config.evict_final {
                 self.actors.remove(&key);
+                self.published.remove(&key);
                 self.output.changelog.push((key, None));
             } else {
                 let record = self.config.codec.encode_serialize(&actor.persist_view());
