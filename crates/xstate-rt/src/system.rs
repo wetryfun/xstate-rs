@@ -217,7 +217,7 @@ pub trait Logic: Send + Sync + 'static {
     fn transition(
         &self,
         snapshot: &mut Box<dyn AnySnapshot>,
-        event: &Value,
+        event: Value,
         cx: &mut dyn Context,
     ) -> Result<Vec<Effect>, SystemError>;
     /// Rebuilds a snapshot from its data.
@@ -948,7 +948,7 @@ impl System {
         let mut snapshot = entry.snapshot.take().expect("snapshot present outside its transition");
         let result = {
             let mut cx = Cx { sys: self, self_ref: target.clone() };
-            logic.transition(&mut snapshot, &message.event, &mut cx)
+            logic.transition(&mut snapshot, message.event, &mut cx)
         };
         let effects = match result {
             Ok(effects) => effects,
@@ -960,7 +960,11 @@ impl System {
         let result = Transition { snapshot, effects };
         let effects = finalize(previous_status, false, &result);
         let status = result.snapshot.status();
-        let data_for_parent = (status == Status::Active).then(|| logic.snapshot_data(&*result.snapshot));
+        // Only a child invoked with `onSnapshot` reports its snapshot.
+        let reports_snapshot = self
+            .current(&target)
+            .is_some_and(|a| a.sync_snapshot == Some(true) && a.parent.is_some() && status == Status::Active);
+        let data_for_parent = reports_snapshot.then(|| logic.snapshot_data(&*result.snapshot));
         self.store(&target, result.snapshot);
         self.effects_for(&target, effects)?;
         if let Some(actor) = self.current(&target) {

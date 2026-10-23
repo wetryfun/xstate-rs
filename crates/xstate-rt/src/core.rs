@@ -13,6 +13,10 @@
 //! array: state values, parallel region order and selection order all follow
 //! it, and it can differ from document order after a region is re-entered.
 
+use std::cell::RefCell;
+use std::ops::{Deref, DerefMut};
+use std::sync::Arc;
+
 /// A state node, by document order (XState's `StateNode.order`).
 pub type Nid = u32;
 /// A transition definition registered with the tree.
@@ -137,6 +141,12 @@ impl Tree {
         }
     }
 
+    /// XState's `getProperAncestors(node, to)`, without collecting.
+    pub fn ancestors(&self, node: Nid, to: Option<Nid>) -> impl Iterator<Item = Nid> + '_ {
+        let start = if Some(node) == to { None } else { self.node(node).parent };
+        std::iter::successors(start, move |&a| self.node(a).parent).take_while(move |&a| Some(a) != to)
+    }
+
     /// XState's `getProperAncestors(node, to)`.
     pub fn proper_ancestors(&self, node: Nid, to: Option<Nid>) -> Vec<Nid> {
         let mut out = Vec::new();
@@ -156,22 +166,33 @@ impl Tree {
 
     /// XState's `getCandidates`: exact descriptor first, then the other
     /// matching descriptors, longest first.
-    pub fn candidates(&self, node: Nid, event_type: &str) -> Vec<Tid> {
+    pub fn candidates(&self, node: Nid, event_type: &str) -> Buf<Tid> {
         self.candidates_with_warnings(node, event_type, &mut |_| {})
     }
 
     /// [`Tree::candidates`], reporting the development warnings XState's
     /// `matchesEventDescriptor` logs for misplaced wildcards, in order.
-    pub fn candidates_with_warnings(&self, node: Nid, event_type: &str, warn: &mut dyn FnMut(String)) -> Vec<Tid> {
+    pub fn candidates_with_warnings(&self, node: Nid, event_type: &str, warn: &mut dyn FnMut(String)) -> Buf<Tid> {
         let on = &self.node(node).on;
-        let mut out: Vec<Tid> = on.iter().find(|(d, _)| d == event_type).map(|(_, ts)| ts.clone()).unwrap_or_default();
-        let mut wild: Vec<&(String, Vec<Tid>)> = on
-            .iter()
-            .filter(|(d, _)| d != event_type && matches_event_descriptor_warn(event_type, d, &mut *warn))
-            .collect();
-        wild.sort_by_key(|(d, _)| std::cmp::Reverse(d.len()));
-        for (_, ts) in wild {
+        let mut out: Buf<Tid> = Buf::new();
+        if let Some((_, ts)) = on.iter().find(|(d, _)| d == event_type) {
             out.extend_from_slice(ts);
+        }
+        let mut wild =
+            on.iter().filter(|(d, _)| d != event_type && matches_event_descriptor_warn(event_type, d, &mut *warn));
+        // Usually there is no wildcard; only sort when there are several.
+        if let Some(first) = wild.next() {
+            match wild.next() {
+                None => out.extend_from_slice(&first.1),
+                Some(second) => {
+                    let mut all: Vec<&(String, Vec<Tid>)> = vec![first, second];
+                    all.extend(wild);
+                    all.sort_by_key(|(d, _)| std::cmp::Reverse(d.len()));
+                    for (_, ts) in all {
+                        out.extend_from_slice(ts);
+                    }
+                }
+            }
         }
         out
     }
@@ -199,30 +220,6 @@ impl Tree {
     }
 }
 
-/// An insertion-ordered set of nodes, like a JavaScript `Set`.
-struct NodeSet {
-    order: Vec<Nid>,
-    member: Vec<bool>,
-}
-
-impl NodeSet {
-    fn new(size: usize) -> Self {
-        Self { order: Vec::new(), member: vec![false; size] }
-    }
-
-    fn insert(&mut self, n: Nid) -> bool {
-        let fresh = !std::mem::replace(&mut self.member[n as usize], true);
-        if fresh {
-            self.order.push(n);
-        }
-        fresh
-    }
-
-    fn contains(&self, n: Nid) -> bool {
-        self.member[n as usize]
-    }
-}
-
 /// XState's `getAllStateNodes`: the configuration, initial descendants of
 /// compound and parallel states with no active child, and every ancestor, in
 /// XState's insertion order. `snapshot.value`, and therefore selection, is
@@ -230,23 +227,23 @@ impl NodeSet {
 /// XState can produce illegal ones (fixture `conflicting_regions`), and both
 /// follow from it then. `initial` gives a compound state's static initial
 /// targets.
-pub fn all_state_nodes(tree: &Tree, config: &[Nid], initial: impl Fn(Nid) -> Vec<Nid>) -> Vec<Nid> {
+pub fn all_state_nodes(tree: &Tree, config: &[Nid], initial: impl Fn(Nid) -> Arc<[Nid]>) -> OrderedSet {
     let size = tree.nodes.len();
     // `getInitialStateNodes`.
-    let initial_state_nodes = |node: Nid| -> Vec<Nid> {
-        let mut set = NodeSet::new(size);
-        let mut stack = vec![node];
+    let initial_state_nodes = |node: Nid| -> OrderedSet {
+        let mut set = OrderedSet::new(size);
+        let mut stack: Buf<Nid> = Buf::new();
+        stack.push(node);
         // Depth first in document order, as the recursive `iter`.
         while let Some(n) = stack.pop() {
             if !set.insert(n) {
                 continue;
             }
-            let next: Vec<Nid> = match tree.kind(n) {
-                Kind::Compound => initial(n),
-                Kind::Parallel => tree.node(n).children.clone(),
-                _ => Vec::new(),
-            };
-            stack.extend(next.into_iter().rev());
+            match tree.kind(n) {
+                Kind::Compound => stack.extend(initial(n).iter().rev()),
+                Kind::Parallel => stack.extend(tree.node(n).children.iter().rev()),
+                _ => {}
+            }
         }
         let mut i = 0;
         while i < set.order.len() {
@@ -257,10 +254,10 @@ pub fn all_state_nodes(tree: &Tree, config: &[Nid], initial: impl Fn(Nid) -> Vec
                 a = tree.node(p).parent;
             }
         }
-        set.order
+        set
     };
-    let mut set = NodeSet::new(size);
-    let mut active_parent = vec![false; size];
+    let mut set = OrderedSet::new(size);
+    let mut active_parent: Buf<bool> = Buf::filled(false, size);
     for &s in config {
         set.insert(s);
         if let Some(p) = tree.node(s).parent {
@@ -273,14 +270,14 @@ pub fn all_state_nodes(tree: &Tree, config: &[Nid], initial: impl Fn(Nid) -> Vec
         i += 1;
         match tree.kind(s) {
             Kind::Compound if !active_parent[s as usize] => {
-                for n in initial_state_nodes(s) {
+                for &n in initial_state_nodes(s).as_slice() {
                     set.insert(n);
                 }
             }
             Kind::Parallel => {
                 for &child in &tree.node(s).children {
                     if !set.contains(child) {
-                        for n in initial_state_nodes(child) {
+                        for &n in initial_state_nodes(child).as_slice() {
                             set.insert(n);
                         }
                     }
@@ -300,7 +297,123 @@ pub fn all_state_nodes(tree: &Tree, config: &[Nid], initial: impl Fn(Nid) -> Vec
             m = tree.node(p).parent;
         }
     }
-    set.order
+    set
+}
+
+/// Element types with a pool of reusable vectors (see [`Buf`]).
+pub trait Pooled: Copy + 'static {
+    #[doc(hidden)]
+    fn with_pool<R>(f: impl FnOnce(&mut Vec<Vec<Self>>) -> R) -> Option<R>;
+}
+
+macro_rules! pooled {
+    ($t:ty, $pool:ident) => {
+        thread_local! {
+            static $pool: RefCell<Vec<Vec<$t>>> = const { RefCell::new(Vec::new()) };
+        }
+        impl Pooled for $t {
+            fn with_pool<R>(f: impl FnOnce(&mut Vec<Vec<Self>>) -> R) -> Option<R> {
+                $pool.try_with(|p| p.try_borrow_mut().ok().map(|mut p| f(&mut p))).ok().flatten()
+            }
+        }
+    };
+}
+
+pooled!(u32, NID_POOL);
+pooled!(bool, BOOL_POOL);
+pooled!(TRef, TREF_POOL);
+
+/// A scratch vector taken from a per-thread pool and returned to it on drop,
+/// so the algorithm's temporaries do not allocate once the pool is warm.
+/// Re-entrant calls (a guard running another actor) simply take other
+/// vectors.
+pub struct Buf<T: Pooled>(Vec<T>);
+
+impl<T: Pooled> Buf<T> {
+    pub fn new() -> Self {
+        Buf(T::with_pool(|p| p.pop()).flatten().unwrap_or_default())
+    }
+
+    /// A buffer holding `len` copies of `value`.
+    pub fn filled(value: T, len: usize) -> Self {
+        let mut b = Self::new();
+        b.0.resize(len, value);
+        b
+    }
+
+    pub fn from_slice(items: &[T]) -> Self {
+        let mut b = Self::new();
+        b.0.extend_from_slice(items);
+        b
+    }
+}
+
+impl<T: Pooled> Default for Buf<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<T: Pooled> Drop for Buf<T> {
+    fn drop(&mut self) {
+        let mut v = std::mem::take(&mut self.0);
+        if v.capacity() == 0 || v.capacity() > 4096 {
+            return;
+        }
+        v.clear();
+        T::with_pool(|p| {
+            if p.len() < 64 {
+                p.push(v);
+            }
+        });
+    }
+}
+
+impl<T: Pooled> Deref for Buf<T> {
+    type Target = Vec<T>;
+    fn deref(&self) -> &Vec<T> {
+        &self.0
+    }
+}
+
+impl<T: Pooled> DerefMut for Buf<T> {
+    fn deref_mut(&mut self) -> &mut Vec<T> {
+        &mut self.0
+    }
+}
+
+impl<T: Pooled> Clone for Buf<T> {
+    fn clone(&self) -> Self {
+        Self::from_slice(&self.0)
+    }
+}
+
+impl<T: Pooled + std::fmt::Debug> std::fmt::Debug for Buf<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl<T: Pooled + PartialEq> PartialEq for Buf<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl<T: Pooled> FromIterator<T> for Buf<T> {
+    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        let mut b = Self::new();
+        b.0.extend(iter);
+        b
+    }
+}
+
+impl<'a, T: Pooled> IntoIterator for &'a Buf<T> {
+    type Item = &'a T;
+    type IntoIter = std::slice::Iter<'a, T>;
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter()
+    }
 }
 
 /// XState's `matchesEventDescriptor`.
@@ -345,13 +458,13 @@ pub fn matches_event_descriptor_warn(event_type: &str, descriptor: &str, warn: &
 /// An insertion-ordered set of nodes with O(1) membership, like a JS `Set`.
 #[derive(Debug, Clone)]
 pub struct OrderedSet {
-    order: Vec<Nid>,
-    member: Vec<bool>,
+    order: Buf<Nid>,
+    member: Buf<bool>,
 }
 
 impl OrderedSet {
     pub fn new(size: usize) -> Self {
-        Self { order: Vec::new(), member: vec![false; size] }
+        Self { order: Buf::new(), member: Buf::filled(false, size) }
     }
 
     pub fn from_slice(size: usize, items: &[Nid]) -> Self {
@@ -434,7 +547,7 @@ pub enum Resolver {
 /// The structural part of a transition result.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Resolved {
-    pub targets: Option<Vec<Nid>>,
+    pub targets: Option<Arc<[Nid]>>,
     pub reenter: bool,
 }
 
@@ -454,12 +567,12 @@ pub enum RegionOutput {
 pub trait Host {
     type Error;
 
-    /// The current configuration (`snapshot.nodes`), in order.
-    fn config(&self) -> Vec<Nid>;
+    /// Appends the current configuration (`snapshot.nodes`), in order, to `out`.
+    fn config(&self, out: &mut Vec<Nid>);
     /// The recorded history of a history state in the current snapshot.
     fn history(&self, history: Nid) -> Option<Vec<Nid>>;
     /// The static targets of a compound state's `initial` (`initial.target`).
-    fn static_initial(&self, node: Nid) -> Vec<Nid>;
+    fn static_initial(&self, node: Nid) -> Arc<[Nid]>;
 
     /// `machine._microstepHooks?.begin(self)`, at the start of selection.
     fn begin_selection(&mut self) -> Result<(), Self::Error>;
@@ -486,7 +599,7 @@ pub trait Host {
     fn transition_content(&mut self, filtered: &[TRef]) -> Result<(), Self::Error>;
     /// Before entering: the configuration after exits, and the targets each
     /// transition enters explicitly (for state inputs).
-    fn begin_entry(&mut self, active: &[Nid], entered: &[(TRef, Vec<Nid>)]) -> Result<(), Self::Error>;
+    fn begin_entry(&mut self, active: &[Nid], entered: &[(TRef, Buf<Nid>)]) -> Result<(), Self::Error>;
     /// Enters one state: invokes, entry function, and, for default entry, its
     /// `initial` transition and the default transitions of `history_defaults`.
     fn enter_state(&mut self, node: Nid, default_entry: bool, history_defaults: &[Nid]) -> Result<(), Self::Error>;
@@ -531,10 +644,10 @@ pub trait Host {
 #[derive(Debug, Clone)]
 pub struct MicrostepResult {
     /// The transitions taken, after conflict removal.
-    pub filtered: Vec<TRef>,
+    pub filtered: Buf<TRef>,
     /// The new configuration. Equal to the old one, order included, unless
     /// `structure_changed`.
-    pub nodes: Vec<Nid>,
+    pub nodes: Buf<Nid>,
     /// Whether membership or history changed (XState then builds a new
     /// node list and history value).
     pub structure_changed: bool,
@@ -545,11 +658,17 @@ pub struct MicrostepResult {
 /// The synthetic transition of the initial microstep.
 #[derive(Debug, Clone)]
 pub struct InitialPlan {
-    pub targets: Vec<Nid>,
+    pub targets: Arc<[Nid]>,
     pub default_entry: Vec<Nid>,
 }
 
 // ---- selection ----------------------------------------------------------------
+
+fn config_of<H: Host>(h: &H) -> Buf<Nid> {
+    let mut config = Buf::new();
+    h.config(&mut config);
+    config
+}
 
 /// `StateNode.next`: the first enabled candidate of one node.
 fn node_next<H: Host>(tree: &Tree, h: &mut H, node: Nid, event_type: &str) -> Result<Option<Tid>, H::Error> {
@@ -566,7 +685,7 @@ fn node_next<H: Host>(tree: &Tree, h: &mut H, node: Nid, event_type: &str) -> Re
     } else {
         tree.candidates(node, event_type)
     };
-    for t in candidates {
+    for &t in &candidates {
         if h.eval_candidate(t, node, false)? {
             return Ok(Some(t));
         }
@@ -574,20 +693,21 @@ fn node_next<H: Host>(tree: &Tree, h: &mut H, node: Nid, event_type: &str) -> Re
     Ok(None)
 }
 
-/// XState's `transitionNode`, over the configuration's value structure.
+/// XState's `transitionNode`, over the value structure of `all` (the
+/// configuration completed by [`all_state_nodes`]): a node's children in the
+/// value are its children in `all`, in order.
 fn transition_node<H: Host>(
     tree: &Tree,
     h: &mut H,
-    adj: &[Vec<Nid>],
+    all: &[Nid],
     node: Nid,
     event_type: &str,
     out: &mut Vec<Tid>,
 ) -> Result<(), H::Error> {
-    let children = &adj[node as usize];
+    let mut children = all.iter().copied().filter(|&c| tree.node(c).parent == Some(node)).peekable();
     // A compound state whose active child is atomic has a string value.
-    let leaf_child = tree.kind(node) == Kind::Compound && children.first().is_some_and(|&c| tree.kind(c).is_atomic());
-    if leaf_child {
-        let child = children[0];
+    let first = children.peek().copied();
+    if let Some(child) = first.filter(|&c| tree.kind(node) == Kind::Compound && tree.kind(c).is_atomic()) {
         if let Some(t) = node_next(tree, h, child, event_type)? {
             out.push(t);
             return Ok(());
@@ -601,8 +721,8 @@ fn transition_node<H: Host>(
     // one; an illegal configuration can give it several, and XState then
     // walks them all.
     let before = out.len();
-    for &child in children {
-        transition_node(tree, h, adj, child, event_type, out)?;
+    for child in children {
+        transition_node(tree, h, all, child, event_type, out)?;
     }
     if out.len() == before {
         if let Some(t) = node_next(tree, h, node, event_type)? {
@@ -613,23 +733,22 @@ fn transition_node<H: Host>(
 }
 
 /// `machine.getTransitionData`: the transitions an event enables.
-pub fn select_transitions<H: Host>(tree: &Tree, h: &mut H, event_type: &str) -> Result<Vec<Tid>, H::Error> {
+pub fn select_transitions<H: Host>(tree: &Tree, h: &mut H, event_type: &str) -> Result<Buf<Tid>, H::Error> {
     h.begin_selection()?;
-    let config = h.config();
+    let config = config_of(h);
     let all = all_state_nodes(tree, &config, |n| h.static_initial(n));
-    let adj = tree.active_children(&all);
-    let mut out = Vec::new();
+    let mut out = Buf::new();
     if !config.is_empty() {
-        transition_node(tree, h, &adj, 0, event_type, &mut out)?;
+        transition_node(tree, h, all.as_slice(), 0, event_type, &mut out)?;
     }
     Ok(out)
 }
 
 /// `selectEventlessTransitions`.
-pub fn select_eventless<H: Host>(tree: &Tree, h: &mut H) -> Result<Vec<TRef>, H::Error> {
+pub fn select_eventless<H: Host>(tree: &Tree, h: &mut H) -> Result<Buf<TRef>, H::Error> {
     h.begin_selection()?;
-    let config = h.config();
-    let mut enabled: Vec<TRef> = Vec::new();
+    let config = config_of(h);
+    let mut enabled: Buf<TRef> = Buf::new();
     for &atomic in config.iter().filter(|&&n| tree.kind(n).is_atomic()) {
         let mut m = Some(atomic);
         'ancestors: while let Some(node) = m {
@@ -686,20 +805,20 @@ impl<H: Host> Ctx<'_, H> {
     }
 
     /// `getEffectiveTargetStates`, against the snapshot's (old) history.
-    fn effective_targets(&mut self, t: TRef) -> Result<Vec<Nid>, H::Error> {
-        let Some(targets) = self.resolve(t)?.targets else { return Ok(Vec::new()) };
-        let mut set: Vec<Nid> = Vec::new();
-        let add = |set: &mut Vec<Nid>, n: Nid| {
+    fn effective_targets(&mut self, t: TRef) -> Result<Buf<Nid>, H::Error> {
+        let mut set: Buf<Nid> = Buf::new();
+        let Some(targets) = self.resolve(t)?.targets else { return Ok(set) };
+        let add = |set: &mut Buf<Nid>, n: Nid| {
             if !set.contains(&n) {
                 set.push(n);
             }
         };
-        for target in targets {
+        for &target in targets.iter() {
             if self.tree.is_history(target) {
                 match self.h.history(target) {
                     Some(recorded) => recorded.into_iter().for_each(|n| add(&mut set, n)),
                     None => {
-                        for n in self.effective_targets(TRef::HistoryDefault(target))? {
+                        for &n in self.effective_targets(TRef::HistoryDefault(target))?.iter() {
                             add(&mut set, n);
                         }
                     }
@@ -746,7 +865,7 @@ impl<H: Host> Ctx<'_, H> {
             let mut all = effective.clone();
             all.push(source);
             let (head, tail) = (all[0], &all[1..]);
-            for ancestor in tree.proper_ancestors(head, None) {
+            for ancestor in tree.ancestors(head, None) {
                 if tree.kind(ancestor) == Kind::Compound && tail.iter().all(|&x| tree.is_descendant(x, Some(ancestor)))
                 {
                     return Ok(Some(ancestor));
@@ -764,7 +883,7 @@ impl<H: Host> Ctx<'_, H> {
         let mut all = effective.clone();
         all.push(source);
         let (head, tail) = (all[0], &all[1..]);
-        for ancestor in tree.proper_ancestors(head, None) {
+        for ancestor in tree.ancestors(head, None) {
             if tail.iter().all(|&x| tree.is_descendant(x, Some(ancestor))) {
                 return Ok(Some(if reenter { ancestor } else { self.narrow_parallel(ancestor, &effective) }));
             }
@@ -797,8 +916,8 @@ impl<H: Host> Ctx<'_, H> {
     }
 
     /// `removeConflictingTransitions`.
-    fn remove_conflicting(&mut self, enabled: &[TRef], config: &OrderedSet) -> Result<Vec<TRef>, H::Error> {
-        let mut filtered: Vec<TRef> = Vec::new();
+    fn remove_conflicting(&mut self, enabled: &[TRef], config: &OrderedSet) -> Result<Buf<TRef>, H::Error> {
+        let mut filtered: Buf<TRef> = Buf::new();
         let mut exit_sets: Vec<(TRef, OrderedSet)> = Vec::new();
         for &t1 in enabled {
             let mut preempted = false;
@@ -843,8 +962,9 @@ impl<H: Host> Ctx<'_, H> {
 /// Entry-set state, as the closures in XState's `enterStates`.
 struct Entry {
     to_enter: OrderedSet,
-    default_entry: Vec<bool>,
-    history_defaults: Vec<Vec<Nid>>,
+    default_entry: Buf<bool>,
+    /// History states whose default transition a parent takes on entry.
+    history_defaults: Vec<(Nid, Vec<Nid>)>,
 }
 
 impl<H: Host> Ctx<'_, H> {
@@ -864,7 +984,8 @@ impl<H: Host> Ctx<'_, H> {
                 e.to_enter.insert(anc);
             }
             if self.tree.kind(anc) == Kind::Parallel {
-                for child in self.tree.node(anc).children.clone() {
+                let tree = self.tree;
+                for &child in &tree.node(anc).children {
                     if !self.has_descendant_state(&e.to_enter, child) {
                         e.to_enter.insert(child);
                         self.add_descendants(e, history, child)?;
@@ -886,43 +1007,46 @@ impl<H: Host> Ctx<'_, H> {
                         self.add_descendants(e, history, s)?;
                     }
                     for &s in &recorded {
-                        let ancestors = tree.proper_ancestors(s, Some(parent));
+                        let ancestors: Buf<Nid> = tree.ancestors(s, Some(parent)).collect();
                         self.add_ancestors(e, history, &ancestors, None)?;
                     }
                 } else {
                     e.default_entry[parent as usize] = true;
-                    e.history_defaults[parent as usize].push(node);
-                    let targets = self.resolve(TRef::HistoryDefault(node))?.targets.unwrap_or_default();
-                    for &s in &targets {
+                    match e.history_defaults.iter_mut().find(|(p, _)| *p == parent) {
+                        Some((_, list)) => list.push(node),
+                        None => e.history_defaults.push((parent, vec![node])),
+                    }
+                    let targets = self.resolve(TRef::HistoryDefault(node))?.targets.unwrap_or_else(|| Arc::from([]));
+                    for &s in targets.iter() {
                         e.to_enter.insert(s);
                         // `historyDefaultTransition === stateNode.parent.initial`
                         // only adds `parent` again, which is already marked.
                         self.add_descendants(e, history, s)?;
                     }
-                    for &s in &targets {
-                        let ancestors = tree.proper_ancestors(s, Some(parent));
+                    for &s in targets.iter() {
+                        let ancestors: Buf<Nid> = tree.ancestors(s, Some(parent)).collect();
                         self.add_ancestors(e, history, &ancestors, None)?;
                     }
                 }
             }
             Kind::Compound => {
-                let initial = self.resolve(TRef::Initial(node))?.targets.unwrap_or_default();
-                for &s in &initial {
+                let initial = self.resolve(TRef::Initial(node))?.targets.unwrap_or_else(|| Arc::from([]));
+                for &s in initial.iter() {
                     if !tree.is_history(s) {
                         e.to_enter.insert(s);
                     }
                 }
                 e.default_entry[node as usize] = true;
-                for &s in &initial {
+                for &s in initial.iter() {
                     self.add_descendants(e, history, s)?;
                 }
-                for &s in &initial {
-                    let ancestors = tree.proper_ancestors(s, Some(node));
+                for &s in initial.iter() {
+                    let ancestors: Buf<Nid> = tree.ancestors(s, Some(node)).collect();
                     self.add_ancestors(e, history, &ancestors, None)?;
                 }
             }
             Kind::Parallel => {
-                for child in tree.node(node).children.clone() {
+                for &child in &tree.node(node).children {
                     if !self.has_descendant_state(&e.to_enter, child) {
                         e.to_enter.insert(child);
                         e.default_entry[child as usize] = true;
@@ -964,7 +1088,7 @@ pub fn initial_plan<H: Host>(tree: &Tree, h: &H) -> InitialPlan {
         }
         match tree.kind(n) {
             Kind::Compound => {
-                for t in h.static_initial(n) {
+                for &t in h.static_initial(n).iter() {
                     iter(tree, h, set, t);
                 }
             }
@@ -993,7 +1117,7 @@ pub fn initial_plan<H: Host>(tree: &Tree, h: &H) -> InitialPlan {
                 if !out.contains(&n) {
                     out.push(n);
                 }
-                for t in h.static_initial(n) {
+                for &t in h.static_initial(n).iter() {
                     collect(tree, h, out, t);
                 }
             }
@@ -1006,7 +1130,7 @@ pub fn initial_plan<H: Host>(tree: &Tree, h: &H) -> InitialPlan {
         }
     }
     collect(tree, h, &mut default_entry, 0);
-    InitialPlan { targets, default_entry }
+    InitialPlan { targets: targets.into(), default_entry }
 }
 
 /// XState's `microstep`. `initial` is set for the initial microstep, whose
@@ -1023,11 +1147,11 @@ pub fn microstep<H: Host>(
     }
     let is_initial = initial.is_some();
     let size = tree.nodes.len();
-    let original = h.config();
+    let original = config_of(h);
     let mut set = OrderedSet::from_slice(size, &original);
 
     let filtered = if transitions.len() == 1 {
-        transitions.to_vec()
+        Buf::from_slice(transitions)
     } else {
         let mut ctx = Ctx { tree, h: &mut *h, resolver: Resolver::Conflicts, initial };
         ctx.remove_conflicting(transitions, &set)?
@@ -1046,9 +1170,9 @@ pub fn microstep<H: Host>(
     let mut history_updates: Option<Vec<(Nid, Vec<Nid>)>> = None;
     if !is_initial && changes_state {
         let exit = ctx.exit_set(&filtered, &set)?;
-        let mut to_exit = exit.as_slice().to_vec();
+        let mut to_exit = Buf::from_slice(exit.as_slice());
         to_exit.sort_by(|a, b| b.cmp(a));
-        let current: Vec<Nid> = set.as_slice().to_vec();
+        let current = Buf::from_slice(set.as_slice());
         for &s in &to_exit {
             for &hn in &tree.node(s).history_children {
                 let deep = matches!(tree.kind(hn), Kind::History { deep: true });
@@ -1084,15 +1208,15 @@ pub fn microstep<H: Host>(
         let history = HistoryView { updates: history_updates.clone() };
         let mut e = Entry {
             to_enter: OrderedSet::new(size),
-            default_entry: vec![false; size],
-            history_defaults: vec![Vec::new(); size],
+            default_entry: Buf::filled(false, size),
+            history_defaults: Vec::new(),
         };
-        let mut entered: Vec<(TRef, Vec<Nid>)> = Vec::new();
+        let mut entered: Vec<(TRef, Buf<Nid>)> = Vec::with_capacity(filtered.len());
         for &t in &filtered {
             let domain = ctx.domain(t)?;
             let Resolved { targets, reenter } = ctx.resolve(t)?;
             let source = ctx.source(t);
-            let mut entered_targets = Vec::new();
+            let mut entered_targets = Buf::new();
             for &target in targets.as_deref().unwrap_or(&[]) {
                 if !tree.is_history(target) && (source != target || Some(source) != domain || reenter) {
                     if !entered_targets.contains(&target) {
@@ -1104,8 +1228,8 @@ pub fn microstep<H: Host>(
                 ctx.add_descendants(&mut e, &history, target)?;
             }
             entered.push((t, entered_targets));
-            for s in ctx.effective_targets(t)? {
-                let mut ancestors = tree.proper_ancestors(s, domain);
+            for &s in ctx.effective_targets(t)?.iter() {
+                let mut ancestors: Buf<Nid> = tree.ancestors(s, domain).collect();
                 if let Some(d) = domain {
                     if tree.kind(d) == Kind::Parallel {
                         ancestors.push(d);
@@ -1125,12 +1249,15 @@ pub fn microstep<H: Host>(
         }
 
         ctx.h.begin_entry(set.as_slice(), &entered)?;
-        let mut order = e.to_enter.as_slice().to_vec();
+        let mut order = Buf::from_slice(e.to_enter.as_slice());
         order.sort_unstable();
-        let mut completed = vec![false; size];
-        for s in order {
+        let mut completed: Buf<bool> = Buf::filled(false, size);
+        for &s in &order {
             set.insert(s);
-            let defaults = std::mem::take(&mut e.history_defaults[s as usize]);
+            let defaults = match e.history_defaults.iter().position(|(p, _)| *p == s) {
+                Some(i) => e.history_defaults.swap_remove(i).1,
+                None => Vec::new(),
+            };
             ctx.h.enter_state(s, e.default_entry[s as usize], &defaults)?;
             if tree.kind(s) != Kind::Final {
                 continue;
@@ -1181,7 +1308,7 @@ pub fn microstep<H: Host>(
         ctx.h.end_entry()?;
     }
 
-    let mut nodes: Vec<Nid> = set.as_slice().to_vec();
+    let mut nodes = Buf::from_slice(set.as_slice());
     if ctx.h.is_done() {
         // XState sorts its node list in place here, so a completed machine's
         // configuration is in descending document order.
@@ -1192,7 +1319,7 @@ pub fn microstep<H: Host>(
     let same_membership = original.len() == set.len() && original.iter().all(|&n| set.contains(n));
     let structure_changed = history_updates.is_some() || !same_membership;
     let result = MicrostepResult {
-        filtered: filtered.clone(),
+        filtered,
         nodes: if structure_changed { nodes } else { original },
         structure_changed,
         history_updates: history_updates.unwrap_or_default(),
@@ -1217,12 +1344,12 @@ pub fn run_to_completion<H: Host>(tree: &Tree, h: &mut H) -> Result<(), H::Error
     while h.is_active() {
         iteration += 1;
         h.check_iteration(iteration)?;
-        let mut enabled = if should_select_eventless { select_eventless(tree, h)? } else { Vec::new() };
+        let mut enabled = if should_select_eventless { select_eventless(tree, h)? } else { Buf::new() };
         let previous = if enabled.is_empty() { None } else { Some(h.snapshot_token()) };
         h.drain_raised()?;
         if enabled.is_empty() {
             let Some(event_type) = h.dequeue()? else { break };
-            enabled = select_transitions(tree, h, &event_type)?.into_iter().map(TRef::T).collect();
+            enabled = select_transitions(tree, h, &event_type)?.iter().map(|&t| TRef::T(t)).collect();
         }
         microstep(tree, h, &enabled, None)?;
         should_select_eventless = Some(h.microstep_token()) != previous;

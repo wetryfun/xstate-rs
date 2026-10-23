@@ -294,8 +294,8 @@ where
             invokes: n.invokes,
             output: n.output,
             tags: n.tags,
-            initial: n.initial.into_iter().collect(),
-            history_target: n.history_target,
+            initial: n.initial.into_iter().collect::<Vec<_>>().into(),
+            history_target: n.history_target.into(),
         });
     }
     let tree_transitions =
@@ -1027,7 +1027,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             ));
         }
         let targets = match obj.get("target") {
-            Some(t) => Some(self.resolve_targets(source, Some(t), &child_path(path, "target"), false)?),
+            Some(t) => Some(self.resolve_targets(source, Some(t), &child_path(path, "target"), false)?.into()),
             None => None,
         };
         let mut matches: Vec<(String, Value)> = match opt_object(obj, "matches", path)? {

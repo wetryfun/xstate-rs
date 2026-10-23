@@ -205,10 +205,53 @@ impl<E> Outcome<E> {
     }
 }
 
+/// The parts of a snapshot a failed macrostep restores (the context is
+/// saved separately, on its first write).
+struct Saved<E> {
+    nodes: core::Buf<Nid>,
+    status: Status,
+    output: Option<Value>,
+    error: Option<Value>,
+    history: Vec<(Nid, Vec<Nid>)>,
+    children: IndexMap<String, ActorRef>,
+    timers: Vec<LogicalTimer<E>>,
+    next_timer_id: u64,
+}
+
+impl<E: Clone> Saved<E> {
+    fn of<C>(st: &State<C, E>) -> Self {
+        Saved {
+            nodes: core::Buf::from_slice(&st.nodes),
+            status: st.status,
+            output: st.output.clone(),
+            error: st.error.clone(),
+            history: st.history.clone(),
+            children: st.children.clone(),
+            timers: st.timers.clone(),
+            next_timer_id: st.next_timer_id,
+        }
+    }
+
+    fn restore<C>(self, st: &mut State<C, E>, context: Option<C>) {
+        st.nodes.clear();
+        st.nodes.extend_from_slice(&self.nodes);
+        st.status = self.status;
+        st.output = self.output;
+        st.error = self.error;
+        st.history = self.history;
+        st.children = self.children;
+        st.timers = self.timers;
+        st.next_timer_id = self.next_timer_id;
+        if let Some(context) = context {
+            st.context = context;
+        }
+    }
+}
+
 /// Which macrostep is being run.
-pub(crate) enum MacroEvent<'a> {
+pub(crate) enum MacroEvent {
     Init,
-    Event(&'a Value),
+    Event(Value),
 }
 
 struct NativeHost<'a, C, E> {
@@ -230,11 +273,14 @@ struct NativeHost<'a, C, E> {
     stopped_ids: Vec<String>,
     /// The identity of the snapshot the last microstep returned.
     microstep_token_value: u64,
+    /// The context before this macrostep's first write, to roll back to
+    /// when the macrostep fails.
+    context_backup: Option<C>,
 }
 
 impl<C, E> NativeHost<'_, C, E>
 where
-    C: Serialize + DeserializeOwned,
+    C: Serialize + DeserializeOwned + Clone,
     E: EventType,
 {
     fn context_object(&self) -> Result<Map<String, Value>, SystemError> {
@@ -254,13 +300,25 @@ where
         for (k, v) in patch {
             map.insert(k.clone(), v.clone());
         }
-        self.st.context =
+        let context =
             C::deserialize(&Value::Object(map)).map_err(|e| SystemError::Failed(format!("invalid context: {e}")))?;
+        let previous = std::mem::replace(&mut self.st.context, context);
+        self.context_backup.get_or_insert(previous);
         self.cloned = true;
         Ok(())
     }
 
     /// `executeActions` from `machineFromJSON`, against `base` as the context.
+    /// The context an action list starts from, which only `@xstate.assign`
+    /// reads (serializing the context is skipped otherwise).
+    fn action_base(&self, actions: &[Action]) -> Result<Map<String, Value>, SystemError> {
+        if actions.iter().any(|a| matches!(a, Action::Assign(_))) {
+            self.context_object()
+        } else {
+            Ok(Map::new())
+        }
+    }
+
     fn execute_actions(&self, actions: &[Action], base: &Map<String, Value>) -> Outcome<E> {
         let mut assigned: Option<Map<String, Value>> = None;
         let mut out = Outcome::empty();
@@ -304,7 +362,7 @@ where
             return Ok(Outcome::empty());
         }
         let mut out = if tr.context.is_some() || !tr.actions.is_empty() {
-            let mut base = self.context_object()?;
+            let mut base = self.action_base(&tr.actions)?;
             if let Some(patch) = &tr.context {
                 for (k, v) in patch {
                     base.insert(k.clone(), v.clone());
@@ -407,7 +465,7 @@ where
     /// nest, so the last first), then the exit actions run.
     fn exit_outcome(&self, node: Nid) -> Result<Outcome<E>, SystemError> {
         let data = self.m.data(node);
-        let base = self.context_object()?;
+        let base = self.action_base(&data.exit)?;
         let mut out = self.execute_actions(&data.exit, &base);
         let mut ops: Vec<Op<E>> =
             data.delayed.iter().rev().map(|d| Op::Cancel(json!({ "event": self.delayed_identity(node, d) }))).collect();
@@ -531,20 +589,20 @@ where
 
 impl<C, E> Host for NativeHost<'_, C, E>
 where
-    C: Serialize + DeserializeOwned,
+    C: Serialize + DeserializeOwned + Clone,
     E: EventType,
 {
     type Error = SystemError;
 
-    fn config(&self) -> Vec<Nid> {
-        self.st.nodes.clone()
+    fn config(&self, out: &mut Vec<Nid>) {
+        out.extend_from_slice(&self.st.nodes);
     }
 
     fn history(&self, history: Nid) -> Option<Vec<Nid>> {
         self.st.history.iter().find(|(h, _)| *h == history).map(|(_, v)| v.clone())
     }
 
-    fn static_initial(&self, node: Nid) -> Vec<Nid> {
+    fn static_initial(&self, node: Nid) -> Arc<[Nid]> {
         self.m.data(node).initial.clone()
     }
 
@@ -641,7 +699,7 @@ where
         Ok(())
     }
 
-    fn begin_entry(&mut self, _active: &[Nid], _entered: &[(TRef, Vec<Nid>)]) -> Result<(), SystemError> {
+    fn begin_entry(&mut self, _active: &[Nid], _entered: &[(TRef, core::Buf<Nid>)]) -> Result<(), SystemError> {
         Ok(())
     }
 
@@ -675,7 +733,7 @@ where
                 self.cloned = true;
             }
         }
-        let base = self.context_object()?;
+        let base = self.action_base(&data.entry)?;
         let mut out = self.execute_actions(&data.entry, &base);
         // Delayed transitions' timers are scheduled by entry wrappers, after
         // the entry actions and against the context they produced.
@@ -767,7 +825,8 @@ where
     fn apply_microstep(&mut self, result: Option<MicrostepResult>, _enabled: &[TRef]) -> Result<(), SystemError> {
         if let Some(r) = result {
             if r.structure_changed {
-                self.st.nodes = r.nodes;
+                self.st.nodes.clear();
+                self.st.nodes.extend_from_slice(&r.nodes);
                 for (h, nodes) in r.history_updates {
                     match self.st.history.iter_mut().find(|(x, _)| *x == h) {
                         Some(entry) => entry.1 = nodes,
@@ -836,7 +895,7 @@ where
 
 impl<C, E> Machine<C, E>
 where
-    C: Serialize + DeserializeOwned,
+    C: Serialize + DeserializeOwned + Clone,
     E: EventType,
 {
     /// One macrostep of XState's machine logic (`initialTransition` or
@@ -846,10 +905,15 @@ where
         &self,
         st: &mut State<C, E>,
         cx: &mut dyn Context,
-        event: MacroEvent<'_>,
+        event: MacroEvent,
     ) -> Result<Vec<Effect>, SystemError> {
         let initial = matches!(event, MacroEvent::Init);
         let previous_status = st.status;
+        // A macrostep that throws leaves the previous snapshot in the error
+        // status, as XState's actor does (`_setErrorSnapshot`); the failed
+        // step's state and effects are discarded. The context is saved on
+        // its first write.
+        let saved = (!initial).then(|| Saved::of(st));
         let mut h = NativeHost {
             m: self,
             st,
@@ -863,11 +927,15 @@ where
             recent: VecDeque::new(),
             stopped_ids: Vec::new(),
             microstep_token_value: 0,
+            context_backup: None,
         };
         if let Err(e) = self.macrostep_body(&mut h, event) {
-            // XState's actor errors when its transition throws.
-            h.st.status = Status::Error;
-            h.st.error = Some(Value::String(e.to_string()));
+            let context = h.context_backup.take();
+            if let Some(saved) = saved {
+                saved.restore(st, context);
+            }
+            st.status = Status::Error;
+            st.error = Some(Value::String(e.to_string()));
             return Err(e);
         }
         let mut effects = std::mem::take(&mut h.effects);
@@ -887,7 +955,7 @@ where
         Ok(effects)
     }
 
-    fn macrostep_body(&self, h: &mut NativeHost<'_, C, E>, event: MacroEvent<'_>) -> Result<(), SystemError> {
+    fn macrostep_body(&self, h: &mut NativeHost<'_, C, E>, event: MacroEvent) -> Result<(), SystemError> {
         let tree = &self.tree;
         let event = match event {
             MacroEvent::Init => {
@@ -911,7 +979,7 @@ where
                 return Ok(());
             }
             "xstate.timer" => {
-                let key = crate::system::read_timer_key(event);
+                let key = crate::system::read_timer_key(&event);
                 let index = key.as_ref().and_then(|k| h.st.timers.iter().position(|t| t.matches(k)));
                 let Some(index) = index else { return Ok(()) };
                 let timer = h.st.timers.remove(index);
@@ -920,7 +988,7 @@ where
                 h.event = Ev::Internal { event_type: Cow::Borrowed("xstate.timer"), data: Map::new() };
             }
             _ => {
-                h.event = Ev::from_json(event.clone())
+                h.event = Ev::from_json(event)
                     .ok_or_else(|| SystemError::Rejected("an event must have a string \"type\"".into()))?;
                 let transitions = core::select_transitions(tree, h, &ty)?;
                 if ty.starts_with("xstate.error.") && transitions.is_empty() {
@@ -937,7 +1005,7 @@ where
                     h.remove_terminated_child();
                     return Ok(());
                 }
-                let enabled: Vec<TRef> = transitions.into_iter().map(TRef::T).collect();
+                let enabled: core::Buf<TRef> = transitions.iter().map(|&t| TRef::T(t)).collect();
                 core::microstep(tree, h, &enabled, None)?;
             }
         }
@@ -1071,23 +1139,14 @@ where
     fn transition(
         &self,
         snapshot: &mut Box<dyn AnySnapshot>,
-        event: &Value,
+        event: Value,
         cx: &mut dyn Context,
     ) -> Result<Vec<Effect>, SystemError> {
         let st = snapshot
             .as_any_mut()
             .downcast_mut::<State<C, E>>()
             .ok_or_else(|| SystemError::Failed("machine received a foreign snapshot".into()))?;
-        // A macrostep that throws leaves the previous snapshot in the error
-        // status, as XState's actor does (`_setErrorSnapshot`); the failed
-        // step's state and effects are discarded.
-        let previous = st.clone();
-        self.run_macrostep(st, cx, MacroEvent::Event(event)).inspect_err(|_| {
-            let error = st.error.take();
-            *st = previous;
-            st.status = Status::Error;
-            st.error = error;
-        })
+        self.run_macrostep(st, cx, MacroEvent::Event(event))
     }
 
     fn snapshot_data(&self, snapshot: &dyn AnySnapshot) -> Value {

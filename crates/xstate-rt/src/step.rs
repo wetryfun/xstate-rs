@@ -310,9 +310,10 @@ impl Logic for StepLogic {
     fn transition(
         &self,
         snapshot: &mut Box<dyn AnySnapshot>,
-        event: &Value,
+        event: Value,
         cx: &mut dyn Context,
     ) -> Result<Vec<Effect>, SystemError> {
+        let event = &event;
         let current = crate::system::downcast::<StepSnapshot>(&**snapshot)
             .cloned()
             .ok_or_else(|| SystemError::Failed("step logic received a foreign snapshot".into()))?;

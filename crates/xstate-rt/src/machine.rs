@@ -29,9 +29,9 @@ pub(crate) struct NodeData {
     pub output: Option<Value>,
     pub tags: Vec<String>,
     /// The static targets of a compound state's `initial`.
-    pub initial: Vec<Nid>,
+    pub initial: Arc<[Nid]>,
     /// The default targets of a history state.
-    pub history_target: Vec<Nid>,
+    pub history_target: Arc<[Nid]>,
 }
 
 /// A timer a state schedules on entry and cancels on exit; its event is
@@ -77,7 +77,7 @@ pub(crate) enum DelaySpec {
 
 pub(crate) struct TransitionData {
     /// `None` for a targetless transition.
-    pub targets: Option<Vec<Nid>>,
+    pub targets: Option<Arc<[Nid]>>,
     pub matches: Vec<(String, Value)>,
     pub guard: Option<Guard>,
     /// The transition's `context` patch.
@@ -195,7 +195,7 @@ impl<C, E> Machine<C, E> {
     /// XState's state value for a configuration.
     pub(crate) fn state_value(&self, config: &[Nid]) -> Value {
         let all = crate::core::all_state_nodes(&self.tree, config, |n| self.data(n).initial.clone());
-        let adj = self.tree.active_children(&all);
+        let adj = self.tree.active_children(all.as_slice());
         self.node_value(ROOT, &adj)
     }
 

@@ -153,8 +153,8 @@ fn read_u32s(n: i32) -> Vec<u32> {
 impl Host for JsHost {
     type Error = ();
 
-    fn config(&self) -> Vec<Nid> {
-        read_u32s(unsafe { config() })
+    fn config(&self, out: &mut Vec<Nid>) {
+        out.extend(read_u32s(unsafe { config() }));
     }
 
     fn history(&self, h: Nid) -> Option<Vec<Nid>> {
@@ -162,8 +162,8 @@ impl Host for JsHost {
         (n >= 0).then(|| read_u32s(n))
     }
 
-    fn static_initial(&self, node: Nid) -> Vec<Nid> {
-        read_u32s(unsafe { static_initial(node) })
+    fn static_initial(&self, node: Nid) -> std::sync::Arc<[Nid]> {
+        read_u32s(unsafe { static_initial(node) }).into()
     }
 
     fn begin_selection(&mut self) -> Result<(), ()> {
@@ -195,7 +195,7 @@ impl Host for JsHost {
         ck(unsafe { resolve(r, encode_tref(t)) })?;
         let buf = u32buf();
         let (has_targets, reenter, n) = (buf[0] == 1, buf[1] == 1, buf[2] as usize);
-        Ok(Resolved { targets: has_targets.then(|| buf[3..3 + n].to_vec()), reenter })
+        Ok(Resolved { targets: has_targets.then(|| buf[3..3 + n].into()), reenter })
     }
 
     fn begin_microstep(&mut self) -> Result<(), ()> {
@@ -211,7 +211,7 @@ impl Host for JsHost {
         ck(unsafe { transition_content(encoded.as_ptr(), encoded.len() as u32) }).map(drop)
     }
 
-    fn begin_entry(&mut self, active: &[Nid], entered: &[(TRef, Vec<Nid>)]) -> Result<(), ()> {
+    fn begin_entry(&mut self, active: &[Nid], entered: &[(TRef, core::Buf<Nid>)]) -> Result<(), ()> {
         let mut encoded = Vec::new();
         for (t, nodes) in entered {
             encoded.push(encode_tref(*t));
@@ -480,7 +480,7 @@ fn write_out(values: impl IntoIterator<Item = u32>) -> i32 {
 pub unsafe extern "C" fn xs_select(handle: u32, event_type_len: u32) -> i32 {
     let event_type = String::from_utf8_lossy(&bytebuf()[..event_type_len as usize]).into_owned();
     match core::select_transitions(tree(handle), &mut JsHost, &event_type) {
-        Ok(ts) => write_out(ts),
+        Ok(ts) => write_out(ts.iter().copied()),
         Err(()) => -1,
     }
 }
@@ -490,7 +490,7 @@ pub unsafe extern "C" fn xs_select(handle: u32, event_type_len: u32) -> i32 {
 #[no_mangle]
 pub unsafe extern "C" fn xs_select_eventless(handle: u32) -> i32 {
     match core::select_eventless(tree(handle), &mut JsHost) {
-        Ok(ts) => write_out(ts.into_iter().map(encode_tref)),
+        Ok(ts) => write_out(ts.iter().copied().map(encode_tref)),
         Err(()) => -1,
     }
 }
@@ -520,7 +520,7 @@ pub unsafe extern "C" fn xs_initial_microstep(handle: u32) -> i32 {
 #[no_mangle]
 pub unsafe extern "C" fn xs_initial_targets(handle: u32) -> i32 {
     let plan = core::initial_plan(tree(handle), &JsHost);
-    write_out(plan.targets)
+    write_out(plan.targets.iter().copied())
 }
 
 /// The loop at the end of `macrostep`. Returns 0, or -1.
