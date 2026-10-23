@@ -611,17 +611,22 @@ fn expressions_compute_typed_context_events_guards_and_delays() {
 }
 
 #[test]
-fn expressions_with_strings_for_patches_fail_the_step() {
+fn expressions_with_strings_for_patches_spread_like_javascript() {
     let mut r: Registry<Value, Value> = Registry::new();
-    r.expr("text", |_| json!("ab"));
+    r.expr("text", |_| json!("ab")).expr("raw", |_| json!("not an event"));
     let def = json!({
         "context": { "count": 1 }, "initial": "a",
-        "states": { "a": { "on": { "bad": { "actions": [{ "type": "@xstate.assign", "context": { "@code": "text", "@lang": "rust" } }] } } } }
+        "states": { "a": { "on": {
+            "spread": { "actions": [{ "type": "@xstate.assign", "context": { "@code": "text", "@lang": "rust" } }] },
+            "bad": { "actions": [{ "type": "@xstate.raise", "event": { "@code": "raw", "@lang": "rust" } }] }
+        } } }
     });
     let mut actor = Actor::start(Arc::new(Machine::from_json(&def, &r).unwrap()), 0).unwrap();
+    actor.send(json!({ "type": "spread" }), 0).unwrap();
+    assert_eq!(actor.context(), &json!({ "count": 1, "0": "a", "1": "b" }));
+    // Raising a string fails the step, as in XState.
     assert!(actor.send(json!({ "type": "bad" }), 0).is_err());
     assert_eq!(actor.status(), Status::Error);
-    assert_eq!(actor.context(), &json!({ "count": 1 }));
 }
 
 #[test]
@@ -635,13 +640,9 @@ fn expression_load_errors_and_references() {
     assert_eq!(e.kind, LoadErrorKind::Code);
     let e = load_err(json!({ "@exprLang": "rust", "context": { "n": { "@code": "one" } } }));
     assert_eq!((e.kind, e.path.as_str()), (LoadErrorKind::MissingImplementation, "$.context.n"));
-    // A transition function needs its expression; a `matches` pattern is
-    // not evaluated.
+    // A transition function needs its expression.
     let e = load_err(json!({ "initial": "a", "states": { "a": { "on": { "go": code("pick") } } } }));
     assert_eq!((e.kind, e.path.as_str()), (LoadErrorKind::MissingImplementation, "$.states.a.on.go"));
-    let e =
-        load_err(json!({ "initial": "a", "states": { "a": { "on": { "go": { "matches": { "n": code("n") } } } } } }));
-    assert_eq!((e.kind, e.path.as_str()), (LoadErrorKind::Unsupported, "$.states.a.on.go.matches.n"));
     // A context expression registered for the scope, and the other way round.
     let mut r: Registry<Value, Value> = Registry::new();
     r.expr("one", |_| json!(1)).context("start", |_| json!({}));

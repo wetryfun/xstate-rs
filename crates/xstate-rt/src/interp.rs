@@ -566,15 +566,20 @@ fn set_input(inputs: &mut Vec<(Nid, Value)>, node: Nid, input: Value) {
     }
 }
 
-/// A computed context patch: an object, or nothing for the values XState's
-/// object spread ignores (`null`, booleans, numbers). Strings and arrays,
-/// which JavaScript spreads into index keys, are errors.
-fn computed_patch(value: Value, what: &str) -> Result<Option<Map<String, Value>>, SystemError> {
-    match value {
-        Value::Object(patch) => Ok(Some(patch)),
-        Value::Null | Value::Bool(_) | Value::Number(_) => Ok(None),
-        other => Err(SystemError::Failed(format!("{what} must be an object, not {other}"))),
-    }
+/// A computed context patch, as XState's object spread reads it: an object,
+/// nothing for `null`, booleans and numbers, and index keys for a string's
+/// characters or an array's items.
+fn computed_patch(value: Value, _what: &str) -> Result<Option<Map<String, Value>>, SystemError> {
+    Ok(match value {
+        Value::Object(patch) => Some(patch),
+        Value::Null | Value::Bool(_) | Value::Number(_) => None,
+        // JavaScript spreads a string's characters and an array's items
+        // under their indices.
+        Value::String(s) => {
+            Some(s.chars().enumerate().map(|(i, c)| (i.to_string(), Value::String(c.into()))).collect())
+        }
+        Value::Array(items) => Some(items.into_iter().enumerate().map(|(i, v)| (i.to_string(), v)).collect()),
+    })
 }
 
 /// A computed event to raise or emit: an object with a string type, or
@@ -584,6 +589,17 @@ fn computed_event(value: Value, what: &str) -> Result<Option<Value>, SystemError
         Value::Object(ref e) if e.get("type").is_some_and(Value::is_string) => Ok(Some(value)),
         Value::Null | Value::Bool(_) | Value::Number(_) => Ok(None),
         other => Err(SystemError::Failed(format!("{what} must be an object with a string type, not {other}"))),
+    }
+}
+
+/// A computed event to raise: XState rejects a string and raises anything
+/// else, but only an object with a string type can be taken by a transition,
+/// so the rest is dropped.
+fn computed_raise(value: Value) -> Result<Option<Value>, SystemError> {
+    match value {
+        Value::String(_) => Err(SystemError::Failed("Only event objects may be used with raise".into())),
+        Value::Object(ref e) if e.get("type").is_some_and(Value::is_string) => Ok(Some(value)),
+        _ => Ok(None),
     }
 }
 
@@ -1112,7 +1128,7 @@ where
                     }
                 }
                 Action::RaiseExpr { event, id, delay } => {
-                    let Some(value) = computed_event(self.eval(event, context, p), "a raised event")? else {
+                    let Some(value) = computed_raise(self.eval(event, context, p))? else {
                         continue;
                     };
                     let event = Ev::from_json(value).expect("an object with a string type");
@@ -1274,7 +1290,7 @@ where
         for op in ops {
             match op {
                 EnqOp::Raise { event, delay, id } => {
-                    let Some(event) = computed_event(event, "a raised event")? else { continue };
+                    let Some(event) = computed_raise(event)? else { continue };
                     let event = Ev::from_json(event).expect("an object with a string type");
                     match delay {
                         None => out.internal.push(event),
@@ -1740,6 +1756,20 @@ where
                 let f = (d.factory)(&value)
                     .map_err(|m| SystemError::Failed(format!("invalid params for guard '{}': {m}", d.name)))?;
                 f(&args())
+            }
+            Guard::StateInExpr(params_template) => {
+                let resolved = self.eval(params_template, &self.st.context, params);
+                match resolved.get("stateId").and_then(Value::as_str) {
+                    Some(id) => {
+                        let id = id.strip_prefix('#').unwrap_or(id);
+                        let node = self
+                            .m
+                            .node_by_id(id)
+                            .ok_or_else(|| SystemError::Failed(format!("No state has id \"{id}\".")))?;
+                        self.st.nodes.contains(&node)
+                    }
+                    None => false,
+                }
             }
             Guard::Scoped(scope, inner) => {
                 let value = self.eval(scope, &self.st.context, params);

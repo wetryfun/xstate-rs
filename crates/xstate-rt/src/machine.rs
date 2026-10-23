@@ -196,6 +196,9 @@ pub(crate) enum Guard {
     /// A named JSON guard with params its expressions read: the params
     /// (resolved in the outer scope), then the guard.
     Scoped(Box<Template>, Box<Guard>),
+    /// `@xstate.stateIn` with expressions in its params (the state id is
+    /// resolved when the guard runs).
+    StateInExpr(Box<Template>),
 }
 
 #[derive(Debug, Clone)]

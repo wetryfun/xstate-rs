@@ -1,0 +1,701 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "q",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "q": {
+          "id": "q",
+          "address": "q",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 1,
+              "items": [
+                "x"
+              ]
+            },
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "q",
+              "q.a"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 0,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "q",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "q": {
+          "id": "q",
+          "address": "q",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "0": "a",
+              "1": "b",
+              "count": 1,
+              "items": [
+                "x"
+              ]
+            },
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "q",
+              "q.a"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 1,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "q",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "q": {
+          "id": "q",
+          "address": "q",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "0": "x",
+              "1": "y",
+              "count": 1,
+              "items": [
+                "x"
+              ]
+            },
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "q",
+              "q.a"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 2,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "q",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "q": {
+          "id": "q",
+          "address": "q",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "0": "x",
+              "1": "y",
+              "count": 1,
+              "items": [
+                "x"
+              ]
+            },
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "q",
+              "q.a"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "q",
+            "incarnation": "0"
+          },
+          "type": "unmatched",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "unmatched"
+          }
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 3,
+        "effect": 1
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "q",
+          "incarnation": "0"
+        },
+        "type": "unmatched",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "unmatched"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "snapshot": {
+      "root": "q",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "q": {
+          "id": "q",
+          "address": "q",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "0": "x",
+              "1": "y",
+              "count": 1,
+              "items": [
+                "x"
+              ]
+            },
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "q",
+              "q.a"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "q",
+            "incarnation": "0"
+          },
+          "type": "unmatched",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "unmatched"
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "q",
+            "incarnation": "0"
+          },
+          "type": "@xstate.log",
+          "kind": "action",
+          "params": {},
+          "args": [
+            {
+              "@code": "countPlusOne",
+              "@lang": "rust"
+            },
+            "x"
+          ]
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 4,
+        "effect": 2
+      }
+    },
+    "effects": [
+      {
+        "id": "system:1",
+        "source": {
+          "$actor": "q",
+          "incarnation": "0"
+        },
+        "type": "@xstate.log",
+        "kind": "action",
+        "params": {},
+        "args": [
+          {
+            "@code": "countPlusOne",
+            "@lang": "rust"
+          },
+          "x"
+        ]
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "snapshot": {
+      "root": "q",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "q": {
+          "id": "q",
+          "address": "q",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "0": "x",
+              "1": "y",
+              "count": 1,
+              "items": [
+                "x"
+              ]
+            },
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "q",
+              "q.a"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "q",
+            "incarnation": "0"
+          },
+          "type": "unmatched",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "unmatched"
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "q",
+            "incarnation": "0"
+          },
+          "type": "@xstate.log",
+          "kind": "action",
+          "params": {},
+          "args": [
+            {
+              "@code": "countPlusOne",
+              "@lang": "rust"
+            },
+            "x"
+          ]
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "q",
+            "incarnation": "0"
+          },
+          "type": "raised",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "raised"
+          }
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 5,
+        "effect": 3
+      }
+    },
+    "effects": [
+      {
+        "id": "system:2",
+        "source": {
+          "$actor": "q",
+          "incarnation": "0"
+        },
+        "type": "raised",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "raised"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 5",
+    "snapshot": {
+      "root": "q",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "q": {
+          "id": "q",
+          "address": "q",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "0": "x",
+              "1": "y",
+              "count": 1,
+              "items": [
+                "x"
+              ]
+            },
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "q",
+              "q.a"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "q",
+            "incarnation": "0"
+          },
+          "type": "unmatched",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "unmatched"
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "q",
+            "incarnation": "0"
+          },
+          "type": "@xstate.log",
+          "kind": "action",
+          "params": {},
+          "args": [
+            {
+              "@code": "countPlusOne",
+              "@lang": "rust"
+            },
+            "x"
+          ]
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "q",
+            "incarnation": "0"
+          },
+          "type": "raised",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "raised"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "q",
+            "incarnation": "0"
+          },
+          "type": "in",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "in"
+          }
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 6,
+        "effect": 4
+      }
+    },
+    "effects": [
+      {
+        "id": "system:3",
+        "source": {
+          "$actor": "q",
+          "incarnation": "0"
+        },
+        "type": "in",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "in"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 6",
+    "snapshot": {
+      "root": "q",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "q": {
+          "id": "q",
+          "address": "q",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "0": "x",
+              "1": "y",
+              "count": 1,
+              "items": [
+                "x"
+              ]
+            },
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "q",
+              "q.a"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "q",
+            "incarnation": "0"
+          },
+          "type": "unmatched",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "unmatched"
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "q",
+            "incarnation": "0"
+          },
+          "type": "@xstate.log",
+          "kind": "action",
+          "params": {},
+          "args": [
+            {
+              "@code": "countPlusOne",
+              "@lang": "rust"
+            },
+            "x"
+          ]
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "q",
+            "incarnation": "0"
+          },
+          "type": "raised",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "raised"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "q",
+            "incarnation": "0"
+          },
+          "type": "in",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "in"
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "q",
+            "incarnation": "0"
+          },
+          "type": "not.in",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "not.in"
+          }
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 7,
+        "effect": 5
+      }
+    },
+    "effects": [
+      {
+        "id": "system:4",
+        "source": {
+          "$actor": "q",
+          "incarnation": "0"
+        },
+        "type": "not.in",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "not.in"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 7",
+    "error": "No state has id \"zz\"."
+  }
+]

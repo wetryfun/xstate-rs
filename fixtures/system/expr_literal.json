@@ -1,0 +1,199 @@
+{
+  "notes": "Code nodes where XState does not evaluate them (matches patterns, log args: taken literally), @xstate.stateIn params (evaluated; an unknown id is an error), string and array context patches (spread into index keys) and raised events without a type (dropped).",
+  "logic": [
+    {
+      "name": "q",
+      "machine": {
+        "id": "q",
+        "context": {
+          "count": 1,
+          "items": [
+            "x"
+          ]
+        },
+        "initial": "a",
+        "states": {
+          "a": {
+            "on": {
+              "STRING": {
+                "context": {
+                  "@code": "eventValue",
+                  "@lang": "rust"
+                }
+              },
+              "ARRAY": {
+                "actions": [
+                  {
+                    "type": "@xstate.assign",
+                    "context": {
+                      "@code": "appendItem",
+                      "@lang": "rust"
+                    }
+                  }
+                ]
+              },
+              "MATCH": [
+                {
+                  "matches": {
+                    "value": {
+                      "@code": "eventValue",
+                      "@lang": "rust"
+                    }
+                  },
+                  "actions": [
+                    {
+                      "type": "@xstate.emit",
+                      "event": {
+                        "type": "matched"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "actions": [
+                    {
+                      "type": "@xstate.emit",
+                      "event": {
+                        "type": "unmatched"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "LOG": {
+                "actions": [
+                  {
+                    "type": "@xstate.log",
+                    "args": [
+                      {
+                        "@code": "countPlusOne",
+                        "@lang": "rust"
+                      },
+                      "x"
+                    ]
+                  }
+                ]
+              },
+              "RAISE": {
+                "actions": [
+                  {
+                    "type": "@xstate.raise",
+                    "event": {
+                      "value": {
+                        "@code": "countPlusOne",
+                        "@lang": "rust"
+                      }
+                    }
+                  },
+                  {
+                    "type": "@xstate.raise",
+                    "event": {
+                      "@code": "countPlusOne",
+                      "@lang": "rust"
+                    }
+                  },
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "raised"
+                    }
+                  }
+                ]
+              },
+              "IN": [
+                {
+                  "guard": {
+                    "type": "@xstate.stateIn",
+                    "params": {
+                      "stateId": {
+                        "@code": "eventValue",
+                        "@lang": "rust"
+                      }
+                    }
+                  },
+                  "actions": [
+                    {
+                      "type": "@xstate.emit",
+                      "event": {
+                        "type": "in"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "actions": [
+                    {
+                      "type": "@xstate.emit",
+                      "event": {
+                        "type": "not.in"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "b": {}
+        }
+      }
+    }
+  ],
+  "root": "q",
+  "init": {},
+  "steps": [
+    {
+      "send": "q",
+      "event": {
+        "type": "STRING",
+        "value": "ab"
+      }
+    },
+    {
+      "send": "q",
+      "event": {
+        "type": "ARRAY",
+        "item": "y"
+      }
+    },
+    {
+      "send": "q",
+      "event": {
+        "type": "MATCH",
+        "value": "v"
+      }
+    },
+    {
+      "send": "q",
+      "event": {
+        "type": "LOG"
+      }
+    },
+    {
+      "send": "q",
+      "event": {
+        "type": "RAISE"
+      }
+    },
+    {
+      "send": "q",
+      "event": {
+        "type": "IN",
+        "value": "#q.a"
+      }
+    },
+    {
+      "send": "q",
+      "event": {
+        "type": "IN",
+        "value": "q.b"
+      }
+    },
+    {
+      "send": "q",
+      "event": {
+        "type": "IN",
+        "value": "zz"
+      }
+    }
+  ]
+}

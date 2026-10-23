@@ -140,27 +140,6 @@ fn check_code(value: &Value, path: &str, default_lang: Option<&str>) -> Result<(
     Ok(())
 }
 
-/// Rejects code nodes where this runtime does not evaluate them.
-fn reject_code(value: &Value, path: &str, what: &str) -> Result<()> {
-    match value {
-        Value::Object(map) => {
-            if code_source(value).is_some() {
-                return Err(err(K::Unsupported, path, format!("expressions are not supported in {what}")));
-            }
-            for (k, v) in map {
-                reject_code(v, &child_path(path, k), what)?;
-            }
-        }
-        Value::Array(items) => {
-            for (i, v) in items.iter().enumerate() {
-                reject_code(v, &format!("{path}[{i}]"), what)?;
-            }
-        }
-        _ => {}
-    }
-    Ok(())
-}
-
 fn contains_code(value: &Value) -> bool {
     match value {
         Value::Object(map) => code_source(value).is_some() || map.values().any(contains_code),
@@ -1305,9 +1284,6 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             Some(t) => Some(self.resolve_targets(source, Some(t), &child_path(path, "target"), false)?.into()),
             None => None,
         };
-        if let Some(m) = obj.get("matches") {
-            reject_code(m, &child_path(path, "matches"), "`matches` patterns")?;
-        }
         let mut matches: Vec<(String, Value)> = match opt_object(obj, "matches", path)? {
             Some(m) => m.iter().map(|(k, v)| (k.clone(), v.clone())).collect(),
             None => Vec::new(),
@@ -1453,7 +1429,11 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             }
             "@xstate.stateIn" => {
                 let spath = format!("{path}.params.stateId");
-                reject_code(params, &params_path, "`@xstate.stateIn` params")?;
+                if contains_code(params) {
+                    // Resolved when the guard runs, as XState does.
+                    let params = self.compile_template(params, &params_path, Slot::Scope)?;
+                    return Ok(Guard::StateInExpr(Box::new(params)));
+                }
                 let id =
                     params.get("stateId").and_then(Value::as_str).ok_or_else(|| invalid(&spath, "missing state id"))?;
                 let id = id.strip_prefix('#').unwrap_or(id);
@@ -1600,9 +1580,6 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                 out.push(Action::Cancel(id.to_owned()));
             }
             "@xstate.log" => {
-                if let Some(args) = obj.get("args") {
-                    reject_code(args, &child_path(path, "args"), "`@xstate.log` args")?;
-                }
                 let args = match obj.get("args") {
                     None => Vec::new(),
                     Some(Value::Array(a)) => a.clone(),
