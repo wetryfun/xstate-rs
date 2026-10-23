@@ -1,0 +1,25 @@
+{
+  "nsPerOp": {
+    "system_call": 154.9,
+    "macrostep": 0.0,
+    "microstep": 99.7,
+    "internal_event": 337.4,
+    "candidate": 29.0,
+    "guard": 29.0,
+    "exit": 202.4,
+    "enter": 202.4,
+    "action": 62.4,
+    "context_merge": 416.8,
+    "expr": 302.3,
+    "effect": 489.5,
+    "timer_schedule": 828.5,
+    "timer_cancel": 342.9,
+    "actor_start": 1829.3,
+    "actor_stop": 905.9,
+    "message": 178.8,
+    "effect_stored": 1294.9,
+    "active_state": 35.2,
+    "context_value": 137.3,
+    "actor_scan": 48.4
+  }
+}

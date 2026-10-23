@@ -13,6 +13,10 @@ serde_json.workspace = true
 indexmap = { version = "2", features = ["serde"] }
 erased-serde = "0.4"
 
+[features]
+# Count runtime operations per thread (`xstate_rt::ops`), for the cost model.
+op-counts = []
+
 [dev-dependencies]
 criterion = { version = "0.8", default-features = false }
 
@@ -23,3 +27,7 @@ harness = false
 [[bench]]
 name = "examples"
 harness = false
+
+[[example]]
+name = "cost_model"
+required-features = ["op-counts"]

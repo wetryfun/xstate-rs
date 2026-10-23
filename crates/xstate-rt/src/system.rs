@@ -944,10 +944,14 @@ struct ActorMap(Vec<ActorEntry>);
 
 impl ActorMap {
     fn get(&self, address: &str) -> Option<&ActorEntry> {
+        #[cfg(feature = "op-counts")]
+        self.scanned(address);
         self.0.iter().find(|a| *a.address == *address)
     }
 
     fn get_mut(&mut self, address: &str) -> Option<&mut ActorEntry> {
+        #[cfg(feature = "op-counts")]
+        self.scanned(address);
         self.0.iter_mut().find(|a| *a.address == *address)
     }
 
@@ -963,6 +967,15 @@ impl ActorMap {
                 self.0.reserve_exact(1);
                 self.0.push(entry);
             }
+        }
+    }
+
+    /// Counts the entries a lookup of `address` passes over.
+    #[cfg(feature = "op-counts")]
+    fn scanned(&self, address: &str) {
+        if crate::ops::enabled() {
+            let n = self.0.iter().position(|a| *a.address == *address).map_or(self.0.len(), |i| i + 1);
+            crate::ops::count_n(crate::ops::Op::ActorScan, n as u64);
         }
     }
 
@@ -1023,6 +1036,7 @@ impl System {
     /// XState's `initialSystemTransition`: allocates and starts the root.
     /// Returns the system and the external effects produced.
     pub fn initialize(logic: &SystemLogic, options: InitOptions) -> Result<(Self, Vec<ExternalEffect>), SystemError> {
+        crate::ops::count(crate::ops::Op::SystemCall);
         let mut sys = Self {
             logic: logic.clone(),
             defs: None,
@@ -1248,6 +1262,7 @@ impl System {
         if transient {
             self.scratch().out.push(effect);
         } else {
+            crate::ops::count(crate::ops::Op::EffectStored);
             self.scratch().out.push(effect.clone());
             self.external_effects.insert(id, effect);
         }
@@ -1259,6 +1274,7 @@ impl System {
     }
 
     fn enqueue(&mut self, source: Option<ActorRef>, target: ActorRef, event: Value, timer_occurrence: Option<u64>) {
+        crate::ops::count(crate::ops::Op::Message);
         self.enqueue_event(source, target, QueuedEvent::Value(event), timer_occurrence);
     }
 
@@ -1592,6 +1608,7 @@ impl System {
     /// clock moves to its due time), as a live actor processes each timer
     /// as its own step. Returns `None` when no timer is due.
     pub fn fire_next_timer(&mut self, time: u64) -> Result<Option<Vec<ExternalEffect>>, SystemError> {
+        crate::ops::count(crate::ops::Op::SystemCall);
         self.begin();
         if time < self.now {
             return rejected("System time must be finite and cannot move backwards.");
@@ -1605,6 +1622,7 @@ impl System {
     /// XState's `advanceSystemTime`: fires every timer due at or before
     /// `time`, chronologically, then sets the clock to `time`.
     pub fn advance(&mut self, time: u64) -> Result<Vec<ExternalEffect>, SystemError> {
+        crate::ops::count(crate::ops::Op::SystemCall);
         self.begin();
         self.advance_to(time)?;
         Ok(sys_end(self))
@@ -1613,6 +1631,7 @@ impl System {
     /// XState's `systemTransition`: delivers `event` to the actor at
     /// `address` and completes all resulting work. Due timers fire first.
     pub fn send(&mut self, address: &str, event: Value) -> Result<Vec<ExternalEffect>, SystemError> {
+        crate::ops::count(crate::ops::Op::SystemCall);
         self.begin();
         let ty = event.get("type").and_then(Value::as_str).unwrap_or("");
         if ty == "xstate.timer" {
@@ -1676,6 +1695,7 @@ impl System {
         effect_id: &str,
         event: Option<Value>,
     ) -> Result<Vec<ExternalEffect>, SystemError> {
+        crate::ops::count(crate::ops::Op::SystemCall);
         let Some(effect) = self.external_effects.get(effect_id) else {
             return rejected("External effect result does not match its owner or is stale.");
         };

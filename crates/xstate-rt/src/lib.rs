@@ -33,6 +33,7 @@ mod interp;
 mod load;
 mod machine;
 pub mod migrate;
+pub mod ops;
 mod registry;
 pub mod step;
 pub mod system;

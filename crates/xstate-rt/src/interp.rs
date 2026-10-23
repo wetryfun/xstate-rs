@@ -950,11 +950,17 @@ where
     fn context_object(&self) -> Result<Map<String, Value>, SystemError> {
         if let Some(v) = (&self.st.context as &dyn Any).downcast_ref::<Value>() {
             let mut map = v.as_object().cloned().unwrap_or_default();
+            if crate::ops::enabled() {
+                crate::ops::count_n(crate::ops::Op::ContextValue, map.values().map(crate::ops::json_size).sum());
+            }
             map.values_mut().for_each(crate::event::js_numbers);
             return Ok(map);
         }
         match serde_json::to_value(&self.st.context) {
             Ok(Value::Object(mut map)) => {
+                if crate::ops::enabled() {
+                    crate::ops::count_n(crate::ops::Op::ContextValue, map.values().map(crate::ops::json_size).sum());
+                }
                 map.values_mut().for_each(crate::event::js_numbers);
                 Ok(map)
             }
@@ -989,6 +995,7 @@ where
 
     /// `mergeContextPatch`.
     fn merge_context(&mut self, patch: &Map<String, Value>) -> Result<(), SystemError> {
+        crate::ops::count(crate::ops::Op::ContextMerge);
         let normalized = self.st.context_normalized;
         if let Some(v) = (&mut self.st.context as &mut dyn Any).downcast_mut::<Value>() {
             // An untyped context is patched in place. To roll back a failed
@@ -1087,7 +1094,10 @@ where
             config: &self.st.nodes,
             enq: None,
         };
-        t.eval(&mut |i| (m.exprs[i as usize])(&args))
+        t.eval(&mut |i| {
+            crate::ops::count(crate::ops::Op::Expr);
+            (m.exprs[i as usize])(&args)
+        })
     }
 
     /// The input of the state in scope.
@@ -1118,6 +1128,9 @@ where
         let mut stale = patched;
         let mut params: Vec<Value> = Vec::new();
         for action in actions {
+            if crate::ops::enabled() && !matches!(action, Action::Params(_) | Action::EndParams) {
+                crate::ops::count(crate::ops::Op::Action);
+            }
             if stale && action.evaluates() {
                 scope = Some(self.context_from(base, assigned.as_ref())?);
                 stale = false;
@@ -1182,6 +1195,7 @@ where
                         config: &self.st.nodes,
                         enq: Some(&enq),
                     };
+                    crate::ops::count(crate::ops::Op::Expr);
                     let mut result = (m.exprs[*i as usize])(&args);
                     self.push_enq_ops(enq.take(), &mut out)?;
                     // XState merges a truthy `context` of the result.
@@ -1371,6 +1385,7 @@ where
                 config: &self.st.nodes,
                 enq,
             };
+            crate::ops::count(crate::ops::Op::Expr);
             (m.exprs[expr as usize])(&args)
         };
         let targets_of = |result: &Value| -> Result<Option<Arc<[Nid]>>, SystemError> {
@@ -1455,6 +1470,22 @@ where
     /// everything becomes an effect.
     fn resolve_ops(&mut self, ops: Vec<Op<E>>) -> Result<(), SystemError> {
         for op in ops {
+            // Messages are counted by the system, which delivers them.
+            if crate::ops::enabled() {
+                let kind = match &op {
+                    Op::Raise { .. } => Some(crate::ops::Op::TimerSchedule),
+                    Op::Cancel(_) => Some(crate::ops::Op::TimerCancel),
+                    Op::Spawn(_) | Op::SpawnChild(_) => Some(crate::ops::Op::ActorStart),
+                    Op::Stop(_) => Some(crate::ops::Op::ActorStop),
+                    Op::SendTo(..) => None,
+                    Op::Log(_) | Op::Emit(_) | Op::Custom(_) | Op::CustomDyn { .. } | Op::DeadLetter(_) => {
+                        Some(crate::ops::Op::Effect)
+                    }
+                };
+                if let Some(kind) = kind {
+                    crate::ops::count(kind);
+                }
+            }
             match op {
                 Op::Raise { event, id, delay, target } => {
                     let seq = if id.is_none() && !has_builtin_timer_identity(event.event_type()) {
@@ -1744,6 +1775,7 @@ where
 
     /// A guard, with `params` the scope of its expressions.
     fn eval_guard(&self, guard: &Guard, params: Option<&Value>) -> Result<bool, SystemError> {
+        crate::ops::count(crate::ops::Op::Guard);
         // XState's guard arguments have no state input.
         let _scope = self.scoped(None);
         let args =
@@ -1858,11 +1890,13 @@ where
     }
 
     fn begin_selection(&mut self) -> Result<(), SystemError> {
+        crate::ops::count_n(crate::ops::Op::ActiveState, self.st.nodes.len() as u64);
         self.selected.clear();
         Ok(())
     }
 
     fn eval_candidate(&mut self, t: Tid, _node: Nid, _eventless: bool) -> Result<bool, SystemError> {
+        crate::ops::count(crate::ops::Op::Candidate);
         let tr = self.m.transition(t);
         for (key, expected) in &tr.matches {
             match self.event.field(key) {
@@ -1943,12 +1977,14 @@ where
     }
 
     fn begin_microstep(&mut self) -> Result<(), SystemError> {
+        crate::ops::count(crate::ops::Op::Microstep);
         self.outcomes.clear();
         self.cloned = false;
         Ok(())
     }
 
     fn exit_state(&mut self, node: Nid) -> Result<(), SystemError> {
+        crate::ops::count(crate::ops::Op::Exit);
         let out = self.exit_outcome(node)?;
         self.queue.extend(out.internal);
         if let Some(ctx) = &out.context {
@@ -2026,6 +2062,7 @@ where
     }
 
     fn enter_state(&mut self, node: Nid, default_entry: bool, _history_defaults: &[Nid]) -> Result<(), SystemError> {
+        crate::ops::count(crate::ops::Op::Enter);
         self.scope.set(Some(node));
         let result = self.enter_state_scoped(node);
         self.scope.set(None);
@@ -2103,6 +2140,7 @@ where
     fn exit_on_done(&mut self, nodes_desc: &[Nid]) -> Result<(), SystemError> {
         let mut ops = Vec::new();
         for &node in nodes_desc {
+            crate::ops::count(crate::ops::Op::Exit);
             let out = self.exit_outcome(node)?;
             if let Some(ctx) = &out.context {
                 self.merge_context(ctx)?;
@@ -2188,6 +2226,7 @@ where
 
     fn dequeue(&mut self) -> Result<Option<String>, SystemError> {
         Ok(self.queue.pop_front().map(|e| {
+            crate::ops::count(crate::ops::Op::InternalEvent);
             let ty = e.event_type().to_owned();
             self.event = e;
             ty
@@ -2209,6 +2248,7 @@ where
         cx: &mut dyn Context,
         event: MacroEvent,
     ) -> Result<Vec<Effect>, SystemError> {
+        crate::ops::count(crate::ops::Op::Macrostep);
         let initial = matches!(event, MacroEvent::Init);
         let previous_status = st.status;
         // A macrostep that throws leaves the previous snapshot in the error
