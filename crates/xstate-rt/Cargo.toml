@@ -19,3 +19,7 @@ criterion = { version = "0.8", default-features = false }
 [[bench]]
 name = "interpreter"
 harness = false
+
+[[bench]]
+name = "examples"
+harness = false
