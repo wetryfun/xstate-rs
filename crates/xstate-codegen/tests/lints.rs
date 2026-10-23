@@ -152,3 +152,27 @@ fn unused_schema_entries_are_warnings() {
     assert_eq!(generated.warnings, vec!["schemas.guards.unused is declared but never referenced"]);
     assert!(generated.code.contains("pub trait MImpl: Send + Sync + 'static"));
 }
+
+#[test]
+fn children_are_declared_by_invoke_id() {
+    let m = json!({ "id": "m", "initial": "a", "states": { "a": { "invoke": { "id": "worker", "src": "job" } } } });
+    let ping = json!({ "type": "object", "properties": { "n": { "type": "integer" } }, "required": ["n"] });
+    let children = json!({ "worker": { "events": { "ping": ping }, "output": { "type": "string" } } });
+    let code = generate(&bundle(m.clone(), json!({ "children": children })), "m").unwrap().code;
+    for item in [
+        "pub enum WorkerChildEvent",
+        "Ping {",
+        "pub type WorkerChildOutput = String;",
+        "pub struct WorkerChild<'a>",
+        "pub fn child_worker(actor: &mut Actor) -> Option<WorkerChild<'_>>",
+        "pub fn child_worker_output(event: &__rt::Ev<Event>) -> Option<WorkerChildOutput>",
+    ] {
+        assert!(code.contains(item), "missing `{item}` in\n{code}");
+    }
+
+    let (path, message) = error(bundle(m.clone(), json!({ "children": { "other": {} } })));
+    assert_eq!(path, "schemas.children.other");
+    assert!(message.contains("no invoke"), "{message}");
+    let (path, _) = error(bundle(m, json!({ "children": { "worker": { "input": {} } } })));
+    assert_eq!(path, "schemas.children.worker.input");
+}

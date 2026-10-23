@@ -13,6 +13,9 @@
 //     emitted: { type: zodObject },
 //     actions: { name: { params? } },    // params of custom actions
 //     guards: { name: { params? } },     // params of custom guards
+//     children: {                        // invoked children, by invoke id
+//       id: { events?: { type: zodObject }, output?: zodSchema },
+//     },
 //   };
 //
 // `machine` is the JSON-portable definition (transitions as objects, guards
@@ -42,7 +45,7 @@ registerHooks({
   }
 });
 
-const SCHEMA_KEYS = ['context', 'input', 'output', 'events', 'internalEvents', 'emitted', 'actions', 'guards'];
+const SCHEMA_KEYS = ['context', 'input', 'output', 'events', 'internalEvents', 'emitted', 'actions', 'guards', 'children'];
 
 function fail(message) {
   throw new Error(message);
@@ -79,6 +82,26 @@ function sourceMap(map, path) {
   );
 }
 
+function childMap(map, path) {
+  if (map === undefined) return undefined;
+  if (!map || typeof map !== 'object') fail(`${path}: expected an object`);
+  return Object.fromEntries(
+    Object.entries(map).map(([id, def]) => {
+      const p = `${path}.${id}`;
+      if (!def || typeof def !== 'object' || '_zod' in def) {
+        fail(`${p}: expected { events?: { type: <Zod object> }, output?: <Zod schema> } (an ActorRef type is not portable)`);
+      }
+      const out = {};
+      for (const k of Object.keys(def)) {
+        if (k === 'events') out.events = schemaMap(def.events, `${p}.events`);
+        else if (k === 'output') out.output = toJSONSchema(def.output, `${p}.output`);
+        else fail(`${p}: unknown key "${k}"`);
+      }
+      return [id, out];
+    })
+  );
+}
+
 function convertSchemas(schemas = {}) {
   for (const k of Object.keys(schemas)) {
     if (!SCHEMA_KEYS.includes(k)) fail(`schemas.${k}: not supported (expected one of ${SCHEMA_KEYS.join(', ')})`);
@@ -95,6 +118,8 @@ function convertSchemas(schemas = {}) {
     const m = sourceMap(schemas[k], `schemas.${k}`);
     if (m) out[k] = m;
   }
+  const children = childMap(schemas.children, 'schemas.children');
+  if (children) out.children = children;
   return out;
 }
 

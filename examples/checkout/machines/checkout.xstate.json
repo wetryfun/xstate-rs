@@ -57,6 +57,7 @@
           }
         ],
         "invoke": {
+          "id": "charge",
           "src": "chargeCard",
           "timeout": "5s",
           "onTimeout": {
@@ -387,6 +388,24 @@
         }
       },
       "retryable": {}
+    },
+    "children": {
+      "charge": {
+        "output": {
+          "type": "object",
+          "properties": {
+            "receipt": {
+              "type": "integer",
+              "minimum": -9007199254740991,
+              "maximum": 9007199254740991
+            }
+          },
+          "required": [
+            "receipt"
+          ],
+          "additionalProperties": false
+        }
+      }
     }
   }
 }

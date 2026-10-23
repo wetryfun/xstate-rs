@@ -111,3 +111,33 @@ fn persists_and_restores_typed_context() {
     assert_eq!(restored.context().status, ContextStatus::Paying);
     assert_eq!(restored.persist(), saved);
 }
+
+#[test]
+fn the_charge_child_is_typed() {
+    let shop = Arc::new(Shop::default());
+    let mut actor = start(&shop);
+    assert!(checkout::child_charge(&mut actor).is_none(), "not invoked yet");
+    actor.send(Event::Checkout { total: 120.0 }, 10).unwrap();
+    let child = checkout::child_charge(&mut actor).expect("invoked while paying");
+    assert_eq!(checkout::ChargeChild::ID, "charge");
+    assert!(child.address().ends_with("/charge"), "{}", child.address());
+    assert_eq!(child.status(), Status::Active);
+
+    // The child's done event, as the parent receives it.
+    let done = xstate_rt::Ev::<Event>::Internal {
+        event_type: "xstate.done.actor".into(),
+        data: json!({ "actorId": "charge", "output": { "receipt": 7 } }).as_object().unwrap().clone(),
+    };
+    assert_eq!(checkout::child_charge_output(&done), Some(checkout::ChargeChildOutput { receipt: 7 }));
+    let other = xstate_rt::Ev::<Event>::Internal {
+        event_type: "xstate.done.actor".into(),
+        data: json!({ "actorId": "other", "output": { "receipt": 7 } }).as_object().unwrap().clone(),
+    };
+    assert_eq!(checkout::child_charge_output(&other), None);
+    assert_eq!(checkout::child_charge_output(&xstate_rt::Ev::User(Event::Cancel)), None);
+
+    let charge = pending_charge(&actor);
+    actor.resolve_effect(&charge, Some(json!({ "type": "xstate.async.resolve", "data": { "receipt": 7 } }))).unwrap();
+    assert!(actor.matches("paid"));
+    assert!(checkout::child_charge(&mut actor).is_none(), "done children are gone");
+}

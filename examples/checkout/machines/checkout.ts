@@ -39,6 +39,10 @@ export const schemas = {
   guards: {
     withinLimit: { params: z.object({ max: z.number() }) },
     retryable: {}
+  },
+  // The invoked charge, by invoke id: what it accepts and what it outputs.
+  children: {
+    charge: { output: z.object({ receipt: z.number().int() }) }
   }
 };
 
@@ -60,6 +64,7 @@ export const machine = {
     paying: {
       entry: [{ type: '@xstate.assign', context: { status: 'paying' } }],
       invoke: {
+        id: 'charge',
         src: 'chargeCard',
         timeout: '5s',
         onTimeout: { target: 'retrying' },

@@ -9,6 +9,12 @@
 //!   [`EventType`](xstate_rt::EventType) impl that matches instead of
 //!   serializing), `Emitted`, `Input`, `Output` and one `*Params` type per
 //!   guard or action with params;
+//! - for each child in `schemas.children` (keyed by invoke `id`, with the
+//!   child's accepted `events` and its `output`): `<Id>ChildEvent`,
+//!   `<Id>ChildOutput`, a handle `<Id>Child` (from `child_<id>(&mut actor)`)
+//!   that sends typed events to the running child, and
+//!   `child_<id>_output(event)`, which reads the child's typed output from
+//!   its `xstate.done.actor` event;
 //! - a trait, `<MachineId>Impl`, with one method per guard, action, delay
 //!   and actor the definition needs from Rust;
 //! - `registry(impl)` and `machine(impl)`, which wire an implementation of
@@ -76,7 +82,7 @@ pub struct Generated {
 }
 
 const SCHEMA_KEYS: &[&str] =
-    &["context", "input", "output", "events", "internalEvents", "emitted", "actions", "guards"];
+    &["context", "input", "output", "events", "internalEvents", "emitted", "actions", "guards", "children"];
 
 fn obj(v: Option<&Value>) -> Option<&Map<String, Value>> {
     v.and_then(Value::as_object)
@@ -309,6 +315,113 @@ impl Checker<'_> {
     }
 }
 
+/// The `id`s of every invoke in the definition, with their paths.
+fn invoke_ids(machine: &Map<String, Value>) -> Vec<(String, String)> {
+    let mut ids = Vec::new();
+    each_state(machine, "$", &mut |state, path| {
+        let invokes: Vec<(String, &Value)> = match state.get("invoke") {
+            Some(Value::Array(items)) => {
+                items.iter().enumerate().map(|(i, v)| (format!("{path}.invoke[{i}]"), v)).collect()
+            }
+            Some(v) => vec![(format!("{path}.invoke"), v)],
+            None => vec![],
+        };
+        for (ipath, invoke) in invokes {
+            if let Some(id) = invoke.get("id").and_then(Value::as_str) {
+                ids.push((id.to_owned(), ipath));
+            }
+        }
+    });
+    ids
+}
+
+/// Types, a handle and an output reader for each declared child.
+fn children(types: &mut Types, machine: &Map<String, Value>, schemas: &Map<String, Value>) -> Result<String, Error> {
+    let Some(declared) = schemas.get("children") else { return Ok(String::new()) };
+    let declared = declared.as_object().ok_or_else(|| Error::new("schemas.children", "expected an object"))?;
+    let ids = invoke_ids(machine);
+    let mut code = String::new();
+    for (id, def) in declared {
+        let path = format!("schemas.children.{id}");
+        let def = def.as_object().ok_or_else(|| Error::new(&path, "expected `{ events?, output? }`"))?;
+        if let Some(k) = def.keys().find(|k| !matches!(k.as_str(), "events" | "output")) {
+            return Err(Error::new(&format!("{path}.{k}"), "unknown key (expected `events` or `output`)"));
+        }
+        let Some((_, invoke_path)) = ids.iter().find(|(i, _)| i == id) else {
+            return Err(Error::new(&path, format!("no invoke in the machine has `id: \"{id}\"`")));
+        };
+        let p = pascal(id);
+        let (handle, event, output) = (format!("{p}Child"), format!("{p}ChildEvent"), format!("{p}ChildOutput"));
+        types.claim(&handle, &path)?;
+        match def.get("events") {
+            Some(Value::Object(events)) => {
+                event_enum(types, &event, &event, &[(&format!("children.{id}.events"), events)])?
+            }
+            Some(_) => return Err(Error::new(&format!("{path}.events"), "expected an object of event schemas")),
+            None => {
+                types.claim(&event, &path)?;
+                types.out.push(format!("pub type {event} = {VALUE};\n"));
+            }
+        }
+        match def.get("output") {
+            Some(schema) => types.named(schema, &output, &format!("{path}.output"))?,
+            None => {
+                types.claim(&output, &path)?;
+                types.out.push(format!("pub type {output} = {VALUE};\n"));
+            }
+        }
+        let snake_id = snake(id);
+        let lit = string_lit(id);
+        code.push_str(&format!(
+            r#"/// The running child invoked with `id: {lit}` (at `{invoke_path}`).
+pub struct {handle}<'a> {{
+    actor: &'a mut Actor,
+    address: String,
+}}
+
+impl {handle}<'_> {{
+    /// The invoke `id`.
+    pub const ID: &'static str = {lit};
+
+    /// The child's address in the actor's system.
+    pub fn address(&self) -> &str {{
+        &self.address
+    }}
+
+    /// The child's status.
+    pub fn status(&self) -> __rt::Status {{
+        self.actor.system().snapshot(&self.address).map_or(__rt::Status::Stopped, |s| s.status())
+    }}
+
+    /// Sends an event to the child at `now_ms` (see `Actor::send_to`).
+    pub fn send(&mut self, event: {event}, now_ms: u64) -> Result<(), __rt::SystemError> {{
+        let event = __rt::EventType::to_json(&event);
+        self.actor.send_to(&self.address, event, now_ms)
+    }}
+}}
+
+/// The child invoked with `id: {lit}`, while the machine's active states invoke it.
+pub fn child_{snake_id}(actor: &mut Actor) -> Option<{handle}<'_>> {{
+    let address = actor.children().into_iter().find(|(id, _)| *id == {lit})?.1.to_owned();
+    Some({handle} {{ actor, address }})
+}}
+
+/// The output of the child invoked with `id: {lit}`, when `event` is its
+/// `xstate.done.actor` event (`None` for other events, or an output that
+/// does not fit `{output}`).
+pub fn child_{snake_id}_output(event: &__rt::Ev<Event>) -> Option<{output}> {{
+    if event.event_type() != "xstate.done.actor" || event.field("actorId")?.as_str() != Some({lit}) {{
+        return None;
+    }}
+    __rt::serde_json::from_value(event.field("output").unwrap_or(__rt::serde_json::Value::Null)).ok()
+}}
+
+"#
+        ));
+    }
+    Ok(code)
+}
+
 /// Distinct names in reference order.
 fn distinct(refs: &[Reference]) -> Vec<&Reference> {
     let mut seen = HashSet::new();
@@ -423,6 +536,8 @@ pub fn generate(bundle: &Value, module: &str) -> Result<Generated, Error> {
         }
     }
 
+    let children_code = children(&mut types, machine, schemas)?;
+
     // The implementation trait and the registry wiring.
     let mut methods = Vec::new();
     let mut wiring = Vec::new();
@@ -522,6 +637,10 @@ pub fn generate(bundle: &Value, module: &str) -> Result<Generated, Error> {
         "/// Compiles the definition with `imp`.\npub fn machine<I: {trait_name}>(imp: ::std::sync::Arc<I>) -> Result<__rt::Machine<Context, Event>, __rt::LoadError> {{\n    __rt::Machine::from_json_str(DEFINITION, &registry(imp))\n}}\n\n"
     ));
     code.push_str("/// An actor running this machine.\npub type Actor = __rt::Actor<Context, Event>;\n");
+    if !children_code.is_empty() {
+        code.push('\n');
+        code.push_str(&children_code);
+    }
     Ok(Generated { code, warnings })
 }
 
