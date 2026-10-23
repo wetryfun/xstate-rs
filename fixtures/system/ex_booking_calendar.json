@@ -454,10 +454,28 @@
     {
       "resolve": 0,
       "event": {
-        "type": "xstate.async.reject",
-        "data": {
-          "message": "Slot already taken"
-        }
+        "type": "xstate.async.resolve",
+        "data": [
+          {
+            "id": "s1",
+            "taken": false
+          },
+          {
+            "id": "s2",
+            "taken": true
+          },
+          {
+            "id": "s3",
+            "taken": false
+          }
+        ]
+      }
+    },
+    {
+      "send": "booking",
+      "event": {
+        "type": "select",
+        "slotId": "s2"
       }
     },
     {
@@ -469,13 +487,6 @@
     },
     {
       "advance": 10
-    },
-    {
-      "send": "booking",
-      "event": {
-        "type": "select",
-        "slotId": "s1"
-      }
     },
     {
       "send": "booking",
@@ -576,28 +587,17 @@
     {
       "resolve": 0,
       "event": {
-        "type": "xstate.async.resolve",
-        "data": [
-          {
-            "id": "s1",
-            "taken": false
-          },
-          {
-            "id": "s2",
-            "taken": true
-          },
-          {
-            "id": "s3",
-            "taken": false
-          }
-        ]
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "Could not load slots."
+        }
       }
     },
     {
       "send": "booking",
       "event": {
         "type": "select",
-        "slotId": "s3"
+        "slotId": "s1"
       }
     },
     {

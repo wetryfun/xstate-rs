@@ -233,7 +233,7 @@
       }
     },
     {
-      "resolve": 0,
+      "resolve": 2,
       "event": {
         "type": "xstate.async.resolve",
         "data": {
@@ -247,7 +247,7 @@
       "advance": 12000
     },
     {
-      "resolve": 0,
+      "resolve": 2,
       "event": {
         "type": "xstate.async.reject",
         "data": {
@@ -270,7 +270,7 @@
       }
     },
     {
-      "resolve": 0,
+      "resolve": 2,
       "event": {
         "type": "xstate.async.resolve",
         "data": {
@@ -310,7 +310,7 @@
       "advance": 20000
     },
     {
-      "resolve": 0,
+      "resolve": 2,
       "event": {
         "type": "xstate.async.resolve",
         "data": {

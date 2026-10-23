@@ -465,7 +465,7 @@
   "root": "client",
   "steps": [
     {
-      "resolve": 0,
+      "resolve": 1,
       "event": {
         "type": "xstate.async.resolve",
         "data": {
@@ -477,7 +477,7 @@
       "advance": 120
     },
     {
-      "resolve": 0,
+      "resolve": 2,
       "event": {
         "type": "xstate.async.resolve",
         "data": {
@@ -489,7 +489,7 @@
       "advance": 240
     },
     {
-      "resolve": 0,
+      "resolve": 3,
       "event": {
         "type": "xstate.async.resolve",
         "data": {
@@ -501,7 +501,7 @@
       "advance": 360
     },
     {
-      "resolve": 0,
+      "resolve": 4,
       "event": {
         "type": "xstate.async.reject",
         "data": {
@@ -510,7 +510,7 @@
       }
     },
     {
-      "resolve": 0,
+      "resolve": 6,
       "event": {
         "type": "xstate.async.reject",
         "data": {
@@ -522,7 +522,7 @@
       "advance": 560
     },
     {
-      "resolve": 0,
+      "resolve": 8,
       "event": {
         "type": "xstate.async.reject",
         "data": {
@@ -534,7 +534,7 @@
       "advance": 760
     },
     {
-      "resolve": 0,
+      "resolve": 10,
       "event": {
         "type": "xstate.async.resolve",
         "data": {
@@ -546,7 +546,7 @@
       "advance": 880
     },
     {
-      "resolve": 0,
+      "resolve": 11,
       "event": {
         "type": "xstate.async.reject",
         "data": {
@@ -555,7 +555,7 @@
       }
     },
     {
-      "resolve": 0,
+      "resolve": 13,
       "event": {
         "type": "xstate.async.reject",
         "data": {
@@ -567,7 +567,7 @@
       "advance": 1080
     },
     {
-      "resolve": 0,
+      "resolve": 15,
       "event": {
         "type": "xstate.async.reject",
         "data": {
@@ -579,7 +579,7 @@
       "advance": 1280
     },
     {
-      "resolve": 0,
+      "resolve": 17,
       "event": {
         "type": "xstate.async.reject",
         "data": {
@@ -591,7 +591,7 @@
       "advance": 1480
     },
     {
-      "resolve": 0,
+      "resolve": 19,
       "event": {
         "type": "xstate.async.reject",
         "data": {

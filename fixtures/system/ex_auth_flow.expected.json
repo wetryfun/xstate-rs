@@ -1458,7 +1458,170 @@
   },
   {
     "label": "step 11",
-    "error": "External effect result does not match its owner or is stale."
+    "snapshot": {
+      "root": "auth",
+      "executionId": "system",
+      "now": 8000,
+      "actors": {
+        "auth": {
+          "id": "auth",
+          "address": "auth",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "credentials": null,
+              "session": {
+                "user": "ada@example.com",
+                "token": "t1",
+                "expiresAt": 10000
+              },
+              "error": null
+            },
+            "value": {
+              "authenticated": "idle"
+            },
+            "children": {},
+            "timers": [
+              {
+                "delay": 4000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 4000,
+                  "stateId": "auth.authenticated.idle"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "auth",
+              "auth.authenticated",
+              "auth.authenticated.idle"
+            ]
+          }
+        },
+        "auth/auth.authenticating:0": {
+          "id": "auth.authenticating:0",
+          "address": "auth/auth.authenticating:0",
+          "incarnation": "5",
+          "src": "root/actors/authenticate",
+          "parent": {
+            "$actor": "auth",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "email": "ada@example.com",
+            "password": "lovelace"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "user": "ada@example.com",
+              "token": "t1",
+              "expiresAt": 10000
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "user": "ada@example.com",
+                  "token": "t1",
+                  "expiresAt": 10000
+                }
+              }
+            }
+          }
+        },
+        "auth/auth.authenticated.refreshing:0": {
+          "id": "auth.authenticated.refreshing:0",
+          "address": "auth/auth.authenticated.refreshing:0",
+          "incarnation": "4",
+          "src": "root/actors/refreshToken",
+          "parent": {
+            "$actor": "auth",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "session": {
+              "user": "ada@example.com",
+              "token": "t1",
+              "expiresAt": 10000
+            }
+          },
+          "snapshot": {
+            "status": "stopped",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "auth",
+            "incarnation": "0"
+          },
+          "occurrence": 2,
+          "scheduledAt": 8000,
+          "dueAt": 12000,
+          "sequence": 18,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 4000,
+              "stateId": "auth.authenticated.idle"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "auth/auth.authenticated.refreshing:0",
+            "incarnation": "4"
+          },
+          "type": "@xstate.cleanup",
+          "kind": "action",
+          "args": []
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "auth/auth.authenticated.refreshing:0",
+            "incarnation": "4"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:3"
+          }
+        }
+      },
+      "counters": {
+        "actor": 6,
+        "timer": 3,
+        "sequence": 19,
+        "effect": 7
+      }
+    },
+    "effects": []
   },
   {
     "label": "step 12",
@@ -1476,18 +1639,21 @@
           "snapshot": {
             "status": "active",
             "context": {
-              "credentials": {
-                "email": "ada@example.com",
-                "password": "lovelace"
+              "credentials": null,
+              "session": {
+                "user": "ada@example.com",
+                "token": "t1",
+                "expiresAt": 10000
               },
-              "session": null,
               "error": null
             },
-            "value": "authenticating",
+            "value": {
+              "authenticated": "refreshing"
+            },
             "children": {
-              "auth.authenticating:0": {
-                "$actor": "auth/auth.authenticating:0",
-                "incarnation": "5"
+              "auth.authenticated.refreshing:0": {
+                "$actor": "auth/auth.authenticated.refreshing:0",
+                "incarnation": "6"
               }
             },
             "timers": [],
@@ -1496,7 +1662,8 @@
             "_nextTimerId": 0,
             "nodeIds": [
               "auth",
-              "auth.authenticating"
+              "auth.authenticated",
+              "auth.authenticated.refreshing"
             ]
           }
         },
@@ -1516,14 +1683,20 @@
             "password": "lovelace"
           },
           "snapshot": {
-            "status": "active",
-            "input": {
-              "email": "ada@example.com",
-              "password": "lovelace"
+            "status": "done",
+            "output": {
+              "user": "ada@example.com",
+              "token": "t1",
+              "expiresAt": 10000
             },
             "effects": {
               "async": {
-                "status": "active"
+                "status": "done",
+                "output": {
+                  "user": "ada@example.com",
+                  "token": "t1",
+                  "expiresAt": 10000
+                }
               }
             }
           }
@@ -1531,7 +1704,7 @@
         "auth/auth.authenticated.refreshing:0": {
           "id": "auth.authenticated.refreshing:0",
           "address": "auth/auth.authenticated.refreshing:0",
-          "incarnation": "4",
+          "incarnation": "6",
           "src": "root/actors/refreshToken",
           "parent": {
             "$actor": "auth",
@@ -1547,7 +1720,14 @@
             }
           },
           "snapshot": {
-            "status": "stopped",
+            "status": "active",
+            "input": {
+              "session": {
+                "user": "ada@example.com",
+                "token": "t1",
+                "expiresAt": 10000
+              }
+            },
             "effects": {
               "async": {
                 "status": "active"
@@ -1582,11 +1762,11 @@
             "effectId": "system:3"
           }
         },
-        "system:6": {
-          "id": "system:6",
+        "system:7": {
+          "id": "system:7",
           "source": {
-            "$actor": "auth/auth.authenticating:0",
-            "incarnation": "5"
+            "$actor": "auth/auth.authenticated.refreshing:0",
+            "incarnation": "6"
           },
           "type": "@xstate.effect",
           "kind": "action",
@@ -1594,17 +1774,164 @@
         }
       },
       "counters": {
-        "actor": 6,
-        "timer": 2,
-        "sequence": 16,
-        "effect": 7
+        "actor": 7,
+        "timer": 3,
+        "sequence": 20,
+        "effect": 8
       }
     },
-    "effects": []
+    "effects": [
+      {
+        "id": "system:7",
+        "source": {
+          "$actor": "auth/auth.authenticated.refreshing:0",
+          "incarnation": "6"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
   },
   {
     "label": "step 13",
-    "error": "External effect result does not match its owner or is stale."
+    "snapshot": {
+      "root": "auth",
+      "executionId": "system",
+      "now": 12000,
+      "actors": {
+        "auth": {
+          "id": "auth",
+          "address": "auth",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "credentials": null,
+              "session": {
+                "user": "ada@example.com",
+                "token": "t1",
+                "expiresAt": 10000
+              },
+              "error": "Refresh token rejected."
+            },
+            "value": "sessionExpired",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "auth",
+              "auth.sessionExpired"
+            ]
+          }
+        },
+        "auth/auth.authenticating:0": {
+          "id": "auth.authenticating:0",
+          "address": "auth/auth.authenticating:0",
+          "incarnation": "5",
+          "src": "root/actors/authenticate",
+          "parent": {
+            "$actor": "auth",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "email": "ada@example.com",
+            "password": "lovelace"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "user": "ada@example.com",
+              "token": "t1",
+              "expiresAt": 10000
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "user": "ada@example.com",
+                  "token": "t1",
+                  "expiresAt": 10000
+                }
+              }
+            }
+          }
+        },
+        "auth/auth.authenticated.refreshing:0": {
+          "id": "auth.authenticated.refreshing:0",
+          "address": "auth/auth.authenticated.refreshing:0",
+          "incarnation": "6",
+          "src": "root/actors/refreshToken",
+          "parent": {
+            "$actor": "auth",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "session": {
+              "user": "ada@example.com",
+              "token": "t1",
+              "expiresAt": 10000
+            }
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "Refresh token rejected."
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "Refresh token rejected."
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "auth/auth.authenticated.refreshing:0",
+            "incarnation": "4"
+          },
+          "type": "@xstate.cleanup",
+          "kind": "action",
+          "args": []
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "auth/auth.authenticated.refreshing:0",
+            "incarnation": "4"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:3"
+          }
+        }
+      },
+      "counters": {
+        "actor": 7,
+        "timer": 3,
+        "sequence": 22,
+        "effect": 8
+      }
+    },
+    "effects": []
   },
   {
     "label": "step 14",
@@ -1622,27 +1949,19 @@
           "snapshot": {
             "status": "active",
             "context": {
-              "credentials": {
-                "email": "ada@example.com",
-                "password": "lovelace"
-              },
+              "credentials": null,
               "session": null,
               "error": null
             },
-            "value": "authenticating",
-            "children": {
-              "auth.authenticating:0": {
-                "$actor": "auth/auth.authenticating:0",
-                "incarnation": "5"
-              }
-            },
+            "value": "loggedOut",
+            "children": {},
             "timers": [],
             "historyValue": {},
             "_stateInputs": {},
             "_nextTimerId": 0,
             "nodeIds": [
               "auth",
-              "auth.authenticating"
+              "auth.loggedOut"
             ]
           }
         },
@@ -1662,14 +1981,20 @@
             "password": "lovelace"
           },
           "snapshot": {
-            "status": "active",
-            "input": {
-              "email": "ada@example.com",
-              "password": "lovelace"
+            "status": "done",
+            "output": {
+              "user": "ada@example.com",
+              "token": "t1",
+              "expiresAt": 10000
             },
             "effects": {
               "async": {
-                "status": "active"
+                "status": "done",
+                "output": {
+                  "user": "ada@example.com",
+                  "token": "t1",
+                  "expiresAt": 10000
+                }
               }
             }
           }
@@ -1677,7 +2002,7 @@
         "auth/auth.authenticated.refreshing:0": {
           "id": "auth.authenticated.refreshing:0",
           "address": "auth/auth.authenticated.refreshing:0",
-          "incarnation": "4",
+          "incarnation": "6",
           "src": "root/actors/refreshToken",
           "parent": {
             "$actor": "auth",
@@ -1693,10 +2018,16 @@
             }
           },
           "snapshot": {
-            "status": "stopped",
+            "status": "error",
+            "error": {
+              "message": "Refresh token rejected."
+            },
             "effects": {
               "async": {
-                "status": "active"
+                "status": "error",
+                "error": {
+                  "message": "Refresh token rejected."
+                }
               }
             }
           }
@@ -1727,23 +2058,13 @@
           "params": {
             "effectId": "system:3"
           }
-        },
-        "system:6": {
-          "id": "system:6",
-          "source": {
-            "$actor": "auth/auth.authenticating:0",
-            "incarnation": "5"
-          },
-          "type": "@xstate.effect",
-          "kind": "action",
-          "args": []
         }
       },
       "counters": {
-        "actor": 6,
-        "timer": 2,
-        "sequence": 17,
-        "effect": 7
+        "actor": 7,
+        "timer": 3,
+        "sequence": 23,
+        "effect": 8
       }
     },
     "effects": []
@@ -1775,7 +2096,7 @@
             "children": {
               "auth.authenticating:0": {
                 "$actor": "auth/auth.authenticating:0",
-                "incarnation": "5"
+                "incarnation": "7"
               }
             },
             "timers": [],
@@ -1791,7 +2112,7 @@
         "auth/auth.authenticating:0": {
           "id": "auth.authenticating:0",
           "address": "auth/auth.authenticating:0",
-          "incarnation": "5",
+          "incarnation": "7",
           "src": "root/actors/authenticate",
           "parent": {
             "$actor": "auth",
@@ -1819,7 +2140,7 @@
         "auth/auth.authenticated.refreshing:0": {
           "id": "auth.authenticated.refreshing:0",
           "address": "auth/auth.authenticated.refreshing:0",
-          "incarnation": "4",
+          "incarnation": "6",
           "src": "root/actors/refreshToken",
           "parent": {
             "$actor": "auth",
@@ -1835,10 +2156,16 @@
             }
           },
           "snapshot": {
-            "status": "stopped",
+            "status": "error",
+            "error": {
+              "message": "Refresh token rejected."
+            },
             "effects": {
               "async": {
-                "status": "active"
+                "status": "error",
+                "error": {
+                  "message": "Refresh token rejected."
+                }
               }
             }
           }
@@ -1870,11 +2197,11 @@
             "effectId": "system:3"
           }
         },
-        "system:6": {
-          "id": "system:6",
+        "system:8": {
+          "id": "system:8",
           "source": {
             "$actor": "auth/auth.authenticating:0",
-            "incarnation": "5"
+            "incarnation": "7"
           },
           "type": "@xstate.effect",
           "kind": "action",
@@ -1882,17 +2209,197 @@
         }
       },
       "counters": {
-        "actor": 6,
-        "timer": 2,
-        "sequence": 18,
-        "effect": 7
+        "actor": 8,
+        "timer": 3,
+        "sequence": 24,
+        "effect": 9
       }
     },
-    "effects": []
+    "effects": [
+      {
+        "id": "system:8",
+        "source": {
+          "$actor": "auth/auth.authenticating:0",
+          "incarnation": "7"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
   },
   {
     "label": "step 16",
-    "error": "External effect result does not match its owner or is stale."
+    "snapshot": {
+      "root": "auth",
+      "executionId": "system",
+      "now": 12000,
+      "actors": {
+        "auth": {
+          "id": "auth",
+          "address": "auth",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "credentials": null,
+              "session": {
+                "user": "ada@example.com",
+                "token": "t1",
+                "expiresAt": 10000
+              },
+              "error": null
+            },
+            "value": {
+              "authenticated": "idle"
+            },
+            "children": {},
+            "timers": [
+              {
+                "delay": 4000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 4000,
+                  "stateId": "auth.authenticated.idle"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "auth",
+              "auth.authenticated",
+              "auth.authenticated.idle"
+            ]
+          }
+        },
+        "auth/auth.authenticating:0": {
+          "id": "auth.authenticating:0",
+          "address": "auth/auth.authenticating:0",
+          "incarnation": "7",
+          "src": "root/actors/authenticate",
+          "parent": {
+            "$actor": "auth",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "email": "ada@example.com",
+            "password": "lovelace"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "user": "ada@example.com",
+              "token": "t1",
+              "expiresAt": 10000
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "user": "ada@example.com",
+                  "token": "t1",
+                  "expiresAt": 10000
+                }
+              }
+            }
+          }
+        },
+        "auth/auth.authenticated.refreshing:0": {
+          "id": "auth.authenticated.refreshing:0",
+          "address": "auth/auth.authenticated.refreshing:0",
+          "incarnation": "6",
+          "src": "root/actors/refreshToken",
+          "parent": {
+            "$actor": "auth",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "session": {
+              "user": "ada@example.com",
+              "token": "t1",
+              "expiresAt": 10000
+            }
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "Refresh token rejected."
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "Refresh token rejected."
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "auth",
+            "incarnation": "0"
+          },
+          "occurrence": 3,
+          "scheduledAt": 12000,
+          "dueAt": 16000,
+          "sequence": 26,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 4000,
+              "stateId": "auth.authenticated.idle"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "auth/auth.authenticated.refreshing:0",
+            "incarnation": "4"
+          },
+          "type": "@xstate.cleanup",
+          "kind": "action",
+          "args": []
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "auth/auth.authenticated.refreshing:0",
+            "incarnation": "4"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:3"
+          }
+        }
+      },
+      "counters": {
+        "actor": 8,
+        "timer": 4,
+        "sequence": 27,
+        "effect": 9
+      }
+    },
+    "effects": []
   },
   {
     "label": "step 17",
@@ -1910,34 +2417,26 @@
           "snapshot": {
             "status": "active",
             "context": {
-              "credentials": {
-                "email": "ada@example.com",
-                "password": "lovelace"
-              },
+              "credentials": null,
               "session": null,
               "error": null
             },
-            "value": "authenticating",
-            "children": {
-              "auth.authenticating:0": {
-                "$actor": "auth/auth.authenticating:0",
-                "incarnation": "5"
-              }
-            },
+            "value": "loggedOut",
+            "children": {},
             "timers": [],
             "historyValue": {},
             "_stateInputs": {},
             "_nextTimerId": 0,
             "nodeIds": [
               "auth",
-              "auth.authenticating"
+              "auth.loggedOut"
             ]
           }
         },
         "auth/auth.authenticating:0": {
           "id": "auth.authenticating:0",
           "address": "auth/auth.authenticating:0",
-          "incarnation": "5",
+          "incarnation": "7",
           "src": "root/actors/authenticate",
           "parent": {
             "$actor": "auth",
@@ -1950,14 +2449,20 @@
             "password": "lovelace"
           },
           "snapshot": {
-            "status": "active",
-            "input": {
-              "email": "ada@example.com",
-              "password": "lovelace"
+            "status": "done",
+            "output": {
+              "user": "ada@example.com",
+              "token": "t1",
+              "expiresAt": 10000
             },
             "effects": {
               "async": {
-                "status": "active"
+                "status": "done",
+                "output": {
+                  "user": "ada@example.com",
+                  "token": "t1",
+                  "expiresAt": 10000
+                }
               }
             }
           }
@@ -1965,7 +2470,7 @@
         "auth/auth.authenticated.refreshing:0": {
           "id": "auth.authenticated.refreshing:0",
           "address": "auth/auth.authenticated.refreshing:0",
-          "incarnation": "4",
+          "incarnation": "6",
           "src": "root/actors/refreshToken",
           "parent": {
             "$actor": "auth",
@@ -1981,10 +2486,16 @@
             }
           },
           "snapshot": {
-            "status": "stopped",
+            "status": "error",
+            "error": {
+              "message": "Refresh token rejected."
+            },
             "effects": {
               "async": {
-                "status": "active"
+                "status": "error",
+                "error": {
+                  "message": "Refresh token rejected."
+                }
               }
             }
           }
@@ -2015,23 +2526,13 @@
           "params": {
             "effectId": "system:3"
           }
-        },
-        "system:6": {
-          "id": "system:6",
-          "source": {
-            "$actor": "auth/auth.authenticating:0",
-            "incarnation": "5"
-          },
-          "type": "@xstate.effect",
-          "kind": "action",
-          "args": []
         }
       },
       "counters": {
-        "actor": 6,
-        "timer": 2,
-        "sequence": 19,
-        "effect": 7
+        "actor": 8,
+        "timer": 4,
+        "sequence": 28,
+        "effect": 9
       }
     },
     "effects": []
@@ -2052,34 +2553,26 @@
           "snapshot": {
             "status": "active",
             "context": {
-              "credentials": {
-                "email": "ada@example.com",
-                "password": "lovelace"
-              },
+              "credentials": null,
               "session": null,
               "error": null
             },
-            "value": "authenticating",
-            "children": {
-              "auth.authenticating:0": {
-                "$actor": "auth/auth.authenticating:0",
-                "incarnation": "5"
-              }
-            },
+            "value": "loggedOut",
+            "children": {},
             "timers": [],
             "historyValue": {},
             "_stateInputs": {},
             "_nextTimerId": 0,
             "nodeIds": [
               "auth",
-              "auth.authenticating"
+              "auth.loggedOut"
             ]
           }
         },
         "auth/auth.authenticating:0": {
           "id": "auth.authenticating:0",
           "address": "auth/auth.authenticating:0",
-          "incarnation": "5",
+          "incarnation": "7",
           "src": "root/actors/authenticate",
           "parent": {
             "$actor": "auth",
@@ -2092,14 +2585,20 @@
             "password": "lovelace"
           },
           "snapshot": {
-            "status": "active",
-            "input": {
-              "email": "ada@example.com",
-              "password": "lovelace"
+            "status": "done",
+            "output": {
+              "user": "ada@example.com",
+              "token": "t1",
+              "expiresAt": 10000
             },
             "effects": {
               "async": {
-                "status": "active"
+                "status": "done",
+                "output": {
+                  "user": "ada@example.com",
+                  "token": "t1",
+                  "expiresAt": 10000
+                }
               }
             }
           }
@@ -2107,7 +2606,7 @@
         "auth/auth.authenticated.refreshing:0": {
           "id": "auth.authenticated.refreshing:0",
           "address": "auth/auth.authenticated.refreshing:0",
-          "incarnation": "4",
+          "incarnation": "6",
           "src": "root/actors/refreshToken",
           "parent": {
             "$actor": "auth",
@@ -2123,10 +2622,16 @@
             }
           },
           "snapshot": {
-            "status": "stopped",
+            "status": "error",
+            "error": {
+              "message": "Refresh token rejected."
+            },
             "effects": {
               "async": {
-                "status": "active"
+                "status": "error",
+                "error": {
+                  "message": "Refresh token rejected."
+                }
               }
             }
           }
@@ -2157,23 +2662,13 @@
           "params": {
             "effectId": "system:3"
           }
-        },
-        "system:6": {
-          "id": "system:6",
-          "source": {
-            "$actor": "auth/auth.authenticating:0",
-            "incarnation": "5"
-          },
-          "type": "@xstate.effect",
-          "kind": "action",
-          "args": []
         }
       },
       "counters": {
-        "actor": 6,
-        "timer": 2,
-        "sequence": 20,
-        "effect": 7
+        "actor": 8,
+        "timer": 4,
+        "sequence": 29,
+        "effect": 9
       }
     },
     "effects": []
@@ -2205,7 +2700,7 @@
             "children": {
               "auth.authenticating:0": {
                 "$actor": "auth/auth.authenticating:0",
-                "incarnation": "5"
+                "incarnation": "8"
               }
             },
             "timers": [],
@@ -2221,7 +2716,7 @@
         "auth/auth.authenticating:0": {
           "id": "auth.authenticating:0",
           "address": "auth/auth.authenticating:0",
-          "incarnation": "5",
+          "incarnation": "8",
           "src": "root/actors/authenticate",
           "parent": {
             "$actor": "auth",
@@ -2249,7 +2744,7 @@
         "auth/auth.authenticated.refreshing:0": {
           "id": "auth.authenticated.refreshing:0",
           "address": "auth/auth.authenticated.refreshing:0",
-          "incarnation": "4",
+          "incarnation": "6",
           "src": "root/actors/refreshToken",
           "parent": {
             "$actor": "auth",
@@ -2265,10 +2760,16 @@
             }
           },
           "snapshot": {
-            "status": "stopped",
+            "status": "error",
+            "error": {
+              "message": "Refresh token rejected."
+            },
             "effects": {
               "async": {
-                "status": "active"
+                "status": "error",
+                "error": {
+                  "message": "Refresh token rejected."
+                }
               }
             }
           }
@@ -2300,11 +2801,11 @@
             "effectId": "system:3"
           }
         },
-        "system:6": {
-          "id": "system:6",
+        "system:9": {
+          "id": "system:9",
           "source": {
             "$actor": "auth/auth.authenticating:0",
-            "incarnation": "5"
+            "incarnation": "8"
           },
           "type": "@xstate.effect",
           "kind": "action",
@@ -2312,13 +2813,24 @@
         }
       },
       "counters": {
-        "actor": 6,
-        "timer": 2,
-        "sequence": 21,
-        "effect": 7
+        "actor": 9,
+        "timer": 4,
+        "sequence": 30,
+        "effect": 10
       }
     },
-    "effects": []
+    "effects": [
+      {
+        "id": "system:9",
+        "source": {
+          "$actor": "auth/auth.authenticating:0",
+          "incarnation": "8"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
   },
   {
     "label": "step 20",
@@ -2347,7 +2859,7 @@
             "children": {
               "auth.authenticating:0": {
                 "$actor": "auth/auth.authenticating:0",
-                "incarnation": "5"
+                "incarnation": "8"
               }
             },
             "timers": [],
@@ -2363,7 +2875,7 @@
         "auth/auth.authenticating:0": {
           "id": "auth.authenticating:0",
           "address": "auth/auth.authenticating:0",
-          "incarnation": "5",
+          "incarnation": "8",
           "src": "root/actors/authenticate",
           "parent": {
             "$actor": "auth",
@@ -2391,7 +2903,7 @@
         "auth/auth.authenticated.refreshing:0": {
           "id": "auth.authenticated.refreshing:0",
           "address": "auth/auth.authenticated.refreshing:0",
-          "incarnation": "4",
+          "incarnation": "6",
           "src": "root/actors/refreshToken",
           "parent": {
             "$actor": "auth",
@@ -2407,10 +2919,16 @@
             }
           },
           "snapshot": {
-            "status": "stopped",
+            "status": "error",
+            "error": {
+              "message": "Refresh token rejected."
+            },
             "effects": {
               "async": {
-                "status": "active"
+                "status": "error",
+                "error": {
+                  "message": "Refresh token rejected."
+                }
               }
             }
           }
@@ -2442,11 +2960,11 @@
             "effectId": "system:3"
           }
         },
-        "system:6": {
-          "id": "system:6",
+        "system:9": {
+          "id": "system:9",
           "source": {
             "$actor": "auth/auth.authenticating:0",
-            "incarnation": "5"
+            "incarnation": "8"
           },
           "type": "@xstate.effect",
           "kind": "action",
@@ -2454,10 +2972,10 @@
         }
       },
       "counters": {
-        "actor": 6,
-        "timer": 2,
-        "sequence": 22,
-        "effect": 7
+        "actor": 9,
+        "timer": 4,
+        "sequence": 31,
+        "effect": 10
       }
     },
     "effects": []
@@ -2489,7 +3007,7 @@
             "children": {
               "auth.authenticating:0": {
                 "$actor": "auth/auth.authenticating:0",
-                "incarnation": "5"
+                "incarnation": "8"
               }
             },
             "timers": [],
@@ -2505,7 +3023,7 @@
         "auth/auth.authenticating:0": {
           "id": "auth.authenticating:0",
           "address": "auth/auth.authenticating:0",
-          "incarnation": "5",
+          "incarnation": "8",
           "src": "root/actors/authenticate",
           "parent": {
             "$actor": "auth",
@@ -2533,7 +3051,7 @@
         "auth/auth.authenticated.refreshing:0": {
           "id": "auth.authenticated.refreshing:0",
           "address": "auth/auth.authenticated.refreshing:0",
-          "incarnation": "4",
+          "incarnation": "6",
           "src": "root/actors/refreshToken",
           "parent": {
             "$actor": "auth",
@@ -2549,10 +3067,16 @@
             }
           },
           "snapshot": {
-            "status": "stopped",
+            "status": "error",
+            "error": {
+              "message": "Refresh token rejected."
+            },
             "effects": {
               "async": {
-                "status": "active"
+                "status": "error",
+                "error": {
+                  "message": "Refresh token rejected."
+                }
               }
             }
           }
@@ -2584,11 +3108,11 @@
             "effectId": "system:3"
           }
         },
-        "system:6": {
-          "id": "system:6",
+        "system:9": {
+          "id": "system:9",
           "source": {
             "$actor": "auth/auth.authenticating:0",
-            "incarnation": "5"
+            "incarnation": "8"
           },
           "type": "@xstate.effect",
           "kind": "action",
@@ -2596,16 +3120,185 @@
         }
       },
       "counters": {
-        "actor": 6,
-        "timer": 2,
-        "sequence": 22,
-        "effect": 7
+        "actor": 9,
+        "timer": 4,
+        "sequence": 31,
+        "effect": 10
       }
     },
     "effects": []
   },
   {
     "label": "step 22",
-    "error": "External effect result does not match its owner or is stale."
+    "snapshot": {
+      "root": "auth",
+      "executionId": "system",
+      "now": 20000,
+      "actors": {
+        "auth": {
+          "id": "auth",
+          "address": "auth",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "credentials": null,
+              "session": {
+                "user": "ada@example.com",
+                "token": "t1",
+                "expiresAt": 10000
+              },
+              "error": null
+            },
+            "value": {
+              "authenticated": "idle"
+            },
+            "children": {},
+            "timers": [
+              {
+                "delay": 4000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 4000,
+                  "stateId": "auth.authenticated.idle"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "auth",
+              "auth.authenticated",
+              "auth.authenticated.idle"
+            ]
+          }
+        },
+        "auth/auth.authenticating:0": {
+          "id": "auth.authenticating:0",
+          "address": "auth/auth.authenticating:0",
+          "incarnation": "8",
+          "src": "root/actors/authenticate",
+          "parent": {
+            "$actor": "auth",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "email": "ada@example.com",
+            "password": "lovelace"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "user": "ada@example.com",
+              "token": "t1",
+              "expiresAt": 10000
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "user": "ada@example.com",
+                  "token": "t1",
+                  "expiresAt": 10000
+                }
+              }
+            }
+          }
+        },
+        "auth/auth.authenticated.refreshing:0": {
+          "id": "auth.authenticated.refreshing:0",
+          "address": "auth/auth.authenticated.refreshing:0",
+          "incarnation": "6",
+          "src": "root/actors/refreshToken",
+          "parent": {
+            "$actor": "auth",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "session": {
+              "user": "ada@example.com",
+              "token": "t1",
+              "expiresAt": 10000
+            }
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "Refresh token rejected."
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "Refresh token rejected."
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "auth",
+            "incarnation": "0"
+          },
+          "occurrence": 4,
+          "scheduledAt": 20000,
+          "dueAt": 24000,
+          "sequence": 33,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 4000,
+              "stateId": "auth.authenticated.idle"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "auth/auth.authenticated.refreshing:0",
+            "incarnation": "4"
+          },
+          "type": "@xstate.cleanup",
+          "kind": "action",
+          "args": []
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "auth/auth.authenticated.refreshing:0",
+            "incarnation": "4"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:3"
+          }
+        }
+      },
+      "counters": {
+        "actor": 9,
+        "timer": 5,
+        "sequence": 34,
+        "effect": 10
+      }
+    },
+    "effects": []
   }
 ]

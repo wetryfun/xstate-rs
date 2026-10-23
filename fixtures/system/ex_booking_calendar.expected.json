@@ -113,14 +113,27 @@
           "snapshot": {
             "status": "active",
             "context": {
-              "slots": [],
+              "slots": [
+                {
+                  "id": "s1",
+                  "taken": false
+                },
+                {
+                  "id": "s2",
+                  "taken": true
+                },
+                {
+                  "id": "s3",
+                  "taken": false
+                }
+              ],
               "selectedId": null,
               "secondsLeft": 20,
               "confirmation": null,
-              "error": "Could not load slots.",
-              "s1Taken": true,
+              "error": null,
+              "s1Taken": false,
               "s2Taken": true,
-              "s3Taken": true
+              "s3Taken": false
             },
             "value": "selecting",
             "children": {},
@@ -146,16 +159,38 @@
           "syncSnapshot": false,
           "started": true,
           "snapshot": {
-            "status": "error",
-            "error": {
-              "message": "Slot already taken"
-            },
+            "status": "done",
+            "output": [
+              {
+                "id": "s1",
+                "taken": false
+              },
+              {
+                "id": "s2",
+                "taken": true
+              },
+              {
+                "id": "s3",
+                "taken": false
+              }
+            ],
             "effects": {
               "async": {
-                "status": "error",
-                "error": {
-                  "message": "Slot already taken"
-                }
+                "status": "done",
+                "output": [
+                  {
+                    "id": "s1",
+                    "taken": false
+                  },
+                  {
+                    "id": "s2",
+                    "taken": true
+                  },
+                  {
+                    "id": "s3",
+                    "taken": false
+                  }
+                ]
               }
             }
           }
@@ -190,14 +225,27 @@
           "snapshot": {
             "status": "active",
             "context": {
-              "slots": [],
+              "slots": [
+                {
+                  "id": "s1",
+                  "taken": false
+                },
+                {
+                  "id": "s2",
+                  "taken": true
+                },
+                {
+                  "id": "s3",
+                  "taken": false
+                }
+              ],
               "selectedId": null,
               "secondsLeft": 20,
               "confirmation": null,
-              "error": "Could not load slots.",
-              "s1Taken": true,
+              "error": null,
+              "s1Taken": false,
               "s2Taken": true,
-              "s3Taken": true
+              "s3Taken": false
             },
             "value": "selecting",
             "children": {},
@@ -223,16 +271,38 @@
           "syncSnapshot": false,
           "started": true,
           "snapshot": {
-            "status": "error",
-            "error": {
-              "message": "Slot already taken"
-            },
+            "status": "done",
+            "output": [
+              {
+                "id": "s1",
+                "taken": false
+              },
+              {
+                "id": "s2",
+                "taken": true
+              },
+              {
+                "id": "s3",
+                "taken": false
+              }
+            ],
             "effects": {
               "async": {
-                "status": "error",
-                "error": {
-                  "message": "Slot already taken"
-                }
+                "status": "done",
+                "output": [
+                  {
+                    "id": "s1",
+                    "taken": false
+                  },
+                  {
+                    "id": "s2",
+                    "taken": true
+                  },
+                  {
+                    "id": "s3",
+                    "taken": false
+                  }
+                ]
               }
             }
           }
@@ -256,7 +326,7 @@
     "snapshot": {
       "root": "booking",
       "executionId": "system",
-      "now": 10,
+      "now": 0,
       "actors": {
         "booking": {
           "id": "booking",
@@ -267,24 +337,48 @@
           "snapshot": {
             "status": "active",
             "context": {
-              "slots": [],
-              "selectedId": null,
+              "slots": [
+                {
+                  "id": "s1",
+                  "taken": false
+                },
+                {
+                  "id": "s2",
+                  "taken": true
+                },
+                {
+                  "id": "s3",
+                  "taken": false
+                }
+              ],
+              "selectedId": "s1",
               "secondsLeft": 20,
               "confirmation": null,
-              "error": "Could not load slots.",
-              "s1Taken": true,
+              "error": null,
+              "s1Taken": false,
               "s2Taken": true,
-              "s3Taken": true
+              "s3Taken": false
             },
-            "value": "selecting",
+            "value": "holding",
             "children": {},
-            "timers": [],
+            "timers": [
+              {
+                "delay": 2000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 2000,
+                  "stateId": "booking.holding"
+                },
+                "target": "self"
+              }
+            ],
             "historyValue": {},
             "_stateInputs": {},
             "_nextTimerId": 0,
             "nodeIds": [
               "booking",
-              "booking.selecting"
+              "booking.holding"
             ]
           }
         },
@@ -300,16 +394,38 @@
           "syncSnapshot": false,
           "started": true,
           "snapshot": {
-            "status": "error",
-            "error": {
-              "message": "Slot already taken"
-            },
+            "status": "done",
+            "output": [
+              {
+                "id": "s1",
+                "taken": false
+              },
+              {
+                "id": "s2",
+                "taken": true
+              },
+              {
+                "id": "s3",
+                "taken": false
+              }
+            ],
             "effects": {
               "async": {
-                "status": "error",
-                "error": {
-                  "message": "Slot already taken"
-                }
+                "status": "done",
+                "output": [
+                  {
+                    "id": "s1",
+                    "taken": false
+                  },
+                  {
+                    "id": "s2",
+                    "taken": true
+                  },
+                  {
+                    "id": "s3",
+                    "taken": false
+                  }
+                ]
               }
             }
           }
@@ -317,12 +433,31 @@
       },
       "registry": {},
       "messages": [],
-      "timers": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 2000,
+          "sequence": 4,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 2000,
+              "stateId": "booking.holding"
+            }
+          }
+        }
+      ],
       "externalEffects": {},
       "counters": {
         "actor": 2,
-        "timer": 0,
-        "sequence": 3,
+        "timer": 1,
+        "sequence": 5,
         "effect": 1
       }
     },
@@ -344,24 +479,48 @@
           "snapshot": {
             "status": "active",
             "context": {
-              "slots": [],
-              "selectedId": null,
+              "slots": [
+                {
+                  "id": "s1",
+                  "taken": false
+                },
+                {
+                  "id": "s2",
+                  "taken": true
+                },
+                {
+                  "id": "s3",
+                  "taken": false
+                }
+              ],
+              "selectedId": "s1",
               "secondsLeft": 20,
               "confirmation": null,
-              "error": "Could not load slots.",
-              "s1Taken": true,
+              "error": null,
+              "s1Taken": false,
               "s2Taken": true,
-              "s3Taken": true
+              "s3Taken": false
             },
-            "value": "selecting",
+            "value": "holding",
             "children": {},
-            "timers": [],
+            "timers": [
+              {
+                "delay": 2000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 2000,
+                  "stateId": "booking.holding"
+                },
+                "target": "self"
+              }
+            ],
             "historyValue": {},
             "_stateInputs": {},
             "_nextTimerId": 0,
             "nodeIds": [
               "booking",
-              "booking.selecting"
+              "booking.holding"
             ]
           }
         },
@@ -377,16 +536,38 @@
           "syncSnapshot": false,
           "started": true,
           "snapshot": {
-            "status": "error",
-            "error": {
-              "message": "Slot already taken"
-            },
+            "status": "done",
+            "output": [
+              {
+                "id": "s1",
+                "taken": false
+              },
+              {
+                "id": "s2",
+                "taken": true
+              },
+              {
+                "id": "s3",
+                "taken": false
+              }
+            ],
             "effects": {
               "async": {
-                "status": "error",
-                "error": {
-                  "message": "Slot already taken"
-                }
+                "status": "done",
+                "output": [
+                  {
+                    "id": "s1",
+                    "taken": false
+                  },
+                  {
+                    "id": "s2",
+                    "taken": true
+                  },
+                  {
+                    "id": "s3",
+                    "taken": false
+                  }
+                ]
               }
             }
           }
@@ -394,12 +575,31 @@
       },
       "registry": {},
       "messages": [],
-      "timers": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 2000,
+          "sequence": 4,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 2000,
+              "stateId": "booking.holding"
+            }
+          }
+        }
+      ],
       "externalEffects": {},
       "counters": {
         "actor": 2,
-        "timer": 0,
-        "sequence": 4,
+        "timer": 1,
+        "sequence": 5,
         "effect": 1
       }
     },
@@ -421,24 +621,48 @@
           "snapshot": {
             "status": "active",
             "context": {
-              "slots": [],
-              "selectedId": null,
-              "secondsLeft": 20,
+              "slots": [
+                {
+                  "id": "s1",
+                  "taken": false
+                },
+                {
+                  "id": "s2",
+                  "taken": true
+                },
+                {
+                  "id": "s3",
+                  "taken": false
+                }
+              ],
+              "selectedId": "s1",
+              "secondsLeft": 19,
               "confirmation": null,
-              "error": "Could not load slots.",
-              "s1Taken": true,
+              "error": null,
+              "s1Taken": false,
               "s2Taken": true,
-              "s3Taken": true
+              "s3Taken": false
             },
-            "value": "selecting",
+            "value": "holding",
             "children": {},
-            "timers": [],
+            "timers": [
+              {
+                "delay": 2000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 2000,
+                  "stateId": "booking.holding"
+                },
+                "target": "self"
+              }
+            ],
             "historyValue": {},
             "_stateInputs": {},
             "_nextTimerId": 0,
             "nodeIds": [
               "booking",
-              "booking.selecting"
+              "booking.holding"
             ]
           }
         },
@@ -454,16 +678,38 @@
           "syncSnapshot": false,
           "started": true,
           "snapshot": {
-            "status": "error",
-            "error": {
-              "message": "Slot already taken"
-            },
+            "status": "done",
+            "output": [
+              {
+                "id": "s1",
+                "taken": false
+              },
+              {
+                "id": "s2",
+                "taken": true
+              },
+              {
+                "id": "s3",
+                "taken": false
+              }
+            ],
             "effects": {
               "async": {
-                "status": "error",
-                "error": {
-                  "message": "Slot already taken"
-                }
+                "status": "done",
+                "output": [
+                  {
+                    "id": "s1",
+                    "taken": false
+                  },
+                  {
+                    "id": "s2",
+                    "taken": true
+                  },
+                  {
+                    "id": "s3",
+                    "taken": false
+                  }
+                ]
               }
             }
           }
@@ -471,12 +717,31 @@
       },
       "registry": {},
       "messages": [],
-      "timers": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 2000,
+          "sequence": 4,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 2000,
+              "stateId": "booking.holding"
+            }
+          }
+        }
+      ],
       "externalEffects": {},
       "counters": {
         "actor": 2,
-        "timer": 0,
-        "sequence": 5,
+        "timer": 1,
+        "sequence": 6,
         "effect": 1
       }
     },
@@ -498,24 +763,48 @@
           "snapshot": {
             "status": "active",
             "context": {
-              "slots": [],
-              "selectedId": null,
-              "secondsLeft": 20,
+              "slots": [
+                {
+                  "id": "s1",
+                  "taken": false
+                },
+                {
+                  "id": "s2",
+                  "taken": true
+                },
+                {
+                  "id": "s3",
+                  "taken": false
+                }
+              ],
+              "selectedId": "s1",
+              "secondsLeft": 18,
               "confirmation": null,
-              "error": "Could not load slots.",
-              "s1Taken": true,
+              "error": null,
+              "s1Taken": false,
               "s2Taken": true,
-              "s3Taken": true
+              "s3Taken": false
             },
-            "value": "selecting",
+            "value": "holding",
             "children": {},
-            "timers": [],
+            "timers": [
+              {
+                "delay": 2000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 2000,
+                  "stateId": "booking.holding"
+                },
+                "target": "self"
+              }
+            ],
             "historyValue": {},
             "_stateInputs": {},
             "_nextTimerId": 0,
             "nodeIds": [
               "booking",
-              "booking.selecting"
+              "booking.holding"
             ]
           }
         },
@@ -531,16 +820,38 @@
           "syncSnapshot": false,
           "started": true,
           "snapshot": {
-            "status": "error",
-            "error": {
-              "message": "Slot already taken"
-            },
+            "status": "done",
+            "output": [
+              {
+                "id": "s1",
+                "taken": false
+              },
+              {
+                "id": "s2",
+                "taken": true
+              },
+              {
+                "id": "s3",
+                "taken": false
+              }
+            ],
             "effects": {
               "async": {
-                "status": "error",
-                "error": {
-                  "message": "Slot already taken"
-                }
+                "status": "done",
+                "output": [
+                  {
+                    "id": "s1",
+                    "taken": false
+                  },
+                  {
+                    "id": "s2",
+                    "taken": true
+                  },
+                  {
+                    "id": "s3",
+                    "taken": false
+                  }
+                ]
               }
             }
           }
@@ -548,12 +859,31 @@
       },
       "registry": {},
       "messages": [],
-      "timers": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 2000,
+          "sequence": 4,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 2000,
+              "stateId": "booking.holding"
+            }
+          }
+        }
+      ],
       "externalEffects": {},
       "counters": {
         "actor": 2,
-        "timer": 0,
-        "sequence": 6,
+        "timer": 1,
+        "sequence": 7,
         "effect": 1
       }
     },
@@ -575,14 +905,27 @@
           "snapshot": {
             "status": "active",
             "context": {
-              "slots": [],
+              "slots": [
+                {
+                  "id": "s1",
+                  "taken": false
+                },
+                {
+                  "id": "s2",
+                  "taken": true
+                },
+                {
+                  "id": "s3",
+                  "taken": false
+                }
+              ],
               "selectedId": null,
-              "secondsLeft": 20,
+              "secondsLeft": 18,
               "confirmation": null,
-              "error": "Could not load slots.",
-              "s1Taken": true,
+              "error": "Your hold expired.",
+              "s1Taken": false,
               "s2Taken": true,
-              "s3Taken": true
+              "s3Taken": false
             },
             "value": "selecting",
             "children": {},
@@ -608,16 +951,38 @@
           "syncSnapshot": false,
           "started": true,
           "snapshot": {
-            "status": "error",
-            "error": {
-              "message": "Slot already taken"
-            },
+            "status": "done",
+            "output": [
+              {
+                "id": "s1",
+                "taken": false
+              },
+              {
+                "id": "s2",
+                "taken": true
+              },
+              {
+                "id": "s3",
+                "taken": false
+              }
+            ],
             "effects": {
               "async": {
-                "status": "error",
-                "error": {
-                  "message": "Slot already taken"
-                }
+                "status": "done",
+                "output": [
+                  {
+                    "id": "s1",
+                    "taken": false
+                  },
+                  {
+                    "id": "s2",
+                    "taken": true
+                  },
+                  {
+                    "id": "s3",
+                    "taken": false
+                  }
+                ]
               }
             }
           }
@@ -629,8 +994,8 @@
       "externalEffects": {},
       "counters": {
         "actor": 2,
-        "timer": 0,
-        "sequence": 6,
+        "timer": 1,
+        "sequence": 8,
         "effect": 1
       }
     },
@@ -652,24 +1017,48 @@
           "snapshot": {
             "status": "active",
             "context": {
-              "slots": [],
-              "selectedId": null,
+              "slots": [
+                {
+                  "id": "s1",
+                  "taken": false
+                },
+                {
+                  "id": "s2",
+                  "taken": true
+                },
+                {
+                  "id": "s3",
+                  "taken": false
+                }
+              ],
+              "selectedId": "s3",
               "secondsLeft": 20,
               "confirmation": null,
-              "error": "Could not load slots.",
-              "s1Taken": true,
+              "error": null,
+              "s1Taken": false,
               "s2Taken": true,
-              "s3Taken": true
+              "s3Taken": false
             },
-            "value": "selecting",
+            "value": "holding",
             "children": {},
-            "timers": [],
+            "timers": [
+              {
+                "delay": 2000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 2000,
+                  "stateId": "booking.holding"
+                },
+                "target": "self"
+              }
+            ],
             "historyValue": {},
             "_stateInputs": {},
             "_nextTimerId": 0,
             "nodeIds": [
               "booking",
-              "booking.selecting"
+              "booking.holding"
             ]
           }
         },
@@ -685,16 +1074,38 @@
           "syncSnapshot": false,
           "started": true,
           "snapshot": {
-            "status": "error",
-            "error": {
-              "message": "Slot already taken"
-            },
+            "status": "done",
+            "output": [
+              {
+                "id": "s1",
+                "taken": false
+              },
+              {
+                "id": "s2",
+                "taken": true
+              },
+              {
+                "id": "s3",
+                "taken": false
+              }
+            ],
             "effects": {
               "async": {
-                "status": "error",
-                "error": {
-                  "message": "Slot already taken"
-                }
+                "status": "done",
+                "output": [
+                  {
+                    "id": "s1",
+                    "taken": false
+                  },
+                  {
+                    "id": "s2",
+                    "taken": true
+                  },
+                  {
+                    "id": "s3",
+                    "taken": false
+                  }
+                ]
               }
             }
           }
@@ -702,12 +1113,31 @@
       },
       "registry": {},
       "messages": [],
-      "timers": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "occurrence": 1,
+          "scheduledAt": 2100,
+          "dueAt": 4100,
+          "sequence": 9,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 2000,
+              "stateId": "booking.holding"
+            }
+          }
+        }
+      ],
       "externalEffects": {},
       "counters": {
         "actor": 2,
-        "timer": 0,
-        "sequence": 7,
+        "timer": 2,
+        "sequence": 10,
         "effect": 1
       }
     },
@@ -729,14 +1159,27 @@
           "snapshot": {
             "status": "active",
             "context": {
-              "slots": [],
+              "slots": [
+                {
+                  "id": "s1",
+                  "taken": false
+                },
+                {
+                  "id": "s2",
+                  "taken": true
+                },
+                {
+                  "id": "s3",
+                  "taken": false
+                }
+              ],
               "selectedId": null,
               "secondsLeft": 20,
               "confirmation": null,
-              "error": "Could not load slots.",
-              "s1Taken": true,
+              "error": null,
+              "s1Taken": false,
               "s2Taken": true,
-              "s3Taken": true
+              "s3Taken": false
             },
             "value": "selecting",
             "children": {},
@@ -762,16 +1205,38 @@
           "syncSnapshot": false,
           "started": true,
           "snapshot": {
-            "status": "error",
-            "error": {
-              "message": "Slot already taken"
-            },
+            "status": "done",
+            "output": [
+              {
+                "id": "s1",
+                "taken": false
+              },
+              {
+                "id": "s2",
+                "taken": true
+              },
+              {
+                "id": "s3",
+                "taken": false
+              }
+            ],
             "effects": {
               "async": {
-                "status": "error",
-                "error": {
-                  "message": "Slot already taken"
-                }
+                "status": "done",
+                "output": [
+                  {
+                    "id": "s1",
+                    "taken": false
+                  },
+                  {
+                    "id": "s2",
+                    "taken": true
+                  },
+                  {
+                    "id": "s3",
+                    "taken": false
+                  }
+                ]
               }
             }
           }
@@ -783,8 +1248,8 @@
       "externalEffects": {},
       "counters": {
         "actor": 2,
-        "timer": 0,
-        "sequence": 8,
+        "timer": 2,
+        "sequence": 11,
         "effect": 1
       }
     },
@@ -806,24 +1271,48 @@
           "snapshot": {
             "status": "active",
             "context": {
-              "slots": [],
-              "selectedId": null,
+              "slots": [
+                {
+                  "id": "s1",
+                  "taken": false
+                },
+                {
+                  "id": "s2",
+                  "taken": true
+                },
+                {
+                  "id": "s3",
+                  "taken": false
+                }
+              ],
+              "selectedId": "s3",
               "secondsLeft": 20,
               "confirmation": null,
-              "error": "Could not load slots.",
-              "s1Taken": true,
+              "error": null,
+              "s1Taken": false,
               "s2Taken": true,
-              "s3Taken": true
+              "s3Taken": false
             },
-            "value": "selecting",
+            "value": "holding",
             "children": {},
-            "timers": [],
+            "timers": [
+              {
+                "delay": 2000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 2000,
+                  "stateId": "booking.holding"
+                },
+                "target": "self"
+              }
+            ],
             "historyValue": {},
             "_stateInputs": {},
             "_nextTimerId": 0,
             "nodeIds": [
               "booking",
-              "booking.selecting"
+              "booking.holding"
             ]
           }
         },
@@ -839,16 +1328,38 @@
           "syncSnapshot": false,
           "started": true,
           "snapshot": {
-            "status": "error",
-            "error": {
-              "message": "Slot already taken"
-            },
+            "status": "done",
+            "output": [
+              {
+                "id": "s1",
+                "taken": false
+              },
+              {
+                "id": "s2",
+                "taken": true
+              },
+              {
+                "id": "s3",
+                "taken": false
+              }
+            ],
             "effects": {
               "async": {
-                "status": "error",
-                "error": {
-                  "message": "Slot already taken"
-                }
+                "status": "done",
+                "output": [
+                  {
+                    "id": "s1",
+                    "taken": false
+                  },
+                  {
+                    "id": "s2",
+                    "taken": true
+                  },
+                  {
+                    "id": "s3",
+                    "taken": false
+                  }
+                ]
               }
             }
           }
@@ -856,12 +1367,31 @@
       },
       "registry": {},
       "messages": [],
-      "timers": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "occurrence": 2,
+          "scheduledAt": 2100,
+          "dueAt": 4100,
+          "sequence": 12,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 2000,
+              "stateId": "booking.holding"
+            }
+          }
+        }
+      ],
       "externalEffects": {},
       "counters": {
         "actor": 2,
-        "timer": 0,
-        "sequence": 9,
+        "timer": 3,
+        "sequence": 13,
         "effect": 1
       }
     },
@@ -883,12 +1413,190 @@
           "snapshot": {
             "status": "active",
             "context": {
-              "slots": [],
+              "slots": [
+                {
+                  "id": "s1",
+                  "taken": false
+                },
+                {
+                  "id": "s2",
+                  "taken": true
+                },
+                {
+                  "id": "s3",
+                  "taken": false
+                }
+              ],
+              "selectedId": "s3",
+              "secondsLeft": 20,
+              "confirmation": null,
+              "error": null,
+              "s1Taken": false,
+              "s2Taken": true,
+              "s3Taken": false
+            },
+            "value": "confirming",
+            "children": {
+              "booking.confirming:0": {
+                "$actor": "booking/booking.confirming:0",
+                "incarnation": "2"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "booking",
+              "booking.confirming"
+            ]
+          }
+        },
+        "booking/booking.loading:0": {
+          "id": "booking.loading:0",
+          "address": "booking/booking.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadSlots",
+          "parent": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": [
+              {
+                "id": "s1",
+                "taken": false
+              },
+              {
+                "id": "s2",
+                "taken": true
+              },
+              {
+                "id": "s3",
+                "taken": false
+              }
+            ],
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": [
+                  {
+                    "id": "s1",
+                    "taken": false
+                  },
+                  {
+                    "id": "s2",
+                    "taken": true
+                  },
+                  {
+                    "id": "s3",
+                    "taken": false
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "booking/booking.confirming:0": {
+          "id": "booking.confirming:0",
+          "address": "booking/booking.confirming:0",
+          "incarnation": "2",
+          "src": "root/actors/bookSlot",
+          "parent": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "slotId": "s1"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "slotId": "s1"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "booking/booking.confirming:0",
+            "incarnation": "2"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 3,
+        "sequence": 14,
+        "effect": 2
+      }
+    },
+    "effects": [
+      {
+        "id": "system:1",
+        "source": {
+          "$actor": "booking/booking.confirming:0",
+          "incarnation": "2"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 11",
+    "snapshot": {
+      "root": "booking",
+      "executionId": "system",
+      "now": 2100,
+      "actors": {
+        "booking": {
+          "id": "booking",
+          "address": "booking",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "slots": [
+                {
+                  "id": "s1",
+                  "taken": false
+                },
+                {
+                  "id": "s2",
+                  "taken": true
+                },
+                {
+                  "id": "s3",
+                  "taken": false
+                }
+              ],
               "selectedId": null,
               "secondsLeft": 20,
               "confirmation": null,
-              "error": "Could not load slots.",
-              "s1Taken": true,
+              "error": "Slot already taken",
+              "s1Taken": false,
               "s2Taken": true,
               "s3Taken": true
             },
@@ -916,6 +1624,57 @@
           "syncSnapshot": false,
           "started": true,
           "snapshot": {
+            "status": "done",
+            "output": [
+              {
+                "id": "s1",
+                "taken": false
+              },
+              {
+                "id": "s2",
+                "taken": true
+              },
+              {
+                "id": "s3",
+                "taken": false
+              }
+            ],
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": [
+                  {
+                    "id": "s1",
+                    "taken": false
+                  },
+                  {
+                    "id": "s2",
+                    "taken": true
+                  },
+                  {
+                    "id": "s3",
+                    "taken": false
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "booking/booking.confirming:0": {
+          "id": "booking.confirming:0",
+          "address": "booking/booking.confirming:0",
+          "incarnation": "2",
+          "src": "root/actors/bookSlot",
+          "parent": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "slotId": "s1"
+          },
+          "snapshot": {
             "status": "error",
             "error": {
               "message": "Slot already taken"
@@ -936,17 +1695,13 @@
       "timers": [],
       "externalEffects": {},
       "counters": {
-        "actor": 2,
-        "timer": 0,
-        "sequence": 10,
-        "effect": 1
+        "actor": 3,
+        "timer": 3,
+        "sequence": 16,
+        "effect": 2
       }
     },
     "effects": []
-  },
-  {
-    "label": "step 11",
-    "error": "no pending effect at index 0"
   },
   {
     "label": "step 12",
@@ -964,12 +1719,25 @@
           "snapshot": {
             "status": "active",
             "context": {
-              "slots": [],
+              "slots": [
+                {
+                  "id": "s1",
+                  "taken": false
+                },
+                {
+                  "id": "s2",
+                  "taken": true
+                },
+                {
+                  "id": "s3",
+                  "taken": false
+                }
+              ],
               "selectedId": null,
               "secondsLeft": 20,
               "confirmation": null,
-              "error": "Could not load slots.",
-              "s1Taken": true,
+              "error": "Slot already taken",
+              "s1Taken": false,
               "s2Taken": true,
               "s3Taken": true
             },
@@ -997,6 +1765,57 @@
           "syncSnapshot": false,
           "started": true,
           "snapshot": {
+            "status": "done",
+            "output": [
+              {
+                "id": "s1",
+                "taken": false
+              },
+              {
+                "id": "s2",
+                "taken": true
+              },
+              {
+                "id": "s3",
+                "taken": false
+              }
+            ],
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": [
+                  {
+                    "id": "s1",
+                    "taken": false
+                  },
+                  {
+                    "id": "s2",
+                    "taken": true
+                  },
+                  {
+                    "id": "s3",
+                    "taken": false
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "booking/booking.confirming:0": {
+          "id": "booking.confirming:0",
+          "address": "booking/booking.confirming:0",
+          "incarnation": "2",
+          "src": "root/actors/bookSlot",
+          "parent": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "slotId": "s1"
+          },
+          "snapshot": {
             "status": "error",
             "error": {
               "message": "Slot already taken"
@@ -1017,10 +1836,10 @@
       "timers": [],
       "externalEffects": {},
       "counters": {
-        "actor": 2,
-        "timer": 0,
-        "sequence": 11,
-        "effect": 1
+        "actor": 3,
+        "timer": 3,
+        "sequence": 17,
+        "effect": 2
       }
     },
     "effects": []
@@ -1041,12 +1860,25 @@
           "snapshot": {
             "status": "active",
             "context": {
-              "slots": [],
+              "slots": [
+                {
+                  "id": "s1",
+                  "taken": false
+                },
+                {
+                  "id": "s2",
+                  "taken": true
+                },
+                {
+                  "id": "s3",
+                  "taken": false
+                }
+              ],
               "selectedId": null,
               "secondsLeft": 20,
               "confirmation": null,
-              "error": "Could not load slots.",
-              "s1Taken": true,
+              "error": "Slot already taken",
+              "s1Taken": false,
               "s2Taken": true,
               "s3Taken": true
             },
@@ -1074,6 +1906,57 @@
           "syncSnapshot": false,
           "started": true,
           "snapshot": {
+            "status": "done",
+            "output": [
+              {
+                "id": "s1",
+                "taken": false
+              },
+              {
+                "id": "s2",
+                "taken": true
+              },
+              {
+                "id": "s3",
+                "taken": false
+              }
+            ],
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": [
+                  {
+                    "id": "s1",
+                    "taken": false
+                  },
+                  {
+                    "id": "s2",
+                    "taken": true
+                  },
+                  {
+                    "id": "s3",
+                    "taken": false
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "booking/booking.confirming:0": {
+          "id": "booking.confirming:0",
+          "address": "booking/booking.confirming:0",
+          "incarnation": "2",
+          "src": "root/actors/bookSlot",
+          "parent": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "slotId": "s1"
+          },
+          "snapshot": {
             "status": "error",
             "error": {
               "message": "Slot already taken"
@@ -1094,10 +1977,10 @@
       "timers": [],
       "externalEffects": {},
       "counters": {
-        "actor": 2,
-        "timer": 0,
-        "sequence": 12,
-        "effect": 1
+        "actor": 3,
+        "timer": 3,
+        "sequence": 18,
+        "effect": 2
       }
     },
     "effects": []
@@ -1118,24 +2001,48 @@
           "snapshot": {
             "status": "active",
             "context": {
-              "slots": [],
-              "selectedId": null,
+              "slots": [
+                {
+                  "id": "s1",
+                  "taken": false
+                },
+                {
+                  "id": "s2",
+                  "taken": true
+                },
+                {
+                  "id": "s3",
+                  "taken": false
+                }
+              ],
+              "selectedId": "s1",
               "secondsLeft": 20,
               "confirmation": null,
-              "error": "Could not load slots.",
-              "s1Taken": true,
+              "error": null,
+              "s1Taken": false,
               "s2Taken": true,
               "s3Taken": true
             },
-            "value": "selecting",
+            "value": "holding",
             "children": {},
-            "timers": [],
+            "timers": [
+              {
+                "delay": 2000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 2000,
+                  "stateId": "booking.holding"
+                },
+                "target": "self"
+              }
+            ],
             "historyValue": {},
             "_stateInputs": {},
             "_nextTimerId": 0,
             "nodeIds": [
               "booking",
-              "booking.selecting"
+              "booking.holding"
             ]
           }
         },
@@ -1150,6 +2057,57 @@
           },
           "syncSnapshot": false,
           "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": [
+              {
+                "id": "s1",
+                "taken": false
+              },
+              {
+                "id": "s2",
+                "taken": true
+              },
+              {
+                "id": "s3",
+                "taken": false
+              }
+            ],
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": [
+                  {
+                    "id": "s1",
+                    "taken": false
+                  },
+                  {
+                    "id": "s2",
+                    "taken": true
+                  },
+                  {
+                    "id": "s3",
+                    "taken": false
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "booking/booking.confirming:0": {
+          "id": "booking.confirming:0",
+          "address": "booking/booking.confirming:0",
+          "incarnation": "2",
+          "src": "root/actors/bookSlot",
+          "parent": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "slotId": "s1"
+          },
           "snapshot": {
             "status": "error",
             "error": {
@@ -1168,13 +2126,32 @@
       },
       "registry": {},
       "messages": [],
-      "timers": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "occurrence": 3,
+          "scheduledAt": 2100,
+          "dueAt": 4100,
+          "sequence": 19,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 2000,
+              "stateId": "booking.holding"
+            }
+          }
+        }
+      ],
       "externalEffects": {},
       "counters": {
-        "actor": 2,
-        "timer": 0,
-        "sequence": 13,
-        "effect": 1
+        "actor": 3,
+        "timer": 4,
+        "sequence": 20,
+        "effect": 2
       }
     },
     "effects": []
@@ -1195,24 +2172,48 @@
           "snapshot": {
             "status": "active",
             "context": {
-              "slots": [],
-              "selectedId": null,
-              "secondsLeft": 20,
+              "slots": [
+                {
+                  "id": "s1",
+                  "taken": false
+                },
+                {
+                  "id": "s2",
+                  "taken": true
+                },
+                {
+                  "id": "s3",
+                  "taken": false
+                }
+              ],
+              "selectedId": "s1",
+              "secondsLeft": 19,
               "confirmation": null,
-              "error": "Could not load slots.",
-              "s1Taken": true,
+              "error": null,
+              "s1Taken": false,
               "s2Taken": true,
               "s3Taken": true
             },
-            "value": "selecting",
+            "value": "holding",
             "children": {},
-            "timers": [],
+            "timers": [
+              {
+                "delay": 2000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 2000,
+                  "stateId": "booking.holding"
+                },
+                "target": "self"
+              }
+            ],
             "historyValue": {},
             "_stateInputs": {},
             "_nextTimerId": 0,
             "nodeIds": [
               "booking",
-              "booking.selecting"
+              "booking.holding"
             ]
           }
         },
@@ -1227,6 +2228,57 @@
           },
           "syncSnapshot": false,
           "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": [
+              {
+                "id": "s1",
+                "taken": false
+              },
+              {
+                "id": "s2",
+                "taken": true
+              },
+              {
+                "id": "s3",
+                "taken": false
+              }
+            ],
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": [
+                  {
+                    "id": "s1",
+                    "taken": false
+                  },
+                  {
+                    "id": "s2",
+                    "taken": true
+                  },
+                  {
+                    "id": "s3",
+                    "taken": false
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "booking/booking.confirming:0": {
+          "id": "booking.confirming:0",
+          "address": "booking/booking.confirming:0",
+          "incarnation": "2",
+          "src": "root/actors/bookSlot",
+          "parent": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "slotId": "s1"
+          },
           "snapshot": {
             "status": "error",
             "error": {
@@ -1245,13 +2297,32 @@
       },
       "registry": {},
       "messages": [],
-      "timers": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "occurrence": 3,
+          "scheduledAt": 2100,
+          "dueAt": 4100,
+          "sequence": 19,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 2000,
+              "stateId": "booking.holding"
+            }
+          }
+        }
+      ],
       "externalEffects": {},
       "counters": {
-        "actor": 2,
-        "timer": 0,
-        "sequence": 14,
-        "effect": 1
+        "actor": 3,
+        "timer": 4,
+        "sequence": 21,
+        "effect": 2
       }
     },
     "effects": []
@@ -1272,24 +2343,42 @@
           "snapshot": {
             "status": "active",
             "context": {
-              "slots": [],
-              "selectedId": null,
-              "secondsLeft": 20,
+              "slots": [
+                {
+                  "id": "s1",
+                  "taken": false
+                },
+                {
+                  "id": "s2",
+                  "taken": true
+                },
+                {
+                  "id": "s3",
+                  "taken": false
+                }
+              ],
+              "selectedId": "s1",
+              "secondsLeft": 19,
               "confirmation": null,
-              "error": "Could not load slots.",
-              "s1Taken": true,
+              "error": null,
+              "s1Taken": false,
               "s2Taken": true,
               "s3Taken": true
             },
-            "value": "selecting",
-            "children": {},
+            "value": "confirming",
+            "children": {
+              "booking.confirming:0": {
+                "$actor": "booking/booking.confirming:0",
+                "incarnation": "3"
+              }
+            },
             "timers": [],
             "historyValue": {},
             "_stateInputs": {},
             "_nextTimerId": 0,
             "nodeIds": [
               "booking",
-              "booking.selecting"
+              "booking.confirming"
             ]
           }
         },
@@ -1305,16 +2394,223 @@
           "syncSnapshot": false,
           "started": true,
           "snapshot": {
-            "status": "error",
-            "error": {
-              "message": "Slot already taken"
+            "status": "done",
+            "output": [
+              {
+                "id": "s1",
+                "taken": false
+              },
+              {
+                "id": "s2",
+                "taken": true
+              },
+              {
+                "id": "s3",
+                "taken": false
+              }
+            ],
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": [
+                  {
+                    "id": "s1",
+                    "taken": false
+                  },
+                  {
+                    "id": "s2",
+                    "taken": true
+                  },
+                  {
+                    "id": "s3",
+                    "taken": false
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "booking/booking.confirming:0": {
+          "id": "booking.confirming:0",
+          "address": "booking/booking.confirming:0",
+          "incarnation": "3",
+          "src": "root/actors/bookSlot",
+          "parent": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "slotId": "s1"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "slotId": "s1"
             },
             "effects": {
               "async": {
-                "status": "error",
-                "error": {
-                  "message": "Slot already taken"
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "booking/booking.confirming:0",
+            "incarnation": "3"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 4,
+        "timer": 4,
+        "sequence": 22,
+        "effect": 3
+      }
+    },
+    "effects": [
+      {
+        "id": "system:2",
+        "source": {
+          "$actor": "booking/booking.confirming:0",
+          "incarnation": "3"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 17",
+    "snapshot": {
+      "root": "booking",
+      "executionId": "system",
+      "now": 2100,
+      "actors": {
+        "booking": {
+          "id": "booking",
+          "address": "booking",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "slots": [
+                {
+                  "id": "s1",
+                  "taken": false
+                },
+                {
+                  "id": "s2",
+                  "taken": true
+                },
+                {
+                  "id": "s3",
+                  "taken": false
                 }
+              ],
+              "selectedId": "s1",
+              "secondsLeft": 19,
+              "confirmation": "BK-1",
+              "error": null,
+              "s1Taken": false,
+              "s2Taken": true,
+              "s3Taken": true
+            },
+            "value": "booked",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "booking",
+              "booking.booked"
+            ]
+          }
+        },
+        "booking/booking.loading:0": {
+          "id": "booking.loading:0",
+          "address": "booking/booking.loading:0",
+          "incarnation": "1",
+          "src": "root/actors/loadSlots",
+          "parent": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": [
+              {
+                "id": "s1",
+                "taken": false
+              },
+              {
+                "id": "s2",
+                "taken": true
+              },
+              {
+                "id": "s3",
+                "taken": false
+              }
+            ],
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": [
+                  {
+                    "id": "s1",
+                    "taken": false
+                  },
+                  {
+                    "id": "s2",
+                    "taken": true
+                  },
+                  {
+                    "id": "s3",
+                    "taken": false
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "booking/booking.confirming:0": {
+          "id": "booking.confirming:0",
+          "address": "booking/booking.confirming:0",
+          "incarnation": "3",
+          "src": "root/actors/bookSlot",
+          "parent": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "slotId": "s1"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "BK-1",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "BK-1"
               }
             }
           }
@@ -1325,17 +2621,13 @@
       "timers": [],
       "externalEffects": {},
       "counters": {
-        "actor": 2,
-        "timer": 0,
-        "sequence": 15,
-        "effect": 1
+        "actor": 4,
+        "timer": 4,
+        "sequence": 24,
+        "effect": 3
       }
     },
     "effects": []
-  },
-  {
-    "label": "step 17",
-    "error": "no pending effect at index 0"
   },
   {
     "label": "step 18",
@@ -1353,12 +2645,161 @@
           "snapshot": {
             "status": "active",
             "context": {
-              "slots": [],
+              "slots": [
+                {
+                  "id": "s1",
+                  "taken": false
+                },
+                {
+                  "id": "s2",
+                  "taken": true
+                },
+                {
+                  "id": "s3",
+                  "taken": false
+                }
+              ],
+              "selectedId": null,
+              "secondsLeft": 20,
+              "confirmation": null,
+              "error": null,
+              "s1Taken": false,
+              "s2Taken": true,
+              "s3Taken": true
+            },
+            "value": "loading",
+            "children": {
+              "booking.loading:0": {
+                "$actor": "booking/booking.loading:0",
+                "incarnation": "4"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "booking",
+              "booking.loading"
+            ]
+          }
+        },
+        "booking/booking.loading:0": {
+          "id": "booking.loading:0",
+          "address": "booking/booking.loading:0",
+          "incarnation": "4",
+          "src": "root/actors/loadSlots",
+          "parent": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "booking/booking.confirming:0": {
+          "id": "booking.confirming:0",
+          "address": "booking/booking.confirming:0",
+          "incarnation": "3",
+          "src": "root/actors/bookSlot",
+          "parent": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "slotId": "s1"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "BK-1",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "BK-1"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "booking/booking.loading:0",
+            "incarnation": "4"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 5,
+        "timer": 4,
+        "sequence": 25,
+        "effect": 4
+      }
+    },
+    "effects": [
+      {
+        "id": "system:3",
+        "source": {
+          "$actor": "booking/booking.loading:0",
+          "incarnation": "4"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 19",
+    "snapshot": {
+      "root": "booking",
+      "executionId": "system",
+      "now": 2100,
+      "actors": {
+        "booking": {
+          "id": "booking",
+          "address": "booking",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "slots": [
+                {
+                  "id": "s1",
+                  "taken": false
+                },
+                {
+                  "id": "s2",
+                  "taken": true
+                },
+                {
+                  "id": "s3",
+                  "taken": false
+                }
+              ],
               "selectedId": null,
               "secondsLeft": 20,
               "confirmation": null,
               "error": "Could not load slots.",
-              "s1Taken": true,
+              "s1Taken": false,
               "s2Taken": true,
               "s3Taken": true
             },
@@ -1377,7 +2818,7 @@
         "booking/booking.loading:0": {
           "id": "booking.loading:0",
           "address": "booking/booking.loading:0",
-          "incarnation": "1",
+          "incarnation": "4",
           "src": "root/actors/loadSlots",
           "parent": {
             "$actor": "booking",
@@ -1388,14 +2829,39 @@
           "snapshot": {
             "status": "error",
             "error": {
-              "message": "Slot already taken"
+              "message": "Could not load slots."
             },
             "effects": {
               "async": {
                 "status": "error",
                 "error": {
-                  "message": "Slot already taken"
+                  "message": "Could not load slots."
                 }
+              }
+            }
+          }
+        },
+        "booking/booking.confirming:0": {
+          "id": "booking.confirming:0",
+          "address": "booking/booking.confirming:0",
+          "incarnation": "3",
+          "src": "root/actors/bookSlot",
+          "parent": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "slotId": "s1"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "BK-1",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "BK-1"
               }
             }
           }
@@ -1406,17 +2872,13 @@
       "timers": [],
       "externalEffects": {},
       "counters": {
-        "actor": 2,
-        "timer": 0,
-        "sequence": 16,
-        "effect": 1
+        "actor": 5,
+        "timer": 4,
+        "sequence": 27,
+        "effect": 4
       }
     },
     "effects": []
-  },
-  {
-    "label": "step 19",
-    "error": "no pending effect at index 0"
   },
   {
     "label": "step 20",
@@ -1434,31 +2896,55 @@
           "snapshot": {
             "status": "active",
             "context": {
-              "slots": [],
-              "selectedId": null,
+              "slots": [
+                {
+                  "id": "s1",
+                  "taken": false
+                },
+                {
+                  "id": "s2",
+                  "taken": true
+                },
+                {
+                  "id": "s3",
+                  "taken": false
+                }
+              ],
+              "selectedId": "s1",
               "secondsLeft": 20,
               "confirmation": null,
-              "error": "Could not load slots.",
-              "s1Taken": true,
+              "error": null,
+              "s1Taken": false,
               "s2Taken": true,
               "s3Taken": true
             },
-            "value": "selecting",
+            "value": "holding",
             "children": {},
-            "timers": [],
+            "timers": [
+              {
+                "delay": 2000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 2000,
+                  "stateId": "booking.holding"
+                },
+                "target": "self"
+              }
+            ],
             "historyValue": {},
             "_stateInputs": {},
             "_nextTimerId": 0,
             "nodeIds": [
               "booking",
-              "booking.selecting"
+              "booking.holding"
             ]
           }
         },
         "booking/booking.loading:0": {
           "id": "booking.loading:0",
           "address": "booking/booking.loading:0",
-          "incarnation": "1",
+          "incarnation": "4",
           "src": "root/actors/loadSlots",
           "parent": {
             "$actor": "booking",
@@ -1469,14 +2955,39 @@
           "snapshot": {
             "status": "error",
             "error": {
-              "message": "Slot already taken"
+              "message": "Could not load slots."
             },
             "effects": {
               "async": {
                 "status": "error",
                 "error": {
-                  "message": "Slot already taken"
+                  "message": "Could not load slots."
                 }
+              }
+            }
+          }
+        },
+        "booking/booking.confirming:0": {
+          "id": "booking.confirming:0",
+          "address": "booking/booking.confirming:0",
+          "incarnation": "3",
+          "src": "root/actors/bookSlot",
+          "parent": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "slotId": "s1"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "BK-1",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "BK-1"
               }
             }
           }
@@ -1484,13 +2995,32 @@
       },
       "registry": {},
       "messages": [],
-      "timers": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "occurrence": 4,
+          "scheduledAt": 2100,
+          "dueAt": 4100,
+          "sequence": 28,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 2000,
+              "stateId": "booking.holding"
+            }
+          }
+        }
+      ],
       "externalEffects": {},
       "counters": {
-        "actor": 2,
-        "timer": 0,
-        "sequence": 17,
-        "effect": 1
+        "actor": 5,
+        "timer": 5,
+        "sequence": 29,
+        "effect": 4
       }
     },
     "effects": []
@@ -1511,31 +3041,55 @@
           "snapshot": {
             "status": "active",
             "context": {
-              "slots": [],
-              "selectedId": null,
+              "slots": [
+                {
+                  "id": "s1",
+                  "taken": false
+                },
+                {
+                  "id": "s2",
+                  "taken": true
+                },
+                {
+                  "id": "s3",
+                  "taken": false
+                }
+              ],
+              "selectedId": "s1",
               "secondsLeft": 20,
               "confirmation": null,
-              "error": "Could not load slots.",
-              "s1Taken": true,
+              "error": null,
+              "s1Taken": false,
               "s2Taken": true,
               "s3Taken": true
             },
-            "value": "selecting",
+            "value": "holding",
             "children": {},
-            "timers": [],
+            "timers": [
+              {
+                "delay": 2000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 2000,
+                  "stateId": "booking.holding"
+                },
+                "target": "self"
+              }
+            ],
             "historyValue": {},
             "_stateInputs": {},
             "_nextTimerId": 0,
             "nodeIds": [
               "booking",
-              "booking.selecting"
+              "booking.holding"
             ]
           }
         },
         "booking/booking.loading:0": {
           "id": "booking.loading:0",
           "address": "booking/booking.loading:0",
-          "incarnation": "1",
+          "incarnation": "4",
           "src": "root/actors/loadSlots",
           "parent": {
             "$actor": "booking",
@@ -1546,14 +3100,39 @@
           "snapshot": {
             "status": "error",
             "error": {
-              "message": "Slot already taken"
+              "message": "Could not load slots."
             },
             "effects": {
               "async": {
                 "status": "error",
                 "error": {
-                  "message": "Slot already taken"
+                  "message": "Could not load slots."
                 }
+              }
+            }
+          }
+        },
+        "booking/booking.confirming:0": {
+          "id": "booking.confirming:0",
+          "address": "booking/booking.confirming:0",
+          "incarnation": "3",
+          "src": "root/actors/bookSlot",
+          "parent": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "slotId": "s1"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "BK-1",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "BK-1"
               }
             }
           }
@@ -1561,13 +3140,32 @@
       },
       "registry": {},
       "messages": [],
-      "timers": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "occurrence": 4,
+          "scheduledAt": 2100,
+          "dueAt": 4100,
+          "sequence": 28,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 2000,
+              "stateId": "booking.holding"
+            }
+          }
+        }
+      ],
       "externalEffects": {},
       "counters": {
-        "actor": 2,
-        "timer": 0,
-        "sequence": 17,
-        "effect": 1
+        "actor": 5,
+        "timer": 5,
+        "sequence": 29,
+        "effect": 4
       }
     },
     "effects": []
@@ -1588,12 +3186,25 @@
           "snapshot": {
             "status": "active",
             "context": {
-              "slots": [],
+              "slots": [
+                {
+                  "id": "s1",
+                  "taken": false
+                },
+                {
+                  "id": "s2",
+                  "taken": true
+                },
+                {
+                  "id": "s3",
+                  "taken": false
+                }
+              ],
               "selectedId": null,
               "secondsLeft": 20,
               "confirmation": null,
-              "error": "Could not load slots.",
-              "s1Taken": true,
+              "error": "Your hold expired.",
+              "s1Taken": false,
               "s2Taken": true,
               "s3Taken": true
             },
@@ -1612,7 +3223,7 @@
         "booking/booking.loading:0": {
           "id": "booking.loading:0",
           "address": "booking/booking.loading:0",
-          "incarnation": "1",
+          "incarnation": "4",
           "src": "root/actors/loadSlots",
           "parent": {
             "$actor": "booking",
@@ -1623,14 +3234,39 @@
           "snapshot": {
             "status": "error",
             "error": {
-              "message": "Slot already taken"
+              "message": "Could not load slots."
             },
             "effects": {
               "async": {
                 "status": "error",
                 "error": {
-                  "message": "Slot already taken"
+                  "message": "Could not load slots."
                 }
+              }
+            }
+          }
+        },
+        "booking/booking.confirming:0": {
+          "id": "booking.confirming:0",
+          "address": "booking/booking.confirming:0",
+          "incarnation": "3",
+          "src": "root/actors/bookSlot",
+          "parent": {
+            "$actor": "booking",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "slotId": "s1"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "BK-1",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "BK-1"
               }
             }
           }
@@ -1641,10 +3277,10 @@
       "timers": [],
       "externalEffects": {},
       "counters": {
-        "actor": 2,
-        "timer": 0,
-        "sequence": 17,
-        "effect": 1
+        "actor": 5,
+        "timer": 5,
+        "sequence": 30,
+        "effect": 4
       }
     },
     "effects": []
