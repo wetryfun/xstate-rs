@@ -378,6 +378,9 @@ pub trait Host {
     fn check_iteration(&mut self, iteration: usize) -> Result<(), Self::Error>;
     /// An identity for the current snapshot object.
     fn snapshot_token(&self) -> u64;
+    /// The identity of the snapshot the last microstep returned (before any
+    /// post-microstep bookkeeping, such as removing a terminated child).
+    fn microstep_token(&self) -> u64;
     /// `_microstepHooks?.drain`: raised events from failed eventless guards.
     fn drain_raised(&mut self) -> Result<(), Self::Error>;
     fn queue_is_empty(&self) -> bool;
@@ -1060,12 +1063,12 @@ pub fn run_to_completion<H: Host>(tree: &Tree, h: &mut H) -> Result<(), H::Error
     if h.queue_is_empty() && !tree.has_eventless {
         return Ok(());
     }
-    let mut select_eventless = true;
+    let mut should_select_eventless = true;
     let mut iteration = 0;
     while h.is_active() {
         iteration += 1;
         h.check_iteration(iteration)?;
-        let mut enabled = if select_eventless { select_eventless_transitions(tree, h)? } else { Vec::new() };
+        let mut enabled = if should_select_eventless { select_eventless(tree, h)? } else { Vec::new() };
         let previous = if enabled.is_empty() { None } else { Some(h.snapshot_token()) };
         h.drain_raised()?;
         if enabled.is_empty() {
@@ -1073,13 +1076,9 @@ pub fn run_to_completion<H: Host>(tree: &Tree, h: &mut H) -> Result<(), H::Error
             enabled = select_transitions(tree, h, &event_type)?.into_iter().map(TRef::T).collect();
         }
         microstep(tree, h, &enabled, None)?;
-        select_eventless = Some(h.snapshot_token()) != previous;
+        should_select_eventless = Some(h.microstep_token()) != previous;
     }
     Ok(())
-}
-
-fn select_eventless_transitions<H: Host>(tree: &Tree, h: &mut H) -> Result<Vec<TRef>, H::Error> {
-    select_eventless(tree, h)
 }
 
 #[cfg(test)]

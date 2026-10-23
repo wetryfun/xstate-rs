@@ -1,0 +1,1116 @@
+diff --git a/packages/core/src/StateMachine.ts b/packages/core/src/StateMachine.ts
+index b58e2e7..5205d67 100644
+--- a/packages/core/src/StateMachine.ts
++++ b/packages/core/src/StateMachine.ts
+@@ -1,3 +1,4 @@
++import { rsEnabled } from './rustBridge.ts';
+ import { historicalEventSchemas } from './historicalEventSchemas.ts';
+ import type { PublicEventFromMachine } from './eventTypes.ts';
+ import isDevelopment from '#is-development';
+@@ -43,6 +44,7 @@ import {
+   macrostep,
+   resolveStateValue,
+   transitionNode,
++  rsGetTransitionData,
+   type TransitionSelectionResults
+ } from './stateUtils.ts';
+ import {
+@@ -1141,6 +1143,14 @@ export class StateMachine<
+     actorScope: AnyActorScope,
+     selectionResults?: TransitionSelectionResults
+   ): Array<AnyTransitionDefinition> {
++    if (rsEnabled()) {
++      return rsGetTransitionData(
++        snapshot as any,
++        event,
++        actorScope,
++        selectionResults
++      );
++    }
+     this._microstepHooks?.begin(actorScope.self);
+     return (
+       transitionNode(
+diff --git a/packages/core/src/stateUtils.ts b/packages/core/src/stateUtils.ts
+index 49efd21..86b10c9 100644
+--- a/packages/core/src/stateUtils.ts
++++ b/packages/core/src/stateUtils.ts
+@@ -85,6 +85,8 @@ import {
+   withActorScope
+ } from './actorScope.ts';
+ 
++import * as rs from './rustBridge.ts';
++
+ type AnyStateNodeIterable = Iterable<AnyStateNode>;
+ 
+ function getConfiguredDelayValue(
+@@ -1330,6 +1332,15 @@ export function initialMicrostep(
+   initEvent: AnyEventObject,
+   internalQueue: AnyEventObject[]
+ ): Microstep {
++  if (rs.rsEnabled()) {
++    return rsInitialMicrostep(
++      root,
++      preInitialState,
++      actorScope,
++      initEvent,
++      internalQueue
++    );
++  }
+   root.machine._microstepHooks?.begin(actorScope.self);
+   const initialStateNodes = [...getInitialStateNodes(root)];
+   const statesForDefaultEntry = new Set<AnyStateNode>();
+@@ -1380,6 +1391,16 @@ function microstep(
+   internalQueue: Array<AnyEventObject>,
+   selectionResults?: TransitionSelectionResults
+ ): Microstep {
++  if (rs.rsEnabled() && !isInitial) {
++    return rsMicrostep(
++      transitions,
++      currentSnapshot,
++      actorScope,
++      event,
++      internalQueue,
++      selectionResults
++    );
++  }
+   const executableActions: ExecutableEffect[] = [];
+   const internalEvents = currentSnapshot.machine._microstepHooks?.drain(
+     actorScope.self
+@@ -2651,6 +2672,32 @@ export function macrostep(
+     removeTerminatedChild(currentEvent);
+   }
+ 
++  if (rs.rsEnabled()) {
++    const m = rsMachine(snapshot.machine);
++    const host = new RsHost(
++      m,
++      actorScope,
++      nextSnapshot,
++      nextEvent,
++      internalQueue,
++      undefined
++    );
++    host.loop = {
++      macroEvent: event,
++      recentStates: [],
++      maxIterations:
++        snapshot.machine.options?.maxIterations ?? DEFAULT_MAX_ITERATIONS,
++      getNext: () => nextSnapshot,
++      setNext: (s) => {
++        nextSnapshot = s;
++      },
++      addMicrostep,
++      removeTerminatedChild
++    };
++    rs.runToCompletion(m.handle, host);
++    return completeMacrostep();
++  }
++
+   if (
+     !internalQueue.length &&
+     snapshot.machine._hasEventlessTransitions === false
+@@ -2929,6 +2976,18 @@ function selectEventlessTransitions(
+   event: AnyEventObject,
+   actorScope: AnyActorScope
+ ) {
++  if (rs.rsEnabled()) {
++    const m = rsMachine(snapshot.machine);
++    const host = new RsHost(
++      m,
++      actorScope,
++      snapshot,
++      event,
++      [],
++      undefined
++    );
++    return rs.selectEventless(m.handle, host).map((t) => host.obj(t));
++  }
+   snapshot.machine._microstepHooks?.begin(actorScope.self);
+   const enabledTransitionSet: Set<AnyTransitionDefinition> = new Set();
+   const atomicStates = snapshot.nodes.filter(isAtomicStateNode);
+@@ -3013,3 +3072,985 @@ export function evaluateCandidate(
+ 
+   return true;
+ }
++
++// ---- xstate-rs core ---------------------------------------------------------
++//
++// With XSTATE_RS_WASM set, the structural algorithm (selection, conflict
++// removal, transition domains, exit and entry sets, history, done events and
++// the macrostep loop) runs in the xstate-rs core. `RsHost` is the value-level
++// half: each method is the code `microstep` / `macrostep` above run at that
++// point, called by the core in the same order.
++
++interface RsMachine {
++  handle: number;
++  nodes: AnyStateNode[];
++  defs: AnyTransitionDefinition[];
++  ids: Map<AnyTransitionDefinition, number>;
++}
++
++const rsMachines = new WeakMap<object, RsMachine>();
++const RS_KINDS: Record<string, number> = {
++  atomic: 0,
++  compound: 1,
++  parallel: 2,
++  final: 3,
++  history: 4,
++  choice: 5
++};
++
++function rsMachine(machine: any): RsMachine {
++  const cached = rsMachines.get(machine);
++  if (cached) {
++    return cached;
++  }
++  const nodes: AnyStateNode[] = [...machine.idMap.values()].sort(
++    (a: AnyStateNode, b: AnyStateNode) => a.order - b.order
++  );
++  nodes.forEach((n, i) => {
++    if (n.order !== i) {
++      throw new Error('xstate-rs: state node order is not dense');
++    }
++  });
++  const defs: AnyTransitionDefinition[] = [];
++  const ids = new Map<AnyTransitionDefinition, number>();
++  const strings: string[] = [];
++  const stringIds = new Map<string, number>();
++  const str = (s: string) => {
++    let i = stringIds.get(s);
++    if (i === undefined) {
++      i = strings.length;
++      strings.push(s);
++      stringIds.set(s, i);
++    }
++    return i;
++  };
++  const tid = (d: AnyTransitionDefinition) => {
++    let i = ids.get(d);
++    if (i === undefined) {
++      i = defs.length;
++      defs.push(d);
++      ids.set(d, i);
++    }
++    return i;
++  };
++  const words: number[] = [nodes.length, 0];
++  for (const n of nodes) {
++    const kind = RS_KINDS[n.type];
++    if (kind === undefined) {
++      throw new Error(`xstate-rs: unknown state node type "${n.type}"`);
++    }
++    const children = Object.values(n.states) as AnyStateNode[];
++    const regular = children.filter((c) => c.type !== 'history');
++    const history = children.filter((c) => c.type === 'history');
++    words.push(
++      n.parent ? n.parent.order + 1 : 0,
++      kind,
++      n.history === 'deep' ? 1 : 0,
++      regular.length,
++      ...regular.map((c) => c.order),
++      history.length,
++      ...history.map((c) => c.order)
++    );
++    const on = [...((n as any).transitions ?? [])] as Array<
++      [string, AnyTransitionDefinition[]]
++    >;
++    words.push(on.length);
++    for (const [descriptor, ts] of on) {
++      words.push(str(descriptor), ts.length, ...ts.map(tid));
++    }
++    const always = (n.always ?? []) as AnyTransitionDefinition[];
++    words.push(always.length, ...always.map(tid));
++  }
++  words[1] = defs.length;
++  for (const d of defs) {
++    words.push(
++      d.source.order,
++      d._transitionDomain === 'internal'
++        ? 1
++        : d._transitionDomain === 'external'
++          ? 2
++          : 0
++    );
++  }
++  const m: RsMachine = {
++    handle: rs.registerTree(words, strings),
++    nodes,
++    defs,
++    ids
++  };
++  rsMachines.set(machine, m);
++  return m;
++}
++
++const rsSnapshotIds = new WeakMap<object, number>();
++let rsNextSnapshotId = 1;
++function rsToken(snapshot: object): number {
++  let id = rsSnapshotIds.get(snapshot);
++  if (id === undefined) {
++    id = rsNextSnapshotId++;
++    if (rsNextSnapshotId > 0x7fffffff) {
++      rsNextSnapshotId = 1;
++    }
++    rsSnapshotIds.set(snapshot, id);
++  }
++  return id;
++}
++
++interface RsLoop {
++  macroEvent: EventObject;
++  recentStates: StateValue[];
++  maxIterations: number;
++  getNext: () => AnyMachineSnapshot;
++  setNext: (snapshot: AnyMachineSnapshot) => void;
++  addMicrostep: (step: Microstep, transitions: AnyTransitionDefinition[]) => void;
++  removeTerminatedChild: (event: EventObject) => void;
++}
++
++class RsHost implements rs.CoreHost {
++  public loop: RsLoop | undefined;
++  public initialTransition: AnyTransitionDefinition | undefined;
++  public lastStep: Microstep | undefined;
++  private eventlessResolver: TransitionResultResolver | undefined;
++  private microToken = 0;
++  // Microstep state.
++  private currentSnapshot!: AnyMachineSnapshot;
++  private nextState!: AnyMachineSnapshot;
++  private executableActions: ExecutableEffect[] = [];
++  private originalContext: MachineContext;
++  private conflictResolver!: TransitionResultResolver;
++  private currentResolver!: TransitionResultResolver;
++  private resolvedTransitions: AnyTransitionDefinition[] = [];
++  private stateInputMap: Record<string, Record<string, unknown>> = {};
++  private stateInputsChanged = false;
++
++  constructor(
++    private m: RsMachine,
++    private actorScope: AnyActorScope,
++    public snapshot: AnyMachineSnapshot,
++    public event: AnyEventObject,
++    private internalQueue: AnyEventObject[],
++    public selectionResults: TransitionSelectionResults | undefined
++  ) {
++    this.originalContext = snapshot.context;
++  }
++
++  private get machine(): any {
++    return this.snapshot.machine;
++  }
++
++  private node(i: number): AnyStateNode {
++    return this.m.nodes[i];
++  }
++
++  public obj(tref: number): any {
++    if (tref === rs.TREF_INITIAL_MICROSTEP) {
++      return this.initialTransition;
++    }
++    if ((tref & rs.TREF_INITIAL) !== 0) {
++      return this.node(tref & rs.TREF_MASK).initial;
++    }
++    if ((tref & rs.TREF_HISTORY_DEFAULT) !== 0) {
++      return resolveHistoryDefaultTransition(this.node(tref & rs.TREF_MASK));
++    }
++    return this.m.defs[tref];
++  }
++
++  public tref(t: AnyTransitionDefinition): number {
++    const id = this.m.ids.get(t);
++    if (id === undefined) {
++      throw new Error('xstate-rs: transition is not part of the machine');
++    }
++    return id;
++  }
++
++  config(): number[] {
++    return this.snapshot.nodes.map((n) => n.order);
++  }
++
++  history(h: number): number[] | undefined {
++    const recorded = this.snapshot.historyValue[this.node(h).id];
++    return recorded ? recorded.map((n) => n.order) : undefined;
++  }
++
++  staticInitial(n: number): number[] {
++    return (this.node(n).initial.target ?? []).map(
++      (t: AnyStateNode) => t.order
++    );
++  }
++
++  beginSelection(): void {
++    this.machine._microstepHooks?.begin(this.actorScope.self);
++    this.eventlessResolver = undefined;
++  }
++
++  evalCandidate(t: number, node: number, eventless: boolean): boolean {
++    return evaluateCandidate(
++      this.m.defs[t],
++      this.event,
++      this.snapshot,
++      this.node(node),
++      this.actorScope,
++      eventless ? undefined : this.selectionResults
++    );
++  }
++
++  resolve(resolver: 0 | 1 | 2, tref: number): rs.CoreResolved {
++    const resolve =
++      resolver === 0
++        ? (this.eventlessResolver ??= createTransitionResultResolver(
++            this.snapshot,
++            this.event,
++            this.actorScope,
++            false
++          ))
++        : resolver === 1
++          ? this.conflictResolver
++          : this.currentResolver;
++    const res = resolve(this.obj(tref));
++    return {
++      targets: res.targets?.map((n: AnyStateNode) => n.order),
++      reenter: !!res.reenter
++    };
++  }
++
++  beginMicrostep(): void {
++    const internalEvents = this.machine._microstepHooks?.drain(
++      this.actorScope.self
++    );
++    if (internalEvents?.length) {
++      this.internalQueue.push(...internalEvents);
++    }
++    this.currentSnapshot = this.snapshot;
++    this.nextState = this.snapshot;
++    this.executableActions = [];
++    this.originalContext = this.snapshot.context;
++    this.conflictResolver = createTransitionResultResolver(
++      this.snapshot,
++      this.event,
++      this.actorScope,
++      false,
++      this.selectionResults
++    );
++    this.currentResolver = createTransitionResultResolver(
++      this.snapshot,
++      this.event,
++      this.actorScope,
++      true,
++      this.selectionResults
++    );
++    this.resolvedTransitions = [];
++    this.stateInputMap = {};
++    this.stateInputsChanged = false;
++  }
++
++  private stateActions(
++    transitionFn: any,
++    context: MachineContext,
++    children: AnyMachineSnapshot['children'],
++    input: Record<string, unknown> | undefined,
++    kind: 'entry' | 'exit',
++    stateNode: AnyStateNode
++  ): [
++    actions: any[],
++    context: MachineContext | undefined,
++    internalEvents: EventObject[] | undefined,
++    children: AnyMachineSnapshot['children'] | undefined
++  ] {
++    const actorScope = this.actorScope;
++    const currentSnapshot = this.currentSnapshot;
++    const event = this.event;
++    const actions: any[] = [];
++    const internalEvents: EventObject[] = [];
++    let updatedContext: MachineContext | undefined;
++
++    const enqueue = createTransitionEnqueue(
++      actorScope,
++      actions,
++      internalEvents,
++      true
++    );
++
++    const args = isLazyActorScope(actorScope)
++      ? withActorScope(
++          {
++            context,
++            event,
++            output: getEventOutput(event),
++            children,
++            actions: currentSnapshot.machine.sources.actions,
++            actors: currentSnapshot.machine.sources.actors,
++            guards: currentSnapshot.machine.sources.guards,
++            delays: currentSnapshot.machine.sources.delays,
++            input,
++            stateNode
++          },
++          actorScope
++        )
++      : {
++          context,
++          event,
++          output: getEventOutput(event),
++          parent: actorScope.self._parent,
++          self: actorScope.self,
++          children,
++          system: actorScope.system,
++          actions: currentSnapshot.machine.sources.actions,
++          actors: currentSnapshot.machine.sources.actors,
++          guards: currentSnapshot.machine.sources.guards,
++          delays: currentSnapshot.machine.sources.delays,
++          input,
++          stateNode
++        };
++    let res;
++    try {
++      res = transitionFn(args, enqueue);
++    } finally {
++      closeTransitionEnqueue(enqueue);
++    }
++    assertSyncTransitionResult(res, event, stateNode.id, kind);
++
++    if (res?.context !== undefined) {
++      updatedContext = mergeContextPatch(context, res.context);
++    }
++
++    return [actions, updatedContext, internalEvents, res?.children];
++  }
++
++  exitState(n: number): void {
++    const exitStateNode = this.node(n);
++    const stateInput = getStateInput(this.currentSnapshot, exitStateNode.id);
++    const [exitActions, nextContext, internalEvents, nextChildren] =
++      exitStateNode.exit
++        ? this.stateActions(
++            exitStateNode.exit,
++            this.nextState.context,
++            this.nextState.children,
++            stateInput,
++            'exit',
++            exitStateNode
++          )
++        : [[], undefined, undefined, undefined];
++    if (internalEvents?.length) {
++      this.internalQueue.push(...internalEvents);
++    }
++    if (nextContext || nextChildren) {
++      this.nextState = cloneMachineSnapshot(this.nextState, {
++        ...(nextContext ? { context: nextContext } : {}),
++        ...(nextChildren ? { children: nextChildren } : {})
++      });
++    }
++    const [resolvedState, resolvedActions] = resolveActionsWithContext(
++      this.nextState,
++      this.event,
++      this.actorScope,
++      exitActions
++    );
++    this.nextState = resolvedState;
++    this.executableActions.push(...resolvedActions);
++
++    const invokeStopActions: AnyAction[] = [];
++    const enqueue = createTransitionEnqueue(
++      this.actorScope,
++      invokeStopActions,
++      []
++    );
++    for (const invokeDef of exitStateNode.invoke) {
++      const child = this.nextState.children[invokeDef.id];
++      if (child) {
++        enqueue.stop(child);
++      }
++    }
++    if (invokeStopActions.length) {
++      const [stoppedState, stopEffects] = resolveActionsWithContext(
++        this.nextState,
++        this.event,
++        this.actorScope,
++        invokeStopActions
++      );
++      this.nextState = stoppedState;
++      this.executableActions.push(...stopEffects);
++    }
++  }
++
++  transitionContent(trefs: number[]): void {
++    let context = this.nextState.context;
++    const transitionActions: AnyAction[] = [];
++    const internalEvents: EventObject[] = [];
++    for (const tref of trefs) {
++      const t = this.obj(tref);
++      const res = this.currentResolver(t, true);
++      if (t.to) {
++        const resolvedTransition = {
++          ...t,
++          target: res.targets,
++          definition: t
++        } as AnyTransitionDefinition & {
++          toJSON: () => Record<string, unknown>;
++        };
++        resolvedTransition.toJSON = () =>
++          transitionDefinitionToJSON(resolvedTransition);
++        this.resolvedTransitions.push(resolvedTransition);
++      } else {
++        this.resolvedTransitions.push(t);
++      }
++      if (res.context !== undefined) {
++        context = mergeContextPatch(context, res.context);
++      }
++      if (res.actions) {
++        transitionActions.push(...res.actions);
++      }
++      if (res.internalEvents) {
++        internalEvents.push(...res.internalEvents);
++      }
++    }
++    if (internalEvents.length) {
++      this.internalQueue.push(...internalEvents);
++    }
++    const [resolvedTransitionState, transitionExecutableEffects] =
++      resolveActionsWithContext(
++        this.nextState,
++        this.event,
++        this.actorScope,
++        transitionActions
++      );
++    this.nextState = resolvedTransitionState;
++    this.executableActions.push(...transitionExecutableEffects);
++    if (context && context !== this.currentSnapshot.context) {
++      this.nextState = cloneMachineSnapshot(this.nextState, { context });
++    }
++  }
++
++  beginEntry(active: number[], entered: Array<[number, number[]]>): void {
++    const activeIds = new Set(active.map((i) => this.node(i).id));
++    for (const [id, input] of Object.entries(
++      this.currentSnapshot._stateInputs ?? {}
++    )) {
++      if (activeIds.has(id)) {
++        this.stateInputMap[id] = input as Record<string, unknown>;
++      } else {
++        this.stateInputsChanged = true;
++      }
++    }
++    for (const [tref, enteredNodes] of entered) {
++      const { targets, input } = this.currentResolver(this.obj(tref), true);
++      if (input && targets) {
++        const enteredSet = new Set(enteredNodes);
++        for (const targetNode of targets.filter((tn: AnyStateNode) =>
++          enteredSet.has(tn.order)
++        )) {
++          this.stateInputMap[targetNode.id] = input;
++          this.stateInputsChanged = true;
++        }
++      }
++    }
++  }
++
++  enterState(n: number, defaultEntry: boolean, historyDefaults: number[]): void {
++    const stateNodeToEnter = this.node(n);
++    const actorScope = this.actorScope;
++    const event = this.event;
++    const currentSnapshot = this.currentSnapshot;
++    const stateInputMap = this.stateInputMap;
++    const actions: AnyAction[] = [];
++    let children = this.nextState.children;
++
++    let invoked = false;
++    for (const invokeDef of stateNodeToEnter.type === 'final'
++      ? []
++      : stateNodeToEnter.invoke) {
++      invoked = true;
++
++      let src = invokeDef.logic;
++      if (typeof src === 'function') {
++        src = src({
++          actors: currentSnapshot.machine.sources.actors,
++          context: this.nextState.context,
++          event,
++          self: actorScope.self
++        });
++      }
++
++      const logic =
++        typeof src === 'string'
++          ? currentSnapshot.machine.sources.actors[src]
++          : src;
++
++      if (!logic) {
++        throw new Error(
++          isDevelopment
++            ? `Actor logic '${typeof src === 'string' ? src : 'inline'}' not implemented in ${describeMachine(currentSnapshot.machine.id)}`
++            : `Actor logic '${typeof src === 'string' ? src : 'inline'}' not implemented`
++        );
++      }
++
++      const input =
++        typeof invokeDef.input === 'function'
++          ? invokeDef.input({
++              self: actorScope.self,
++              context: this.nextState.context,
++              event,
++              input: stateInputMap[stateNodeToEnter.id],
++              output: getEventOutput(event)
++            })
++          : invokeDef.input;
++
++      assertChildIdFree(actorScope, invokeDef.id);
++      const actor = actorScope.system.createActorRef(logic, {
++        ...invokeDef,
++        src: typeof src === 'string' ? src : undefined,
++        input,
++        parent: actorScope.self,
++        syncSnapshot: !!invokeDef.onSnapshot
++      });
++      (actor as { _invoked?: boolean })._invoked = true;
++
++      actions.push({
++        action: builtInActions['@xstate.spawn'],
++        args: [actor]
++      });
++
++      if (invokeDef.id) {
++        children = { ...children, [invokeDef.id]: actor };
++      }
++    }
++
++    if (invoked) {
++      this.nextState = cloneMachineSnapshot(this.nextState, { children });
++    }
++    let context = this.nextState.context;
++    let contextChangedByEntry = false;
++
++    const stateInput = stateInputMap[stateNodeToEnter.id];
++
++    if (stateNodeToEnter.entry) {
++      const [resultActions, nextContext, nextInternalEvents, nextChildren] =
++        this.stateActions(
++          stateNodeToEnter.entry,
++          context,
++          children,
++          stateInput,
++          'entry',
++          stateNodeToEnter
++        );
++      actions.push(...resultActions);
++      if (nextInternalEvents?.length) {
++        this.internalQueue.push(...nextInternalEvents);
++      }
++      if (nextContext) {
++        context = nextContext;
++        contextChangedByEntry = true;
++      }
++      if (nextChildren) {
++        this.nextState = cloneMachineSnapshot(this.nextState, {
++          children: nextChildren
++        });
++      }
++    }
++
++    if (contextChangedByEntry) {
++      this.nextState.context = context;
++      if (isDevelopment) {
++        freezeContext(context);
++      }
++    }
++
++    if (defaultEntry) {
++      const defaultTransitions = [
++        stateNodeToEnter.initial,
++        ...historyDefaults.map((h) =>
++          resolveHistoryDefaultTransition(this.node(h))
++        )
++      ].filter(Boolean);
++      for (const defaultTransition of defaultTransitions) {
++        const {
++          actions: initialActions,
++          context: initialContext,
++          input: initialInput,
++          internalEvents: initialInternalEvents
++        } = getTransitionResult(
++          defaultTransition,
++          this.nextState,
++          event,
++          actorScope
++        );
++        if (initialActions) {
++          actions.push(...initialActions);
++        }
++        if (initialInternalEvents?.length) {
++          this.internalQueue.push(...initialInternalEvents);
++        }
++        if (initialContext !== undefined) {
++          this.nextState.context = mergeContextPatch(
++            this.nextState.context,
++            initialContext
++          );
++          if (isDevelopment) {
++            freezeContext(this.nextState.context);
++          }
++        }
++        if (initialInput && defaultTransition.target) {
++          for (const targetNode of defaultTransition.target) {
++            stateInputMap[targetNode.id] = initialInput;
++            this.stateInputsChanged = true;
++          }
++        }
++      }
++    }
++
++    const [resolvedState, resolvedActions] = resolveActionsWithContext(
++      this.nextState,
++      event,
++      actorScope,
++      actions
++    );
++    this.nextState = resolvedState;
++    this.executableActions.push(...resolvedActions);
++  }
++
++  doneCompound(parent: number, finalChild: number): void {
++    const final = this.node(finalChild);
++    this.internalQueue.push(
++      createDoneStateEvent(
++        this.node(parent).id,
++        final.output !== undefined
++          ? resolveOutput(
++              final.output,
++              this.nextState.context,
++              this.event,
++              this.actorScope.self,
++              this.stateInputMap[final.id]
++            )
++          : undefined
++      )
++    );
++  }
++
++  doneParallel(parallel: number, regions: rs.RegionDescriptor[]): void {
++    const regionOutput: Record<string, unknown> = {};
++    for (const [kind, r, child] of regions) {
++      const region = this.node(r);
++      if (kind === 0) {
++        regionOutput[region.key] =
++          region.output !== undefined
++            ? resolveOutput(
++                region.output,
++                this.nextState.context,
++                this.event,
++                this.actorScope.self,
++                this.stateInputMap[region.id]
++              )
++            : undefined;
++        continue;
++      }
++      if (kind === 1) {
++        const regionDoneEvent = this.internalQueue.find(
++          (e) =>
++            e.type === 'xstate.done.state' &&
++            (e as DoneStateEvent).stateId === region.id
++        ) as DoneStateEvent | undefined;
++        regionOutput[region.key] = regionDoneEvent?.output;
++        continue;
++      }
++      const finalChild = child === undefined ? undefined : this.node(child);
++      regionOutput[region.key] =
++        finalChild?.output !== undefined
++          ? resolveOutput(
++              finalChild.output,
++              this.nextState.context,
++              this.event,
++              this.actorScope.self,
++              this.stateInputMap[finalChild.id]
++            )
++          : undefined;
++    }
++    this.internalQueue.push(
++      createDoneStateEvent(this.node(parallel).id, regionOutput)
++    );
++  }
++
++  machineDone(completion: number): void {
++    const rootCompletionNode = this.node(completion);
++    const rootNode = this.nextState.machine.root;
++    const internalQueue = this.internalQueue;
++
++    let completionOutput: unknown;
++    if (rootCompletionNode.output !== undefined && rootCompletionNode.parent) {
++      const rootDoneEvent = internalQueue.find(
++        (e) =>
++          e.type === 'xstate.done.state' &&
++          (e as DoneStateEvent).stateId === rootNode.id
++      ) as DoneStateEvent | undefined;
++      completionOutput =
++        rootDoneEvent && rootCompletionNode.parent === rootNode
++          ? rootDoneEvent.output
++          : resolveOutput(
++              rootCompletionNode.output,
++              this.nextState.context,
++              this.event,
++              this.actorScope.self,
++              this.stateInputMap[rootCompletionNode.id]
++            );
++    } else if (rootCompletionNode.type === 'parallel') {
++      const parallelDoneEvent = internalQueue.find(
++        (e) =>
++          e.type === 'xstate.done.state' &&
++          (e as DoneStateEvent).stateId === rootCompletionNode.id
++      ) as DoneStateEvent | undefined;
++      completionOutput = parallelDoneEvent?.output;
++    }
++
++    const output =
++      rootNode.output === undefined
++        ? rootCompletionNode.parent === rootNode
++          ? completionOutput
++          : undefined
++        : resolveOutput(
++            rootNode.output,
++            this.nextState.context,
++            createDoneStateEvent(rootCompletionNode.id, completionOutput),
++            this.actorScope.self
++          );
++
++    this.nextState = cloneMachineSnapshot(this.nextState, {
++      status: 'done',
++      output
++    });
++  }
++
++  endEntry(): void {
++    if (this.stateInputsChanged) {
++      this.nextState = cloneMachineSnapshot(this.nextState, {
++        _stateInputs: this.stateInputMap
++      });
++    }
++  }
++
++  isDone(): boolean {
++    return this.nextState.status === 'done';
++  }
++
++  exitOnDone(nodesDesc: number[]): void {
++    const allExitActions: AnyAction[] = [];
++    for (const stateNode of nodesDesc.map((i) => this.node(i))) {
++      if (stateNode.exit) {
++        const stateInput = getStateInput(this.nextState, stateNode.id);
++        const [exitActions, nextContext, nextInternalEvents, nextChildren] =
++          this.stateActions(
++            stateNode.exit,
++            this.nextState.context,
++            this.nextState.children,
++            stateInput,
++            'exit',
++            stateNode
++          );
++        if (nextContext || nextChildren) {
++          this.nextState = cloneMachineSnapshot(this.nextState, {
++            ...(nextContext ? { context: nextContext } : {}),
++            ...(nextChildren ? { children: nextChildren } : {})
++          });
++        }
++        allExitActions.push(...exitActions);
++        if (nextInternalEvents?.length) {
++          this.internalQueue.push(...nextInternalEvents);
++        }
++      }
++    }
++
++    const [resolvedState, resolvedActions] = resolveActionsWithContext(
++      this.nextState,
++      this.event,
++      this.actorScope,
++      allExitActions
++    );
++    this.nextState = resolvedState;
++    this.executableActions.push(...resolvedActions);
++
++    const [stoppedState, stopEffects] = stopChildren(
++      this.nextState,
++      this.event,
++      this.actorScope
++    );
++    this.nextState = stoppedState;
++    this.executableActions.push(...stopEffects);
++
++    const [withoutTimers, cancelEffects] = cancelTimers(
++      this.nextState,
++      this.event,
++      this.actorScope
++    );
++    this.nextState = withoutTimers;
++    this.executableActions.push(...cancelEffects);
++  }
++
++  applyMicrostep(
++    result:
++      | {
++          filtered: number[];
++          nodes: number[];
++          structureChanged: boolean;
++          history: Array<[number, number[]]>;
++        }
++      | undefined,
++    enabled: number[]
++  ): void {
++    let step: Microstep;
++    if (!result) {
++      step = [this.currentSnapshot, this.executableActions];
++    } else if (!result.structureChanged) {
++      step =
++        this.nextState.context !== this.originalContext
++          ? [
++              this.nextState === this.currentSnapshot
++                ? cloneMachineSnapshot(this.nextState)
++                : this.nextState,
++              this.executableActions,
++              this.resolvedTransitions
++            ]
++          : [this.nextState, this.executableActions, this.resolvedTransitions];
++    } else {
++      let historyValue = this.currentSnapshot.historyValue;
++      if (result.history.length) {
++        historyValue = { ...historyValue };
++        for (const [h, recorded] of result.history) {
++          historyValue[this.node(h).id] = recorded.map((i) => this.node(i));
++        }
++      }
++      step = [
++        cloneMachineSnapshot(this.nextState, {
++          _nodes: result.nodes.map((i) => this.node(i)),
++          historyValue
++        }),
++        this.executableActions,
++        this.resolvedTransitions
++      ];
++    }
++    this.lastStep = step;
++    if (this.loop) {
++      this.microToken = rsToken(step[0]);
++      this.loop.setNext(step[0]);
++      this.loop.addMicrostep(
++        step,
++        enabled.map((t) => this.obj(t))
++      );
++      this.loop.removeTerminatedChild(this.event);
++      this.snapshot = this.loop.getNext();
++    }
++  }
++
++  isActive(): boolean {
++    return this.snapshot.status === 'active';
++  }
++
++  checkIteration(n: number): void {
++    const loop = this.loop!;
++    this.selectionResults = undefined;
++    if (n > loop.maxIterations) {
++      throw new InfiniteTransitionError(
++        this.actorScope.self?.id,
++        loop.macroEvent,
++        loop.maxIterations,
++        loop.recentStates
++      );
++    }
++    loop.recentStates.push(this.snapshot.value);
++    if (loop.recentStates.length > 5) {
++      loop.recentStates.shift();
++    }
++  }
++
++  snapshotToken(): number {
++    return rsToken(this.snapshot);
++  }
++
++  microstepToken(): number {
++    return this.microToken;
++  }
++
++  drainRaised(): void {
++    const raisedEvents = this.machine._microstepHooks?.drain(
++      this.actorScope.self
++    );
++    if (raisedEvents?.length) {
++      this.internalQueue.push(...raisedEvents);
++    }
++  }
++
++  queueIsEmpty(): boolean {
++    return this.internalQueue.length === 0;
++  }
++
++  dequeue(): string | undefined {
++    const next = this.internalQueue.shift();
++    if (!next) {
++      return undefined;
++    }
++    this.event = next;
++    this.selectionResults = new Map();
++    return next.type;
++  }
++}
++
++/** `getTransitionData` on the xstate-rs core. */
++export function rsGetTransitionData(
++  snapshot: AnyMachineSnapshot,
++  event: AnyEventObject,
++  actorScope: AnyActorScope,
++  selectionResults?: TransitionSelectionResults
++): AnyTransitionDefinition[] {
++  const m = rsMachine(snapshot.machine);
++  const host = new RsHost(m, actorScope, snapshot, event, [], selectionResults);
++  return rs.select(m.handle, host, event.type).map((t) => m.defs[t]);
++}
++
++function rsMicrostep(
++  transitions: Array<AnyTransitionDefinition>,
++  currentSnapshot: AnyMachineSnapshot,
++  actorScope: AnyActorScope,
++  event: AnyEventObject,
++  internalQueue: Array<AnyEventObject>,
++  selectionResults?: TransitionSelectionResults
++): Microstep {
++  const m = rsMachine(currentSnapshot.machine);
++  const host = new RsHost(
++    m,
++    actorScope,
++    currentSnapshot,
++    event,
++    internalQueue,
++    selectionResults
++  );
++  rs.microstep(
++    m.handle,
++    host,
++    transitions.map((t) => host.tref(t))
++  );
++  return host.lastStep!;
++}
++
++function rsInitialMicrostep(
++  root: AnyStateNode,
++  preInitialState: AnyMachineSnapshot,
++  actorScope: AnyActorScope,
++  initEvent: AnyEventObject,
++  internalQueue: AnyEventObject[]
++): Microstep {
++  root.machine._microstepHooks?.begin(actorScope.self);
++  const m = rsMachine(root.machine);
++  const host = new RsHost(
++    m,
++    actorScope,
++    preInitialState,
++    initEvent,
++    internalQueue,
++    undefined
++  );
++  host.initialTransition = {
++    target: rs.initialTargets(m.handle, host).map((i) => m.nodes[i]),
++    source: root,
++    reenter: true,
++    eventType: null as any,
++    toJSON: null as any
++  } as AnyTransitionDefinition;
++  rs.initialMicrostep(m.handle, host);
++  return host.lastStep!;
++}

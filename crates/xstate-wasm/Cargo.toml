@@ -1,0 +1,15 @@
+[package]
+name = "xstate-wasm"
+version = "0.1.0"
+description = "WebAssembly bridge that runs XState's own JS host on the xstate-rt core algorithm"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+xstate-rt = { path = "../xstate-rt" }

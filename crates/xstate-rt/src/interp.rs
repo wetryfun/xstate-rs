@@ -581,6 +581,10 @@ where
         self.token
     }
 
+    fn microstep_token(&self) -> u64 {
+        self.token
+    }
+
     fn drain_raised(&mut self) -> Result<(), RuntimeError> {
         Ok(())
     }
