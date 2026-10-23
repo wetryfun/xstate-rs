@@ -498,14 +498,9 @@ fn rejects_unsupported_features() {
         (e.kind, e.message.as_str()),
         (LoadErrorKind::Invalid, "Choice state at $.states.a must declare choice.")
     );
-    let e = load_err(json!({ "initial": "a", "states": { "a": { "input": {} } } }));
-    assert_eq!(e.kind, LoadErrorKind::Unsupported);
 
     let e = load_err(json!({ "initial": "a", "states": { "a": { "timeout": 100 } } }));
     assert!(e.message.contains("onTimeout"), "{e}");
-
-    let e = load_err(json!({ "initial": "a", "states": { "a": { "on": { "go": { "target": "a", "input": {} } } } } }));
-    assert_eq!((e.kind, e.path.as_str()), (LoadErrorKind::Unsupported, "$.states.a.on.go.input"));
 }
 
 #[test]

@@ -16,6 +16,7 @@
 
 use std::any::Any;
 use std::borrow::Cow;
+use std::cell::Cell;
 use std::collections::VecDeque;
 use std::sync::Arc;
 
@@ -227,6 +228,11 @@ pub(crate) struct State<C, E> {
     /// `snapshot.timers`, in order.
     pub timers: Arc<Vec<LogicalTimer<E>>>,
     pub next_timer_id: u64,
+    /// `_stateInputs`: the input of each active state that has one, in
+    /// order. Boxed: 8 bytes per actor instead of a `Vec`'s 24, and most
+    /// machines have none.
+    #[allow(clippy::box_collection)]
+    pub inputs: Option<Box<Vec<(Nid, Value)>>>,
     /// For an untyped context: known to need no number normalization
     /// (`js_numbers`), so merges need not check it again. Not persisted.
     pub context_normalized: bool,
@@ -244,6 +250,7 @@ impl<C: Clone, E: Clone> Clone for State<C, E> {
             children: self.children.clone(),
             timers: self.timers.clone(),
             next_timer_id: self.next_timer_id,
+            inputs: self.inputs.clone(),
             context_normalized: self.context_normalized,
         }
     }
@@ -274,6 +281,7 @@ impl<C, E> State<C, E> {
             children: empty.children.clone(),
             timers: empty.timers.clone(),
             next_timer_id: 0,
+            inputs: None,
             context_normalized: false,
         }
     }
@@ -348,11 +356,22 @@ struct Outcome<E> {
     static_patch: Option<Tid>,
     ops: Vec<Op<E>>,
     internal: Vec<Ev<E>>,
+    /// A transition's `input` for the states it enters (when truthy).
+    input: Option<Value>,
 }
 
 impl<E> Outcome<E> {
     fn empty() -> Self {
-        Self { context: None, static_patch: None, ops: Vec::new(), internal: Vec::new() }
+        Self { context: None, static_patch: None, ops: Vec::new(), internal: Vec::new(), input: None }
+    }
+}
+
+/// Restores the expression scope's state when dropped.
+struct ScopeGuard<'a>(&'a Cell<Option<Nid>>, Option<Nid>);
+
+impl Drop for ScopeGuard<'_> {
+    fn drop(&mut self) {
+        self.0.set(self.1);
     }
 }
 
@@ -374,6 +393,8 @@ struct Saved {
     output: Option<Box<Value>>,
     error: Option<Box<Value>>,
     next_timer_id: u64,
+    #[allow(clippy::box_collection)]
+    inputs: Option<Box<Vec<(Nid, Value)>>>,
 }
 
 impl Saved {
@@ -384,6 +405,7 @@ impl Saved {
             output: st.output.clone(),
             error: st.error.clone(),
             next_timer_id: st.next_timer_id,
+            inputs: st.inputs.clone(),
         }
     }
 
@@ -394,6 +416,7 @@ impl Saved {
         st.output = self.output;
         st.error = self.error;
         st.next_timer_id = self.next_timer_id;
+        st.inputs = self.inputs;
         if let Some(history) = parts.history {
             st.history = history;
         }
@@ -417,6 +440,14 @@ struct SavedParts<E> {
 impl<E> Default for SavedParts<E> {
     fn default() -> Self {
         Self { history: None, children: None, timers: None }
+    }
+}
+
+/// Sets a state's input, keeping its place if it had one.
+fn set_input(inputs: &mut Vec<(Nid, Value)>, node: Nid, input: Value) {
+    match inputs.iter_mut().find(|(n, _)| *n == node) {
+        Some(entry) => entry.1 = input,
+        None => inputs.push((node, input)),
     }
 }
 
@@ -616,13 +647,14 @@ where
         }
         let (m, st, compact) = (self.m, self.st, self.compact);
         // Compact leaves out what restore rebuilds: the value (from
-        // `nodeIds`), empty children, timers and history, the always-empty
-        // `_stateInputs` and a zero `_nextTimerId`.
+        // `nodeIds`), empty children, timers, history and `_stateInputs`,
+        // and a zero `_nextTimerId`.
         let keep = |non_empty: bool| !compact || non_empty;
-        let (keep_children, keep_timers, keep_history, keep_next) = (
+        let (keep_children, keep_timers, keep_history, keep_inputs, keep_next) = (
             keep(!st.children.is_empty()),
             keep(!st.timers.is_empty()),
             keep(!st.history.is_empty()),
+            keep(st.inputs.is_some()),
             keep(st.next_timer_id != 0),
         );
         // Exact lengths let encoders such as MessagePack write maps directly
@@ -630,8 +662,8 @@ where
         let len = 3
             + usize::from(st.output.is_some())
             + usize::from(st.error.is_some())
-            + if compact { 0 } else { 2 }
-            + [keep_children, keep_timers, keep_history, keep_next].iter().filter(|k| **k).count();
+            + if compact { 0 } else { 1 }
+            + [keep_children, keep_timers, keep_history, keep_inputs, keep_next].iter().filter(|k| **k).count();
         let mut map = s.serialize_map(Some(len))?;
         map.serialize_entry("status", st.status.as_str())?;
         if let Some(o) = &st.output {
@@ -662,8 +694,14 @@ where
         if keep_history {
             map.serialize_entry("historyValue", &History(m, &st.history))?;
         }
-        if !compact {
-            map.serialize_entry("_stateInputs", &Map::new())?;
+        if keep_inputs {
+            struct Inputs<'a, C, E>(&'a Machine<C, E>, &'a [(Nid, Value)]);
+            impl<C, E> Serialize for Inputs<'_, C, E> {
+                fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+                    s.collect_map(self.1.iter().map(|(n, v)| (&self.0.data(*n).id, JsNumbers(v))))
+                }
+            }
+            map.serialize_entry("_stateInputs", &Inputs(m, st.inputs.as_deref().map_or(&[], Vec::as_slice)))?;
         }
         if keep_next {
             map.serialize_entry("_nextTimerId", &st.next_timer_id)?;
@@ -724,6 +762,11 @@ struct NativeHost<'a, C, E> {
     outcomes: Vec<(Tid, Outcome<E>)>,
     /// Transitions evaluated by the last selection (XState's selection results).
     selected: Vec<(Tid, Selected<E>)>,
+    /// The state whose input expressions see (`None`: no input), as XState
+    /// passes a state's input to its own functions.
+    scope: Cell<Option<Nid>>,
+    /// The inputs of the transitions of this microstep, for `begin_entry`.
+    pending_inputs: Vec<(Tid, Value)>,
     /// The last configurations, for the infinite-loop error.
     recent: VecDeque<Vec<Nid>>,
     /// Children stopped in this macrostep (XState's `stoppedIds`).
@@ -880,8 +923,27 @@ where
             return v.clone();
         }
         let m = self.m;
-        let args = ExprArgs { context, event, params, machine: m, config: &self.st.nodes, enq: None };
+        let args = ExprArgs {
+            context,
+            event,
+            params,
+            input: self.scope_input(),
+            machine: m,
+            config: &self.st.nodes,
+            enq: None,
+        };
         t.eval(&mut |i| (m.exprs[i as usize])(&args))
+    }
+
+    /// The input of the state in scope.
+    fn scope_input(&self) -> Option<&Value> {
+        let node = self.scope.get()?;
+        self.st.inputs.as_ref()?.iter().find(|(n, _)| *n == node).map(|(_, v)| v)
+    }
+
+    /// Puts `node`'s input in the expression scope until the guard drops.
+    fn scoped(&self, node: Option<Nid>) -> ScopeGuard<'_> {
+        ScopeGuard(&self.scope, self.scope.replace(node))
     }
 
     /// `executeActions` from `machineFromJSON`, against `base` as the
@@ -960,6 +1022,7 @@ where
                         context,
                         event: &self.event,
                         params: p,
+                        input: self.scope_input(),
                         machine: m,
                         config: &self.st.nodes,
                         enq: Some(&enq),
@@ -999,9 +1062,26 @@ where
     /// timeout, by a function that then cancels the timeout).
     fn transition_outcome(&self, t: Tid) -> Result<Outcome<E>, SystemError> {
         let tr = self.m.transition(t);
+        // XState evaluates a transition's `input` with only the context and
+        // the event (no state input).
+        let input = match &tr.input {
+            Some(input) => {
+                let _scope = self.scoped(None);
+                Some(self.eval(input, &self.st.context, None)).filter(js_truthy)
+            }
+            None => None,
+        };
+        let mut out = self.transition_body(t)?;
+        out.input = out.input.or(input);
+        Ok(out)
+    }
+
+    fn transition_body(&self, t: Tid) -> Result<Outcome<E>, SystemError> {
+        let tr = self.m.transition(t);
         if !tr.is_dynamic() {
             return Ok(Outcome::empty());
         }
+        let _scope = self.scoped(Some(self.m.tree.transitions[t as usize].source));
         if tr.function.is_some() {
             return Ok(self.eval_function(t)?.and_then(|s| s.outcome).unwrap_or_else(Outcome::empty));
         }
@@ -1082,11 +1162,13 @@ where
         let source = m.tree.transitions[t as usize].source;
         let enq = Enq::default();
         // Only a transition expression's scope has `enq`.
+        let _scope = self.scoped(Some(source));
         let call = |expr: u32, enq: Option<&Enq>| {
             let args = ExprArgs {
                 context: &self.st.context,
                 event: &self.event,
                 params: None,
+                input: self.scope_input(),
                 machine: m,
                 config: &self.st.nodes,
                 enq,
@@ -1149,6 +1231,9 @@ where
                 if let Some(context) = &branch.context {
                     result.insert("context".into(), self.eval(context, &self.st.context, None));
                 }
+                if let Some(input) = &branch.input {
+                    result.insert("input".into(), self.eval(input, &self.st.context, None));
+                }
                 result.insert("reenter".into(), Value::Bool(branch.reenter));
                 (Value::Object(result), branch.targets.clone())
             }
@@ -1163,6 +1248,7 @@ where
         if let Some(key) = &tr.cancel_timeout {
             outcome.ops.push(Op::Cancel(key.clone()));
         }
+        outcome.input = result.get("input").filter(|i| js_truthy(i)).cloned();
         let reenter = result.get("reenter").is_some_and(js_truthy);
         Ok(Some(Selected { targets, reenter, outcome: Some(outcome) }))
     }
@@ -1263,6 +1349,7 @@ where
     /// A state's exit function: its timers are cancelled (the wrappers
     /// nest, so the last first), then the exit actions run.
     fn exit_outcome(&self, node: Nid) -> Result<Outcome<E>, SystemError> {
+        let _scope = self.scoped(Some(node));
         let data = self.m.data(node);
         let base = self.action_base(&data.exit, false)?.unwrap_or_default();
         let mut out = self.execute_actions(&data.exit, &base, false)?;
@@ -1329,8 +1416,60 @@ where
         })
     }
 
+    /// Entering a state, with its input in scope: invokes, entry actions,
+    /// then its delayed transitions' timers.
+    fn enter_state_scoped(&mut self, node: Nid) -> Result<(), SystemError> {
+        let data = self.m.data(node);
+        let mut ops: Vec<Op<E>> = Vec::new();
+        // Final states are inert: their invocations never start.
+        if self.m.tree.kind(node) != core::Kind::Final {
+            for inv in &data.invokes {
+                if let Some(existing) = self.st.children.get(&inv.id) {
+                    let occupied = !self.stopped_ids.contains(&inv.id) && self.cx.status_of(existing) == Status::Active;
+                    if occupied {
+                        return Err(SystemError::Failed(format!(
+                            "Cannot create a child actor with id '{}': a child with that id already exists.",
+                            inv.id
+                        )));
+                    }
+                }
+                let child = self.cx.allocate(
+                    &inv.logic,
+                    AllocateOptions {
+                        id: inv.id.clone(),
+                        input: inv.input.as_ref().map(|t| self.eval(t, &self.st.context, None)),
+                        parent: Some(self.cx.self_ref()),
+                        registry_key: inv.registry_key.clone(),
+                        sync_snapshot: Some(inv.sync_snapshot),
+                    },
+                )?;
+                ops.push(Op::Spawn(child.clone()));
+                self.children_mut().insert(inv.id.clone(), child);
+                self.cloned = true;
+            }
+        }
+        let base = self.action_base(&data.entry, false)?.unwrap_or_default();
+        let mut out = self.execute_actions(&data.entry, &base, false)?;
+        // Delayed transitions' timers are scheduled by entry wrappers, after
+        // the entry actions and against the context they produced.
+        if let Some(ctx) = &out.context {
+            self.merge_context(ctx)?;
+        }
+        for d in &data.delayed {
+            let delay = self.resolve_delay(d.delay)?;
+            out.ops.push(Op::Raise { event: self.delayed_event(node, d), id: None, delay });
+        }
+        self.queue.extend(out.internal);
+        ops.append(&mut out.ops);
+        self.resolve_ops(ops);
+        // The `initial` and history default transitions of JSON machines
+        // carry no context or actions.
+        Ok(())
+    }
+
     /// A final state's output, computed against the current context and event.
     fn output_of(&self, node: Nid) -> Option<Value> {
+        let _scope = self.scoped(Some(node));
         self.m.data(node).output.as_ref().map(|t| self.eval(t, &self.st.context, None))
     }
 
@@ -1357,6 +1496,8 @@ where
 
     /// A guard, with `params` the scope of its expressions.
     fn eval_guard(&self, guard: &Guard, params: Option<&Value>) -> Result<bool, SystemError> {
+        // XState's guard arguments have no state input.
+        let _scope = self.scoped(None);
         let args =
             || GuardArgs { context: &self.st.context, event: &self.event, machine: self.m, config: &self.st.nodes };
         Ok(match guard {
@@ -1516,7 +1657,10 @@ where
                     }
                     return Ok(resolved);
                 }
-                if resolver == Resolver::Current && tr.is_dynamic() && !self.outcomes.iter().any(|(x, _)| *x == t) {
+                if resolver == Resolver::Current
+                    && (tr.is_dynamic() || tr.input.is_some())
+                    && !self.outcomes.iter().any(|(x, _)| *x == t)
+                {
                     let outcome = self.transition_outcome(t)?;
                     self.outcomes.push((t, outcome));
                 }
@@ -1579,62 +1723,55 @@ where
             }
             ops.extend(outcome.ops);
             internal.extend(outcome.internal);
+            if let Some(input) = outcome.input {
+                self.pending_inputs.push((t, input));
+            }
         }
         self.queue.extend(internal);
         self.resolve_ops(ops);
         Ok(())
     }
 
-    fn begin_entry(&mut self, _active: &[Nid], _entered: &[(TRef, core::Buf<Nid>)]) -> Result<(), SystemError> {
+    /// XState's `stateInputMap`: the inputs of states still active, then
+    /// each transition's input for the targets it enters.
+    fn begin_entry(&mut self, active: &[Nid], entered: &[(TRef, core::Buf<Nid>)]) -> Result<(), SystemError> {
+        let pending = std::mem::take(&mut self.pending_inputs);
+        if self.st.inputs.is_none() && pending.is_empty() {
+            return Ok(());
+        }
+        let mut inputs = self.st.inputs.take().map(|b| *b).unwrap_or_default();
+        let before = inputs.len();
+        inputs.retain(|(n, _)| active.contains(n));
+        let mut changed = inputs.len() != before;
+        for (t, input) in pending {
+            let Some((_, targets)) = entered.iter().find(|(r, _)| *r == TRef::T(t)) else { continue };
+            for &n in targets.iter() {
+                set_input(&mut inputs, n, input.clone());
+                changed = true;
+            }
+        }
+        if changed {
+            self.cloned = true;
+        }
+        self.st.inputs = (!inputs.is_empty()).then(|| Box::new(inputs));
         Ok(())
     }
 
-    fn enter_state(&mut self, node: Nid, _default_entry: bool, _history_defaults: &[Nid]) -> Result<(), SystemError> {
+    fn enter_state(&mut self, node: Nid, default_entry: bool, _history_defaults: &[Nid]) -> Result<(), SystemError> {
+        self.scope.set(Some(node));
+        let result = self.enter_state_scoped(node);
+        self.scope.set(None);
+        result?;
+        // The `input` of an object-form `initial`, for the states it enters.
         let data = self.m.data(node);
-        let mut ops: Vec<Op<E>> = Vec::new();
-        // Final states are inert: their invocations never start.
-        if self.m.tree.kind(node) != core::Kind::Final {
-            for inv in &data.invokes {
-                if let Some(existing) = self.st.children.get(&inv.id) {
-                    let occupied = !self.stopped_ids.contains(&inv.id) && self.cx.status_of(existing) == Status::Active;
-                    if occupied {
-                        return Err(SystemError::Failed(format!(
-                            "Cannot create a child actor with id '{}': a child with that id already exists.",
-                            inv.id
-                        )));
-                    }
-                }
-                let child = self.cx.allocate(
-                    &inv.logic,
-                    AllocateOptions {
-                        id: inv.id.clone(),
-                        input: inv.input.as_ref().map(|t| self.eval(t, &self.st.context, None)),
-                        parent: Some(self.cx.self_ref()),
-                        registry_key: inv.registry_key.clone(),
-                        sync_snapshot: Some(inv.sync_snapshot),
-                    },
-                )?;
-                ops.push(Op::Spawn(child.clone()));
-                self.children_mut().insert(inv.id.clone(), child);
-                self.cloned = true;
+        if let Some(input) = data.initial_input.as_ref().filter(|i| default_entry && js_truthy(i)) {
+            let mut inputs = self.st.inputs.take().map(|b| *b).unwrap_or_default();
+            for &n in data.initial.iter() {
+                set_input(&mut inputs, n, input.clone());
             }
+            self.st.inputs = Some(Box::new(inputs));
+            self.cloned = true;
         }
-        let base = self.action_base(&data.entry, false)?.unwrap_or_default();
-        let mut out = self.execute_actions(&data.entry, &base, false)?;
-        // Delayed transitions' timers are scheduled by entry wrappers, after
-        // the entry actions and against the context they produced.
-        if let Some(ctx) = &out.context {
-            self.merge_context(ctx)?;
-        }
-        for d in &data.delayed {
-            let delay = self.resolve_delay(d.delay)?;
-            out.ops.push(Op::Raise { event: self.delayed_event(node, d), id: None, delay });
-        }
-        self.queue.extend(out.internal);
-        ops.append(&mut out.ops);
-        self.resolve_ops(ops);
-        // The `initial` and history default transitions of JSON machines
-        // carry no context or actions.
         Ok(())
     }
 
@@ -1822,6 +1959,8 @@ where
             cloned: false,
             outcomes: Vec::new(),
             selected: Vec::new(),
+            scope: Cell::new(None),
+            pending_inputs: Vec::new(),
             recent: VecDeque::new(),
             stopped_ids: Vec::new(),
             microstep_token_value: 0,
@@ -1964,10 +2103,17 @@ where
                     .collect(),
             ),
         );
-        m.insert("_stateInputs".into(), json!({}));
+        m.insert("_stateInputs".into(), self.inputs_json(st));
         m.insert("_nextTimerId".into(), json!(st.next_timer_id));
         m.insert("nodeIds".into(), Value::Array(st.nodes.iter().map(|&n| json!(self.data(n).id)).collect()));
         Value::Object(m)
+    }
+
+    /// `_stateInputs`: inputs by state id.
+    fn inputs_json(&self, st: &State<C, E>) -> Value {
+        Value::Object(
+            st.inputs.iter().flat_map(|i| i.iter()).map(|(n, v)| (self.data(*n).id.clone(), v.clone())).collect(),
+        )
     }
 
     /// Rebuilds a machine snapshot from [`Machine::snapshot_data`].
@@ -2016,6 +2162,11 @@ where
             });
         }
         st.next_timer_id = data.get("_nextTimerId").and_then(Value::as_u64).unwrap_or(0);
+        let mut inputs = Vec::new();
+        for (id, input) in data.get("_stateInputs").and_then(Value::as_object).into_iter().flatten() {
+            inputs.push((lookup(id)?, input.clone()));
+        }
+        st.inputs = (!inputs.is_empty()).then(|| Box::new(inputs));
         Ok(st)
     }
 

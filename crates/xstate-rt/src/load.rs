@@ -27,6 +27,7 @@ struct Node {
     history_children: Vec<NodeId>,
     initial: Option<NodeId>,
     history_target: Vec<NodeId>,
+    initial_input: Option<Value>,
     entry: Vec<Action>,
     exit: Vec<Action>,
     on: Vec<(String, Vec<Tid>)>,
@@ -74,7 +75,7 @@ const TRANSITION_KEYS: &[&str] =
     &["target", "matches", "context", "actions", "guard", "description", "reenter", "meta", "input"];
 
 /// State-node keys that name v6 features this runtime does not run yet.
-const UNSUPPORTED_STATE_KEYS: &[(&str, &str)] = &[("input", "state input")];
+const UNSUPPORTED_STATE_KEYS: &[(&str, &str)] = &[];
 
 fn err(kind: K, path: &str, message: impl Into<String>) -> LoadError {
     LoadError::new(kind, path, message)
@@ -386,6 +387,7 @@ where
             output: n.output,
             tags: n.tags,
             initial: n.initial.into_iter().collect::<Vec<_>>().into(),
+            initial_input: n.initial_input,
             history_target: n.history_target.into(),
         });
     }
@@ -684,6 +686,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             history_children: Vec::new(),
             initial: None,
             history_target: Vec::new(),
+            initial_input: None,
             entry: Vec::new(),
             exit: Vec::new(),
             on: Vec::new(),
@@ -821,11 +824,22 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
 
         match kind {
             NodeKind::Compound => {
-                let initial_path = child_path(&path, "initial");
-                let initial = json
-                    .get("initial")
-                    .and_then(Value::as_str)
-                    .ok_or_else(|| invalid(&initial_path, "expected the key of a child state"))?;
+                let mut initial_path = child_path(&path, "initial");
+                // The object form, `{ target, input?, description?, meta? }`.
+                let initial = match json.get("initial") {
+                    Some(Value::Object(o)) => {
+                        for k in o.keys() {
+                            if !["target", "input", "description", "meta"].contains(&k.as_str()) {
+                                return Err(err(K::UnknownKey, &initial_path, format!("unknown key \"{k}\"")));
+                            }
+                        }
+                        self.nodes[node as usize].initial_input = o.get("input").cloned();
+                        initial_path = child_path(&initial_path, "target");
+                        o.get("target").and_then(Value::as_str)
+                    }
+                    other => other.and_then(Value::as_str),
+                }
+                .ok_or_else(|| invalid(&initial_path, "expected the key of a child state"))?;
                 let target = self.node_by_path(node, initial).map_err(|m| err(K::InvalidTarget, &initial_path, m))?;
                 if !self.is_desc(target, node) {
                     return Err(err(K::InvalidTarget, &initial_path, "the initial state must be a descendant"));
@@ -1143,6 +1157,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                 session: Some(id.clone()),
                 cancel_timeout: Some(timeout_key.clone()),
                 function: None,
+                input: None,
             });
             this.transition_sources.push(node);
             this.transitions.len() as TransitionId - 1
@@ -1218,13 +1233,6 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                     return Err(err(K::UnknownKey, &path, format!("unknown key \"{k}\"")));
                 }
             }
-            if config.contains_key("input") {
-                return Err(err(
-                    K::Unsupported,
-                    &child_path(&path, "input"),
-                    "route input (state input) is not supported yet",
-                ));
-            }
             let named = match config.remove("guard") {
                 None | Some(Value::Null) => None,
                 Some(Value::String(g)) => Some(g),
@@ -1293,13 +1301,6 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                 return Err(err(K::UnknownKey, path, format!("unknown key \"{k}\"")));
             }
         }
-        if obj.contains_key("input") {
-            return Err(err(
-                K::Unsupported,
-                &child_path(path, "input"),
-                "transition input (state input) is not supported yet",
-            ));
-        }
         let targets = match obj.get("target") {
             Some(t) => Some(self.resolve_targets(source, Some(t), &child_path(path, "target"), false)?.into()),
             None => None,
@@ -1328,6 +1329,10 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             _ => (opt_object(obj, "context", path)?.cloned(), None),
         };
         let actions = self.compile_action_list(obj.get("actions"), &child_path(path, "actions"), false)?;
+        let input = match obj.get("input") {
+            Some(i) => Some(self.compile_template(i, &child_path(path, "input"), Slot::Scope)?),
+            None => None,
+        };
         let reenter = match obj.get("reenter") {
             None => false,
             Some(Value::Bool(b)) => *b,
@@ -1345,6 +1350,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             session: None,
             cancel_timeout: None,
             function: None,
+            input,
         });
         self.transition_sources.push(source);
         Ok(id)
@@ -1375,13 +1381,6 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                             return Err(err(K::UnknownKey, &bpath, format!("unknown key \"{k}\"")));
                         }
                     }
-                    if b.contains_key("input") {
-                        return Err(err(
-                            K::Unsupported,
-                            &child_path(&bpath, "input"),
-                            "choice input (state input) is not supported yet",
-                        ));
-                    }
                     if !b.contains_key("when") && i + 1 != items.len() {
                         return Err(invalid(&bpath, format!("Choice fallback branch at {bpath} must be last.")));
                     }
@@ -1399,12 +1398,16 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                         Some(c) => Some(self.compile_template(c, &child_path(&bpath, "context"), Slot::Scope)?),
                         None => None,
                     };
+                    let input = match b.get("input") {
+                        Some(i) => Some(self.compile_template(i, &child_path(&bpath, "input"), Slot::Scope)?),
+                        None => None,
+                    };
                     let reenter = match b.get("reenter") {
                         None => false,
                         Some(Value::Bool(r)) => *r,
                         Some(_) => return Err(invalid(&child_path(&bpath, "reenter"), "expected a boolean")),
                     };
-                    branches.push(ChoiceBranch { when, targets, context, reenter });
+                    branches.push(ChoiceBranch { when, targets, context, input, reenter });
                 }
                 TransitionFn::Choice { branches, path: cpath, id }
             }
@@ -1426,6 +1429,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             session: None,
             cancel_timeout: None,
             function: Some(function),
+            input: None,
         });
         self.transition_sources.push(source);
         self.transitions.len() as TransitionId - 1

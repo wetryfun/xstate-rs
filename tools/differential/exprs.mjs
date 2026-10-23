@@ -47,6 +47,10 @@ export const exprs = {
   choosePick: ({ context }) => (context.count % 2 === 0 ? { target: 'even' } : { target: 'odd', context: { picked: context.count } }),
   pickEvenAlways: ({ context }) => (context.count % 2 === 0 ? { target: 'even' } : undefined),
   doneToEven: ({ event }) => ({ target: 'even', context: { result: event.output } }),
+  // State input.
+  stateInput: ({ input }) => input ?? null,
+  hasInput: ({ input }) => input !== undefined,
+  toBWithInput: ({ context }) => ({ target: 'b', input: { fromFn: context.count } }),
   // examples/pattern-retry-policy (fixtures/system/ex_retry_policy*).
   canRetry: ({ context }) => context.attempts + 1 < 5,
   contextName: ({ context }) => context.name,

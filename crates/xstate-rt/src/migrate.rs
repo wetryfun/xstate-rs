@@ -5,7 +5,8 @@
 //! `SystemSnapshot`, as [`crate::System::to_json`] writes it) before it is
 //! restored: the root actor's state ids (its configuration, recorded
 //! history and the events of its pending timers, in the machine snapshot and
-//! in the system's timers), a shallow patch merged into its context, and its
+//! in the system's timers, and the keys of its state inputs), a shallow patch
+//! merged into its context, and its
 //! `logicVersion`. The configuration is then completed for the new
 //! definition (ancestors of the mapped states, and the initial states of
 //! compound states left without an active child, all regions of parallel
@@ -119,6 +120,17 @@ impl Migration {
                 }
                 if known {
                     history.insert(h.to_owned(), recorded);
+                }
+            }
+        }
+        if let Some(Value::Object(inputs)) = data.get_mut("_stateInputs") {
+            // State inputs follow their states; those of states the current
+            // machine lacks are dropped.
+            let old = std::mem::take(inputs);
+            for (id, input) in old {
+                let id = self.map(&id);
+                if to.node_by_id(id).is_some() {
+                    inputs.insert(id.to_owned(), input);
                 }
             }
         }

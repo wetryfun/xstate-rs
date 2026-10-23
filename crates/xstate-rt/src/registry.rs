@@ -65,6 +65,9 @@ pub struct ExprArgs<'a, C, E> {
     /// The resolved `params` of the enclosing named action or guard defined
     /// in the JSON (`actions` / `guards` at the root), if any.
     pub params: Option<&'a Value>,
+    /// The state input (XState's state `input`) of the state whose action,
+    /// output or invoke this is, or of a transition's source state.
+    pub input: Option<&'a Value>,
     pub(crate) machine: &'a Machine<C, E>,
     pub(crate) config: &'a [Nid],
     pub(crate) enq: Option<&'a Enq>,

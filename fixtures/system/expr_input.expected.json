@@ -1,0 +1,7062 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "in",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "in": {
+          "id": "in",
+          "address": "in",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2,
+              "total": 0
+            },
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {
+              "in.a": {
+                "first": true
+              }
+            },
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "in",
+              "in.a"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          }
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 0,
+        "effect": 1
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "a.entry",
+          "input": {
+            "first": true
+          }
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "a.entry",
+          "input": {
+            "first": true
+          }
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "in",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "in": {
+          "id": "in",
+          "address": "in",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2,
+              "total": 0
+            },
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {
+              "in.a": {
+                "first": true
+              }
+            },
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "in",
+              "in.a"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          }
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 1,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "in",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "in": {
+          "id": "in",
+          "address": "in",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2,
+              "total": 0
+            },
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {
+              "in.a": {
+                "again": 2
+              }
+            },
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "in",
+              "in.a"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          }
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 2,
+        "effect": 3
+      }
+    },
+    "effects": [
+      {
+        "id": "system:1",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "a.exit",
+          "input": {
+            "first": true
+          }
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "a.exit",
+          "input": {
+            "first": true
+          }
+        }
+      },
+      {
+        "id": "system:2",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "a.entry",
+          "input": {
+            "again": 2
+          }
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "a.entry",
+          "input": {
+            "again": 2
+          }
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "in",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "in": {
+          "id": "in",
+          "address": "in",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2,
+              "total": 0
+            },
+            "value": "b",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {
+              "in.b": {
+                "n": 3
+              }
+            },
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "in",
+              "in.b"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          }
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 3,
+        "effect": 5
+      }
+    },
+    "effects": [
+      {
+        "id": "system:3",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "a.exit",
+          "input": {
+            "again": 2
+          }
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "a.exit",
+          "input": {
+            "again": 2
+          }
+        }
+      },
+      {
+        "id": "system:4",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "b.entry",
+          "input": {
+            "n": 3
+          }
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "b.entry",
+          "input": {
+            "n": 3
+          }
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "snapshot": {
+      "root": "in",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "in": {
+          "id": "in",
+          "address": "in",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2,
+              "total": 0,
+              "seen": {
+                "n": 3
+              }
+            },
+            "value": "b",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {
+              "in.b": {
+                "n": 3
+              }
+            },
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "in",
+              "in.b"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          }
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 4,
+        "effect": 6
+      }
+    },
+    "effects": [
+      {
+        "id": "system:5",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "b.CTX",
+          "input": {
+            "n": 3
+          }
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "b.CTX",
+          "input": {
+            "n": 3
+          }
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "snapshot": {
+      "root": "in",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "in": {
+          "id": "in",
+          "address": "in",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2,
+              "total": 0,
+              "seen": {
+                "n": 3
+              }
+            },
+            "value": "b",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {
+              "in.b": {
+                "n": 3
+              }
+            },
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "in",
+              "in.b"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          }
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 5,
+        "effect": 6
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 5",
+    "snapshot": {
+      "root": "in",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "in": {
+          "id": "in",
+          "address": "in",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2,
+              "total": 0,
+              "seen": {
+                "n": 3
+              }
+            },
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "in",
+              "in.a"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 6,
+        "effect": 8
+      }
+    },
+    "effects": [
+      {
+        "id": "system:6",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "b.exit",
+          "input": {
+            "n": 3
+          }
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "b.exit",
+          "input": {
+            "n": 3
+          }
+        }
+      },
+      {
+        "id": "system:7",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "a.entry",
+          "input": null
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "a.entry",
+          "input": null
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 6",
+    "snapshot": {
+      "root": "in",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "in": {
+          "id": "in",
+          "address": "in",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2,
+              "total": 0,
+              "seen": {
+                "n": 3
+              }
+            },
+            "value": "b",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {
+              "in.b": {
+                "fromFn": 2
+              }
+            },
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "in",
+              "in.b"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "fromFn": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "fromFn": 2
+            }
+          }
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 7,
+        "effect": 10
+      }
+    },
+    "effects": [
+      {
+        "id": "system:8",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "a.exit",
+          "input": null
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "a.exit",
+          "input": null
+        }
+      },
+      {
+        "id": "system:9",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "b.entry",
+          "input": {
+            "fromFn": 2
+          }
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "b.entry",
+          "input": {
+            "fromFn": 2
+          }
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 7",
+    "snapshot": {
+      "root": "in",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "in": {
+          "id": "in",
+          "address": "in",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2,
+              "total": 0,
+              "seen": {
+                "n": 3
+              }
+            },
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "in",
+              "in.a"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "fromFn": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "fromFn": 2
+            }
+          }
+        },
+        "system:10": {
+          "id": "system:10",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "fromFn": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "fromFn": 2
+            }
+          }
+        },
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 8,
+        "effect": 12
+      }
+    },
+    "effects": [
+      {
+        "id": "system:10",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "b.exit",
+          "input": {
+            "fromFn": 2
+          }
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "b.exit",
+          "input": {
+            "fromFn": 2
+          }
+        }
+      },
+      {
+        "id": "system:11",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "a.entry",
+          "input": null
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "a.entry",
+          "input": null
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 8",
+    "snapshot": {
+      "root": "in",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "in": {
+          "id": "in",
+          "address": "in",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2,
+              "total": 0,
+              "seen": {
+                "n": 3
+              }
+            },
+            "value": "b",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {
+              "in.b": {
+                "picked": 3
+              }
+            },
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "in",
+              "in.b"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "fromFn": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "fromFn": 2
+            }
+          }
+        },
+        "system:10": {
+          "id": "system:10",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "fromFn": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "fromFn": 2
+            }
+          }
+        },
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:12": {
+          "id": "system:12",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:13": {
+          "id": "system:13",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "picked": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "picked": 3
+            }
+          }
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 9,
+        "effect": 14
+      }
+    },
+    "effects": [
+      {
+        "id": "system:12",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "a.exit",
+          "input": null
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "a.exit",
+          "input": null
+        }
+      },
+      {
+        "id": "system:13",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "b.entry",
+          "input": {
+            "picked": 3
+          }
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "b.entry",
+          "input": {
+            "picked": 3
+          }
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 9",
+    "snapshot": {
+      "root": "in",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "in": {
+          "id": "in",
+          "address": "in",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2,
+              "total": 0,
+              "seen": {
+                "n": 3
+              }
+            },
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "in",
+              "in.a"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "fromFn": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "fromFn": 2
+            }
+          }
+        },
+        "system:10": {
+          "id": "system:10",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "fromFn": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "fromFn": 2
+            }
+          }
+        },
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:12": {
+          "id": "system:12",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:13": {
+          "id": "system:13",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "picked": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "picked": 3
+            }
+          }
+        },
+        "system:14": {
+          "id": "system:14",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "picked": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "picked": 3
+            }
+          }
+        },
+        "system:15": {
+          "id": "system:15",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 10,
+        "effect": 16
+      }
+    },
+    "effects": [
+      {
+        "id": "system:14",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "b.exit",
+          "input": {
+            "picked": 3
+          }
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "b.exit",
+          "input": {
+            "picked": 3
+          }
+        }
+      },
+      {
+        "id": "system:15",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "a.entry",
+          "input": null
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "a.entry",
+          "input": null
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 10",
+    "snapshot": {
+      "root": "in",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "in": {
+          "id": "in",
+          "address": "in",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2,
+              "total": 0,
+              "seen": {
+                "n": 3
+              }
+            },
+            "value": {
+              "par": {
+                "left": "l1",
+                "right": "r1"
+              }
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {
+              "in.par.left.l1": {
+                "both": true
+              },
+              "in.par.right.r1": {
+                "both": true
+              }
+            },
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "in",
+              "in.par",
+              "in.par.left",
+              "in.par.left.l1",
+              "in.par.right",
+              "in.par.right.r1"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "fromFn": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "fromFn": 2
+            }
+          }
+        },
+        "system:10": {
+          "id": "system:10",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "fromFn": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "fromFn": 2
+            }
+          }
+        },
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:12": {
+          "id": "system:12",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:13": {
+          "id": "system:13",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "picked": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "picked": 3
+            }
+          }
+        },
+        "system:14": {
+          "id": "system:14",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "picked": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "picked": 3
+            }
+          }
+        },
+        "system:15": {
+          "id": "system:15",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:16": {
+          "id": "system:16",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:17": {
+          "id": "system:17",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "l1.entry",
+            "input": {
+              "both": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "l1.entry",
+            "input": {
+              "both": true
+            }
+          }
+        },
+        "system:18": {
+          "id": "system:18",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "r1.entry",
+            "input": {
+              "both": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "r1.entry",
+            "input": {
+              "both": true
+            }
+          }
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 11,
+        "effect": 19
+      }
+    },
+    "effects": [
+      {
+        "id": "system:16",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "a.exit",
+          "input": null
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "a.exit",
+          "input": null
+        }
+      },
+      {
+        "id": "system:17",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "l1.entry",
+          "input": {
+            "both": true
+          }
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "l1.entry",
+          "input": {
+            "both": true
+          }
+        }
+      },
+      {
+        "id": "system:18",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "r1.entry",
+          "input": {
+            "both": true
+          }
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "r1.entry",
+          "input": {
+            "both": true
+          }
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 11",
+    "snapshot": {
+      "root": "in",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "in": {
+          "id": "in",
+          "address": "in",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2,
+              "total": 0,
+              "seen": {
+                "n": 3
+              }
+            },
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "in",
+              "in.a"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "fromFn": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "fromFn": 2
+            }
+          }
+        },
+        "system:10": {
+          "id": "system:10",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "fromFn": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "fromFn": 2
+            }
+          }
+        },
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:12": {
+          "id": "system:12",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:13": {
+          "id": "system:13",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "picked": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "picked": 3
+            }
+          }
+        },
+        "system:14": {
+          "id": "system:14",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "picked": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "picked": 3
+            }
+          }
+        },
+        "system:15": {
+          "id": "system:15",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:16": {
+          "id": "system:16",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:17": {
+          "id": "system:17",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "l1.entry",
+            "input": {
+              "both": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "l1.entry",
+            "input": {
+              "both": true
+            }
+          }
+        },
+        "system:18": {
+          "id": "system:18",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "r1.entry",
+            "input": {
+              "both": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "r1.entry",
+            "input": {
+              "both": true
+            }
+          }
+        },
+        "system:19": {
+          "id": "system:19",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 12,
+        "effect": 20
+      }
+    },
+    "effects": [
+      {
+        "id": "system:19",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "a.entry",
+          "input": null
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "a.entry",
+          "input": null
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 12",
+    "snapshot": {
+      "root": "in",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "in": {
+          "id": "in",
+          "address": "in",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2,
+              "total": 0,
+              "seen": {
+                "n": 3
+              }
+            },
+            "value": {
+              "nest": "inner"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {
+              "in.nest": {
+                "outer": true
+              },
+              "in.nest.inner": {
+                "inner": true
+              }
+            },
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "in",
+              "in.nest",
+              "in.nest.inner"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "fromFn": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "fromFn": 2
+            }
+          }
+        },
+        "system:10": {
+          "id": "system:10",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "fromFn": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "fromFn": 2
+            }
+          }
+        },
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:12": {
+          "id": "system:12",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:13": {
+          "id": "system:13",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "picked": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "picked": 3
+            }
+          }
+        },
+        "system:14": {
+          "id": "system:14",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "picked": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "picked": 3
+            }
+          }
+        },
+        "system:15": {
+          "id": "system:15",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:16": {
+          "id": "system:16",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:17": {
+          "id": "system:17",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "l1.entry",
+            "input": {
+              "both": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "l1.entry",
+            "input": {
+              "both": true
+            }
+          }
+        },
+        "system:18": {
+          "id": "system:18",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "r1.entry",
+            "input": {
+              "both": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "r1.entry",
+            "input": {
+              "both": true
+            }
+          }
+        },
+        "system:19": {
+          "id": "system:19",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:20": {
+          "id": "system:20",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:21": {
+          "id": "system:21",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "nest.entry",
+            "input": {
+              "outer": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "nest.entry",
+            "input": {
+              "outer": true
+            }
+          }
+        },
+        "system:22": {
+          "id": "system:22",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "inner.entry",
+            "input": {
+              "inner": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "inner.entry",
+            "input": {
+              "inner": true
+            }
+          }
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 13,
+        "effect": 23
+      }
+    },
+    "effects": [
+      {
+        "id": "system:20",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "a.exit",
+          "input": null
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "a.exit",
+          "input": null
+        }
+      },
+      {
+        "id": "system:21",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "nest.entry",
+          "input": {
+            "outer": true
+          }
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "nest.entry",
+          "input": {
+            "outer": true
+          }
+        }
+      },
+      {
+        "id": "system:22",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "inner.entry",
+          "input": {
+            "inner": true
+          }
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "inner.entry",
+          "input": {
+            "inner": true
+          }
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 13",
+    "snapshot": {
+      "root": "in",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "in": {
+          "id": "in",
+          "address": "in",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2,
+              "total": 0,
+              "seen": {
+                "n": 3
+              }
+            },
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "in",
+              "in.a"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "fromFn": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "fromFn": 2
+            }
+          }
+        },
+        "system:10": {
+          "id": "system:10",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "fromFn": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "fromFn": 2
+            }
+          }
+        },
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:12": {
+          "id": "system:12",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:13": {
+          "id": "system:13",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "picked": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "picked": 3
+            }
+          }
+        },
+        "system:14": {
+          "id": "system:14",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "picked": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "picked": 3
+            }
+          }
+        },
+        "system:15": {
+          "id": "system:15",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:16": {
+          "id": "system:16",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:17": {
+          "id": "system:17",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "l1.entry",
+            "input": {
+              "both": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "l1.entry",
+            "input": {
+              "both": true
+            }
+          }
+        },
+        "system:18": {
+          "id": "system:18",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "r1.entry",
+            "input": {
+              "both": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "r1.entry",
+            "input": {
+              "both": true
+            }
+          }
+        },
+        "system:19": {
+          "id": "system:19",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:20": {
+          "id": "system:20",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:21": {
+          "id": "system:21",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "nest.entry",
+            "input": {
+              "outer": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "nest.entry",
+            "input": {
+              "outer": true
+            }
+          }
+        },
+        "system:22": {
+          "id": "system:22",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "inner.entry",
+            "input": {
+              "inner": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "inner.entry",
+            "input": {
+              "inner": true
+            }
+          }
+        },
+        "system:23": {
+          "id": "system:23",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 14,
+        "effect": 24
+      }
+    },
+    "effects": [
+      {
+        "id": "system:23",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "a.entry",
+          "input": null
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "a.entry",
+          "input": null
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 14",
+    "snapshot": {
+      "root": "in",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "in": {
+          "id": "in",
+          "address": "in",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2,
+              "total": 0,
+              "seen": {
+                "n": 3
+              }
+            },
+            "value": "running",
+            "children": {
+              "c": {
+                "$actor": "in/c",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {
+              "in.running": {
+                "start": 7
+              }
+            },
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "in",
+              "in.running"
+            ]
+          }
+        },
+        "in/c": {
+          "id": "c",
+          "address": "in/c",
+          "incarnation": "1",
+          "src": "root/actors/child",
+          "parent": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "start": 7
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 7,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "run",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "child",
+              "child.run"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "fromFn": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "fromFn": 2
+            }
+          }
+        },
+        "system:10": {
+          "id": "system:10",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "fromFn": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "fromFn": 2
+            }
+          }
+        },
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:12": {
+          "id": "system:12",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:13": {
+          "id": "system:13",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "picked": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "picked": 3
+            }
+          }
+        },
+        "system:14": {
+          "id": "system:14",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "picked": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "picked": 3
+            }
+          }
+        },
+        "system:15": {
+          "id": "system:15",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:16": {
+          "id": "system:16",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:17": {
+          "id": "system:17",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "l1.entry",
+            "input": {
+              "both": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "l1.entry",
+            "input": {
+              "both": true
+            }
+          }
+        },
+        "system:18": {
+          "id": "system:18",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "r1.entry",
+            "input": {
+              "both": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "r1.entry",
+            "input": {
+              "both": true
+            }
+          }
+        },
+        "system:19": {
+          "id": "system:19",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:20": {
+          "id": "system:20",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:21": {
+          "id": "system:21",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "nest.entry",
+            "input": {
+              "outer": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "nest.entry",
+            "input": {
+              "outer": true
+            }
+          }
+        },
+        "system:22": {
+          "id": "system:22",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "inner.entry",
+            "input": {
+              "inner": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "inner.entry",
+            "input": {
+              "inner": true
+            }
+          }
+        },
+        "system:23": {
+          "id": "system:23",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:24": {
+          "id": "system:24",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 15,
+        "effect": 25
+      }
+    },
+    "effects": [
+      {
+        "id": "system:24",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "a.exit",
+          "input": null
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "a.exit",
+          "input": null
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 15",
+    "snapshot": {
+      "root": "in",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "in": {
+          "id": "in",
+          "address": "in",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2,
+              "total": 0,
+              "seen": {
+                "n": 3
+              }
+            },
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "in",
+              "in.a"
+            ]
+          }
+        },
+        "in/c": {
+          "id": "c",
+          "address": "in/c",
+          "incarnation": "1",
+          "src": "root/actors/child",
+          "parent": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "start": 7
+          },
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "count": 7,
+              "total": 0
+            },
+            "context": {
+              "count": 7,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "end",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "child.end",
+              "child"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "fromFn": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "fromFn": 2
+            }
+          }
+        },
+        "system:10": {
+          "id": "system:10",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "fromFn": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "fromFn": 2
+            }
+          }
+        },
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:12": {
+          "id": "system:12",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:13": {
+          "id": "system:13",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "picked": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "picked": 3
+            }
+          }
+        },
+        "system:14": {
+          "id": "system:14",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "picked": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "picked": 3
+            }
+          }
+        },
+        "system:15": {
+          "id": "system:15",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:16": {
+          "id": "system:16",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:17": {
+          "id": "system:17",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "l1.entry",
+            "input": {
+              "both": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "l1.entry",
+            "input": {
+              "both": true
+            }
+          }
+        },
+        "system:18": {
+          "id": "system:18",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "r1.entry",
+            "input": {
+              "both": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "r1.entry",
+            "input": {
+              "both": true
+            }
+          }
+        },
+        "system:19": {
+          "id": "system:19",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:20": {
+          "id": "system:20",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:21": {
+          "id": "system:21",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "nest.entry",
+            "input": {
+              "outer": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "nest.entry",
+            "input": {
+              "outer": true
+            }
+          }
+        },
+        "system:22": {
+          "id": "system:22",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "inner.entry",
+            "input": {
+              "inner": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "inner.entry",
+            "input": {
+              "inner": true
+            }
+          }
+        },
+        "system:23": {
+          "id": "system:23",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:24": {
+          "id": "system:24",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:25": {
+          "id": "system:25",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "child.done",
+          "kind": "emit",
+          "params": {
+            "output": {
+              "count": 7,
+              "total": 0
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "child.done",
+            "output": {
+              "count": 7,
+              "total": 0
+            }
+          }
+        },
+        "system:26": {
+          "id": "system:26",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 17,
+        "effect": 27
+      }
+    },
+    "effects": [
+      {
+        "id": "system:25",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "child.done",
+        "kind": "emit",
+        "params": {
+          "output": {
+            "count": 7,
+            "total": 0
+          }
+        },
+        "args": [],
+        "event": {
+          "type": "child.done",
+          "output": {
+            "count": 7,
+            "total": 0
+          }
+        }
+      },
+      {
+        "id": "system:26",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "a.entry",
+          "input": null
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "a.entry",
+          "input": null
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 16",
+    "snapshot": {
+      "root": "in",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "in": {
+          "id": "in",
+          "address": "in",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "from": {
+                "why": "done"
+              }
+            },
+            "context": {
+              "count": 2,
+              "total": 0,
+              "seen": {
+                "n": 3
+              }
+            },
+            "value": "fin",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {
+              "in.fin": {
+                "why": "done"
+              }
+            },
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "in.fin",
+              "in"
+            ]
+          }
+        },
+        "in/c": {
+          "id": "c",
+          "address": "in/c",
+          "incarnation": "1",
+          "src": "root/actors/child",
+          "parent": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "start": 7
+          },
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "count": 7,
+              "total": 0
+            },
+            "context": {
+              "count": 7,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "end",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "child.end",
+              "child"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "first": true
+            }
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": {
+              "again": 2
+            }
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.CTX",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "n": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "n": 3
+            }
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "fromFn": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "fromFn": 2
+            }
+          }
+        },
+        "system:10": {
+          "id": "system:10",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "fromFn": 2
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "fromFn": 2
+            }
+          }
+        },
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:12": {
+          "id": "system:12",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:13": {
+          "id": "system:13",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.entry",
+            "input": {
+              "picked": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.entry",
+            "input": {
+              "picked": 3
+            }
+          }
+        },
+        "system:14": {
+          "id": "system:14",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "b.exit",
+            "input": {
+              "picked": 3
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "b.exit",
+            "input": {
+              "picked": 3
+            }
+          }
+        },
+        "system:15": {
+          "id": "system:15",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:16": {
+          "id": "system:16",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:17": {
+          "id": "system:17",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "l1.entry",
+            "input": {
+              "both": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "l1.entry",
+            "input": {
+              "both": true
+            }
+          }
+        },
+        "system:18": {
+          "id": "system:18",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "r1.entry",
+            "input": {
+              "both": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "r1.entry",
+            "input": {
+              "both": true
+            }
+          }
+        },
+        "system:19": {
+          "id": "system:19",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:20": {
+          "id": "system:20",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:21": {
+          "id": "system:21",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "nest.entry",
+            "input": {
+              "outer": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "nest.entry",
+            "input": {
+              "outer": true
+            }
+          }
+        },
+        "system:22": {
+          "id": "system:22",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "inner.entry",
+            "input": {
+              "inner": true
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "inner.entry",
+            "input": {
+              "inner": true
+            }
+          }
+        },
+        "system:23": {
+          "id": "system:23",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:24": {
+          "id": "system:24",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        },
+        "system:25": {
+          "id": "system:25",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "child.done",
+          "kind": "emit",
+          "params": {
+            "output": {
+              "count": 7,
+              "total": 0
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "child.done",
+            "output": {
+              "count": 7,
+              "total": 0
+            }
+          }
+        },
+        "system:26": {
+          "id": "system:26",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.entry",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.entry",
+            "input": null
+          }
+        },
+        "system:27": {
+          "id": "system:27",
+          "source": {
+            "$actor": "in",
+            "incarnation": "0"
+          },
+          "type": "input",
+          "kind": "emit",
+          "params": {
+            "at": "a.exit",
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "input",
+            "at": "a.exit",
+            "input": null
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 18,
+        "effect": 28
+      }
+    },
+    "effects": [
+      {
+        "id": "system:27",
+        "source": {
+          "$actor": "in",
+          "incarnation": "0"
+        },
+        "type": "input",
+        "kind": "emit",
+        "params": {
+          "at": "a.exit",
+          "input": null
+        },
+        "args": [],
+        "event": {
+          "type": "input",
+          "at": "a.exit",
+          "input": null
+        }
+      }
+    ]
+  }
+]

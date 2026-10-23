@@ -104,6 +104,10 @@ pub fn register(r: &mut Registry<Value, Value>) {
             }
         })
         .expr("doneToEven", |a| json!({ "target": "even", "context": { "result": a.event.field("output") } }))
+        // State input.
+        .expr("stateInput", |a| a.input.cloned().unwrap_or(Value::Null))
+        .expr("hasInput", |a| Value::Bool(a.input.is_some()))
+        .expr("toBWithInput", |a| json!({ "target": "b", "input": { "fromFn": a.context.get("count") } }))
         // examples/pattern-retry-policy (fixtures/system/ex_retry_policy*).
         .expr("canRetry", |a| Value::Bool(num(a.context.get("attempts")) + 1.0 < 5.0))
         .expr("contextName", |a| a.context.get("name").cloned().unwrap_or(Value::Null))

@@ -30,6 +30,9 @@ pub(crate) struct NodeData {
     pub tags: Vec<String>,
     /// The static targets of a compound state's `initial`.
     pub initial: Arc<[Nid]>,
+    /// The `input` of an object-form `initial` (`{ target, input }`), for
+    /// the states it enters (taken as it is: XState does not evaluate it).
+    pub initial_input: Option<Value>,
     /// The default targets of a history state.
     pub history_target: Arc<[Nid]>,
 }
@@ -129,6 +132,8 @@ pub(crate) struct TransitionData {
     /// A transition function (an expression in the `transition` slot):
     /// its result gives the targets, context and `reenter`.
     pub function: Option<TransitionFn>,
+    /// The `input` the transition gives the states it enters.
+    pub input: Option<Template>,
 }
 
 /// A transition computed when it is selected, as XState's `to` functions
@@ -151,6 +156,7 @@ pub(crate) struct ChoiceBranch {
     pub when: Option<Guard>,
     pub targets: Option<Arc<[Nid]>>,
     pub context: Option<Template>,
+    pub input: Option<Template>,
     pub reenter: bool,
 }
 
