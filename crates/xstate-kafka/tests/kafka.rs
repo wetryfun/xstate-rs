@@ -195,8 +195,7 @@ fn exactly_once_actors_with_restore() {
     assert!(last_a.1.is_none(), "tombstone for a");
     let last_c = changelog.iter().rev().find(|r| r.0.as_deref() == Some("c")).unwrap();
     let snapshot = xstate_kafka::Codec::decode(last_c.1.as_deref().unwrap()).unwrap();
-    // Compact snapshots keep the active state ids (the value is derived).
-    assert_eq!(snapshot["actors"]["steps"]["snapshot"]["nodeIds"], json!(["steps", "steps.s2"]));
+    assert_eq!(snapshot["actors"]["steps"]["snapshot"]["value"], json!("s2"));
 }
 
 #[test]

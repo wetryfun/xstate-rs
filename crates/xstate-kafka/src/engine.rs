@@ -51,10 +51,11 @@ impl Default for EngineConfig {
 pub enum SnapshotFormat {
     /// XState's `SystemSnapshot` without what restore rebuilds identically
     /// (`xstate_rt::System::compact_view`): smaller and faster to write,
-    /// but not for XState's own restore.
-    #[default]
+    /// but not for XState's own restore. Opt in when only this service
+    /// reads the changelog.
     Compact,
-    /// XState's full `SystemSnapshot`.
+    /// XState's full `SystemSnapshot`, as XState persists it.
+    #[default]
     XState,
 }
 

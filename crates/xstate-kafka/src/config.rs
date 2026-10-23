@@ -13,7 +13,7 @@
 //!   "transactionalId": "orders",
 //!   "codec": "messagepack",
 //!   "evictFinal": true,
-//!   "snapshots": "compact",
+//!   "snapshots": "xstate",
 //!   "client": { "compression.type": "lz4" },
 //!   "stateDir": "/var/lib/xstate", "checkpointIntervalMs": 60000,
 //!   "metricsAddress": "0.0.0.0:9464",
@@ -79,7 +79,7 @@ pub struct FileConfig {
     pub codec: Option<String>,
     #[serde(default)]
     pub evict_final: Option<bool>,
-    /// `"compact"` (default) or `"xstate"` (XState's full `SystemSnapshot`).
+    /// `"xstate"` (default: XState's full `SystemSnapshot`) or `"compact"`.
     #[serde(default)]
     pub snapshots: Option<String>,
     #[serde(default)]
@@ -145,10 +145,10 @@ impl FileConfig {
             Some(other) => return Err(format!("unknown codec \"{other}\" (expected \"messagepack\" or \"json\")")),
         };
         let snapshots = match self.snapshots.as_deref() {
-            None | Some("compact") => SnapshotFormat::Compact,
-            Some("xstate") => SnapshotFormat::XState,
+            Some("compact") => SnapshotFormat::Compact,
+            None | Some("xstate") => SnapshotFormat::XState,
             Some(other) => {
-                return Err(format!("unknown snapshot format \"{other}\" (expected \"compact\" or \"xstate\")"))
+                return Err(format!("unknown snapshot format \"{other}\" (expected \"xstate\" or \"compact\")"))
             }
         };
         c.engine = EngineConfig { codec, evict_final: self.evict_final.unwrap_or(true), snapshots };
@@ -226,13 +226,13 @@ mod tests {
             r#"{ "machine": "m.json", "bootstrapServers": "b:9092", "groupId": "g",
                  "topics": { "input": "i", "output": "o", "changelog": "c" },
                  "workers": 3, "codec": "json", "batchLingerMs": 5, "client": { "linger.ms": 7 },
-                 "stateDir": "state", "checkpointIntervalMs": 1000, "snapshots": "xstate" }"#,
+                 "stateDir": "state", "checkpointIntervalMs": 1000, "snapshots": "compact" }"#,
         );
         let config = FileConfig::load(&path).unwrap();
         let service = config.service().unwrap();
         assert_eq!(service.workers, 3);
         assert_eq!(service.engine.codec, Codec::Json);
-        assert_eq!(service.engine.snapshots, SnapshotFormat::XState);
+        assert_eq!(service.engine.snapshots, SnapshotFormat::Compact);
         assert_eq!(service.batch_linger, Duration::from_millis(5));
         assert_eq!(service.state_dir, Some(dir.join("state")));
         assert_eq!(service.checkpoint_interval, Duration::from_secs(1));
