@@ -757,7 +757,10 @@ fn same_logic(a: &Arc<dyn Logic>, b: &Arc<dyn Logic>) -> bool {
 }
 
 /// XState's `definitions(systemLogic)`: every logic by definition key.
-fn definitions(logic: &SystemLogic) -> Vec<(String, Arc<dyn Logic>)> {
+/// Every logic of a system by definition key.
+type Definitions = Vec<(String, Arc<dyn Logic>)>;
+
+fn definitions(logic: &SystemLogic) -> Definitions {
     fn add(
         out: &mut Vec<(String, Arc<dyn Logic>)>,
         visited: &mut Vec<Arc<dyn Logic>>,
@@ -979,9 +982,11 @@ type Fixed = std::hash::BuildHasherDefault<std::collections::hash_map::DefaultHa
 
 /// A running actor system.
 pub struct System {
-    /// Definitions are derived from it when an actor is allocated (rarely),
-    /// so a system holds no copy of them.
+    /// The root is allocated without definitions; they are derived from
+    /// it when another actor is first allocated, and kept (`defs`), so only
+    /// systems that invoke or spawn hold them.
     logic: SystemLogic,
+    defs: Option<Arc<Definitions>>,
     /// Borrowed for the default, `system`.
     execution_id: std::borrow::Cow<'static, str>,
     /// The root's address, shared with its actor entry.
@@ -1020,6 +1025,7 @@ impl System {
     pub fn initialize(logic: &SystemLogic, options: InitOptions) -> Result<(Self, Vec<ExternalEffect>), SystemError> {
         let mut sys = Self {
             logic: logic.clone(),
+            defs: None,
             execution_id: execution_id(options.execution_id.clone()),
             root: Arc::from(""),
             now: options.time,
@@ -1138,8 +1144,15 @@ impl System {
 
     fn allocate(&mut self, logic: &Arc<dyn Logic>, options: AllocateOptions) -> Result<ActorRef, SystemError> {
         self.step()?;
-        let Some((src, _)) = definitions(&self.logic).into_iter().find(|(_, l)| same_logic(l, logic)) else {
-            return Err(SystemError::Failed("Register dynamically spawned logic in systemLogic.actors.".into()));
+        // The root's definition is always `root`, the first one.
+        let src = if same_logic(logic, &self.logic.root) {
+            "root".to_owned()
+        } else {
+            let defs = self.defs.get_or_insert_with(|| Arc::new(definitions(&self.logic)));
+            let Some((src, _)) = defs.iter().find(|(_, l)| same_logic(l, logic)) else {
+                return Err(SystemError::Failed("Register dynamically spawned logic in systemLogic.actors.".into()));
+            };
+            src.clone()
         };
         let segment = encode_address_segment(&options.id);
         let address: Arc<str> = match &options.parent {
@@ -1843,6 +1856,7 @@ impl System {
         let counter = |k: &str| c.get(k).and_then(Value::as_u64).unwrap_or(0);
         Ok(Self {
             logic: logic.clone(),
+            defs: None,
             execution_id: execution_id(data.get("executionId").and_then(Value::as_str).unwrap_or("system").to_owned()),
             root: {
                 let root = data.get("root").and_then(Value::as_str).unwrap_or("");
