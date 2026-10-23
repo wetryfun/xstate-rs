@@ -224,7 +224,8 @@ struct NativeHost<'a, C, E> {
     cloned: bool,
     /// Transition results computed this microstep (`getCurrentTransitionResult`).
     outcomes: Vec<(Tid, Outcome<E>)>,
-    recent: VecDeque<Value>,
+    /// The last configurations, for the infinite-loop error.
+    recent: VecDeque<Vec<Nid>>,
     /// Children stopped in this macrostep (XState's `stoppedIds`).
     stopped_ids: Vec<String>,
     /// The identity of the snapshot the last microstep returned.
@@ -795,12 +796,15 @@ where
             return Err(SystemError::InfiniteLoop {
                 event_type: self.event.event_type().to_owned(),
                 max_iterations: self.m.options.max_iterations,
-                states: self.recent.iter().cloned().collect(),
+                states: self.recent.iter().map(|c| self.m.state_value(c)).collect(),
             });
         }
-        self.recent.push_back(self.m.state_value(&self.st.nodes));
-        if self.recent.len() > 5 {
-            self.recent.pop_front();
+        if self.recent.len() == 5 {
+            let mut oldest = self.recent.pop_front().unwrap_or_default();
+            oldest.clone_from(&self.st.nodes);
+            self.recent.push_back(oldest);
+        } else {
+            self.recent.push_back(self.st.nodes.clone());
         }
         Ok(())
     }
@@ -1024,36 +1028,18 @@ where
     }
 
     /// Checks that a configuration is legal.
+    /// What restore checks: every state at most once, and no history state.
+    /// The configuration need not be legal: XState can produce illegal ones
+    /// (fixture `conflicting_regions`) and restores whatever ids it is given.
     fn check_configuration(&self, nodes: &[Nid]) -> Result<(), SystemError> {
-        let fail = |m: String| Err(SystemError::Rejected(m));
         let mut active = vec![false; self.nodes.len()];
         for &n in nodes {
-            if active[n as usize] {
-                return fail(format!("state \"{}\" appears twice", self.data(n).id));
-            }
-            active[n as usize] = true;
-        }
-        if !active[ROOT as usize] {
-            return fail("the root state is not active".into());
-        }
-        for &n in nodes {
-            let node = self.tree.node(n);
             let id = &self.data(n).id;
-            if let Some(p) = node.parent {
-                if !active[p as usize] {
-                    return fail(format!("state \"{id}\" is active but its parent is not"));
-                }
+            if std::mem::replace(&mut active[n as usize], true) {
+                return Err(SystemError::Rejected(format!("state \"{id}\" appears twice")));
             }
-            let active_children = node.children.iter().filter(|&&c| active[c as usize]).count();
-            match node.kind {
-                core::Kind::Compound if active_children != 1 => {
-                    return fail(format!("compound state \"{id}\" must have exactly one active child"))
-                }
-                core::Kind::Parallel if active_children != node.children.len() => {
-                    return fail(format!("parallel state \"{id}\" must have all regions active"))
-                }
-                core::Kind::History { .. } => return fail(format!("history state \"{id}\" cannot be active")),
-                _ => {}
+            if matches!(self.tree.kind(n), core::Kind::History { .. }) {
+                return Err(SystemError::Rejected(format!("history state \"{id}\" cannot be active")));
             }
         }
         Ok(())
@@ -1074,6 +1060,9 @@ where
     }
 
     fn initial_transition(&self, _input: Option<&Value>, cx: &mut dyn Context) -> Result<Transition, SystemError> {
+        if let Some(e) = &self.start_error {
+            return Err(SystemError::Failed(e.clone()));
+        }
         let mut st = State::new(self.initial_context.clone());
         let effects = self.run_macrostep(&mut st, cx, MacroEvent::Init)?;
         Ok(Transition { snapshot: Box::new(st), effects })
@@ -1089,7 +1078,16 @@ where
             .as_any_mut()
             .downcast_mut::<State<C, E>>()
             .ok_or_else(|| SystemError::Failed("machine received a foreign snapshot".into()))?;
-        self.run_macrostep(st, cx, MacroEvent::Event(event))
+        // A macrostep that throws leaves the previous snapshot in the error
+        // status, as XState's actor does (`_setErrorSnapshot`); the failed
+        // step's state and effects are discarded.
+        let previous = st.clone();
+        self.run_macrostep(st, cx, MacroEvent::Event(event)).inspect_err(|_| {
+            let error = st.error.take();
+            *st = previous;
+            st.status = Status::Error;
+            st.error = error;
+        })
     }
 
     fn snapshot_data(&self, snapshot: &dyn AnySnapshot) -> Value {

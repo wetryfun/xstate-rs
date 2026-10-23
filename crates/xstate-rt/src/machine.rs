@@ -154,6 +154,9 @@ pub struct Machine<C, E> {
     pub(crate) initial_context: C,
     pub(crate) output: Option<Value>,
     pub(crate) options: MachineOptions,
+    /// Why starting fails although the definition loads: a root `initial`
+    /// without child states, which XState accepts and fails on at start.
+    pub(crate) start_error: Option<String>,
 }
 
 impl<C, E> Machine<C, E> {
@@ -191,7 +194,8 @@ impl<C, E> Machine<C, E> {
 
     /// XState's state value for a configuration.
     pub(crate) fn state_value(&self, config: &[Nid]) -> Value {
-        let adj = self.tree.active_children(config);
+        let all = crate::core::all_state_nodes(&self.tree, config, |n| self.data(n).initial.clone());
+        let adj = self.tree.active_children(&all);
         self.node_value(ROOT, &adj)
     }
 

@@ -199,6 +199,110 @@ impl Tree {
     }
 }
 
+/// An insertion-ordered set of nodes, like a JavaScript `Set`.
+struct NodeSet {
+    order: Vec<Nid>,
+    member: Vec<bool>,
+}
+
+impl NodeSet {
+    fn new(size: usize) -> Self {
+        Self { order: Vec::new(), member: vec![false; size] }
+    }
+
+    fn insert(&mut self, n: Nid) -> bool {
+        let fresh = !std::mem::replace(&mut self.member[n as usize], true);
+        if fresh {
+            self.order.push(n);
+        }
+        fresh
+    }
+
+    fn contains(&self, n: Nid) -> bool {
+        self.member[n as usize]
+    }
+}
+
+/// XState's `getAllStateNodes`: the configuration, initial descendants of
+/// compound and parallel states with no active child, and every ancestor, in
+/// XState's insertion order. `snapshot.value`, and therefore selection, is
+/// built from it. For a legal configuration it is the configuration itself;
+/// XState can produce illegal ones (fixture `conflicting_regions`), and both
+/// follow from it then. `initial` gives a compound state's static initial
+/// targets.
+pub fn all_state_nodes(tree: &Tree, config: &[Nid], initial: impl Fn(Nid) -> Vec<Nid>) -> Vec<Nid> {
+    let size = tree.nodes.len();
+    // `getInitialStateNodes`.
+    let initial_state_nodes = |node: Nid| -> Vec<Nid> {
+        let mut set = NodeSet::new(size);
+        let mut stack = vec![node];
+        // Depth first in document order, as the recursive `iter`.
+        while let Some(n) = stack.pop() {
+            if !set.insert(n) {
+                continue;
+            }
+            let next: Vec<Nid> = match tree.kind(n) {
+                Kind::Compound => initial(n),
+                Kind::Parallel => tree.node(n).children.clone(),
+                _ => Vec::new(),
+            };
+            stack.extend(next.into_iter().rev());
+        }
+        let mut i = 0;
+        while i < set.order.len() {
+            let mut a = tree.node(set.order[i]).parent;
+            i += 1;
+            while let Some(p) = a.filter(|&p| p != node) {
+                set.insert(p);
+                a = tree.node(p).parent;
+            }
+        }
+        set.order
+    };
+    let mut set = NodeSet::new(size);
+    let mut active_parent = vec![false; size];
+    for &s in config {
+        set.insert(s);
+        if let Some(p) = tree.node(s).parent {
+            active_parent[p as usize] = true;
+        }
+    }
+    let mut i = 0;
+    while i < set.order.len() {
+        let s = set.order[i];
+        i += 1;
+        match tree.kind(s) {
+            Kind::Compound if !active_parent[s as usize] => {
+                for n in initial_state_nodes(s) {
+                    set.insert(n);
+                }
+            }
+            Kind::Parallel => {
+                for &child in &tree.node(s).children {
+                    if !set.contains(child) {
+                        for n in initial_state_nodes(child) {
+                            set.insert(n);
+                        }
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    let mut i = 0;
+    while i < set.order.len() {
+        let mut m = tree.node(set.order[i]).parent;
+        i += 1;
+        while let Some(p) = m {
+            if !set.insert(p) {
+                break;
+            }
+            m = tree.node(p).parent;
+        }
+    }
+    set.order
+}
+
 /// XState's `matchesEventDescriptor`.
 pub fn matches_event_descriptor(event_type: &str, descriptor: &str) -> bool {
     matches_event_descriptor_warn(event_type, descriptor, &mut |_| {})
@@ -493,11 +597,11 @@ fn transition_node<H: Host>(
         }
         return Ok(());
     }
-    // Object value: one entry per active child (all of them, for parallel
-    // states; for a compound state only the first appears in the value).
-    let keys: &[Nid] = if tree.kind(node) == Kind::Compound { &children[..children.len().min(1)] } else { children };
+    // Object value: one entry per active child. A legal compound state has
+    // one; an illegal configuration can give it several, and XState then
+    // walks them all.
     let before = out.len();
-    for &child in keys {
+    for &child in children {
         transition_node(tree, h, adj, child, event_type, out)?;
     }
     if out.len() == before {
@@ -512,7 +616,8 @@ fn transition_node<H: Host>(
 pub fn select_transitions<H: Host>(tree: &Tree, h: &mut H, event_type: &str) -> Result<Vec<Tid>, H::Error> {
     h.begin_selection()?;
     let config = h.config();
-    let adj = tree.active_children(&config);
+    let all = all_state_nodes(tree, &config, |n| h.static_initial(n));
+    let adj = tree.active_children(&all);
     let mut out = Vec::new();
     if !config.is_empty() {
         transition_node(tree, h, &adj, 0, event_type, &mut out)?;

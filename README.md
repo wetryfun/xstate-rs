@@ -8,7 +8,7 @@ This is an independent project, not an official Stately package. It targets `xst
 
 The statechart algorithm is a port of XState's own (`crates/xstate-rt/src/core.rs`), shared by the native interpreter and by XState's JavaScript runtime through WebAssembly: XState's core test suite runs on it (`tools/xstate-suite/run.sh`). Milestone 1 (`xstate-rt` core) is in place: loading and validating `MachineJSON`, compound, parallel, final and history states, guards (including `@xstate.not` and `@xstate.stateIn`), built-in and custom actions, `always`, `after`, delayed `@xstate.raise` and `@xstate.cancel`, `@xstate.emit`, host-driven timers, and persist/restore.
 
-Milestone 2 (actors) is a port of XState's pure system API: `invoke` of machines and async logic, `onDone` / `onError` / `onSnapshot`, state and invoke `timeout` / `onTimeout`, the `systemId` registry, stop cascades, and whole-system snapshots in XState's format. Behavior is checked against XState itself with shared fixtures, at machine and at system level.
+Milestone 2 (actors) is a port of XState's pure system API: `invoke` of machines and async logic, `onDone` / `onError` / `onSnapshot`, state and invoke `timeout` / `onTimeout`, the `systemId` registry, stop cascades, and whole-system snapshots in XState's format. Behavior is checked against XState itself with shared fixtures, at machine and at system level, and with randomly generated machines and actor systems (milestone 4).
 
 Milestone 3 (codegen) turns a machine authored in TypeScript with Zod schemas into typed Rust: `tools/extract/extract.mjs` writes a `<name>.xstate.json` bundle, and `xstate-codegen` (from `build.rs`) generates context, event and params types plus an implementation trait. See [`examples/checkout`](examples/checkout).
 
@@ -84,6 +84,7 @@ tools/xstate-suite/run.sh        # XState's own test suite on the Rust core (nee
 cargo clippy --all-targets
 cd tools/differential && npm install && npm run generate   # regenerate expected traces from XState
 node tools/differential/generate-system.mjs                 # regenerate system-level traces
+tools/differential/fuzz.sh 1000 10                          # random machines and actor systems vs XState
 cd tools/extract && npm install                             # once, for the extract script
 node tools/extract/extract.mjs examples/checkout/machines/*.ts   # re-extract bundles (--check to verify)
 ```

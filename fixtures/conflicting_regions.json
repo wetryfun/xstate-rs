@@ -1,0 +1,28 @@
+{
+  "machine": {
+    "id": "m",
+    "initial": "s1",
+    "states": {
+      "s1": {
+        "type": "parallel",
+        "states": {
+          "s2": { "initial": "s3", "states": { "s3": { "on": { "*": [{ "target": "#m.s1.s9" }] } } } },
+          "s5": { "initial": "s6", "states": { "s6": { "on": { "x.z": { "target": "#m.s24.s31.s36.s38" } } } } },
+          "s9": {
+            "entry": [{ "type": "@xstate.emit", "event": { "type": "trace", "tag": "s9.entry" } }],
+            "exit": [{ "type": "@xstate.emit", "event": { "type": "trace", "tag": "s9.exit" } }]
+          }
+        },
+        "entry": [{ "type": "@xstate.emit", "event": { "type": "trace", "tag": "s1.entry" } }],
+        "exit": [{ "type": "@xstate.emit", "event": { "type": "trace", "tag": "s1.exit" } }]
+      },
+      "s24": {
+        "type": "parallel",
+        "states": {
+          "s31": { "initial": "s32", "states": { "s32": {}, "s36": { "type": "parallel", "states": { "s38": {} } } } }
+        }
+      }
+    }
+  },
+  "steps": [{ "at": 0, "send": { "type": "x.z" } }, { "at": 0, "send": { "type": "other" } }]
+}

@@ -85,7 +85,11 @@ fn run_fixture(path: &PathBuf) -> Result<(), String> {
         &std::fs::read_to_string(path.with_extension("expected.json")).map_err(|e| e.to_string())?,
     )
     .unwrap();
-    let logic = build(&fixture)?;
+    run(&fixture, &expected)
+}
+
+fn run(fixture: &Value, expected: &[Value]) -> Result<(), String> {
+    let logic = build(fixture)?;
     let init = &fixture["init"];
     let options = InitOptions {
         time: init["time"].as_u64().unwrap_or(0),
@@ -170,6 +174,40 @@ fn system_fixtures_match_xstate() {
         "{} of {} system fixtures differ from XState:\n\n{}",
         failures.len(),
         paths.len(),
+        failures.join("\n\n")
+    );
+}
+
+/// The generated corpus (`fixtures/fuzz/system-corpus.json`, written by
+/// `tools/differential/fuzz-system.mjs`), plus `XSTATE_SYSTEM_FUZZ_CORPUS`
+/// when set. `XSTATE_FUZZ_CASE` selects one case.
+#[test]
+fn system_fuzz_corpus_matches_xstate() {
+    let mut paths = vec![PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/fuzz/system-corpus.json")];
+    if let Some(extra) = std::env::var_os("XSTATE_SYSTEM_FUZZ_CORPUS") {
+        paths.push(PathBuf::from(extra));
+    }
+    let only = std::env::var("XSTATE_FUZZ_CASE").ok();
+    let mut failures = Vec::new();
+    let mut total = 0;
+    for path in paths {
+        let cases: Vec<Value> = serde_json::from_str(&std::fs::read_to_string(&path).unwrap()).unwrap();
+        for case in &cases {
+            let name = case["name"].as_str().unwrap();
+            if only.as_deref().is_some_and(|o| o != name) {
+                continue;
+            }
+            total += 1;
+            let expected = case["expected"].as_array().unwrap();
+            if let Err(e) = run(case, expected) {
+                failures.push(format!("{name}: {e}"));
+            }
+        }
+    }
+    assert!(
+        failures.is_empty(),
+        "{} of {total} generated systems differ from XState:\n\n{}",
+        failures.len(),
         failures.join("\n\n")
     );
 }

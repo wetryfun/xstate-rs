@@ -991,6 +991,14 @@ impl System {
             return rejected("System time must be finite and cannot move backwards.");
         }
         self.settle()?;
+        while self.fire_one(time)? {}
+        self.now = time;
+        Ok(())
+    }
+
+    /// Fires the earliest timer occurrence due at or before `time` and
+    /// completes its work. Returns whether an occurrence was due.
+    fn fire_one(&mut self, time: u64) -> Result<bool, SystemError> {
         while let Some(&Reverse((due, sequence, occurrence))) = self.deadlines.peek() {
             let current_key = self
                 .timers
@@ -1002,15 +1010,15 @@ impl System {
                 continue;
             };
             if due > time {
-                break;
+                return Ok(false);
             }
             self.step()?;
             self.deadlines.pop();
             let timer = self.timers.shift_remove(&key).expect("found");
             self.now = self.now.max(timer.due_at);
-            let Some(actor) = self.current(&timer.source) else { continue };
+            let Some(actor) = self.current(&timer.source) else { return Ok(true) };
             if actor.status != Status::Active {
-                continue;
+                return Ok(true);
             }
             let ty = timer.event.get("type").and_then(Value::as_str);
             if ty == Some("xstate.timer") {
@@ -1020,14 +1028,28 @@ impl System {
                     _ => false,
                 };
                 if !pending {
-                    continue;
+                    return Ok(true);
                 }
             }
             self.enqueue(Some(timer.source.clone()), timer.source.clone(), timer.event, Some(timer.occurrence));
             self.settle()?;
+            return Ok(true);
         }
-        self.now = time;
-        Ok(())
+        Ok(false)
+    }
+
+    /// Fires only the earliest timer occurrence due at or before `time` (the
+    /// clock moves to its due time), as a live actor processes each timer
+    /// as its own step. Returns `None` when no timer is due.
+    pub fn fire_next_timer(&mut self, time: u64) -> Result<Option<Vec<ExternalEffect>>, SystemError> {
+        self.begin();
+        if time < self.now {
+            return rejected("System time must be finite and cannot move backwards.");
+        }
+        self.settle()?;
+        let fired = self.fire_one(time)?;
+        let effects = sys_end(self);
+        Ok(fired.then_some(effects))
     }
 
     /// XState's `advanceSystemTime`: fires every timer due at or before

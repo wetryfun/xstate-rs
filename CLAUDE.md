@@ -105,10 +105,12 @@ Event descriptor matching (verified): exact names, `prefix.*` (which also matche
 The runtime never reads a clock or sleeps. The host drives time:
 
 ```rust
-actor.send(event, now_ms);   // fires timers due by now_ms, then sends
+actor.send(event, now_ms);   // when time moved forward, fires timers due by now_ms first
 actor.next_deadline();       // Option<u64>
-actor.advance(now_ms);       // fires due timers in (due, seq) order
+actor.advance(now_ms);       // fires due timers in (due, seq) order, each as its own step
 ```
+
+`Actor` follows XState's live actor; `System` is XState's pure system API, whose calls (`systemTransition`) first fire every timer due at the current time. The two differ only for zero-delay timers: a live actor with a `SimulatedClock` fires them when the clock next moves. `Actor::advance` fires one timer occurrence per step (`System::fire_next_timer`), so when a later timer fails, the effects of earlier ones have already run, as in a live actor.
 
 Timers live in the system, keyed like XState's `systemTimerKey`. They come from `after`, state `timeout` and invoke `timeout` (cancelled on exit, in reverse of their scheduling order) and from delayed `@xstate.raise` (by `id`, or by a per-actor sequence number when there is no id). Scheduling a timer whose key is already pending replaces it. While firing a timer, the actor's clock is its due time, so nested delays are deterministic (verified against XState's `SimulatedClock`). A fired timer's event is processed as an internal event. Numeric `after` keys are milliseconds; fractional values round up.
 
@@ -126,7 +128,9 @@ Persistence is XState's `SystemSnapshot` JSON (`System::to_json` / `System::from
 - Actors are addressed by path (`root/child`), with incarnation counters so stale references and effect results are rejected. Messages are FIFO; starts are deferred to the end of the sending macrostep, as in XState. `systemId` registry with conflict errors; stopping cascades to children and unregisters.
 - Invoke: default id `<stateId>:<index>`; `onDone` / `onError` / `onSnapshot` are transitions on `xstate.done.actor` / `xstate.error.actor` / `xstate.snapshot.actor` with `matches { actorId }` plus the current session. Invoke `timeout` raises `xstate.timeout.actor`; completion transitions cancel it. State-level `onError` catches `xstate.error.*`; an unhandled child error puts the parent in `error`.
 - External effects (emits, logs, custom actions, `@xstate.effect` async work, cancellations, cleanup) get ids `system:N` and stay pending until acknowledged or resolved (`xstate.system.effect.result`). `Actor` runs custom actions and collects the root's emits and logs automatically; async work waits for `Actor::resolve_effect`.
-- Known XState bug (alpha.70): `onSnapshot` on an invoked machine with recorded history throws in `SystemReduction.decode` (decoded without its machine). We do not reproduce the crash; no fixture covers that combination.
+- Known XState bug (alpha.70): `onSnapshot` on an invoked machine with recorded history throws in `SystemReduction.decode` (decoded without its machine). We do not reproduce the crash; no fixture covers that combination, and `fuzz-system.mjs` drops cases that hit it.
+- **Decision: a failed macrostep keeps the previous snapshot.** When a machine's macrostep fails (`InfiniteLoop`), the actor keeps its snapshot from before the event with status `error` and the error, and the step's effects are discarded, as XState's live actor (`_setErrorSnapshot`). The native host clones the state at the start of each macrostep to restore it (a known cost). XState can show context written by entry actions of the failed step (it assigns `nextState.context` on a snapshot it has not cloned yet); that aliasing bug is not reproduced, and the differential tests skip context in error records. A failing initial transition fails `Actor::start` (XState starts an actor whose snapshot is `{ status: 'error' }` with no value), including a root `initial` without child states, which XState loads and fails on at start.
+- **Illegal configurations follow XState.** XState can reach configurations that are not legal (two targets in different regions where one leaves the parallel state: fixture `conflicting_regions`). Its state value and transition selection are built from `getAllStateNodes(nodes)` (ancestors and default descendants added), and `transitionNode` walks every key of an object value even under a compound state. `core::all_state_nodes` and `transition_node` do the same, so behavior on such configurations matches too. Restore accepts them as well (it rejects only unknown ids, duplicates and active history states).
 
 ## Codegen (milestone 3)
 
@@ -165,6 +169,14 @@ System-level differential testing: `fixtures/system/<name>.json` lists logic (ma
 
 `crates/xstate-rt/tests/runtime.rs` covers what the JS side cannot: typed context and events, Rust actions with params, registry delays, load errors with paths, runaway loops, persist/restore round-trips including pending timers and history, `onDone`, `internalEvents`, and `stop`.
 
+Random differential testing (milestone 4):
+
+- `tools/differential/gen.mjs` generates seeded random machines: nested compound, parallel, final and history states, `#id` targets anywhere (including illegal target combinations), guards (stubs, `@xstate.not`, `@xstate.stateIn`), `matches`, `reenter`, `always`, `after` (numbers, named delays, duration strings), wildcard descriptors, `xstate.done.state` handlers, and entry, exit and transition actions (emit, assign, raise, delayed raise with ids, cancel, custom). With `invoke`, states also invoke child machines and async logic with `onDone`, `onError`, `onSnapshot`, invoke and state timeouts.
+- `fuzz.mjs` writes machine cases (`{ name, machine, steps, expected }`, with `expected` a trace or `{ loadError }`) to `fixtures/fuzz/corpus.json`; `fuzz-system.mjs` writes system cases (system fixtures with random sends to the root and children, clock advances and effect results) to `fixtures/fuzz/system-corpus.json`. The committed corpora (seed 1) run in `cargo test`.
+- `tools/differential/fuzz.sh [first-seed] [seeds] [machines] [systems]` tries fresh seeds and keeps failing corpora in `target/fuzz/`; `XSTATE_FUZZ_CASE` selects one case, and the `replay` test (`XSTATE_REPLAY`, `XSTATE_REPLAY_OUT`) writes Rust's trace for a fixture file, which a delta-debugging minimizer can compare with `runner.mjs`.
+- Generated cases avoid zero-delay delayed raises (see Time and scheduling) and skip runs where XState's `SimulatedClock` gives up on timer loops.
+- `runner.mjs` disables alpha.70's `_transitionFast` shortcut, which takes a transition whose `matches` pattern fails (an atomic child of the root with one plain candidate); the reference is XState's full algorithm.
+
 When v6 behavior is uncertain, add a fixture before choosing semantics.
 
 ## Milestones
@@ -172,13 +184,13 @@ When v6 behavior is uncertain, add a fixture before choosing semantics.
 1. ~~`xstate-rt` core: parsing, validation, compilation, interpreter, built-in actions, registry, host-driven timers, persist and restore, unit tests.~~ Done, with the differential harness (originally milestone 4) started early. ~~XState-true core shared with XState's JS runtime; XState's core test suite passes on it.~~
 2. ~~Actor runtime: invoke, system, done and error propagation, timeouts.~~ Done as a port of XState's pure system API, with system differential fixtures. Still open: `spawn` / `sendTo` from JSON actions (no JSON-portable form in alpha.70), listeners and subscriptions.
 3. ~~Codegen pipeline and the TS extract script.~~ Done (`tools/extract`, `xstate-codegen`, `examples/checkout`). Open: typed `ActorRef<Child>` handles from `schemas.children`.
-4. Differential test harness: ~~extend fixtures to actors~~; add generated random event sequences.
+4. ~~Differential test harness: extend fixtures to actors; add generated random event sequences.~~ Done: random machines and actor systems (`gen.mjs`, `fuzz.mjs`, `fuzz-system.mjs`, `fuzz.sh`), committed corpora, and the fixes they found.
 5. WASI component adapter.
 6. Redpanda co-located service with benchmarks.
 
 ## Conventions
 
-- Prefer clarity over cleverness in the interpreter; correctness against XState comes first, then optimize with benchmarks. Known costs to revisit: candidate lookup scans descriptor strings per node (intern them), per-microstep `Vec`/`OrderedSet` allocations, `Host::config()` cloning the configuration, context merges through `serde_json::Value`, and `Ev::Internal` payload maps for lifecycle events.
+- Prefer clarity over cleverness in the interpreter; correctness against XState comes first, then optimize with benchmarks. Known costs to revisit: candidate lookup scans descriptor strings per node (intern them), per-microstep `Vec`/`OrderedSet` allocations, `Host::config()` cloning the configuration, context merges through `serde_json::Value`, `Ev::Internal` payload maps for lifecycle events, and the per-macrostep state clone kept for error rollback.
 - No `unsafe` in `xstate-rt`. No platform clocks, threads, or I/O in the core.
 - Every unsupported v6 feature produces a clear error naming the feature and its JSON path.
 - When v6 behavior is uncertain, write a differential test before choosing semantics, and record the decision in this file.

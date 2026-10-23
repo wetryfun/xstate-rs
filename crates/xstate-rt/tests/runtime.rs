@@ -298,7 +298,7 @@ fn persist_and_restore_pending_timers() {
 }
 
 #[test]
-fn restore_rejects_unknown_states_and_illegal_configurations() {
+fn restore_rejects_unknown_and_duplicate_states() {
     let m = machine(json!({ "id": "x", "initial": "a", "states": { "a": {}, "b": {} } }));
     let a = Actor::start(m.clone(), 0).unwrap();
     let with_nodes = |nodes: Value| {
@@ -308,8 +308,11 @@ fn restore_rejects_unknown_states_and_illegal_configurations() {
     };
     let err = Actor::restore(m.clone(), &with_nodes(json!(["x", "x.gone"]))).unwrap_err();
     assert!(err.to_string().contains("x.gone"), "{err}");
-    let err = Actor::restore(m.clone(), &with_nodes(json!(["x", "x.a", "x.b"]))).unwrap_err();
-    assert!(err.to_string().contains("exactly one active child"), "{err}");
+    let err = Actor::restore(m.clone(), &with_nodes(json!(["x", "x.a", "x.a"]))).unwrap_err();
+    assert!(err.to_string().contains("appears twice"), "{err}");
+    // XState can produce illegal configurations and restores them as given.
+    let restored = Actor::restore(m.clone(), &with_nodes(json!(["x", "x.a", "x.b"]))).unwrap();
+    assert_eq!(restored.configuration(), vec!["x", "x.a", "x.b"]);
 
     let other = machine(json!({ "id": "y", "initial": "a", "states": { "a": {} } }));
     assert!(Actor::restore(other, &a.persist()).is_err());

@@ -318,8 +318,14 @@ where
         initial_context,
         output: root_json.get("output").cloned(),
         options,
+        start_error: (root_json.contains_key("initial") && obj_is_empty(root_json.get("states")))
+            .then(|| "Initial state not found on \"#\"".to_owned()),
     };
     Ok((machine, refs))
+}
+
+fn obj_is_empty(v: Option<&Value>) -> bool {
+    v.and_then(Value::as_object).map_or(true, Map::is_empty)
 }
 
 fn opt_str<'a>(obj: &'a Map<String, Value>, key: &str, path: &str) -> Result<Option<&'a str>> {

@@ -98,23 +98,34 @@ where
         }
     }
 
-    /// Fires timers due by `now_ms`, then sends `event` to the root.
+    /// Sends `event` to the root at `now_ms` (see [`Actor::send_json`]).
     pub fn send(&mut self, event: E, now_ms: u64) -> Result<(), SystemError> {
         self.send_json(event.to_json(), now_ms)
     }
 
-    /// Fires timers due by `now_ms`, then sends a JSON event to the root.
+    /// Sends a JSON event to the root at `now_ms`. When time has moved
+    /// forward, timers due by `now_ms` fire first; a timer scheduled at the
+    /// current time (a zero delay) fires on the next [`Actor::advance`], as
+    /// with XState's `SimulatedClock`.
     pub fn send_json(&mut self, event: Value, now_ms: u64) -> Result<(), SystemError> {
-        self.advance(now_ms)?;
+        if now_ms > self.system.now() {
+            self.advance(now_ms)?;
+        }
         let root = self.system.root().to_owned();
         let effects = self.system.send(&root, event)?;
         self.handle(effects);
         Ok(())
     }
 
-    /// Fires every timer due at or before `now_ms`, chronologically.
+    /// Fires every timer due at or before `now_ms`, chronologically. Each
+    /// timer is its own step, as with a live XState actor: when a later
+    /// timer fails, the effects of the earlier ones have already run.
     pub fn advance(&mut self, now_ms: u64) -> Result<(), SystemError> {
-        let effects = self.system.advance(now_ms.max(self.system.now()))?;
+        let target = now_ms.max(self.system.now());
+        while let Some(effects) = self.system.fire_next_timer(target)? {
+            self.handle(effects);
+        }
+        let effects = self.system.advance(target)?;
         self.handle(effects);
         Ok(())
     }

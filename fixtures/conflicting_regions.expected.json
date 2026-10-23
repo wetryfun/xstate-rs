@@ -1,0 +1,73 @@
+[
+  {
+    "label": "start",
+    "value": {
+      "s1": {
+        "s2": "s3",
+        "s5": "s6",
+        "s9": {}
+      }
+    },
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "trace",
+        "tag": "s1.entry"
+      },
+      {
+        "type": "trace",
+        "tag": "s9.entry"
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "value": {
+      "s24": {
+        "s31": {
+          "s36": {
+            "s38": {}
+          }
+        }
+      },
+      "s1": {
+        "s9": {}
+      }
+    },
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "trace",
+        "tag": "s9.exit"
+      },
+      {
+        "type": "trace",
+        "tag": "s1.exit"
+      },
+      {
+        "type": "trace",
+        "tag": "s9.entry"
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "value": {
+      "s24": {
+        "s31": {
+          "s36": {
+            "s38": {}
+          }
+        }
+      },
+      "s1": {
+        "s9": {}
+      }
+    },
+    "context": {},
+    "status": "active",
+    "emitted": []
+  }
+]

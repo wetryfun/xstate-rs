@@ -1,0 +1,4 @@
+{
+  "machine": { "id": "m", "initial": "missing" },
+  "steps": [{ "at": 0, "send": { "type": "go" } }]
+}
