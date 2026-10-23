@@ -27,7 +27,7 @@ pub mod service;
 
 pub use codec::{Codec, Mark};
 pub use engine::{
-    DeadLetter, Dedupe, EffectRequest, Emitted, EngineConfig, EventFormat, Output, Partition, SnapshotFormat,
-    EFFECT_RESULT,
+    DeadLetter, Dedupe, EffectRequest, Emitted, EngineConfig, EventFormat, MachineSet, Output, Partition,
+    RestoreErrors, SnapshotFormat, EFFECT_RESULT,
 };
 pub use metrics::{BatchCounts, Metrics, MetricsSnapshot};

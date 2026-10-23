@@ -13,6 +13,8 @@ pub struct BatchCounts {
     pub changelog: u64,
     pub effects: u64,
     pub duplicates: u64,
+    pub restore_failures: u64,
+    pub migrated: u64,
 }
 
 /// Counters updated by the workers.
@@ -24,6 +26,8 @@ pub struct Metrics {
     changelog_records: AtomicU64,
     effects: AtomicU64,
     duplicates: AtomicU64,
+    restore_failures: AtomicU64,
+    migrated: AtomicU64,
     transactions: AtomicU64,
     aborted_transactions: AtomicU64,
     restored_partitions: AtomicU64,
@@ -45,6 +49,8 @@ pub struct MetricsSnapshot {
     pub changelog_records: u64,
     pub effects: u64,
     pub duplicates: u64,
+    pub restore_failures: u64,
+    pub migrated: u64,
     pub transactions: u64,
     pub aborted_transactions: u64,
     pub restored_partitions: u64,
@@ -66,6 +72,8 @@ impl Metrics {
             changelog_records: zero(),
             effects: zero(),
             duplicates: zero(),
+            restore_failures: zero(),
+            migrated: zero(),
             transactions: zero(),
             aborted_transactions: zero(),
             restored_partitions: zero(),
@@ -85,6 +93,8 @@ impl Metrics {
         self.changelog_records.fetch_add(batch.changelog, Ordering::Relaxed);
         self.effects.fetch_add(batch.effects, Ordering::Relaxed);
         self.duplicates.fetch_add(batch.duplicates, Ordering::Relaxed);
+        self.restore_failures.fetch_add(batch.restore_failures, Ordering::Relaxed);
+        self.migrated.fetch_add(batch.migrated, Ordering::Relaxed);
         self.transactions.fetch_add(1, Ordering::Relaxed);
         self.commit_micros_total.fetch_add(micros, Ordering::Relaxed);
         self.commit_micros_max.fetch_max(micros, Ordering::Relaxed);
@@ -121,6 +131,8 @@ impl Metrics {
             changelog_records: get(&self.changelog_records),
             effects: get(&self.effects),
             duplicates: get(&self.duplicates),
+            restore_failures: get(&self.restore_failures),
+            migrated: get(&self.migrated),
             transactions: get(&self.transactions),
             aborted_transactions: get(&self.aborted_transactions),
             restored_partitions: get(&self.restored_partitions),
@@ -147,6 +159,13 @@ impl MetricsSnapshot {
         metric("changelog_records_total", "counter", "Snapshots and tombstones written.", self.changelog_records);
         metric("effects_total", "counter", "External work requested (effects topic).", self.effects);
         metric("duplicates_total", "counter", "Input events skipped as duplicates.", self.duplicates);
+        metric(
+            "restore_failures_total",
+            "counter",
+            "Changelog records that could not be restored (dead letters, keys tombstoned).",
+            self.restore_failures,
+        );
+        metric("migrated_total", "counter", "Restored actors migrated to the current machine version.", self.migrated);
         metric("transactions_total", "counter", "Committed transactions.", self.transactions);
         metric("aborted_transactions_total", "counter", "Aborted transactions.", self.aborted_transactions);
         metric(
@@ -237,6 +256,7 @@ mod tests {
             changelog,
             effects,
             duplicates,
+            ..Default::default()
         };
         m.committed(&batch(10, 3, 1, 4, 0, 2), 500);
         m.committed(&batch(5, 0, 0, 2, 1, 0), 900);

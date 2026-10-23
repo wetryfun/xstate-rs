@@ -22,7 +22,14 @@
 //! last one it took; others are counted as duplicates and skipped. The mark
 //! is part of the actor's changelog record, and a finished actor that is
 //! evicted leaves a record of its mark alone, so a late duplicate cannot
-//! start a new actor.
+//! start a new actor (until `retainMs` passes, when it is forgotten).
+//!
+//! A partition can hold actors of several versions of its machine
+//! ([`MachineSet`]): a restored snapshot runs on the version it was written
+//! by (its root's `logicVersion`), or is migrated to the current one, and
+//! new actors start on the current one. A record that cannot be restored is
+//! a dead letter and its key is tombstoned (or the restore fails, with
+//! [`RestoreErrors::Fail`]).
 
 use std::cmp::Reverse;
 use std::collections::BinaryHeap;
@@ -31,7 +38,7 @@ use std::sync::Arc;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use xstate_rt::{Actor, EventType, InitOptions, Machine, Status};
+use xstate_rt::{Actor, EventType, InitOptions, Machine, Migration, Status};
 
 use crate::codec::{self, Codec, Mark};
 use crate::proto::events::EventSchema;
@@ -55,6 +62,21 @@ pub struct EngineConfig {
     pub event_schema: Option<Arc<EventSchema>>,
     /// Skip input events an actor already took.
     pub dedupe: Option<Dedupe>,
+    /// What a changelog record that cannot be restored does.
+    pub restore_errors: RestoreErrors,
+}
+
+/// What happens to a changelog record that cannot be restored (an unknown
+/// machine version, a state the machine no longer has, a corrupt record).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum RestoreErrors {
+    /// The record becomes a dead letter (key, record and reason) and the key
+    /// is tombstoned in the next transaction; the next event for the key
+    /// starts a new actor. Other actors restore and run as usual.
+    #[default]
+    DeadLetter,
+    /// The restore fails (and with it the service).
+    Fail,
 }
 
 impl Default for EngineConfig {
@@ -66,6 +88,7 @@ impl Default for EngineConfig {
             events: EventFormat::default(),
             event_schema: None,
             dedupe: None,
+            restore_errors: RestoreErrors::default(),
         }
     }
 }
@@ -83,6 +106,11 @@ pub struct Dedupe {
     pub sequence: String,
     #[serde(default)]
     pub epoch: Option<String>,
+    /// How long the mark of a finished, evicted actor is kept (by partition
+    /// time); then its key is forgotten (tombstoned), and a late duplicate
+    /// would start a new actor. Kept forever by default.
+    #[serde(default, rename = "retainMs")]
+    pub retain_ms: Option<u64>,
 }
 
 impl Dedupe {
@@ -197,6 +225,11 @@ pub struct Output {
     pub effects: Vec<EffectRequest>,
     /// Input events skipped as duplicates ([`Dedupe`]).
     pub duplicates: u64,
+    /// Changelog records that could not be restored (also dead letters).
+    pub restore_failures: u64,
+    /// Restored actors migrated to the current machine version (their new
+    /// snapshots are in `changelog`).
+    pub migrated: u64,
 }
 
 impl Output {
@@ -206,6 +239,101 @@ impl Output {
             && self.dead_letters.is_empty()
             && self.effects.is_empty()
             && self.duplicates == 0
+            && self.restore_failures == 0
+            && self.migrated == 0
+    }
+}
+
+/// The versions of a partition's machine: the current one, which new actors
+/// start on, earlier ones that restored actors keep running on, and
+/// migrations of earlier versions onto the current one. Versions are the
+/// definitions' `version` (an actor's `logicVersion`).
+pub struct MachineSet<C, E> {
+    current: Arc<Machine<C, E>>,
+    earlier: Vec<Arc<Machine<C, E>>>,
+    migrations: Vec<(String, Migration)>,
+}
+
+impl<C, E> From<Arc<Machine<C, E>>> for MachineSet<C, E> {
+    fn from(current: Arc<Machine<C, E>>) -> Self {
+        Self { current, earlier: Vec::new(), migrations: Vec::new() }
+    }
+}
+
+impl<C, E> MachineSet<C, E> {
+    pub fn new(current: Arc<Machine<C, E>>) -> Self {
+        current.into()
+    }
+
+    pub fn current(&self) -> &Arc<Machine<C, E>> {
+        &self.current
+    }
+
+    fn check_version(&self, version: Option<&str>) -> Result<String, String> {
+        let current =
+            self.current.version().ok_or("the current machine needs a \"version\" to tell earlier ones apart")?;
+        let v = version.ok_or("an earlier machine needs a \"version\"")?;
+        let taken = v == current
+            || self.earlier.iter().any(|m| m.version() == Some(v))
+            || self.migrations.iter().any(|(from, _)| from == v);
+        if taken {
+            return Err(format!("machine version \"{v}\" is listed twice"));
+        }
+        Ok(v.to_owned())
+    }
+
+    /// Actors persisted by `machine` (an earlier version) keep running on it.
+    pub fn keep(mut self, machine: Arc<Machine<C, E>>) -> Result<Self, String> {
+        self.check_version(machine.version())?;
+        self.earlier.push(machine);
+        Ok(self)
+    }
+
+    /// Actors persisted by version `from` are migrated to the current
+    /// version as they are restored. With the earlier machine, the migration
+    /// is checked against it too (every state it lacks a mapping for must
+    /// still exist).
+    pub fn migrate<C2, E2>(
+        mut self,
+        from: &str,
+        migration: Migration,
+        earlier: Option<&Machine<C2, E2>>,
+    ) -> Result<Self, String> {
+        let from = self.check_version(Some(from))?;
+        migration.check(earlier, &*self.current).map_err(|e| format!("migration from version \"{from}\": {e}"))?;
+        self.migrations.push((from, migration));
+        Ok(self)
+    }
+
+    /// Restores an actor on its own version, or migrated to the current one
+    /// (`true`).
+    fn restore(&self, mut snapshot: Value) -> Result<(Actor<C, E>, bool), String>
+    where
+        C: Serialize + DeserializeOwned + Clone + Send + Sync + 'static,
+        E: EventType + Send + Sync,
+    {
+        let version = snapshot
+            .get("root")
+            .and_then(Value::as_str)
+            .and_then(|root| snapshot.get("actors")?.get(root)?.get("logicVersion")?.as_str())
+            .map(str::to_owned);
+        let version = version.as_deref();
+        let restore = |m: &Arc<Machine<C, E>>, s: &Value| Actor::restore(m.clone(), s).map_err(|e| e.to_string());
+        if version == self.current.version() {
+            return Ok((restore(&self.current, &snapshot)?, false));
+        }
+        if let Some((_, migration)) = self.migrations.iter().find(|(from, _)| Some(from.as_str()) == version) {
+            migration.apply(&mut snapshot, &self.current)?;
+            return Ok((restore(&self.current, &snapshot)?, true));
+        }
+        if let Some(m) = self.earlier.iter().find(|m| m.version() == version) {
+            return Ok((restore(m, &snapshot)?, false));
+        }
+        Err(format!(
+            "no machine for version {} (the current one is {}): keep the earlier machine or migrate from it",
+            version.map_or("(none)".into(), |v| format!("\"{v}\"")),
+            self.current.version().map_or("(none)".into(), |v| format!("\"{v}\""))
+        ))
     }
 }
 
@@ -235,15 +363,20 @@ impl<C, E> Slot<C, E> {
 
 /// The actors of one input partition, keyed by record key.
 pub struct Partition<C, E> {
-    machine: Arc<Machine<C, E>>,
+    machines: Arc<MachineSet<C, E>>,
     config: EngineConfig,
     /// Boxed: a slot is several hundred bytes, and the table keeps spare
     /// capacity (up to half of it after growing), which would hold that
     /// much per empty bucket inline.
     actors: HashMap<String, Box<Slot<C, E>>>,
-    /// Marks of evicted actors ([`Dedupe`]): a key's next actor takes only
-    /// events past it.
-    retired: HashMap<String, Mark>,
+    /// Marks of evicted actors ([`Dedupe`]) and when they were retired: a
+    /// key's next actor takes only events past it.
+    retired: HashMap<String, (Mark, u64)>,
+    /// Retirement times, for `retainMs`. Entries can be stale.
+    expiry: BinaryHeap<Reverse<(u64, String)>>,
+    /// Keys whose latest restored record failed, with the dead letter to
+    /// write (with a tombstone) at the next flush.
+    restore_failed: HashMap<String, DeadLetter>,
     /// Due times of actor timers. Entries can be stale; each is checked
     /// against the actor's own next deadline when it comes due.
     timers: BinaryHeap<Reverse<(u64, String)>>,
@@ -259,12 +392,19 @@ where
     C: Serialize + DeserializeOwned + Clone + Send + Sync + 'static,
     E: EventType + Send + Sync,
 {
-    pub fn new(machine: Arc<Machine<C, E>>, config: EngineConfig) -> Self {
+    pub fn new(machines: impl Into<MachineSet<C, E>>, config: EngineConfig) -> Self {
+        Self::shared(Arc::new(machines.into()), config)
+    }
+
+    /// [`Partition::new`] with a machine set shared by several partitions.
+    pub fn shared(machines: Arc<MachineSet<C, E>>, config: EngineConfig) -> Self {
         Self {
-            machine,
+            machines,
             config,
             actors: HashMap::default(),
             retired: HashMap::default(),
+            expiry: BinaryHeap::new(),
+            restore_failed: HashMap::default(),
             timers: BinaryHeap::new(),
             dirty: Vec::new(),
             output: Output::default(),
@@ -291,31 +431,62 @@ where
     }
 
     /// Applies one changelog record while restoring: a snapshot replaces the
-    /// key's actor, a tombstone removes it, and a mark alone removes it but
-    /// keeps the mark. Produces no output.
+    /// key's actor, a tombstone removes it, and a retired actor's mark
+    /// removes it but keeps the mark. A migrated actor is written in its new
+    /// version at the next flush. A record that cannot be restored fails
+    /// with [`RestoreErrors::Fail`]; otherwise the key's actor is removed,
+    /// and if no later record for the key restores, the next flush writes a
+    /// dead letter and a tombstone for it.
     pub fn restore(&mut self, key: &str, record: Option<&[u8]>) -> Result<(), String> {
+        self.restore_failed.remove(key);
         let Some(record) = record else {
             self.actors.remove(key);
             self.retired.remove(key);
             return Ok(());
         };
+        match self.restore_record(key, record) {
+            Ok(()) => Ok(()),
+            Err(e) if self.config.restore_errors == RestoreErrors::Fail => Err(format!("key {key:?}: {e}")),
+            Err(e) => {
+                self.actors.remove(key);
+                self.retired.remove(key);
+                let reason = format!("restore failed: {e}");
+                self.restore_failed
+                    .insert(key.to_owned(), DeadLetter { key: Some(key.to_owned()), payload: record.to_vec(), reason });
+                Ok(())
+            }
+        }
+    }
+
+    fn restore_record(&mut self, key: &str, record: &[u8]) -> Result<(), String> {
         let (mark, body) = codec::split_mark(record)?;
         // Marks count only while deduplication is on.
         let mark = mark.filter(|_| self.config.dedupe.is_some());
         if body.is_empty() {
             self.actors.remove(key);
             match mark {
-                Some(mark) => self.retired.insert(key.to_owned(), mark),
-                None => self.retired.remove(key),
+                Some(mark) => {
+                    let at = codec::retired_at(record).unwrap_or(self.now);
+                    self.retire(key.to_owned(), mark, at);
+                }
+                None => {
+                    self.retired.remove(key);
+                }
             };
             return Ok(());
         }
         self.retired.remove(key);
         let snapshot = Codec::decode(body)?;
-        let actor = Actor::restore(self.machine.clone(), &snapshot).map_err(|e| format!("key {key:?}: {e}"))?;
+        let (actor, migrated) = self.machines.restore(snapshot)?;
         self.now = self.now.max(actor.now());
         let mut slot = Slot::new(actor);
         slot.mark = mark;
+        if migrated {
+            // Written in the new version at the next flush.
+            self.output.migrated += 1;
+            slot.dirty = true;
+            self.dirty.push(key.to_owned());
+        }
         if let Some(due) = slot.actor.next_deadline() {
             self.timers.push(Reverse((due, key.to_owned())));
             slot.scheduled = Some(due);
@@ -385,7 +556,7 @@ where
         if let Some(mark) = mark {
             let seen = match self.actors.get(key) {
                 Some(slot) => slot.mark,
-                None => self.retired.get(key).copied(),
+                None => self.retired.get(key).map(|(mark, _)| *mark),
             };
             if seen.is_some_and(|seen| mark <= seen) {
                 self.output.duplicates += 1;
@@ -410,10 +581,11 @@ where
         let slot = match self.actors.get_mut(key) {
             Some(slot) => slot,
             None => {
-                let actor = Actor::start_with(self.machine.clone(), InitOptions { time: now, ..Default::default() })
-                    .map_err(|e| format!("starting the actor failed: {e}"))?;
+                let actor =
+                    Actor::start_with(self.machines.current.clone(), InitOptions { time: now, ..Default::default() })
+                        .map_err(|e| format!("starting the actor failed: {e}"))?;
                 let mut slot = Slot::new(actor);
-                slot.mark = self.retired.remove(key);
+                slot.mark = self.retired.remove(key).map(|(mark, _)| mark);
                 self.actors.entry(key.to_owned()).or_insert(slot)
             }
         };
@@ -450,6 +622,7 @@ where
     /// Fires every timer due at or before `now`.
     pub fn tick(&mut self, now: u64) {
         self.now = self.now.max(now);
+        self.expire();
         while let Some(Reverse((due, _))) = self.timers.peek() {
             if *due > self.now {
                 break;
@@ -537,10 +710,35 @@ where
         out
     }
 
-    fn mark_record(mark: Mark) -> Vec<u8> {
-        let mut out = Vec::with_capacity(21);
-        codec::write_mark(&mut out, mark);
+    fn retired_record(mark: Mark, at: u64) -> Vec<u8> {
+        let mut out = Vec::with_capacity(31);
+        codec::write_retired(&mut out, mark, at);
         out
+    }
+
+    /// Keeps the mark of an evicted actor, retired at `at`.
+    fn retire(&mut self, key: String, mark: Mark, at: u64) {
+        if self.config.dedupe.as_ref().is_some_and(|d| d.retain_ms.is_some()) {
+            self.expiry.push(Reverse((at, key.clone())));
+        }
+        self.retired.insert(key, (mark, at));
+    }
+
+    /// Forgets the marks retired for longer than `retainMs`, writing
+    /// tombstones for their keys.
+    fn expire(&mut self) {
+        let Some(retain) = self.config.dedupe.as_ref().and_then(|d| d.retain_ms) else { return };
+        while let Some(Reverse((at, _))) = self.expiry.peek() {
+            if at.saturating_add(retain) > self.now {
+                break;
+            }
+            let Reverse((at, key)) = self.expiry.pop().expect("peeked");
+            // Stale when the key has a new actor or was retired again.
+            if self.retired.get(&key).is_some_and(|r| r.1 == at) {
+                self.retired.remove(&key);
+                self.output.changelog.push((key, None));
+            }
+        }
     }
 
     /// The changelog record of every live actor (and the mark of every
@@ -550,7 +748,7 @@ where
     pub fn snapshot_records(&self) -> Vec<(String, Vec<u8>)> {
         let mut records: Vec<(String, Vec<u8>)> =
             self.actors.iter().map(|(key, slot)| (key.clone(), Self::encode(&self.config, slot))).collect();
-        records.extend(self.retired.iter().map(|(key, mark)| (key.clone(), Self::mark_record(*mark))));
+        records.extend(self.retired.iter().map(|(key, (mark, at))| (key.clone(), Self::retired_record(*mark, *at))));
         records.sort_by(|a, b| a.0.cmp(&b.0));
         records
     }
@@ -558,8 +756,14 @@ where
     /// Takes the output since the last flush, with the snapshots of the
     /// actors that changed.
     pub fn flush(&mut self) -> Output {
+        for (key, dead) in std::mem::take(&mut self.restore_failed) {
+            self.output.restore_failures += 1;
+            self.output.dead_letters.push(dead);
+            self.output.changelog.push((key, None));
+        }
         for key in std::mem::take(&mut self.dirty) {
-            let Some(slot) = self.actors.get_mut(&key) else { continue };
+            // A key can be listed twice (a restored record replaced).
+            let Some(slot) = self.actors.get_mut(&key).filter(|s| s.dirty) else { continue };
             slot.dirty = false;
             let finished = matches!(slot.actor.status(), Status::Done | Status::Stopped);
             if finished && self.config.evict_final {
@@ -567,8 +771,9 @@ where
                 self.actors.remove(&key);
                 match mark {
                     Some(mark) => {
-                        self.retired.insert(key.clone(), mark);
-                        self.output.changelog.push((key, Some(Self::mark_record(mark))));
+                        let now = self.now;
+                        self.retire(key.clone(), mark, now);
+                        self.output.changelog.push((key, Some(Self::retired_record(mark, now))));
                     }
                     None => self.output.changelog.push((key, None)),
                 }

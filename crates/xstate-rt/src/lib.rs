@@ -32,6 +32,7 @@ mod event;
 mod interp;
 mod load;
 mod machine;
+pub mod migrate;
 mod registry;
 pub mod step;
 pub mod system;
@@ -44,6 +45,7 @@ pub use error::{LoadError, LoadErrorKind};
 pub use event::{js_numbers, Ev, EventType};
 pub use load::{Reference, References};
 pub use machine::{Machine, MachineOptions, NodeId};
+pub use migrate::Migration;
 pub use registry::{GuardArgs, Registry};
 pub use system::{
     ActorRef, Effect, EffectKind, ExternalEffect, InitOptions, Logic, Status, System, SystemError, SystemLogic,

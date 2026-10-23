@@ -68,7 +68,7 @@ fn run() -> Result<(), String> {
     };
     let config = FileConfig::load(path.as_ref())?;
     let service_config = config.service()?;
-    let machine = Arc::new(config.machine()?);
+    let machine = config.machines()?;
     if check {
         eprintln!("xstate-kafka: {path} is valid ({} workers)", service_config.workers);
         return Ok(());

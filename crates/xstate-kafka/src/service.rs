@@ -60,10 +60,10 @@ use rdkafka::producer::{BaseProducer, BaseRecord, Producer};
 use rdkafka::{Offset, TopicPartitionList};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use xstate_rt::{EventType, Machine};
+use xstate_rt::EventType;
 
 use crate::checkpoint::{self, Checkpoint};
-use crate::engine::{EngineConfig, EventFormat, Output, Partition};
+use crate::engine::{EngineConfig, EventFormat, MachineSet, Output, Partition};
 use crate::metrics::{BatchCounts, Metrics, MetricsSnapshot};
 
 /// How the service connects and batches.
@@ -182,13 +182,15 @@ pub struct Service {
 }
 
 impl Service {
-    /// Starts `config.workers` worker threads running `machine`.
-    pub fn start<C, E>(config: ServiceConfig, machine: Arc<Machine<C, E>>) -> Result<Self>
+    /// Starts `config.workers` worker threads running `machine` (a machine,
+    /// or a [`MachineSet`] with earlier versions).
+    pub fn start<C, E>(config: ServiceConfig, machine: impl Into<MachineSet<C, E>>) -> Result<Self>
     where
         C: Serialize + DeserializeOwned + Clone + Send + Sync + 'static,
         E: EventType + Send + Sync,
     {
         let config = Arc::new(config);
+        let machine = Arc::new(machine.into());
         let stop = Arc::new(AtomicBool::new(false));
         let metrics = Arc::new(Metrics::new(config.workers.max(1)));
         let workers = (0..config.workers.max(1))
@@ -241,7 +243,7 @@ struct Worker<C, E> {
     index: usize,
     metrics: Arc<Metrics>,
     config: Arc<ServiceConfig>,
-    machine: Arc<Machine<C, E>>,
+    machine: Arc<MachineSet<C, E>>,
     consumer: BaseConsumer,
     producer: Arc<BaseProducer>,
     /// Commits a batch's transaction while the worker runs the next batch.
@@ -272,7 +274,7 @@ where
     fn new(
         index: usize,
         config: Arc<ServiceConfig>,
-        machine: Arc<Machine<C, E>>,
+        machine: Arc<MachineSet<C, E>>,
         metrics: Arc<Metrics>,
     ) -> Result<Self> {
         let consumer: BaseConsumer = config
@@ -482,6 +484,8 @@ where
             changelog: count(|o| o.changelog.len()),
             effects: count(|o| o.effects.len()),
             duplicates: outputs.iter().map(|(_, o)| o.duplicates).sum(),
+            restore_failures: outputs.iter().map(|(_, o)| o.restore_failures).sum(),
+            migrated: outputs.iter().map(|(_, o)| o.migrated).sum(),
         };
         let touched: HashSet<i32> = outputs.iter().filter(|(_, o)| !o.changelog.is_empty()).map(|(p, _)| *p).collect();
         self.changed.extend(&touched);
@@ -770,7 +774,7 @@ fn commit_transaction(producer: &BaseProducer, config: &ServiceConfig, job: Job)
 fn restore_into<C, E>(
     restorer: &BaseConsumer,
     config: &ServiceConfig,
-    machine: &Arc<Machine<C, E>>,
+    machine: &Arc<MachineSet<C, E>>,
     metrics: &Metrics,
     into: &mut HashMap<i32, Partition<C, E>>,
     checkpointed: &mut HashMap<i32, Instant>,
@@ -852,7 +856,7 @@ fn restore_consumer(config: &ServiceConfig) -> Result<BaseConsumer> {
 
 /// Rebuilds a partition's actors from its changelog partition (committed
 /// records only, latest record per key).
-pub fn restore<C, E>(config: &ServiceConfig, machine: &Arc<Machine<C, E>>, partition: i32) -> Result<Partition<C, E>>
+pub fn restore<C, E>(config: &ServiceConfig, machine: &Arc<MachineSet<C, E>>, partition: i32) -> Result<Partition<C, E>>
 where
     C: Serialize + DeserializeOwned + Clone + Send + Sync + 'static,
     E: EventType + Send + Sync,
@@ -870,7 +874,7 @@ type Partitions<C, E> = HashMap<i32, Partition<C, E>>;
 fn restore_with<C, E>(
     consumer: &BaseConsumer,
     config: &ServiceConfig,
-    machine: &Arc<Machine<C, E>>,
+    machine: &Arc<MachineSet<C, E>>,
     partitions: &[i32],
 ) -> Result<(Partitions<C, E>, u64)>
 where
@@ -880,11 +884,11 @@ where
     let mut tpl = TopicPartitionList::new();
     let mut restored: HashMap<i32, Partition<C, E>> = HashMap::new();
     for &p in partitions {
-        let mut partition = Partition::new(machine.clone(), config.engine.clone());
+        let mut partition = Partition::shared(machine.clone(), config.engine.clone());
         let start = match load_checkpoint(consumer, config, p, &mut partition) {
             Some(offset) => Offset::Offset(offset),
             None => {
-                partition = Partition::new(machine.clone(), config.engine.clone());
+                partition = Partition::shared(machine.clone(), config.engine.clone());
                 Offset::Beginning
             }
         };

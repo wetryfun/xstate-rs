@@ -6,8 +6,9 @@
 //!
 //! With deduplication on (`engine::Dedupe`), a record starts with the
 //! actor's [`Mark`] instead: [`MARK`], the epoch and the sequence as
-//! varints, then the snapshot record. A record of the mark alone keeps the
-//! mark of a finished, evicted actor.
+//! varints, then the snapshot record. A finished, evicted actor leaves a
+//! [`RETIRED`] record: its mark and when it was retired (varints), with no
+//! snapshot.
 
 use serde_json::Value;
 
@@ -30,6 +31,8 @@ const MESSAGE_PACK: u8 = 2;
 const PROTOBUF: u8 = 3;
 /// The format byte of a record that starts with a [`Mark`].
 pub const MARK: u8 = 16;
+/// The format byte of the record of a retired actor's [`Mark`].
+pub const RETIRED: u8 = 17;
 
 /// The latest input event an actor took, by its `(epoch, sequence)`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default)]
@@ -45,24 +48,51 @@ pub fn write_mark(out: &mut Vec<u8>, mark: Mark) {
     crate::proto::wire::put_varint(out, mark.sequence);
 }
 
-/// Splits a record into its mark (if it has one) and its snapshot record,
-/// which is empty for a record of the mark alone.
-pub fn split_mark(record: &[u8]) -> Result<(Option<Mark>, &[u8]), String> {
-    let Some((&MARK, mut rest)) = record.split_first() else { return Ok((None, record)) };
-    let mut varint = || -> Result<u64, String> {
-        let mut v = 0u64;
-        for i in 0..10 {
-            let (&b, tail) = rest.split_first().ok_or("truncated record mark")?;
-            rest = tail;
-            v |= u64::from(b & 0x7f) << (7 * i);
-            if b < 0x80 {
-                return Ok(v);
-            }
+/// Writes the record of a retired actor's mark, retired at `at`.
+pub fn write_retired(out: &mut Vec<u8>, mark: Mark, at: u64) {
+    out.push(RETIRED);
+    crate::proto::wire::put_varint(out, mark.epoch);
+    crate::proto::wire::put_varint(out, mark.sequence);
+    crate::proto::wire::put_varint(out, at);
+}
+
+/// When a [`RETIRED`] record's actor was retired (`None` for other records,
+/// and for records of a mark alone written before retirement times were).
+pub fn retired_at(record: &[u8]) -> Option<u64> {
+    let (&RETIRED, mut rest) = record.split_first()? else { return None };
+    read_varint(&mut rest).ok()?;
+    read_varint(&mut rest).ok()?;
+    read_varint(&mut rest).ok()
+}
+
+fn read_varint(rest: &mut &[u8]) -> Result<u64, String> {
+    let mut v = 0u64;
+    for i in 0..10 {
+        let (&b, tail) = rest.split_first().ok_or("truncated record mark")?;
+        *rest = tail;
+        v |= u64::from(b & 0x7f) << (7 * i);
+        if b < 0x80 {
+            return Ok(v);
         }
-        Err("invalid record mark".into())
+    }
+    Err("invalid record mark".into())
+}
+
+/// Splits a record into its mark (if it has one) and its snapshot record,
+/// which is empty for the record of a retired actor.
+pub fn split_mark(record: &[u8]) -> Result<(Option<Mark>, &[u8]), String> {
+    let retired = match record.first() {
+        Some(&MARK) => false,
+        Some(&RETIRED) => true,
+        _ => return Ok((None, record)),
     };
-    let epoch = varint()?;
-    let sequence = varint()?;
+    let mut rest = &record[1..];
+    let mut varint = || read_varint(&mut rest);
+    let (epoch, sequence) = (varint()?, varint()?);
+    if retired {
+        varint()?;
+        return Ok((Some(Mark { epoch, sequence }), &[]));
+    }
     Ok((Some(Mark { epoch, sequence }), rest))
 }
 

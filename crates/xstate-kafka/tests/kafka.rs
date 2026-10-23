@@ -15,7 +15,7 @@ use rdkafka::producer::{BaseProducer, BaseRecord, Producer};
 use rdkafka::{Offset, TopicPartitionList};
 use serde_json::{json, Value};
 use xstate_kafka::service::{Service, ServiceConfig};
-use xstate_kafka::Dedupe;
+use xstate_kafka::{Dedupe, MachineSet};
 use xstate_rt::{Machine, Registry};
 
 const PARTITIONS: i32 = 4;
@@ -34,6 +34,22 @@ fn machine() -> Arc<Machine<Value, Value>> {
             "waiting": { "after": { "200": { "target": "s2" } } },
             "s2": { "entry": at("s2"), "on": { "next": { "target": "s3" } } },
             "s3": { "type": "final", "entry": at("s3") }
+        }
+    });
+    Arc::new(Machine::from_json(&definition, &Registry::new()).unwrap())
+}
+
+/// [`machine`] with a `version`.
+fn versioned(version: &str) -> Arc<Machine<Value, Value>> {
+    let at = |s: &str| json!([{ "type": "@xstate.emit", "event": { "type": "at", "state": s } }]);
+    let definition = json!({
+        "id": "steps",
+        "version": version,
+        "initial": "s0",
+        "states": {
+            "s0": { "on": { "next": { "target": "s1" } } },
+            "s1": { "entry": at("s1"), "on": { "next": { "target": "s2" } } },
+            "s2": { "entry": at("s2") }
         }
     });
     Arc::new(Machine::from_json(&definition, &Registry::new()).unwrap())
@@ -177,7 +193,7 @@ fn exactly_once_actors_with_restore() {
     produce_typed(&bootstrap, "d", b"next", "text/plain");
     let deduping = || {
         let mut c = config(&bootstrap);
-        c.engine.dedupe = Some(Dedupe { sequence: "seq".into(), epoch: None });
+        c.engine.dedupe = Some(Dedupe { sequence: "seq".into(), epoch: None, retain_ms: None });
         c
     };
     let service = Service::start(deduping(), machine()).unwrap();
@@ -338,4 +354,42 @@ fn a_failed_commit_discards_the_batch_behind_it() {
     let by_key = states(&output);
     assert_eq!(by_key.len(), 200);
     assert!(by_key.values().all(|s| s == &vec!["s1".to_owned()]), "{by_key:?}");
+}
+
+#[test]
+fn a_record_of_an_unknown_version_is_a_dead_letter_not_a_crash() {
+    let cluster = MockCluster::new(3).unwrap();
+    for topic in ["input", "output", "changelog", "dead"] {
+        cluster.create_topic(topic, PARTITIONS, 3).unwrap();
+    }
+    let bootstrap = cluster.bootstrap_servers();
+    produce(&bootstrap, &[(Some("a"), r#"{"type":"next"}"#), (Some("b"), r#"{"type":"next"}"#)]);
+    let service = Service::start(config(&bootstrap), versioned("1")).unwrap();
+    assert_eq!(read(&bootstrap, "output", 2).len(), 2);
+    service.stop().unwrap();
+    commit_processed(&bootstrap);
+
+    // Version 2 alone does not know version 1's actors: they are dead
+    // letters and their keys start over; the workers keep running.
+    produce(&bootstrap, &[(Some("a"), r#"{"type":"next"}"#)]);
+    let service = Service::start(config(&bootstrap), versioned("2")).unwrap();
+    let dead = read(&bootstrap, "dead", 2);
+    let output = read(&bootstrap, "output", 3);
+    assert!(service.is_running());
+    service.stop().unwrap();
+    assert_eq!(dead.len(), 2, "{dead:?}");
+    assert!(dead.iter().all(|d| d.2.as_deref().unwrap().contains("no machine for version \"1\"")), "{dead:?}");
+    // `a` started over on version 2: s1 again, not s2.
+    assert_eq!(states(&output)["a"], vec!["s1", "s1"]);
+
+    // With version 1 kept, a restart restores nothing broken: the keys
+    // were tombstoned, and `a` runs on version 2.
+    commit_processed(&bootstrap);
+    let set = MachineSet::new(versioned("2")).keep(versioned("1")).unwrap();
+    produce(&bootstrap, &[(Some("a"), r#"{"type":"next"}"#)]);
+    let service = Service::start(config(&bootstrap), set).unwrap();
+    let output = read(&bootstrap, "output", 4);
+    service.stop().unwrap();
+    assert_eq!(states(&output)["a"], vec!["s1", "s1", "s2"]);
+    assert_eq!(read(&bootstrap, "dead", 2).len(), 2, "no new dead letters");
 }

@@ -4,8 +4,8 @@
 use std::sync::Arc;
 
 use serde_json::{json, Value};
-use xstate_kafka::{Codec, Dedupe, EngineConfig, Mark, Partition, SnapshotFormat};
-use xstate_rt::{Machine, Registry, Status};
+use xstate_kafka::{Codec, Dedupe, EngineConfig, MachineSet, Mark, Partition, RestoreErrors, SnapshotFormat};
+use xstate_rt::{Machine, Migration, Registry, Status};
 
 fn order_machine() -> Arc<Machine<Value, Value>> {
     let definition = json!({
@@ -212,7 +212,7 @@ fn deduping(dedupe: Option<Dedupe>) -> Partition<Value, Value> {
 }
 
 fn seq_and_boot() -> Option<Dedupe> {
-    Some(Dedupe { sequence: "seq".into(), epoch: Some("boot".into()) })
+    Some(Dedupe { sequence: "seq".into(), epoch: Some("boot".into()), retain_ms: None })
 }
 
 #[test]
@@ -249,7 +249,7 @@ fn duplicate_events_are_skipped_by_sequence_and_epoch() {
 
 #[test]
 fn evicted_actors_keep_their_mark() {
-    let mut p = deduping(Some(Dedupe { sequence: "seq".into(), epoch: None }));
+    let mut p = deduping(Some(Dedupe { sequence: "seq".into(), epoch: None, retain_ms: None }));
     p.handle(Some("o"), br#"{ "type": "pay", "seq": 1 }"#, 0);
     p.tick(100); // paid: final, evicted at the flush
     let out = p.flush();
@@ -271,7 +271,7 @@ fn evicted_actors_keep_their_mark() {
     p.flush();
     let records = p.snapshot_records();
     assert_eq!(records.len(), 2);
-    let mut q = deduping(Some(Dedupe { sequence: "seq".into(), epoch: None }));
+    let mut q = deduping(Some(Dedupe { sequence: "seq".into(), epoch: None, retain_ms: None }));
     for (key, record) in &records {
         q.restore(key, Some(record)).unwrap();
     }
@@ -292,4 +292,111 @@ fn evicted_actors_keep_their_mark() {
     assert_eq!(out.emitted.len(), 1);
     let record = out.changelog[0].1.as_deref().unwrap();
     assert_eq!(xstate_kafka::codec::split_mark(record).unwrap().0, None);
+}
+
+fn versioned(version: &str, paid: &str) -> Arc<Machine<Value, Value>> {
+    let emit = json!([{ "type": "@xstate.emit", "event": { "type": paid } }]);
+    let definition = json!({
+        "id": "order", "version": version, "initial": "open", "context": { "items": 0 },
+        "states": {
+            "open": { "on": { "pay": { "target": "done", "actions": emit } } },
+            "done": { "type": "final" }
+        }
+    });
+    Arc::new(Machine::from_json(&definition, &Registry::new()).unwrap())
+}
+
+/// A changelog record written by `machine` for an actor waiting in `open`.
+fn record_of(machine: Arc<Machine<Value, Value>>) -> Vec<u8> {
+    let mut p = Partition::new(machine, EngineConfig { evict_final: false, ..Default::default() });
+    p.handle(Some("o"), br#"{ "type": "noop" }"#, 1);
+    p.flush().changelog.remove(0).1.unwrap()
+}
+
+#[test]
+fn restored_actors_keep_their_version_or_migrate() {
+    let (v1, v2) = (versioned("1", "paid.v1"), versioned("2", "paid.v2"));
+    let old = record_of(v1.clone());
+
+    // Kept: the restored actor runs on v1, a new one starts on v2.
+    let set = MachineSet::new(v2.clone()).keep(v1.clone()).unwrap();
+    let mut p = Partition::new(set, EngineConfig::default());
+    p.restore("o", Some(&old)).unwrap();
+    assert!(p.flush().is_empty(), "nothing to write");
+    p.handle(Some("o"), br#"{ "type": "pay" }"#, 2);
+    p.handle(Some("n"), br#"{ "type": "pay" }"#, 2);
+    let out = p.flush();
+    let paid: Vec<(&str, &Value)> = out.emitted.iter().map(|e| (e.key.as_str(), &e.event["type"])).collect();
+    assert_eq!(paid, vec![("o", &json!("paid.v1")), ("n", &json!("paid.v2"))]);
+
+    // Migrated: written as v2 at the next flush, then runs on v2.
+    let set = MachineSet::new(v2.clone()).migrate("1", Migration::default(), Some(&*v1)).unwrap();
+    let mut p = Partition::new(set, EngineConfig::default());
+    p.restore("o", Some(&old)).unwrap();
+    let out = p.flush();
+    assert_eq!((out.migrated, out.changelog.len()), (1, 1));
+    let snapshot = Codec::decode(out.changelog[0].1.as_deref().unwrap()).unwrap();
+    assert_eq!(snapshot["actors"]["order"]["logicVersion"], json!("2"));
+    p.handle(Some("o"), br#"{ "type": "pay" }"#, 2);
+    assert_eq!(p.flush().emitted[0].event["type"], json!("paid.v2"));
+
+    // Listing a version twice, or the current one, is an error.
+    assert!(MachineSet::new(v2.clone()).keep(v2.clone()).is_err());
+    assert!(MachineSet::new(v2).keep(v1.clone()).unwrap().migrate("1", Migration::default(), Some(&*v1)).is_err());
+}
+
+#[test]
+fn unrestorable_records_become_dead_letters() {
+    let (v1, v2) = (versioned("1", "paid.v1"), versioned("2", "paid.v2"));
+    let old = record_of(v1);
+    let mut p = Partition::new(v2.clone(), EngineConfig::default());
+    p.restore("o", Some(&old)).unwrap();
+    p.restore("x", Some(b"\x02garbage")).unwrap();
+    p.restore("y", Some(&old)).unwrap();
+    // A later record for the key restores: no dead letter for it.
+    p.restore("y", Some(&record_of(v2.clone()))).unwrap();
+    assert_eq!(p.len(), 1);
+    let out = p.flush();
+    assert_eq!(out.restore_failures, 2);
+    let mut dead: Vec<(&str, &str)> =
+        out.dead_letters.iter().map(|d| (d.key.as_deref().unwrap(), d.reason.as_str())).collect();
+    dead.sort();
+    assert!(dead[0].0 == "o" && dead[0].1.contains("no machine for version \"1\""), "{dead:?}");
+    assert!(dead[1].0 == "x" && dead[1].1.starts_with("restore failed"), "{dead:?}");
+    assert_eq!(out.dead_letters.iter().find(|d| d.key.as_deref() == Some("o")).unwrap().payload, old);
+    let mut tombstones: Vec<&str> = out.changelog.iter().filter(|c| c.1.is_none()).map(|c| c.0.as_str()).collect();
+    tombstones.sort();
+    assert_eq!(tombstones, ["o", "x"]);
+
+    let fail = EngineConfig { restore_errors: RestoreErrors::Fail, ..Default::default() };
+    let mut p = Partition::new(v2, fail);
+    assert!(p.restore("o", Some(&old)).unwrap_err().contains("no machine for version"));
+}
+
+#[test]
+fn retired_marks_expire_after_retain_ms() {
+    let dedupe = Dedupe { sequence: "seq".into(), epoch: None, retain_ms: Some(1000) };
+    let config = EngineConfig { dedupe: Some(dedupe), ..Default::default() };
+    let mut p = Partition::new(order_machine(), config.clone());
+    p.handle(Some("o"), br#"{ "type": "pay", "seq": 1 }"#, 0);
+    p.tick(100); // paid: final, retired at 100
+    let record = p.flush().changelog.pop().unwrap().1.unwrap();
+    assert_eq!(xstate_kafka::codec::retired_at(&record), Some(100));
+    assert_eq!(p.retired(), 1);
+    p.tick(1099);
+    assert!(p.flush().changelog.is_empty());
+    p.tick(1100);
+    assert_eq!(p.flush().changelog, vec![("o".to_owned(), None)], "forgotten: a tombstone");
+    assert_eq!(p.retired(), 0);
+    // Now a late duplicate starts a new actor.
+    p.handle(Some("o"), br#"{ "type": "pay", "seq": 1 }"#, 1200);
+    assert_eq!(p.len(), 1);
+
+    // A restored mark expires from when it was retired.
+    let mut q = Partition::new(order_machine(), config);
+    q.restore("o", Some(&record)).unwrap();
+    q.tick(1050);
+    assert_eq!(q.retired(), 1);
+    q.tick(1100);
+    assert_eq!((q.retired(), q.flush().changelog.len()), (0, 1));
 }

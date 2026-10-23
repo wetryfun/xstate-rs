@@ -15,7 +15,13 @@
 //!   "evictFinal": true,
 //!   "snapshots": "xstate",
 //!   "events": "json",
-//!   "dedupe": { "sequence": "seq", "epoch": "boot" },
+//!   "dedupe": { "sequence": "seq", "epoch": "boot", "retainMs": 2592000000 },
+//!   "previousVersions": [
+//!     { "machine": "order-v2.json" },
+//!     { "machine": "order-v1.json", "migrate": { "states": { "order.open": "order.cart" }, "context": { "currency": "EUR" } } },
+//!     { "version": "0", "migrate": { "states": {} } }
+//!   ],
+//!   "onRestoreError": "deadLetter",
 //!   "client": { "compression.type": "lz4" },
 //!   "stateDir": "/var/lib/xstate", "checkpointIntervalMs": 60000,
 //!   "metricsAddress": "0.0.0.0:9464",
@@ -31,6 +37,15 @@
 //! topic (see `xstate_kafka::engine`). `dedupe` skips events an actor
 //! already took, by their `sequence` (and optional `epoch`) fields (see
 //! `xstate_kafka::Dedupe`).
+//!
+//! `previousVersions` lists earlier versions of the machine (by their
+//! definitions' `version`; the current machine needs one too). Actors
+//! persisted by an earlier version keep running on it (`machine` alone), or
+//! are migrated to the current machine when restored (`migrate`: state ids
+//! to map, a context patch; with `machine`, the migration is checked against
+//! it, else `version` names it). `onRestoreError` (`"deadLetter"`, the
+//! default when a dead-letter topic is set, or `"fail"`) decides what a
+//! record that cannot be restored does.
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -39,10 +54,10 @@ use std::time::Duration;
 use serde::Deserialize;
 use serde_json::Value;
 use xstate_rt::step::async_logic;
-use xstate_rt::{Machine, Registry};
+use xstate_rt::{Machine, Migration, Registry};
 
 use crate::codec::Codec;
-use crate::engine::{Dedupe, EngineConfig, EventFormat, SnapshotFormat};
+use crate::engine::{Dedupe, EngineConfig, EventFormat, MachineSet, RestoreErrors, SnapshotFormat};
 use crate::proto::events::EventSchema;
 use crate::service::ServiceConfig;
 
@@ -56,6 +71,21 @@ pub struct Topics {
     pub dead_letter: Option<String>,
     #[serde(default)]
     pub effects: Option<String>,
+}
+
+/// An earlier version of the machine.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct PreviousVersion {
+    /// Its definition (relative to the configuration file).
+    #[serde(default)]
+    pub machine: Option<PathBuf>,
+    /// Its version, when `machine` is not given.
+    #[serde(default)]
+    pub version: Option<String>,
+    /// Move its actors to the current machine as they are restored.
+    #[serde(default)]
+    pub migrate: Option<Migration>,
 }
 
 /// The configuration file.
@@ -97,6 +127,12 @@ pub struct FileConfig {
     /// Skip input events an actor already took.
     #[serde(default)]
     pub dedupe: Option<Dedupe>,
+    /// Earlier versions of the machine whose actors may be in the changelog.
+    #[serde(default)]
+    pub previous_versions: Vec<PreviousVersion>,
+    /// `"deadLetter"` or `"fail"`.
+    #[serde(default)]
+    pub on_restore_error: Option<String>,
     #[serde(default)]
     pub client: serde_json::Map<String, Value>,
     #[serde(default)]
@@ -120,6 +156,11 @@ impl FileConfig {
         }
         if let Some(dir) = config.state_dir.as_mut().filter(|d| d.is_relative()) {
             *dir = base.join(&*dir);
+        }
+        for p in &mut config.previous_versions {
+            if let Some(m) = p.machine.as_mut().filter(|m| m.is_relative()) {
+                *m = base.join(&*m);
+            }
         }
         Ok(config)
     }
@@ -194,6 +235,15 @@ impl FileConfig {
                 return Err("\"dedupe\" needs a \"sequence\" field name and a different \"epoch\" one".into());
             }
         }
+        let restore_errors = match self.on_restore_error.as_deref() {
+            Some("fail") => RestoreErrors::Fail,
+            None | Some("deadLetter") if t.dead_letter.is_some() => RestoreErrors::DeadLetter,
+            None => RestoreErrors::Fail,
+            Some("deadLetter") => return Err("\"onRestoreError\": \"deadLetter\" needs topics.deadLetter".into()),
+            Some(other) => {
+                return Err(format!("unknown onRestoreError \"{other}\" (expected \"deadLetter\" or \"fail\")"))
+            }
+        };
         c.engine = EngineConfig {
             codec,
             evict_final: self.evict_final.unwrap_or(true),
@@ -201,6 +251,7 @@ impl FileConfig {
             events,
             event_schema,
             dedupe: self.dedupe.clone(),
+            restore_errors,
         };
         for (k, v) in &self.client {
             let v = match v {
@@ -214,9 +265,34 @@ impl FileConfig {
 
     /// The machine file: a `MachineJSON` definition or a bundle.
     pub fn read_machine_file(&self) -> Result<Value, String> {
-        let path = &self.machine;
-        let text = std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
-        serde_json::from_str(&text).map_err(|e| format!("{}: {e}", path.display()))
+        read_json(&self.machine)
+    }
+
+    /// The machine and its earlier versions.
+    pub fn machines(&self) -> Result<MachineSet<Value, Value>, String> {
+        let mut set = MachineSet::new(Arc::new(self.machine()?));
+        for p in &self.previous_versions {
+            let earlier = p.machine.as_ref().map(|path| self.load_machine(path)).transpose()?;
+            let version = match (&earlier, &p.version) {
+                (Some(m), None) => m.version().map(str::to_owned),
+                (None, Some(v)) => Some(v.clone()),
+                (Some(m), Some(v)) if m.version() == Some(v.as_str()) => Some(v.clone()),
+                (Some(_), Some(v)) => {
+                    return Err(format!("previousVersions: \"{v}\" is not the version of its machine"))
+                }
+                (None, None) => return Err("previousVersions: an entry needs \"machine\" or \"version\"".into()),
+            };
+            let version = version.ok_or("previousVersions: an earlier machine needs a \"version\"")?;
+            set = match (&p.migrate, earlier) {
+                (Some(migration), earlier) => set.migrate(&version, migration.clone(), earlier.as_ref()),
+                (None, Some(earlier)) => set.keep(Arc::new(earlier)),
+                (None, None) => {
+                    Err(format!("previousVersions: version \"{version}\" needs \"machine\" or \"migrate\""))
+                }
+            }
+            .map_err(|e| format!("previousVersions: {e}"))?;
+        }
+        Ok(set)
     }
 
     /// The protobuf form of the machine's input events (the machine file
@@ -230,9 +306,12 @@ impl FileConfig {
     /// delays (build a binary of your own with `Service::start` for those).
     /// Invoked actors become async work on `topics.effects`.
     pub fn machine(&self) -> Result<Machine<Value, Value>, String> {
-        let path = &self.machine;
+        self.load_machine(&self.machine)
+    }
+
+    fn load_machine(&self, path: &Path) -> Result<Machine<Value, Value>, String> {
         let at = |e: String| format!("{}: {e}", path.display());
-        let json = self.read_machine_file()?;
+        let json = read_json(path)?;
         let definition = match json.get("machine") {
             Some(m) if json.get("states").is_none() => m.clone(),
             _ => json,
@@ -267,6 +346,11 @@ impl FileConfig {
     }
 }
 
+fn read_json(path: &Path) -> Result<Value, String> {
+    let text = std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
+    serde_json::from_str(&text).map_err(|e| format!("{}: {e}", path.display()))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -296,7 +380,7 @@ mod tests {
         assert_eq!(service.workers, 3);
         assert_eq!(service.engine.codec, Codec::Json);
         assert_eq!(service.engine.snapshots, SnapshotFormat::Compact);
-        assert_eq!(service.engine.dedupe, Some(Dedupe { sequence: "seq".into(), epoch: None }));
+        assert_eq!(service.engine.dedupe, Some(Dedupe { sequence: "seq".into(), epoch: None, retain_ms: None }));
         assert_eq!(service.batch_linger, Duration::from_millis(5));
         assert_eq!(service.state_dir, Some(dir.join("state")));
         assert_eq!(service.checkpoint_interval, Duration::from_secs(1));
@@ -310,6 +394,36 @@ mod tests {
         );
         let err = config.machine().err().expect("rejected");
         assert!(err.contains("action \"track\""), "{err}");
+        // Earlier versions: kept, migrated (checked against the earlier
+        // definition), and a dead-letter topic for unrestorable records.
+        let v = |version: &str, state: &str| {
+            format!(r#"{{ "id": "m", "version": "{version}", "initial": "{state}", "states": {{ "{state}": {{}} }} }}"#)
+        };
+        write(&dir, "m3.json", &v("3", "c"));
+        write(&dir, "m2.json", &v("2", "c"));
+        write(&dir, "m1.json", &v("1", "a"));
+        let base = r#""bootstrapServers": "b", "groupId": "g", "topics": { "input": "i", "output": "o", "changelog": "c", "deadLetter": "d" }"#;
+        let versions = |previous: &str| {
+            let path = write(
+                &dir,
+                "v.json",
+                &format!(r#"{{ "machine": "m3.json", {base}, "previousVersions": {previous} }}"#),
+            );
+            FileConfig::load(&path).unwrap()
+        };
+        let ok = versions(
+            r#"[{ "machine": "m2.json" }, { "machine": "m1.json", "migrate": { "states": { "m.a": "m.c" } } }]"#,
+        );
+        assert!(ok.machines().is_ok());
+        assert_eq!(ok.service().unwrap().engine.restore_errors, RestoreErrors::DeadLetter);
+        let unmapped = versions(r#"[{ "machine": "m1.json", "migrate": {} }]"#).machines().err().unwrap();
+        assert!(unmapped.contains("need a mapping: m.a"), "{unmapped}");
+        let twice =
+            versions(r#"[{ "machine": "m2.json" }, { "version": "2", "migrate": {} }]"#).machines().err().unwrap();
+        assert!(twice.contains("listed twice"), "{twice}");
+        assert!(versions(r#"[{ "version": "0" }]"#).machines().is_err());
+        assert_eq!(service.engine.restore_errors, RestoreErrors::Fail, "no dead-letter topic");
+
         let bad = write(
             &dir,
             "bad.json",
