@@ -14,6 +14,7 @@
 //!
 //! [`engine`] is deterministic and has no Kafka dependency.
 
+pub mod checkpoint;
 pub mod codec;
 #[cfg(feature = "kafka")]
 pub mod config;

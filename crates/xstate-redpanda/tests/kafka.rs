@@ -197,3 +197,68 @@ fn exactly_once_actors_with_restore() {
     let snapshot = xstate_redpanda::Codec::decode(last_c.1.as_deref().unwrap()).unwrap();
     assert_eq!(snapshot["actors"]["steps"]["snapshot"]["value"], json!("s2"));
 }
+
+#[test]
+fn restores_from_local_checkpoints() {
+    let cluster = MockCluster::new(1).unwrap();
+    for topic in ["input", "output", "changelog", "dead"] {
+        cluster.create_topic(topic, PARTITIONS, 1).unwrap();
+    }
+    let bootstrap = cluster.bootstrap_servers();
+    let dir = std::env::temp_dir().join(format!("xstate-checkpoints-{}", rand_suffix()));
+    let with_checkpoints = || {
+        let mut c = config(&bootstrap);
+        c.state_dir = Some(dir.clone());
+        c.checkpoint_interval = Duration::ZERO;
+        c
+    };
+    let keys: Vec<String> = (0..30).map(|i| format!("k{i}")).collect();
+    let next = r#"{"type":"next"}"#;
+
+    // Rounds, so the last transaction (the tail a checkpoint does not
+    // cover) is small.
+    let service = Service::start(with_checkpoints(), machine()).unwrap();
+    let round: Vec<(Option<&str>, &str)> = keys.iter().map(|k| (Some(k.as_str()), next)).collect();
+    produce(&bootstrap, &round);
+    assert_eq!(read(&bootstrap, "output", 30).len(), 30);
+    produce(&bootstrap, &round);
+    assert_eq!(read(&bootstrap, "output", 60).len(), 60);
+    // k0 finishes (a tombstone).
+    produce(&bootstrap, &[(Some("k0"), next)]);
+    assert_eq!(read(&bootstrap, "output", 61).len(), 61);
+    let first = service.metrics();
+    service.stop().unwrap();
+    assert!(first.checkpoints >= 2, "{first:?}");
+    let files = std::fs::read_dir(&dir).unwrap().count();
+    assert!(files >= 1, "checkpoint files in {}", dir.display());
+    commit_processed(&bootstrap);
+
+    // The workers checkpointed when they stopped: a restart restores
+    // without reading the changelog.
+    let service = Service::start(with_checkpoints(), machine()).unwrap();
+    produce(&bootstrap, &[(Some("k1"), next)]);
+    let output = read(&bootstrap, "output", 62);
+    let second = service.metrics();
+    service.stop().unwrap();
+    assert_eq!(output.len(), 62, "{output:?}");
+    assert_eq!(states(&output)["k1"], vec!["s1", "s2", "s3"]);
+    assert_eq!(second.restored_partitions, PARTITIONS as u64);
+    assert_eq!(second.restored_actors, 29, "{second:?}");
+    assert_eq!(second.restored_records, 0, "{second:?}");
+    commit_processed(&bootstrap);
+
+    // Unreadable checkpoints fall back to the whole changelog.
+    for entry in std::fs::read_dir(&dir).unwrap() {
+        std::fs::write(entry.unwrap().path(), b"garbage").unwrap();
+    }
+    let service = Service::start(with_checkpoints(), machine()).unwrap();
+    produce(&bootstrap, &[(Some("k2"), next)]);
+    let output = read(&bootstrap, "output", 63);
+    let third = service.metrics();
+    service.stop().unwrap();
+    assert_eq!(states(&output)["k2"], vec!["s1", "s2", "s3"]);
+    assert_eq!(third.restored_actors, 28, "{third:?}");
+    // 30 + 30 snapshots, 2 tombstones.
+    assert!(third.restored_records >= 62, "{third:?}");
+    std::fs::remove_dir_all(&dir).ok();
+}

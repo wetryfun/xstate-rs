@@ -15,6 +15,8 @@ pub struct Metrics {
     aborted_transactions: AtomicU64,
     restored_partitions: AtomicU64,
     restored_actors: AtomicU64,
+    restored_records: AtomicU64,
+    checkpoints: AtomicU64,
     commit_micros_total: AtomicU64,
     commit_micros_max: AtomicU64,
     /// Live actors, per worker.
@@ -32,6 +34,8 @@ pub struct MetricsSnapshot {
     pub aborted_transactions: u64,
     pub restored_partitions: u64,
     pub restored_actors: u64,
+    pub restored_records: u64,
+    pub checkpoints: u64,
     pub commit_micros_total: u64,
     pub commit_micros_max: u64,
     pub actors: u64,
@@ -49,6 +53,8 @@ impl Metrics {
             aborted_transactions: zero(),
             restored_partitions: zero(),
             restored_actors: zero(),
+            restored_records: zero(),
+            checkpoints: zero(),
             commit_micros_total: zero(),
             commit_micros_max: zero(),
             actors: (0..workers.max(1)).map(|_| zero()).collect(),
@@ -69,9 +75,16 @@ impl Metrics {
         self.aborted_transactions.fetch_add(1, Ordering::Relaxed);
     }
 
-    pub fn restored(&self, partitions: u64, actors: u64) {
+    /// Partitions restored, with their actors and the changelog records
+    /// read (only the tail after a checkpoint, when there was one).
+    pub fn restored(&self, partitions: u64, actors: u64, records: u64) {
         self.restored_partitions.fetch_add(partitions, Ordering::Relaxed);
         self.restored_actors.fetch_add(actors, Ordering::Relaxed);
+        self.restored_records.fetch_add(records, Ordering::Relaxed);
+    }
+
+    pub fn checkpointed(&self) {
+        self.checkpoints.fetch_add(1, Ordering::Relaxed);
     }
 
     pub fn set_actors(&self, worker: usize, actors: u64) {
@@ -91,6 +104,8 @@ impl Metrics {
             aborted_transactions: get(&self.aborted_transactions),
             restored_partitions: get(&self.restored_partitions),
             restored_actors: get(&self.restored_actors),
+            restored_records: get(&self.restored_records),
+            checkpoints: get(&self.checkpoints),
             commit_micros_total: get(&self.commit_micros_total),
             commit_micros_max: get(&self.commit_micros_max),
             actors: self.actors.iter().map(get).sum(),
@@ -118,6 +133,8 @@ impl MetricsSnapshot {
             self.restored_partitions,
         );
         metric("restored_actors_total", "counter", "Actors restored from the changelog.", self.restored_actors);
+        metric("restored_records_total", "counter", "Changelog records read while restoring.", self.restored_records);
+        metric("checkpoints_total", "counter", "Local partition checkpoints written.", self.checkpoints);
         metric("commit_micros_total", "counter", "Time spent committing transactions.", self.commit_micros_total);
         metric("commit_micros_max", "gauge", "Longest transaction commit.", self.commit_micros_max);
         metric("actors", "gauge", "Live actors.", self.actors);

@@ -20,16 +20,25 @@
 //! it, forgets its partitions and rewinds to the committed offsets, so the
 //! batch is processed again from the last committed state.
 //!
+//! With `state_dir` set, workers also write a local checkpoint of each
+//! partition (every live actor's changelog record and the changelog offset
+//! it covers) at most every `checkpoint_interval`, and a restore loads the
+//! checkpoint and replays only the changelog after it. A checkpoint's offset
+//! is the changelog's end before the transaction that produced its state, so
+//! the replayed tail always ends in the same states; a missing, unreadable
+//! or out-of-range checkpoint falls back to reading the whole changelog.
+//!
 //! Set `rack` (librdkafka `client.rack`) to the broker node's rack to read
 //! from the local replica (follower fetching, `enable_rack_awareness` on the
 //! cluster).
 
 use std::collections::{HashMap, HashSet};
 use std::fmt;
+use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::JoinHandle;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use rdkafka::config::ClientConfig;
 use rdkafka::consumer::{BaseConsumer, Consumer};
@@ -41,6 +50,7 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use xstate_rt::{EventType, Machine};
 
+use crate::checkpoint::{self, Checkpoint};
 use crate::engine::{EngineConfig, Output, Partition};
 use crate::metrics::{Metrics, MetricsSnapshot};
 
@@ -72,6 +82,10 @@ pub struct ServiceConfig {
     /// Extra librdkafka settings for every client.
     pub client_config: Vec<(String, String)>,
     pub engine: EngineConfig,
+    /// Directory for local partition checkpoints; `None` disables them.
+    pub state_dir: Option<PathBuf>,
+    /// Minimum time between two checkpoints of a partition.
+    pub checkpoint_interval: Duration,
 }
 
 impl ServiceConfig {
@@ -99,6 +113,8 @@ impl ServiceConfig {
             request_timeout: Duration::from_secs(30),
             client_config: Vec::new(),
             engine: EngineConfig::default(),
+            state_dir: None,
+            checkpoint_interval: Duration::from_secs(60),
         }
     }
 
@@ -213,6 +229,10 @@ struct Worker<'a, C, E> {
     /// Reads changelog partitions when they are assigned; reused.
     restorer: BaseConsumer,
     partitions: HashMap<i32, Partition<C, E>>,
+    /// When each partition was last checkpointed (or restored).
+    checkpointed: HashMap<i32, Instant>,
+    /// Partitions whose state changed since their last checkpoint.
+    changed: HashSet<i32>,
 }
 
 impl<'a, C, E> Worker<'a, C, E>
@@ -241,7 +261,18 @@ where
             .create()?;
         producer.init_transactions(config.request_timeout)?;
         let restorer = restore_consumer(config)?;
-        Ok(Self { index, metrics, config, machine, consumer, producer, restorer, partitions: HashMap::new() })
+        Ok(Self {
+            index,
+            metrics,
+            config,
+            machine,
+            consumer,
+            producer,
+            restorer,
+            partitions: HashMap::new(),
+            checkpointed: HashMap::new(),
+            changed: HashSet::new(),
+        })
     }
 
     fn run(mut self, stop: &AtomicBool) -> Result<()> {
@@ -251,13 +282,16 @@ where
                 self.metrics.aborted();
                 // Start over from the last committed state.
                 let _ = self.producer.abort_transaction(self.config.request_timeout);
-                self.partitions.clear();
+                self.forget(|_| false);
                 self.rewind()?;
                 if is_fatal(&e) {
                     return Err(e);
                 }
             }
         }
+        // A clean stop leaves exact checkpoints: nothing to replay.
+        let due = self.checkpoints_due(true);
+        self.write_checkpoints(due, &HashSet::new());
         // Leave the group now, so the partitions move to other workers
         // without waiting for this member's session to time out.
         self.consumer.unsubscribe();
@@ -272,7 +306,7 @@ where
         // Restore newly assigned partitions together, and forget revoked ones.
         let assigned: HashSet<i32> =
             self.consumer.assignment()?.elements_for_topic(&config.input_topic).iter().map(|e| e.partition()).collect();
-        self.partitions.retain(|p, _| assigned.contains(p));
+        self.forget(|p| assigned.contains(&p));
         let missing: Vec<i32> = assigned.iter().copied().filter(|p| !self.partitions.contains_key(p)).collect();
         if !missing.is_empty() {
             self.restore(&missing)?;
@@ -284,7 +318,7 @@ where
             Some(due) => Duration::from_millis(due.saturating_sub(now)).min(config.poll_timeout),
             None => config.poll_timeout,
         };
-        let started = std::time::Instant::now();
+        let started = Instant::now();
         let mut first: Option<std::time::Instant> = None;
         let mut polled = 0;
         while polled < config.max_batch {
@@ -296,9 +330,15 @@ where
             let partition = message.partition();
             if !self.partitions.contains_key(&partition) {
                 // Assigned during this poll.
-                let restored = restore_with(&self.restorer, config, &self.machine, &[partition])?;
-                self.metrics.restored(1, restored.values().map(|p| p.len() as u64).sum());
-                self.partitions.extend(restored);
+                restore_into(
+                    &self.restorer,
+                    config,
+                    &self.machine,
+                    &self.metrics,
+                    &mut self.partitions,
+                    &mut self.checkpointed,
+                    &[partition],
+                )?;
             }
             let key = message.key().map(|k| String::from_utf8_lossy(k).into_owned());
             let p = self.partitions.get_mut(&partition).expect("restored");
@@ -316,6 +356,9 @@ where
             }
         }
         if outputs.is_empty() && offsets.is_empty() {
+            // Everything is committed: checkpoints now cover the whole changelog.
+            let due = self.checkpoints_due(false);
+            self.write_checkpoints(due, &HashSet::new());
             return Ok(());
         }
         let processed = started.elapsed();
@@ -328,23 +371,85 @@ where
         let count = |f: fn(&Output) -> usize| outputs.iter().map(|(_, o)| f(o) as u64).sum::<u64>();
         let (emitted, dead, changelog) =
             (count(|o| o.emitted.len()), count(|o| o.dead_letters.len()), count(|o| o.changelog.len()));
-        let committing = std::time::Instant::now();
+        let touched: HashSet<i32> = outputs.iter().filter(|(_, o)| !o.changelog.is_empty()).map(|(p, _)| *p).collect();
+        self.changed.extend(&touched);
+        let checkpoints = self.checkpoints_due(false);
+        let committing = Instant::now();
         self.commit(outputs, offsets)?;
         let micros = committing.elapsed().as_micros() as u64;
         self.metrics.committed(polled as u64, emitted, dead, changelog, micros);
         self.metrics.set_actors(self.index, self.partitions.values().map(|p| p.len() as u64).sum());
+        self.write_checkpoints(checkpoints, &touched);
         debug(|| format!("committed after {:?}", started.elapsed()));
         Ok(())
     }
 
     fn restore(&mut self, partitions: &[i32]) -> Result<()> {
-        let started = std::time::Instant::now();
-        let restored = restore_with(&self.restorer, self.config, &self.machine, partitions)?;
-        let actors: usize = restored.values().map(Partition::len).sum();
-        self.metrics.restored(partitions.len() as u64, actors as u64);
-        debug(|| format!("restored partitions {partitions:?} ({actors} actors) in {:?}", started.elapsed()));
-        self.partitions.extend(restored);
-        Ok(())
+        restore_into(
+            &self.restorer,
+            self.config,
+            &self.machine,
+            &self.metrics,
+            &mut self.partitions,
+            &mut self.checkpointed,
+            partitions,
+        )
+    }
+
+    /// Drops the partitions `keep` rejects.
+    fn forget(&mut self, keep: impl Fn(i32) -> bool) {
+        self.partitions.retain(|&p, _| keep(p));
+        self.checkpointed.retain(|&p, _| keep(p));
+        self.changed.retain(|&p| keep(p));
+    }
+
+    /// The changed partitions due for a checkpoint (all of them when
+    /// `force`), each with its changelog partition's end offset before this
+    /// batch's transaction: the offset the checkpoint will cover. Call
+    /// before committing.
+    fn checkpoints_due(&self, force: bool) -> Vec<(i32, i64)> {
+        if self.config.state_dir.is_none() {
+            return Vec::new();
+        }
+        let interval = self.config.checkpoint_interval;
+        let mut due = Vec::new();
+        for &p in &self.changed {
+            if !force && self.checkpointed.get(&p).is_some_and(|t| t.elapsed() < interval) {
+                continue;
+            }
+            match self.restorer.fetch_watermarks(&self.config.changelog_topic, p, self.config.request_timeout) {
+                Ok((_, high)) => due.push((p, high)),
+                Err(e) => debug(|| format!("no checkpoint of partition {p}: {e}")),
+            }
+        }
+        due
+    }
+
+    /// Writes the checkpoints [`Self::checkpoints_due`] chose, after their
+    /// transaction committed. A checkpoint of a partition the transaction
+    /// `touched` leaves that transaction's records to replay, so the
+    /// partition stays changed and the next batch that does not touch it
+    /// writes an exact one. A failed write only costs restore time.
+    fn write_checkpoints(&mut self, due: Vec<(i32, i64)>, touched: &HashSet<i32>) {
+        let Some(dir) = &self.config.state_dir else { return };
+        for (p, next_offset) in due {
+            let Some(partition) = self.partitions.get(&p) else { continue };
+            let path = checkpoint::path(dir, &self.config.changelog_topic, p);
+            let c = Checkpoint { next_offset, records: partition.snapshot_records() };
+            match checkpoint::write(&path, &c) {
+                Ok(()) => {
+                    if !touched.contains(&p) {
+                        self.changed.remove(&p);
+                    }
+                    self.checkpointed.insert(p, Instant::now());
+                    self.metrics.checkpointed();
+                    debug(|| {
+                        format!("checkpointed partition {p} at offset {next_offset} ({} actors)", c.records.len())
+                    });
+                }
+                Err(e) => eprintln!("xstate-redpanda: writing {} failed: {e}", path.display()),
+            }
+        }
     }
 
     fn commit(&self, outputs: Vec<(i32, Output)>, offsets: HashMap<i32, i64>) -> Result<()> {
@@ -401,6 +506,39 @@ where
     }
 }
 
+/// Restores `partitions` into a worker's partition map (a function of the
+/// worker's fields, so it can run while a polled message borrows the
+/// consumer).
+fn restore_into<C, E>(
+    restorer: &BaseConsumer,
+    config: &ServiceConfig,
+    machine: &Arc<Machine<C, E>>,
+    metrics: &Metrics,
+    into: &mut HashMap<i32, Partition<C, E>>,
+    checkpointed: &mut HashMap<i32, Instant>,
+    partitions: &[i32],
+) -> Result<()>
+where
+    C: Serialize + DeserializeOwned + Clone + Send + Sync + 'static,
+    E: EventType + Send + Sync,
+{
+    let started = Instant::now();
+    let (restored, replayed) = restore_with(restorer, config, machine, partitions)?;
+    let actors: usize = restored.values().map(Partition::len).sum();
+    metrics.restored(partitions.len() as u64, actors as u64, replayed);
+    debug(|| {
+        format!(
+            "restored partitions {partitions:?} ({actors} actors, {replayed} changelog records) in {:?}",
+            started.elapsed()
+        )
+    });
+    for &p in partitions {
+        checkpointed.insert(p, started);
+    }
+    into.extend(restored);
+    Ok(())
+}
+
 /// `XSTATE_REDPANDA_DEBUG=1` traces worker activity on stderr.
 fn debug(message: impl FnOnce() -> String) {
     if std::env::var_os("XSTATE_REDPANDA_DEBUG").is_some() {
@@ -451,32 +589,46 @@ where
     E: EventType + Send + Sync,
 {
     let consumer = restore_consumer(config)?;
-    let mut restored = restore_with(&consumer, config, machine, &[partition])?;
+    let (mut restored, _) = restore_with(&consumer, config, machine, &[partition])?;
     Ok(restored.remove(&partition).expect("restored"))
 }
 
-/// Reads several changelog partitions to their end with `consumer`.
+type Partitions<C, E> = HashMap<i32, Partition<C, E>>;
+
+/// Reads several changelog partitions to their end with `consumer`, each
+/// from its local checkpoint when there is a usable one. Returns the
+/// partitions and the number of changelog records replayed.
 fn restore_with<C, E>(
     consumer: &BaseConsumer,
     config: &ServiceConfig,
     machine: &Arc<Machine<C, E>>,
     partitions: &[i32],
-) -> Result<HashMap<i32, Partition<C, E>>>
+) -> Result<(Partitions<C, E>, u64)>
 where
     C: Serialize + DeserializeOwned + Clone + Send + Sync + 'static,
     E: EventType + Send + Sync,
 {
     let mut tpl = TopicPartitionList::new();
+    let mut restored: HashMap<i32, Partition<C, E>> = HashMap::new();
     for &p in partitions {
-        tpl.add_partition_offset(&config.changelog_topic, p, Offset::Beginning)?;
+        let mut partition = Partition::new(machine.clone(), config.engine.clone());
+        let start = match load_checkpoint(consumer, config, p, &mut partition) {
+            Some(offset) => Offset::Offset(offset),
+            None => {
+                partition = Partition::new(machine.clone(), config.engine.clone());
+                Offset::Beginning
+            }
+        };
+        tpl.add_partition_offset(&config.changelog_topic, p, start)?;
+        restored.insert(p, partition);
     }
     consumer.assign(&tpl)?;
-    let mut restored: HashMap<i32, Partition<C, E>> =
-        partitions.iter().map(|&p| (p, Partition::new(machine.clone(), config.engine.clone()))).collect();
+    let mut replayed = 0;
     let mut pending: HashSet<i32> = partitions.iter().copied().collect();
     while !pending.is_empty() {
         match consumer.poll(config.request_timeout) {
             Some(Ok(m)) => {
+                replayed += 1;
                 let partition = m.partition();
                 let key = m.key().map(|k| String::from_utf8_lossy(k).into_owned()).unwrap_or_default();
                 let p = restored
@@ -494,5 +646,51 @@ where
         }
     }
     consumer.unassign()?;
-    Ok(restored)
+    Ok((restored, replayed))
+}
+
+/// Applies partition `p`'s checkpoint to `partition` and returns the
+/// changelog offset to continue from, or `None` (leaving `partition` to be
+/// discarded) when there is no usable checkpoint: none, unreadable, or
+/// outside the changelog partition's offsets (a recreated or truncated
+/// topic).
+fn load_checkpoint<C, E>(
+    consumer: &BaseConsumer,
+    config: &ServiceConfig,
+    p: i32,
+    partition: &mut Partition<C, E>,
+) -> Option<i64>
+where
+    C: Serialize + DeserializeOwned + Clone + Send + Sync + 'static,
+    E: EventType + Send + Sync,
+{
+    let dir = config.state_dir.as_ref()?;
+    let path = checkpoint::path(dir, &config.changelog_topic, p);
+    let warn = |what: String| eprintln!("xstate-redpanda: ignoring checkpoint {}: {what}", path.display());
+    let c = match checkpoint::read(&path) {
+        Ok(c) => c?,
+        Err(e) => {
+            warn(e.to_string());
+            return None;
+        }
+    };
+    let (low, high) = match consumer.fetch_watermarks(&config.changelog_topic, p, config.request_timeout) {
+        Ok(w) => w,
+        Err(e) => {
+            warn(format!("no changelog offsets: {e}"));
+            return None;
+        }
+    };
+    if c.next_offset < low || c.next_offset > high {
+        warn(format!("offset {} is outside the changelog's {low}..{high}", c.next_offset));
+        return None;
+    }
+    for (key, record) in &c.records {
+        if let Err(e) = partition.restore(key, Some(record)) {
+            warn(e);
+            return None;
+        }
+    }
+    debug(|| format!("partition {p}: {} actors from the checkpoint at offset {}", c.records.len(), c.next_offset));
+    Some(c.next_offset)
 }

@@ -218,6 +218,19 @@ where
         }
     }
 
+    /// The changelog record of every live actor, for a checkpoint. Call it
+    /// right after a flush whose output was committed: the records then
+    /// equal the latest committed changelog record of each key.
+    pub fn snapshot_records(&self) -> Vec<(String, Vec<u8>)> {
+        let mut records: Vec<(String, Vec<u8>)> = self
+            .actors
+            .iter()
+            .map(|(key, actor)| (key.clone(), self.config.codec.encode_serialize(&actor.persist_view())))
+            .collect();
+        records.sort_by(|a, b| a.0.cmp(&b.0));
+        records
+    }
+
     /// Takes the output since the last flush, with the snapshots of the
     /// actors that changed.
     pub fn flush(&mut self) -> Output {

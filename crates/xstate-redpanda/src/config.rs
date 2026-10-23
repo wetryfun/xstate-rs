@@ -14,13 +14,15 @@
 //!   "codec": "messagepack",
 //!   "evictFinal": true,
 //!   "client": { "compression.type": "lz4" },
+//!   "stateDir": "/var/lib/xstate", "checkpointIntervalMs": 60000,
 //!   "metricsAddress": "0.0.0.0:9464",
 //!   "logIntervalMs": 10000
 //! }
 //! ```
 //!
 //! `machine` is a path (relative to the configuration file) to a
-//! `MachineJSON` file or an extract bundle (`{ "machine", "schemas" }`).
+//! `MachineJSON` file or an extract bundle (`{ "machine", "schemas" }`);
+//! a relative `stateDir` is relative to the configuration file too.
 
 use std::path::{Path, PathBuf};
 use std::time::Duration;
@@ -72,6 +74,10 @@ pub struct FileConfig {
     #[serde(default)]
     pub client: serde_json::Map<String, Value>,
     #[serde(default)]
+    pub state_dir: Option<PathBuf>,
+    #[serde(default)]
+    pub checkpoint_interval_ms: Option<u64>,
+    #[serde(default)]
     pub metrics_address: Option<String>,
     #[serde(default)]
     pub log_interval_ms: Option<u64>,
@@ -82,8 +88,12 @@ impl FileConfig {
     pub fn load(path: &Path) -> Result<Self, String> {
         let text = std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
         let mut config: FileConfig = serde_json::from_str(&text).map_err(|e| format!("{}: {e}", path.display()))?;
+        let base = path.parent().unwrap_or(Path::new("."));
         if config.machine.is_relative() {
-            config.machine = path.parent().unwrap_or(Path::new(".")).join(&config.machine);
+            config.machine = base.join(&config.machine);
+        }
+        if let Some(dir) = config.state_dir.as_mut().filter(|d| d.is_relative()) {
+            *dir = base.join(&*dir);
         }
         Ok(config)
     }
@@ -112,6 +122,10 @@ impl FileConfig {
         }
         if let Some(v) = self.request_timeout_ms {
             c.request_timeout = ms(v);
+        }
+        c.state_dir = self.state_dir.clone();
+        if let Some(v) = self.checkpoint_interval_ms {
+            c.checkpoint_interval = ms(v);
         }
         let codec = match self.codec.as_deref() {
             None | Some("messagepack") => Codec::MessagePack,
@@ -180,13 +194,16 @@ mod tests {
             "c.json",
             r#"{ "machine": "m.json", "bootstrapServers": "b:9092", "groupId": "g",
                  "topics": { "input": "i", "output": "o", "changelog": "c" },
-                 "workers": 3, "codec": "json", "batchLingerMs": 5, "client": { "linger.ms": 7 } }"#,
+                 "workers": 3, "codec": "json", "batchLingerMs": 5, "client": { "linger.ms": 7 },
+                 "stateDir": "state", "checkpointIntervalMs": 1000 }"#,
         );
         let config = FileConfig::load(&path).unwrap();
         let service = config.service().unwrap();
         assert_eq!(service.workers, 3);
         assert_eq!(service.engine.codec, Codec::Json);
         assert_eq!(service.batch_linger, Duration::from_millis(5));
+        assert_eq!(service.state_dir, Some(dir.join("state")));
+        assert_eq!(service.checkpoint_interval, Duration::from_secs(1));
         assert_eq!(service.client_config, vec![("linger.ms".to_owned(), "7".to_owned())]);
         assert!(config.machine().is_ok());
 
