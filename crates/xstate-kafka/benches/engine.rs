@@ -43,7 +43,7 @@ fn bench(c: &mut Criterion) {
     let snapshot = actor.persist();
 
     let mut g = c.benchmark_group("codec");
-    for codec in [Codec::Json, Codec::MessagePack] {
+    for codec in [Codec::Json, Codec::MessagePack, Codec::Protobuf] {
         let encoded = codec.encode(&snapshot);
         eprintln!("{codec:?}: {} bytes per snapshot", encoded.len());
         g.bench_function(format!("{codec:?}/encode"), |b| b.iter(|| codec.encode(black_box(&snapshot))));
@@ -53,6 +53,16 @@ fn bench(c: &mut Criterion) {
     for codec in [Codec::Json, Codec::MessagePack] {
         g.bench_function(format!("{codec:?}/persist_view_encode"), |b| {
             b.iter(|| codec.encode_serialize(black_box(&actor.persist_view())))
+        });
+    }
+    for codec in [Codec::MessagePack, Codec::Protobuf] {
+        let encoded = codec.encode_serialize(&actor.persist_compact());
+        eprintln!("{codec:?}, compact: {} bytes per snapshot", encoded.len());
+        g.bench_function(format!("{codec:?}/compact_encode"), |b| {
+            b.iter(|| codec.encode_serialize(black_box(&actor.persist_compact())))
+        });
+        g.bench_function(format!("{codec:?}/compact_decode"), |b| {
+            b.iter(|| Codec::decode(black_box(&encoded)).unwrap())
         });
     }
     g.finish();
@@ -69,7 +79,7 @@ fn bench(c: &mut Criterion) {
                 (format!("order-{}", i % keys), event.as_bytes().to_vec())
             })
             .collect();
-        for codec in [Codec::Json, Codec::MessagePack] {
+        for codec in [Codec::Json, Codec::MessagePack, Codec::Protobuf] {
             g.bench_function(format!("batch_{records}_records_{keys}_keys/{codec:?}"), |b| {
                 b.iter_batched(
                     || {

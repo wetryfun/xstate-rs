@@ -14,6 +14,7 @@
 //!   "codec": "messagepack",
 //!   "evictFinal": true,
 //!   "snapshots": "xstate",
+//!   "events": "json",
 //!   "client": { "compression.type": "lz4" },
 //!   "stateDir": "/var/lib/xstate", "checkpointIntervalMs": 60000,
 //!   "metricsAddress": "0.0.0.0:9464",
@@ -38,7 +39,8 @@ use xstate_rt::step::async_logic;
 use xstate_rt::{Machine, Registry};
 
 use crate::codec::Codec;
-use crate::engine::{EngineConfig, SnapshotFormat};
+use crate::engine::{EngineConfig, EventFormat, SnapshotFormat};
+use crate::proto::events::EventSchema;
 use crate::service::ServiceConfig;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -80,8 +82,15 @@ pub struct FileConfig {
     #[serde(default)]
     pub evict_final: Option<bool>,
     /// `"xstate"` (default: XState's full `SystemSnapshot`) or `"compact"`.
+    /// Ignored for the `"protobuf"` codec, which always writes the compact
+    /// form.
     #[serde(default)]
     pub snapshots: Option<String>,
+    /// The encoding of input records without a `content-type` header:
+    /// `"json"` (default), `"protobuf"` (needs a bundle with
+    /// `schemas.events`) or `"messagepack"`.
+    #[serde(default)]
+    pub events: Option<String>,
     #[serde(default)]
     pub client: serde_json::Map<String, Value>,
     #[serde(default)]
@@ -142,7 +151,10 @@ impl FileConfig {
         let codec = match self.codec.as_deref() {
             None | Some("messagepack") => Codec::MessagePack,
             Some("json") => Codec::Json,
-            Some(other) => return Err(format!("unknown codec \"{other}\" (expected \"messagepack\" or \"json\")")),
+            Some("protobuf") => Codec::Protobuf,
+            Some(other) => {
+                return Err(format!("unknown codec \"{other}\" (expected \"messagepack\", \"json\" or \"protobuf\")"))
+            }
         };
         let snapshots = match self.snapshots.as_deref() {
             Some("compact") => SnapshotFormat::Compact,
@@ -151,7 +163,28 @@ impl FileConfig {
                 return Err(format!("unknown snapshot format \"{other}\" (expected \"xstate\" or \"compact\")"))
             }
         };
-        c.engine = EngineConfig { codec, evict_final: self.evict_final.unwrap_or(true), snapshots };
+        let events = match self.events.as_deref() {
+            None | Some("json") => EventFormat::Json,
+            Some("protobuf") => EventFormat::Protobuf,
+            Some("messagepack") => EventFormat::MessagePack,
+            Some(other) => {
+                return Err(format!(
+                    "unknown event format \"{other}\" (expected \"json\", \"protobuf\" or \"messagepack\")"
+                ))
+            }
+        };
+        let bundle = self.read_machine_file()?;
+        // A bundle with event schemas can always take protobuf records
+        // (announced by their content-type header).
+        let event_schema = match EventSchema::from_bundle(&bundle) {
+            Ok(schema) => Some(Arc::new(schema)),
+            Err(e) if events == EventFormat::Protobuf => {
+                return Err(format!("{}: \"events\": \"protobuf\": {e}", self.machine.display()))
+            }
+            Err(_) => None,
+        };
+        c.engine =
+            EngineConfig { codec, evict_final: self.evict_final.unwrap_or(true), snapshots, events, event_schema };
         for (k, v) in &self.client {
             let v = match v {
                 Value::String(s) => s.clone(),
@@ -162,6 +195,19 @@ impl FileConfig {
         Ok(c)
     }
 
+    /// The machine file: a `MachineJSON` definition or a bundle.
+    pub fn read_machine_file(&self) -> Result<Value, String> {
+        let path = &self.machine;
+        let text = std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
+        serde_json::from_str(&text).map_err(|e| format!("{}: {e}", path.display()))
+    }
+
+    /// The protobuf form of the machine's input events (the machine file
+    /// must be a bundle with `schemas.events`).
+    pub fn event_schema(&self) -> Result<EventSchema, String> {
+        EventSchema::from_bundle(&self.read_machine_file()?).map_err(|e| format!("{}: {e}", self.machine.display()))
+    }
+
     /// Loads the machine. The generic service has no Rust implementations,
     /// so the definition must not reference custom guards, actions or
     /// delays (build a binary of your own with `Service::start` for those).
@@ -169,8 +215,7 @@ impl FileConfig {
     pub fn machine(&self) -> Result<Machine<Value, Value>, String> {
         let path = &self.machine;
         let at = |e: String| format!("{}: {e}", path.display());
-        let text = std::fs::read_to_string(path).map_err(|e| at(e.to_string()))?;
-        let json: Value = serde_json::from_str(&text).map_err(|e| at(e.to_string()))?;
+        let json = self.read_machine_file()?;
         let definition = match json.get("machine") {
             Some(m) if json.get("states").is_none() => m.clone(),
             _ => json,

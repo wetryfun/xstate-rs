@@ -1,0 +1,159 @@
+// Snapshots of xstate-rs actor systems: XState's SystemSnapshot (compact
+// form) with field numbers instead of names. Generated from the table in
+// crates/xstate-kafka/src/proto/snapshot.rs; a test keeps them equal.
+// Keys a message does not describe are in `extra` as key/value pairs.
+syntax = "proto3";
+
+package xstate.snapshot.v1;
+
+message SystemSnapshot {
+  optional string root = 1;
+  optional string execution_id = 2;
+  optional uint64 now = 3;
+  repeated ActorEntry actors = 4; // a JSON object by key
+  repeated ActorRefEntry registry = 5; // a JSON object by key
+  repeated Value messages = 6;
+  repeated SystemTimer timers = 7;
+  Value external_effects = 8;
+  Counters counters = 9;
+  repeated Field extra = 100;
+}
+
+message ActorEntry {
+  string key = 1;
+  optional string id = 2;
+  optional string address = 3;
+  optional uint64 incarnation = 4; // a decimal string in JSON
+  optional string src = 5;
+  optional string logic_version = 6;
+  ActorRef parent = 7;
+  optional string registry_key = 8;
+  optional bool sync_snapshot = 9;
+  optional bool started = 10;
+  Value input = 11;
+  ActorSnapshot snapshot = 12;
+  repeated Field extra = 100;
+}
+
+message ActorRef {
+  optional string actor = 1;
+  optional uint64 incarnation = 2; // a decimal string in JSON
+  repeated Field extra = 100;
+}
+
+message ActorSnapshot {
+  optional Status status = 1;
+  Value output = 2;
+  Value error = 3;
+  Value context = 4;
+  Value value = 5;
+  repeated ActorRefEntry children = 6; // a JSON object by key
+  repeated LogicalTimer timers = 7;
+  repeated HistoryEntry history_value = 8; // a JSON object by key
+  Value state_inputs = 9;
+  optional uint64 next_timer_id = 10;
+  repeated string node_ids = 11;
+  repeated Field extra = 100;
+}
+
+// A history state's recorded states ({ "$stateNode": id } in JSON).
+message HistoryEntry {
+  string key = 1;
+  repeated string states = 2;
+}
+
+enum Status {
+  STATUS_UNSPECIFIED = 0;
+  STATUS_ACTIVE = 1; // "active"
+  STATUS_DONE = 2; // "done"
+  STATUS_ERROR = 3; // "error"
+  STATUS_STOPPED = 4; // "stopped"
+}
+
+message ActorRefEntry {
+  string key = 1;
+  optional string actor = 2;
+  optional uint64 incarnation = 3; // a decimal string in JSON
+  repeated Field extra = 100;
+}
+
+message LogicalTimer {
+  optional string id = 1;
+  optional uint64 seq = 2;
+  optional uint64 delay = 3;
+  optional TimerType type = 4;
+  Event event = 5;
+  optional TimerTarget target = 6;
+  repeated Field extra = 100;
+}
+
+enum TimerType {
+  TIMER_TYPE_UNSPECIFIED = 0;
+  TIMER_TYPE_RAISE = 1; // "@xstate.raise"
+}
+
+enum TimerTarget {
+  TIMER_TARGET_UNSPECIFIED = 0;
+  TIMER_TARGET_SELF = 1; // "self"
+}
+
+message Event {
+  optional string type = 1;
+  optional uint64 delay = 2;
+  optional string state_id = 3;
+  Event event = 4;
+  optional string id = 5;
+  optional uint64 seq = 6;
+  optional uint64 occurrence = 7;
+  optional string actor_id = 8;
+  repeated Field extra = 100;
+}
+
+message SystemTimer {
+  ActorRef source = 1;
+  optional uint64 occurrence = 2;
+  optional uint64 scheduled_at = 3;
+  optional uint64 due_at = 4;
+  optional uint64 sequence = 5;
+  Event event = 6;
+  repeated Field extra = 100;
+}
+
+message Counters {
+  optional uint64 actor = 1;
+  optional uint64 timer = 2;
+  optional uint64 sequence = 3;
+  optional uint64 effect = 4;
+  repeated Field extra = 100;
+}
+
+// A JSON value. Integers and floats stay distinct; object keys keep their order.
+message Value {
+  oneof kind {
+    NullValue null = 1;
+    bool bool = 2;
+    sint64 int = 3;
+    uint64 uint = 4;
+    double float = 5;
+    string string = 6;
+    List list = 7;
+    Object object = 8;
+  }
+}
+
+enum NullValue {
+  NULL_VALUE = 0;
+}
+
+message List {
+  repeated Value values = 1;
+}
+
+message Object {
+  repeated Field fields = 1;
+}
+
+message Field {
+  string key = 1;
+  Value value = 2;
+}

@@ -27,6 +27,7 @@ mimalloc = { version = "0.1", optional = true, default-features = false }
 [dev-dependencies]
 criterion = { version = "0.8", default-features = false }
 mimalloc = { version = "0.1", default-features = false }
+prost = "0.13"
 
 [[bench]]
 name = "engine"

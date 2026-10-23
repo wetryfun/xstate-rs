@@ -55,7 +55,7 @@ use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use rdkafka::config::ClientConfig;
 use rdkafka::consumer::{BaseConsumer, Consumer};
 use rdkafka::error::{KafkaError, RDKafkaErrorCode};
-use rdkafka::message::{Header, Message, OwnedHeaders};
+use rdkafka::message::{Header, Headers, Message, OwnedHeaders};
 use rdkafka::producer::{BaseProducer, BaseRecord, Producer};
 use rdkafka::{Offset, TopicPartitionList};
 use serde::de::DeserializeOwned;
@@ -63,7 +63,7 @@ use serde::Serialize;
 use xstate_rt::{EventType, Machine};
 
 use crate::checkpoint::{self, Checkpoint};
-use crate::engine::{EngineConfig, Output, Partition};
+use crate::engine::{EngineConfig, EventFormat, Output, Partition};
 use crate::metrics::{Metrics, MetricsSnapshot};
 
 /// How the service connects and batches.
@@ -423,7 +423,14 @@ where
             let handle_started = Instant::now();
             let key = message.key().map(String::from_utf8_lossy);
             let p = self.partitions.get_mut(&partition).expect("restored");
-            p.handle(key.as_deref(), message.payload().unwrap_or_default(), clock_ms());
+            let payload = message.payload().unwrap_or_default();
+            match content_type(&message) {
+                None => p.handle(key.as_deref(), payload, clock_ms()),
+                Some(ct) => match EventFormat::from_content_type(ct) {
+                    Some(format) => p.handle_as(key.as_deref(), payload, format, clock_ms()),
+                    None => p.reject(key.as_deref(), payload, format!("unsupported content-type \"{ct}\"")),
+                },
+            }
             handling += handle_started.elapsed();
             offsets.insert(partition, message.offset());
         }
@@ -790,6 +797,17 @@ where
     }
     into.extend(restored);
     Ok(())
+}
+
+/// The record's `content-type` header, if any (the first, by name ignoring
+/// case).
+fn content_type(message: &impl Message) -> Option<&str> {
+    let headers = message.headers()?;
+    headers
+        .iter()
+        .find(|h| h.key.eq_ignore_ascii_case("content-type"))
+        .and_then(|h| h.value)
+        .and_then(|v| std::str::from_utf8(v).ok())
 }
 
 /// `XSTATE_KAFKA_DEBUG=1` traces worker activity on stderr.

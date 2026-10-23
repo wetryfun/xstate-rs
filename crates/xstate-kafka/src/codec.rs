@@ -14,10 +14,15 @@ pub enum Codec {
     /// MessagePack: smaller and faster to write and read.
     #[default]
     MessagePack,
+    /// Protocol Buffers (`proto/xstate_snapshot.proto`): field numbers
+    /// instead of names. Always the compact snapshot form; not for XState's
+    /// own restore.
+    Protobuf,
 }
 
 const JSON: u8 = 1;
 const MESSAGE_PACK: u8 = 2;
+const PROTOBUF: u8 = 3;
 
 impl Codec {
     pub fn encode(self, snapshot: &Value) -> Vec<u8> {
@@ -46,6 +51,12 @@ impl Codec {
                 }
                 out
             }
+            Codec::Protobuf => {
+                let mut out = Vec::with_capacity(256);
+                out.push(PROTOBUF);
+                crate::proto::snapshot::encode(&mut out, snapshot).expect("snapshots serialize");
+                out
+            }
         }
     }
 
@@ -57,6 +68,9 @@ impl Codec {
             }
             Some((&MESSAGE_PACK, payload)) => {
                 rmp_serde::from_slice(payload).map_err(|e| format!("invalid MessagePack snapshot: {e}"))
+            }
+            Some((&PROTOBUF, payload)) => {
+                crate::proto::snapshot::decode(payload).map_err(|e| format!("invalid protobuf snapshot: {e}"))
             }
             Some((format, _)) => Err(format!("unknown snapshot format {format}")),
             None => Err("empty snapshot record".into()),
@@ -72,7 +86,7 @@ mod tests {
     fn round_trips_keep_key_order_and_numbers() {
         let v =
             serde_json::json!({ "z": 1, "a": [1.5, -2, "s", null, true], "m": { "y": {}, "b": 9007199254740991u64 } });
-        for codec in [Codec::Json, Codec::MessagePack] {
+        for codec in [Codec::Json, Codec::MessagePack, Codec::Protobuf] {
             let bytes = codec.encode(&v);
             let back = Codec::decode(&bytes).unwrap();
             assert_eq!(back, v);

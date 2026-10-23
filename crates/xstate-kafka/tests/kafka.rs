@@ -9,7 +9,7 @@ use std::time::{Duration, Instant};
 
 use rdkafka::config::ClientConfig;
 use rdkafka::consumer::{BaseConsumer, Consumer};
-use rdkafka::message::{Headers, Message};
+use rdkafka::message::{Header, Headers, Message, OwnedHeaders};
 use rdkafka::mocking::MockCluster;
 use rdkafka::producer::{BaseProducer, BaseRecord, Producer};
 use rdkafka::{Offset, TopicPartitionList};
@@ -47,6 +47,14 @@ fn produce(bootstrap: &str, records: &[(Option<&str>, &str)]) {
         }
         producer.send(r).unwrap();
     }
+    producer.flush(Duration::from_secs(10)).unwrap();
+}
+
+/// Produces one keyed input record with a `content-type` header.
+fn produce_typed(bootstrap: &str, key: &str, payload: &[u8], content_type: &str) {
+    let producer: BaseProducer = ClientConfig::new().set("bootstrap.servers", bootstrap).create().unwrap();
+    let headers = OwnedHeaders::new().insert(Header { key: "Content-Type", value: Some(content_type) });
+    producer.send(BaseRecord::<str, [u8]>::to("input").key(key).payload(payload).headers(headers)).unwrap();
     producer.flush(Duration::from_secs(10)).unwrap();
 }
 
@@ -156,22 +164,32 @@ fn exactly_once_actors_with_restore() {
             (Some("c"), "not json"),
         ],
     );
+    // The `content-type` header selects the event format.
+    produce_typed(
+        &bootstrap,
+        "d",
+        &rmp_serde::to_vec_named(&json!({ "type": "next" })).unwrap(),
+        "application/msgpack",
+    );
+    produce_typed(&bootstrap, "d", b"next", "text/plain");
     let service = Service::start(config(&bootstrap), machine()).unwrap();
-    // a: s1, s2; b: s1, then s2 when its 200 ms timer fires; c: s1.
-    let output = read(&bootstrap, "output", 5);
+    // a: s1, s2; b: s1, then s2 when its 200 ms timer fires; c: s1; d: s1.
+    let output = read(&bootstrap, "output", 6);
     assert!(service.is_running());
     service.stop().unwrap();
     let by_key = states(&output);
     assert_eq!(by_key["a"], vec!["s1", "s2"]);
     assert_eq!(by_key["b"], vec!["s1", "s2"]);
     assert_eq!(by_key["c"], vec!["s1"]);
-    assert_eq!(output.len(), 5, "{output:?}");
+    assert_eq!(by_key["d"], vec!["s1"]);
+    assert_eq!(output.len(), 6, "{output:?}");
 
-    let dead = read(&bootstrap, "dead", 2);
-    assert_eq!(dead.len(), 2);
+    let dead = read(&bootstrap, "dead", 3);
+    assert_eq!(dead.len(), 3);
     let reasons: Vec<&str> = dead.iter().map(|d| d.2.as_deref().unwrap()).collect();
     assert!(reasons.iter().any(|r| r.contains("key")), "{reasons:?}");
     assert!(reasons.iter().any(|r| r.contains("not JSON")), "{reasons:?}");
+    assert!(reasons.iter().any(|r| r.contains("content-type")), "{reasons:?}");
 
     // librdkafka's mock cluster accepts `TxnOffsetCommit` but never stores
     // the offsets (rdkafka_mock_handlers.c), where a broker applies them when
@@ -182,12 +200,12 @@ fn exactly_once_actors_with_restore() {
     // A new service instance continues from the changelog.
     produce(&bootstrap, &[(Some("a"), r#"{"type":"next"}"#), (Some("c"), r#"{"type":"next"}"#)]);
     let service = Service::start(config(&bootstrap), machine()).unwrap();
-    let output = read(&bootstrap, "output", 7);
+    let output = read(&bootstrap, "output", 8);
     service.stop().unwrap();
     let by_key = states(&output);
     assert_eq!(by_key["a"], vec!["s1", "s2", "s3"], "{output:?}");
     assert_eq!(by_key["c"], vec!["s1", "s2"]);
-    assert_eq!(output.len(), 7, "no duplicates: {output:?}");
+    assert_eq!(output.len(), 8, "no duplicates: {output:?}");
 
     // `a` finished: its latest changelog record is a tombstone.
     let changelog = read(&bootstrap, "changelog", 1);

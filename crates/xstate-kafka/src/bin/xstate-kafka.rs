@@ -1,8 +1,11 @@
 //! The generic service: runs a machine without custom implementations from
 //! a configuration file (see `xstate_kafka::config`).
 //!
-//!   xstate-kafka <config.json>           run until Ctrl-C / SIGTERM
-//!   xstate-kafka --check <config.json>   validate the config and machine
+//!   xstate-kafka <config.json>              run until Ctrl-C / SIGTERM
+//!   xstate-kafka --check <config.json>      validate the config and machine
+//!   xstate-kafka proto events <file>        print the input events' .proto
+//!                                           (file: a bundle or a config)
+//!   xstate-kafka proto snapshot             print the snapshot .proto
 //!
 //! `XSTATE_KAFKA_DEBUG=1` traces worker batches on stderr.
 
@@ -27,8 +30,37 @@ fn main() -> ExitCode {
     }
 }
 
+/// Prints a `.proto` file for producers and other readers.
+fn proto(args: &[String]) -> Result<(), String> {
+    match args {
+        [what] if what == "snapshot" => {
+            print!("{}", xstate_kafka::proto::snapshot::proto_file());
+            Ok(())
+        }
+        [what, path] if what == "events" => {
+            let text = std::fs::read_to_string(path).map_err(|e| format!("{path}: {e}"))?;
+            let json: serde_json::Value = serde_json::from_str(&text).map_err(|e| format!("{path}: {e}"))?;
+            // A service config names the machine file; a bundle is used as is.
+            let schema = if json.get("bootstrapServers").is_some() {
+                FileConfig::load(path.as_ref())?.event_schema()?
+            } else {
+                xstate_kafka::proto::events::EventSchema::from_bundle(&json).map_err(|e| format!("{path}: {e}"))?
+            };
+            print!("{}", schema.proto_file());
+            Ok(())
+        }
+        _ => {
+            Err("usage: xstate-kafka proto events <bundle.xstate.json | config.json> | xstate-kafka proto snapshot"
+                .into())
+        }
+    }
+}
+
 fn run() -> Result<(), String> {
     let args: Vec<String> = std::env::args().skip(1).collect();
+    if args.first().map(String::as_str) == Some("proto") {
+        return proto(&args[1..]);
+    }
     let (check, path) = match args.as_slice() {
         [flag, path] if flag == "--check" => (true, path),
         [path] if !path.starts_with('-') => (false, path),

@@ -26,6 +26,7 @@ use serde_json::Value;
 use xstate_rt::{Actor, EventType, InitOptions, Machine, Status};
 
 use crate::codec::Codec;
+use crate::proto::events::EventSchema;
 
 /// How a partition treats its actors.
 #[derive(Debug, Clone)]
@@ -38,11 +39,56 @@ pub struct EngineConfig {
     pub evict_final: bool,
     /// What a changelog snapshot holds.
     pub snapshots: SnapshotFormat,
+    /// How input records are encoded when the record does not say (see
+    /// [`EventFormat::from_content_type`]).
+    pub events: EventFormat,
+    /// The protobuf form of the machine's input events, for
+    /// [`EventFormat::Protobuf`] records.
+    pub event_schema: Option<Arc<EventSchema>>,
 }
 
 impl Default for EngineConfig {
     fn default() -> Self {
-        Self { codec: Codec::default(), evict_final: true, snapshots: SnapshotFormat::default() }
+        Self {
+            codec: Codec::default(),
+            evict_final: true,
+            snapshots: SnapshotFormat::default(),
+            events: EventFormat::default(),
+            event_schema: None,
+        }
+    }
+}
+
+/// How an input record's event is encoded.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum EventFormat {
+    /// `{ "type": ..., ... }` as JSON text.
+    #[default]
+    Json,
+    /// An `Event` message of the machine's events `.proto`
+    /// ([`EventSchema::proto_file`]).
+    Protobuf,
+    /// The JSON event as MessagePack.
+    MessagePack,
+}
+
+impl EventFormat {
+    /// The format a `content-type` header names: `application/json`,
+    /// `application/x-protobuf` (or `application/protobuf`,
+    /// `application/vnd.google.protobuf`) and `application/msgpack` (or
+    /// `application/x-msgpack`), parameters ignored.
+    pub fn from_content_type(content_type: &str) -> Option<Self> {
+        let media = content_type.split(';').next().unwrap_or("").trim().to_ascii_lowercase();
+        match media.as_str() {
+            "application/json" | "text/json" => Some(EventFormat::Json),
+            "application/x-protobuf" | "application/protobuf" | "application/vnd.google.protobuf" => {
+                Some(EventFormat::Protobuf)
+            }
+            "application/msgpack" | "application/x-msgpack" | "application/vnd.msgpack" => {
+                Some(EventFormat::MessagePack)
+            }
+            _ => None,
+        }
     }
 }
 
@@ -194,14 +240,43 @@ where
     /// starting the actor if it does not exist. Records that are not events
     /// become dead letters.
     pub fn handle(&mut self, key: Option<&str>, payload: &[u8], now: u64) {
+        self.handle_as(key, payload, self.config.events, now);
+    }
+
+    /// Records a record that cannot be processed as a dead letter.
+    pub fn reject(&mut self, key: Option<&str>, payload: &[u8], reason: String) {
+        self.output.dead_letters.push(DeadLetter { key: key.map(str::to_owned), payload: payload.to_vec(), reason });
+    }
+
+    /// [`Partition::handle`] for a record whose event is encoded as `format`
+    /// (from its `content-type` header, say).
+    pub fn handle_as(&mut self, key: Option<&str>, payload: &[u8], format: EventFormat, now: u64) {
         let dead = |reason: String| DeadLetter { key: key.map(str::to_owned), payload: payload.to_vec(), reason };
         let Some(key) = key else {
             self.output.dead_letters.push(dead("a record needs a key (the actor id)".into()));
             return;
         };
-        let event: Value = match serde_json::from_slice(payload) {
-            Ok(e) => e,
-            Err(e) => return self.output.dead_letters.push(dead(format!("not JSON: {e}"))),
+        let event: Value = match format {
+            EventFormat::Json => match serde_json::from_slice(payload) {
+                Ok(e) => e,
+                Err(e) => return self.output.dead_letters.push(dead(format!("not JSON: {e}"))),
+            },
+            EventFormat::MessagePack => match rmp_serde::from_slice(payload) {
+                Ok(e) => e,
+                Err(e) => return self.output.dead_letters.push(dead(format!("not MessagePack: {e}"))),
+            },
+            EventFormat::Protobuf => {
+                let Some(schema) = &self.config.event_schema else {
+                    return self
+                        .output
+                        .dead_letters
+                        .push(dead("a protobuf event, but no event schema is configured".into()));
+                };
+                match schema.decode(payload) {
+                    Ok(e) => e,
+                    Err(e) => return self.output.dead_letters.push(dead(format!("not a protobuf event: {e}"))),
+                }
+            }
         };
         if !event.get("type").is_some_and(Value::is_string) {
             return self.output.dead_letters.push(dead("an event needs a string \"type\"".into()));
@@ -339,9 +414,13 @@ where
     }
 
     fn encode_with(config: &EngineConfig, actor: &Actor<C, E>) -> Vec<u8> {
-        match config.snapshots {
-            SnapshotFormat::Compact => config.codec.encode_serialize(&actor.persist_compact()),
-            SnapshotFormat::XState => config.codec.encode_serialize(&actor.persist_view()),
+        // Protobuf records always hold the compact form: they are not for
+        // XState's own restore anyway.
+        match (config.snapshots, config.codec) {
+            (SnapshotFormat::Compact, _) | (_, Codec::Protobuf) => {
+                config.codec.encode_serialize(&actor.persist_compact())
+            }
+            (SnapshotFormat::XState, _) => config.codec.encode_serialize(&actor.persist_view()),
         }
     }
 

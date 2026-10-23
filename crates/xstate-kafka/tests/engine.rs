@@ -101,7 +101,8 @@ fn bad_records_become_dead_letters() {
 fn restore_from_the_changelog_continues_where_it_left() {
     let formats = [SnapshotFormat::Compact, SnapshotFormat::XState];
     for (codec, snapshots) in [Codec::Json, Codec::MessagePack].into_iter().flat_map(|c| formats.map(|f| (c, f))) {
-        let mut p = Partition::new(order_machine(), EngineConfig { codec, evict_final: true, snapshots });
+        let mut p =
+            Partition::new(order_machine(), EngineConfig { codec, evict_final: true, snapshots, ..Default::default() });
         p.handle(Some("a"), br#"{"type":"add"}"#, 10);
         p.handle(Some("b"), br#"{"type":"pay"}"#, 20);
         p.handle(Some("gone"), br#"{"type":"pay"}"#, 20);

@@ -1,0 +1,46 @@
+# Redpanda Connect: MQTT -> the xstate-kafka input topic.
+#
+# Devices publish events to `devices/<device id>/events`. Each MQTT message
+# becomes one input record keyed by the device id (the actor id), so every
+# device gets its own actor and its events stay in order on one partition.
+#
+#   rpk connect run connect/mqtt.yaml
+#
+# Payloads may be JSON events (`{ "type": "...", ... }`), protobuf `Event`
+# messages of the machine's events schema (`xstate-kafka proto events
+# <bundle>` prints the `.proto`) or MessagePack. Set CONTENT_TYPE to what the
+# devices send; the service reads it from the record's `content-type` header
+# (records without the header use the config's `events` format).
+#
+# MQTT QoS 1 is at-least-once: a message can reach Kafka twice (after a
+# reconnect, say), and the service handles each record it reads. Use QoS 2
+# on the device side, or make events idempotent in the machine (guards on a
+# sequence number in context, say), when duplicates matter.
+
+input:
+  mqtt:
+    urls: [ "${MQTT_URL:tcp://localhost:1883}" ]
+    topics: [ "devices/+/events" ]
+    client_id: "${MQTT_CLIENT_ID:xstate-bridge}"
+    qos: 1
+    # A persistent session keeps QoS 1 messages queued while the bridge is down.
+    clean_session: false
+
+pipeline:
+  processors:
+    - mapping: |
+        # The actor id is the device id: the second level of the MQTT topic.
+        meta kafka_key = @mqtt_topic.split("/").index(1)
+        meta "content-type" = env("CONTENT_TYPE").or("application/json")
+        root = content()
+
+output:
+  redpanda:
+    seed_brokers: [ "${KAFKA_BROKERS:localhost:9092}" ]
+    topic: "${INPUT_TOPIC:orders}"
+    key: ${! @kafka_key }
+    # Kafka's default partitioner, so keys land where any Kafka client
+    # would put them.
+    partitioner: murmur2_hash
+    metadata:
+      include_patterns: [ "^content-type$" ]
