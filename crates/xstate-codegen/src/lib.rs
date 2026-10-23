@@ -621,6 +621,10 @@ pub fn generate(bundle: &Value, module: &str) -> Result<Generated, Error> {
         "/// The `MachineJSON` definition.\npub const DEFINITION: &str = {};\n\n",
         raw_lit(&serde_json::to_string(&machine_value).expect("JSON"))
     ));
+    code.push_str(&format!(
+        "/// The bundle's JSON Schemas (`schemas`: context, events, emitted, ...).\npub const SCHEMAS: &str = {};\n\n",
+        raw_lit(&serde_json::to_string(schemas).expect("JSON"))
+    ));
     for item in &types.out {
         code.push_str(item);
         code.push('\n');

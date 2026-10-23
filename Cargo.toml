@@ -6,8 +6,10 @@ members = [
     "crates/xstate-codegen",
     "crates/xstate-wasi",
     "crates/xstate-wasi-host",
+    "crates/xstate-wasi-guest",
     "crates/xstate-kafka",
     "examples/checkout",
+    "examples/checkout-component",
 ]
 # xstate-wasi-host builds Wasmtime; test it explicitly with `cargo test -p xstate-wasi-host`.
 default-members = [
@@ -15,8 +17,10 @@ default-members = [
     "crates/xstate-wasm",
     "crates/xstate-codegen",
     "crates/xstate-wasi",
+    "crates/xstate-wasi-guest",
     "crates/xstate-kafka",
     "examples/checkout",
+    "examples/checkout-component",
 ]
 
 [workspace.package]
