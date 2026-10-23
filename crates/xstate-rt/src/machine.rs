@@ -131,14 +131,27 @@ pub(crate) struct TransitionData {
     pub function: Option<TransitionFn>,
 }
 
-/// An expression that is a whole transition, as XState's `to` functions.
+/// A transition computed when it is selected, as XState's `to` functions
+/// (expression indices are into `Machine::exprs`).
 #[derive(Debug, Clone)]
-pub(crate) struct TransitionFn {
-    /// Index into `Machine::exprs`.
-    pub expr: u32,
-    /// For a route function: its state, the target of every route result
-    /// (a falsy result blocks the route, `true` takes it as it is).
-    pub route: Option<Arc<[Nid]>>,
+pub(crate) enum TransitionFn {
+    /// A transition expression, with `enq`.
+    Expr(u32),
+    /// A route function: its state is the target of every result (a falsy
+    /// result blocks the route, `true` takes it as it is).
+    Route { expr: u32, target: Arc<[Nid]> },
+    /// A choice state's expression, which must give a target.
+    ChoiceExpr { expr: u32, id: String },
+    /// A choice state's branches: the first whose `when` passes.
+    Choice { branches: Vec<ChoiceBranch>, path: String, id: String },
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct ChoiceBranch {
+    pub when: Option<Guard>,
+    pub targets: Option<Arc<[Nid]>>,
+    pub context: Option<Template>,
+    pub reenter: bool,
 }
 
 impl TransitionData {

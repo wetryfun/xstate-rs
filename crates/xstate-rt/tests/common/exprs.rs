@@ -88,6 +88,14 @@ pub fn register(r: &mut Registry<Value, Value>) {
             }
         })
         .expr("routeAlways", |_| json!(true))
+        .expr("choosePick", |a| {
+            let count = num(a.context.get("count"));
+            if count % 2.0 == 0.0 {
+                json!({ "target": "even" })
+            } else {
+                json!({ "target": "odd", "context": { "picked": js(count) } })
+            }
+        })
         .expr("pickEvenAlways", |a| {
             if num(a.context.get("count")) % 2.0 == 0.0 {
                 json!({ "target": "even" })

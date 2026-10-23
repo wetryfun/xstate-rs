@@ -1,0 +1,268 @@
+{
+  "notes": "Choice states: declarative branches (named, inline expression and fallback guards; computed context; reenter), a choice expression, a choice as the initial state, chained choices, and a choice with no matching branch (an error).",
+  "machine": {
+    "id": "ch",
+    "context": {
+      "count": 0
+    },
+    "initial": "start",
+    "states": {
+      "start": {
+        "type": "choice",
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "enter.start"
+            }
+          }
+        ],
+        "exit": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "exit.start"
+            }
+          }
+        ],
+        "choice": [
+          {
+            "when": {
+              "type": "ctxAtLeast",
+              "params": {
+                "key": "count",
+                "value": 5
+              }
+            },
+            "target": "big"
+          },
+          {
+            "target": "idle",
+            "context": {
+              "count": {
+                "@code": "countPlusOne",
+                "@lang": "rust"
+              }
+            }
+          }
+        ]
+      },
+      "idle": {
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "enter.idle"
+            }
+          }
+        ],
+        "on": {
+          "GO": {
+            "target": "route"
+          },
+          "PICK": {
+            "target": "picked"
+          },
+          "CHAIN": {
+            "target": "first"
+          },
+          "BAD": {
+            "target": "strict"
+          },
+          "BUMP": {
+            "context": {
+              "count": {
+                "@code": "countPlusOne",
+                "@lang": "rust"
+              }
+            }
+          }
+        }
+      },
+      "route": {
+        "type": "choice",
+        "choice": [
+          {
+            "when": {
+              "@code": "countIsEven",
+              "@lang": "rust"
+            },
+            "target": "even",
+            "context": {
+              "parity": "even"
+            }
+          },
+          {
+            "when": {
+              "type": "eventEquals",
+              "params": {
+                "key": "kind",
+                "value": "odd"
+              }
+            },
+            "target": "odd"
+          },
+          {
+            "target": "idle",
+            "reenter": true
+          }
+        ]
+      },
+      "picked": {
+        "type": "choice",
+        "choice": {
+          "@code": "choosePick",
+          "@lang": "rust"
+        }
+      },
+      "first": {
+        "type": "choice",
+        "choice": [
+          {
+            "target": "second"
+          }
+        ]
+      },
+      "second": {
+        "type": "choice",
+        "choice": [
+          {
+            "target": "idle",
+            "context": {
+              "chained": true
+            }
+          }
+        ]
+      },
+      "strict": {
+        "type": "choice",
+        "choice": [
+          {
+            "when": {
+              "type": "no"
+            },
+            "target": "idle"
+          }
+        ]
+      },
+      "even": {
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "enter.even"
+            }
+          }
+        ],
+        "on": {
+          "BACK": {
+            "target": "idle"
+          }
+        }
+      },
+      "odd": {
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "enter.odd"
+            }
+          }
+        ],
+        "on": {
+          "BACK": {
+            "target": "idle"
+          }
+        }
+      },
+      "big": {}
+    }
+  },
+  "steps": [
+    {
+      "at": 0,
+      "send": {
+        "type": "GO"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "BUMP"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "GO"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "BACK"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "BUMP"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "GO",
+        "kind": "odd"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "BACK"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "PICK"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "BACK"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "BUMP"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "PICK"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "BACK"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "CHAIN"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "BAD"
+      }
+    }
+  ]
+}

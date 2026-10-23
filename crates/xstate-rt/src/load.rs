@@ -74,7 +74,7 @@ const TRANSITION_KEYS: &[&str] =
     &["target", "matches", "context", "actions", "guard", "description", "reenter", "meta", "input"];
 
 /// State-node keys that name v6 features this runtime does not run yet.
-const UNSUPPORTED_STATE_KEYS: &[(&str, &str)] = &[("choice", "choice states"), ("input", "state input")];
+const UNSUPPORTED_STATE_KEYS: &[(&str, &str)] = &[("input", "state input")];
 
 fn err(kind: K, path: &str, message: impl Into<String>) -> LoadError {
     LoadError::new(kind, path, message)
@@ -629,9 +629,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             Some("parallel") => NodeKind::Parallel,
             Some("final") => NodeKind::Final,
             Some("history") => NodeKind::History { deep: false },
-            Some("choice") => {
-                return Err(err(K::Unsupported, &child_path(&path, "type"), "choice states are not supported yet"))
-            }
+            Some("choice") => NodeKind::Choice,
             Some(other) => return Err(invalid(&child_path(&path, "type"), format!("unknown state type \"{other}\""))),
             None if has_children => NodeKind::Compound,
             None if json.contains_key("history") => NodeKind::History { deep: false },
@@ -646,7 +644,9 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             },
             other => other,
         };
-        if has_children && matches!(kind, NodeKind::Atomic | NodeKind::Final | NodeKind::History { .. }) {
+        if has_children
+            && matches!(kind, NodeKind::Atomic | NodeKind::Final | NodeKind::History { .. } | NodeKind::Choice)
+        {
             return Err(invalid(
                 &child_path(&path, "states"),
                 "only compound and parallel states can have child states",
@@ -960,9 +960,12 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                 }
             }
         }
-        let always = match json.get("always") {
-            Some(value) => self.compile_transitions(node, value, &child_path(&path, "always"), &[])?,
-            None => Vec::new(),
+        // A choice state's one eventless transition is its choice, which
+        // replaces `always` (XState's `formatChoiceTransitions`).
+        let always = match (kind, json.get("always")) {
+            (NodeKind::Choice, _) => vec![self.compile_choice(node, json, &path)?],
+            (_, Some(value)) => self.compile_transitions(node, value, &child_path(&path, "always"), &[])?,
+            (_, None) => Vec::new(),
         };
 
         let tags = match json.get("tags") {
@@ -1199,7 +1202,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                 self.expr_refs += 1;
                 let expr = self.expr(name, &path, Slot::Scope)?;
                 let target: Arc<[NodeId]> = Arc::from([n as NodeId]);
-                let t = self.push_function(0, expr, Some(target), &[]);
+                let t = self.push_function(0, TransitionFn::Route { expr, target }, &[]);
                 self.transitions[t as usize].guard = Some(Guard::RouteTo(format!("#{id}")));
                 out.push(t);
                 continue;
@@ -1270,7 +1273,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             // A transition function: its result is the transition.
             self.expr_refs += 1;
             let expr = self.expr(name, path, Slot::Scope)?;
-            return Ok(self.push_function(source, expr, None, extra_matches));
+            return Ok(self.push_function(source, TransitionFn::Expr(expr), extra_matches));
         }
         let obj = match value {
             Value::Object(o) => o,
@@ -1347,14 +1350,71 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
         Ok(id)
     }
 
+    /// A choice state's transition: its `choice` expression, or its branches
+    /// (`{ when?, target, context?, reenter?, description?, meta? }`, the
+    /// fallback without `when` last).
+    fn compile_choice(&mut self, node: NodeId, json: &Map<String, Value>, path: &str) -> Result<TransitionId> {
+        let cpath = child_path(path, "choice");
+        let id = self.nodes[node as usize].id.clone();
+        let function = match json.get("choice") {
+            None => return Err(invalid(path, format!("Choice state at {path} must declare choice."))),
+            Some(value) if code_source(value).is_some() => {
+                self.expr_refs += 1;
+                let expr = self.expr(code_source(value).expect("code"), &cpath, Slot::Scope)?;
+                TransitionFn::ChoiceExpr { expr, id }
+            }
+            Some(Value::Array(items)) => {
+                let mut branches = Vec::with_capacity(items.len());
+                for (i, item) in items.iter().enumerate() {
+                    let bpath = format!("{cpath}[{i}]");
+                    let b = item.as_object().ok_or_else(|| invalid(&bpath, "a choice branch must be an object"))?;
+                    for k in b.keys() {
+                        if !["when", "target", "context", "input", "reenter", "description", "meta"]
+                            .contains(&k.as_str())
+                        {
+                            return Err(err(K::UnknownKey, &bpath, format!("unknown key \"{k}\"")));
+                        }
+                    }
+                    if b.contains_key("input") {
+                        return Err(err(
+                            K::Unsupported,
+                            &child_path(&bpath, "input"),
+                            "choice input (state input) is not supported yet",
+                        ));
+                    }
+                    if !b.contains_key("when") && i + 1 != items.len() {
+                        return Err(invalid(&bpath, format!("Choice fallback branch at {bpath} must be last.")));
+                    }
+                    let when = match b.get("when") {
+                        Some(g) => Some(self.compile_guard(g, &child_path(&bpath, "when"), &mut Vec::new())?),
+                        None => None,
+                    };
+                    let targets = match b.get("target") {
+                        Some(t) => {
+                            Some(self.resolve_targets(node, Some(t), &child_path(&bpath, "target"), false)?.into())
+                        }
+                        None => None,
+                    };
+                    let context = match b.get("context") {
+                        Some(c) => Some(self.compile_template(c, &child_path(&bpath, "context"), Slot::Scope)?),
+                        None => None,
+                    };
+                    let reenter = match b.get("reenter") {
+                        None => false,
+                        Some(Value::Bool(r)) => *r,
+                        Some(_) => return Err(invalid(&child_path(&bpath, "reenter"), "expected a boolean")),
+                    };
+                    branches.push(ChoiceBranch { when, targets, context, reenter });
+                }
+                TransitionFn::Choice { branches, path: cpath, id }
+            }
+            Some(_) => return Err(invalid(&cpath, "a choice is an array of branches or an expression")),
+        };
+        Ok(self.push_function(node, function, &[]))
+    }
+
     /// A transition whose result an expression computes.
-    fn push_function(
-        &mut self,
-        source: NodeId,
-        expr: u32,
-        route: Option<Arc<[NodeId]>>,
-        matches: &[(String, Value)],
-    ) -> TransitionId {
+    fn push_function(&mut self, source: NodeId, function: TransitionFn, matches: &[(String, Value)]) -> TransitionId {
         self.transitions.push(TransitionData {
             targets: None,
             matches: matches.to_vec(),
@@ -1365,7 +1425,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             reenter: false,
             session: None,
             cancel_timeout: None,
-            function: Some(TransitionFn { expr, route }),
+            function: Some(function),
         });
         self.transition_sources.push(source);
         self.transitions.len() as TransitionId - 1

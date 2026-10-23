@@ -18,7 +18,7 @@ Milestone 6 (Kafka) is `crates/xstate-kafka`, a service for any Kafka-API broker
 
 Computed values are XState's own code nodes in the `rust` language: `{ "@code": "addLine", "@lang": "rust" }` in a context patch, an assign, an event, params, a guard, a delay, an invoke input or an output names a Rust function (`Registry::expr`, or the generated `expr_add_line` trait method) that receives the context, event and params. XState runs the same JSON with an evaluator for `rust`.
 
-Not yet supported (rejected at load time with the JSON path): choice states, state and transition `input`, and `@code` / `@expr` in other languages or as choice functions. Rust transition functions (`{ "@code": "pick", "@lang": "rust" }` as a transition) work as XState's `to` functions, with `enq`.
+Not yet supported (rejected at load time with the JSON path): state, transition and choice `input`, and `@code` / `@expr` in other languages. Rust transition functions (`{ "@code": "pick", "@lang": "rust" }` as a transition) work as XState's `to` functions, with `enq`.
 
 ## Example
 

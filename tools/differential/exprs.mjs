@@ -44,6 +44,7 @@ export const exprs = {
   },
   routeIfEven: ({ context }) => (context.count % 2 === 0 ? { context: { routed: context.count } } : false),
   routeAlways: () => true,
+  choosePick: ({ context }) => (context.count % 2 === 0 ? { target: 'even' } : { target: 'odd', context: { picked: context.count } }),
   pickEvenAlways: ({ context }) => (context.count % 2 === 0 ? { target: 'even' } : undefined),
   doneToEven: ({ event }) => ({ target: 'even', context: { result: event.output } }),
   // examples/pattern-retry-policy (fixtures/system/ex_retry_policy*).

@@ -1,0 +1,208 @@
+[
+  {
+    "label": "start",
+    "value": "idle",
+    "context": {
+      "count": 1
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.start"
+      },
+      {
+        "type": "exit.start"
+      },
+      {
+        "type": "enter.idle"
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "value": "idle",
+    "context": {
+      "count": 1
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.idle"
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "value": "idle",
+    "context": {
+      "count": 2
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 2",
+    "value": "even",
+    "context": {
+      "count": 2,
+      "parity": "even"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.even"
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "value": "idle",
+    "context": {
+      "count": 2,
+      "parity": "even"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.idle"
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "value": "idle",
+    "context": {
+      "count": 3,
+      "parity": "even"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 5",
+    "value": "odd",
+    "context": {
+      "count": 3,
+      "parity": "even"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.odd"
+      }
+    ]
+  },
+  {
+    "label": "step 6",
+    "value": "idle",
+    "context": {
+      "count": 3,
+      "parity": "even"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.idle"
+      }
+    ]
+  },
+  {
+    "label": "step 7",
+    "value": "odd",
+    "context": {
+      "count": 3,
+      "parity": "even",
+      "picked": 3
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.odd"
+      }
+    ]
+  },
+  {
+    "label": "step 8",
+    "value": "idle",
+    "context": {
+      "count": 3,
+      "parity": "even",
+      "picked": 3
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.idle"
+      }
+    ]
+  },
+  {
+    "label": "step 9",
+    "value": "idle",
+    "context": {
+      "count": 4,
+      "parity": "even",
+      "picked": 3
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 10",
+    "value": "even",
+    "context": {
+      "count": 4,
+      "parity": "even",
+      "picked": 3
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.even"
+      }
+    ]
+  },
+  {
+    "label": "step 11",
+    "value": "idle",
+    "context": {
+      "count": 4,
+      "parity": "even",
+      "picked": 3
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.idle"
+      }
+    ]
+  },
+  {
+    "label": "step 12",
+    "value": "idle",
+    "context": {
+      "count": 4,
+      "parity": "even",
+      "picked": 3,
+      "chained": true
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.idle"
+      }
+    ]
+  },
+  {
+    "label": "step 13",
+    "value": "idle",
+    "context": {
+      "count": 4,
+      "parity": "even",
+      "picked": 3,
+      "chained": true
+    },
+    "status": "error",
+    "emitted": []
+  }
+]

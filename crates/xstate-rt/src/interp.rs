@@ -1079,45 +1079,81 @@ where
     fn eval_function(&self, t: Tid) -> Result<Option<Selected<E>>, SystemError> {
         let m = self.m;
         let tr = m.transition(t);
-        let f = tr.function.as_ref().expect("a transition function");
-        let enq = Enq::default();
-        let args = ExprArgs {
-            context: &self.st.context,
-            event: &self.event,
-            params: None,
-            machine: m,
-            config: &self.st.nodes,
-            // A route function's scope has no `enq`.
-            enq: f.route.is_none().then_some(&enq),
-        };
-        let result = (m.exprs[f.expr as usize])(&args);
-        let ops = enq.take();
         let source = m.tree.transitions[t as usize].source;
-        let (result, targets) = match &f.route {
-            Some(_) if !js_truthy(&result) => return Ok(None),
-            Some(route) => {
-                (if result == Value::Bool(true) { Value::Object(Map::new()) } else { result }, Some(route.clone()))
-            }
-            None if result.is_null() && ops.is_empty() => return Ok(None),
-            None => {
-                let targets = match result.get("target") {
-                    Some(Value::String(s)) if !s.is_empty() => Some(vec![s.as_str()]),
-                    Some(Value::Array(items)) => Some(items.iter().filter_map(Value::as_str).collect()),
-                    _ => None,
-                };
-                let targets = match targets {
-                    Some(list) => Some(
-                        list.into_iter()
-                            .map(|s| m.resolve_target(source, s))
-                            .collect::<Result<Vec<Nid>, String>>()
-                            .map_err(SystemError::Failed)?
-                            .into(),
-                    ),
-                    None => None,
-                };
+        let enq = Enq::default();
+        // Only a transition expression's scope has `enq`.
+        let call = |expr: u32, enq: Option<&Enq>| {
+            let args = ExprArgs {
+                context: &self.st.context,
+                event: &self.event,
+                params: None,
+                machine: m,
+                config: &self.st.nodes,
+                enq,
+            };
+            (m.exprs[expr as usize])(&args)
+        };
+        let targets_of = |result: &Value| -> Result<Option<Arc<[Nid]>>, SystemError> {
+            let list: Vec<&str> = match result.get("target") {
+                Some(Value::String(s)) if !s.is_empty() => vec![s.as_str()],
+                Some(Value::Array(items)) => items.iter().filter_map(Value::as_str).collect(),
+                _ => return Ok(None),
+            };
+            list.into_iter()
+                .map(|s| m.resolve_target(source, s))
+                .collect::<Result<Vec<Nid>, String>>()
+                .map(|v| Some(v.into()))
+                .map_err(SystemError::Failed)
+        };
+        let (result, targets) = match tr.function.as_ref().expect("a transition function") {
+            TransitionFn::Expr(expr) => {
+                let result = call(*expr, Some(&enq));
+                if result.is_null() && enq.ops.borrow().is_empty() {
+                    return Ok(None);
+                }
+                let targets = targets_of(&result)?;
                 (result, targets)
             }
+            TransitionFn::Route { expr, target } => {
+                let result = call(*expr, None);
+                if !js_truthy(&result) {
+                    return Ok(None);
+                }
+                (if result == Value::Bool(true) { Value::Object(Map::new()) } else { result }, Some(target.clone()))
+            }
+            TransitionFn::ChoiceExpr { expr, id } => {
+                let result = call(*expr, None);
+                if !js_truthy(&result) || result.get("target").is_none() {
+                    return Err(SystemError::Failed(format!("Choice \"{id}\" has no target")));
+                }
+                let targets = targets_of(&result)?;
+                (result, targets)
+            }
+            TransitionFn::Choice { branches, path, id } => {
+                let mut taken = None;
+                for branch in branches {
+                    if match &branch.when {
+                        Some(g) => self.eval_guard(g, None)?,
+                        None => true,
+                    } {
+                        taken = Some(branch);
+                        break;
+                    }
+                }
+                let branch = taken
+                    .ok_or_else(|| SystemError::Failed(format!("Choice state at {path} did not match any branch.")))?;
+                if branch.targets.is_none() {
+                    return Err(SystemError::Failed(format!("Choice \"{id}\" has no target")));
+                }
+                let mut result = Map::new();
+                if let Some(context) = &branch.context {
+                    result.insert("context".into(), self.eval(context, &self.st.context, None));
+                }
+                result.insert("reenter".into(), Value::Bool(branch.reenter));
+                (Value::Object(result), branch.targets.clone())
+            }
         };
+        let ops = enq.take();
         let mut outcome = Outcome::empty();
         outcome.context = match result.get("context") {
             Some(patch) if js_truthy(patch) => computed_patch(patch.clone(), "a transition's context")?,

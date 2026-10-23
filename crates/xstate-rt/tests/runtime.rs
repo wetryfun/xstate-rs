@@ -493,7 +493,12 @@ fn rejects_unsupported_features() {
     let e = load_err(json!({ "initial": "a", "states": { "a": { "invoke": { "src": "worker" } } } }));
     assert_eq!((e.kind, e.path.as_str()), (LoadErrorKind::MissingImplementation, "$.states.a.invoke.src"));
 
-    let e = load_err(json!({ "initial": "a", "states": { "a": { "type": "choice", "choice": [] } } }));
+    let e = load_err(json!({ "initial": "a", "states": { "a": { "type": "choice" } } }));
+    assert_eq!(
+        (e.kind, e.message.as_str()),
+        (LoadErrorKind::Invalid, "Choice state at $.states.a must declare choice.")
+    );
+    let e = load_err(json!({ "initial": "a", "states": { "a": { "input": {} } } }));
     assert_eq!(e.kind, LoadErrorKind::Unsupported);
 
     let e = load_err(json!({ "initial": "a", "states": { "a": { "timeout": 100 } } }));
