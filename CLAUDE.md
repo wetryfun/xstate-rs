@@ -201,6 +201,8 @@ Random differential testing (milestone 4):
 - Generated cases avoid zero-delay delayed raises (see Time and scheduling) and skip runs where XState's `SimulatedClock` gives up on timer loops.
 - `runner.mjs` disables alpha.70's `_transitionFast` shortcut, which takes a transition whose `matches` pattern fails (an atomic child of the root with one plain candidate); the reference is XState's full algorithm.
 
+**Example fixtures:** `fixtures/ex_*.json` and `fixtures/system/ex_*.json` (42 fixtures from 31 of XState's own examples: workflows, sagas, retry/polling/deadline patterns, approvals, drip campaigns, players, elevator, vending machine, history, auth, trivia, connection manager, ...) are JSON-portable ports with XState's recorded traces; each fixture's `source` names the example and `notes` what the port simplified (computed context becomes static patches or unrolled guarded branches, callback actors become events, randomness is fixed). Rust matches every record. A `resolve` step counts every pending effect, including emits, logs and cleanups the pure system API keeps pending, so ports aim it at the intended `@xstate.effect`. `cargo bench -p xstate-rt --bench examples` replays each from a fresh actor or system (`XSTATE_BENCH_FIXTURES` selects by prefix): about 1.6-4 µs per step for the machines and 1.6-12 µs for the systems (invoke-heavy ones such as the credit check, sagas and retries cost most: allocating, starting and stopping actors, and the pure API's pending effects).
+
 When v6 behavior is uncertain, add a fixture before choosing semantics.
 
 ## Milestones
