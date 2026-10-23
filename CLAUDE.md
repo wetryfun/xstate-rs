@@ -41,13 +41,13 @@ flowchart TD
   USER --> SVC[Deployment adapters: native service, WASI component, Redpanda]
 ```
 
-Workspace crates (all but `xstate-redpanda` exist so far):
+Workspace crates:
 
 - `xstate-rt`: the core. `core.rs` is the structural statechart algorithm behind a `Host` trait; the native host (`interp.rs`) parses `MachineJSON`, compiles it, and runs it. Later also the actor runtime. Generic, with nothing machine-specific.
 - `xstate-wasm`: exposes `core.rs` to JavaScript over a plain integer wasm ABI, so XState's own runtime can use it (see Testing strategy).
 - `xstate-codegen`: build-time generator. Reads a `<name>.xstate.json` bundle (definition plus JSON Schemas) and emits typed Rust (context, events, params, the implementation trait, and the registry wiring).
 - `xstate-wasi`: a WASI 0.2 component (`wasm32-wasip2`) exposing the runtime through WIT; `xstate-wasi-host` (not a default member, it builds Wasmtime) tests it.
-- `xstate-redpanda`: the co-located, partition-sharded service.
+- `xstate-redpanda`: the co-located, partition-sharded service: a deterministic engine (`engine.rs`, no Kafka) and, with the `kafka` feature, the `rdkafka` driver (`kafka.rs`).
 
 Other directories: `fixtures/` (shared differential fixtures), `tools/differential/` (the JS side of differential testing), `tools/extract/` (the TS extract script), `examples/checkout/` (a machine authored in TS, run through codegen).
 
@@ -118,7 +118,7 @@ This keeps the core deterministic and portable to WASI and Wasm (`xstate-rt` bui
 
 ### Snapshots and persistence
 
-Persistence is XState's `SystemSnapshot` JSON (`System::to_json` / `System::from_json`, `Actor::persist` / `Actor::restore`): every actor by address with its incarnation, parent, logic, input, started flag and snapshot data, plus the registry, queued messages, timers, pending external effects, counters and the clock. A machine's snapshot data is XState's (`status`, `context`, `value`, `children` as `{ $actor, incarnation }`, `timers`, `historyValue` as `{ $stateNode }`, `nodeIds`, `_nextTimerId`). XState's own snapshot data restores into an equal Rust system (checked on every system fixture record). Restoring runs no actions. Binary encodings (postcard, rkyv) need a non-self-describing replacement for the `serde_json::Value` fields; decide that in milestone 6.
+Persistence is XState's `SystemSnapshot` JSON (`System::to_json` / `System::from_json`, `Actor::persist` / `Actor::restore`): every actor by address with its incarnation, parent, logic, input, started flag and snapshot data, plus the registry, queued messages, timers, pending external effects, counters and the clock. A machine's snapshot data is XState's (`status`, `context`, `value`, `children` as `{ $actor, incarnation }`, `timers`, `historyValue` as `{ $stateNode }`, `nodeIds`, `_nextTimerId`). XState's own snapshot data restores into an equal Rust system (checked on every system fixture record). Restoring runs no actions. **Decision (milestone 6): changelog snapshots are MessagePack** (`rmp-serde`, self-describing, so `serde_json::Value` fields need no replacement), behind a format byte (`Codec`), so JSON records stay readable and the encoding can change. Measured on a small order actor: 617 bytes and 7.4 µs to decode versus 822 bytes and 8.6 µs for JSON. Building the persisted system snapshot (`persist`, about 13 µs) costs more than encoding it; postcard/rkyv would need typed snapshot structs and are not worth it until `persist` is cheaper.
 
 ### Actor system (milestone 2)
 
@@ -148,7 +148,14 @@ Mapping rules (custom generator in `crates/xstate-codegen/src/types.rs`, no typi
 ## Deployment targets
 
 - **WASI component (milestone 5, done):** `crates/xstate-wasi/wit/xstate.wit`, world `runtime`. It exports a `actor` resource (`start` / `restore` static functions, `send`, `send-to` (any address), `advance`, `next-deadline`, `snapshot`, `persist`, `take-emitted`, `take-logs`, `pending-effects`, `resolve-effect`, `stop`), passing JSON strings, and imports `implementations` (`guard`, `action`, `delay`). **Decision: the component is generic.** It loads any `MachineJSON` at run time and wires every name the definition references (`Machine::references`) to the host imports; start options supply child machines for `invoke.src` (`children`), and any other source is async work the host completes through `resolve-effect` (`xstate.async.resolve` / `reject`). Host calls happen while the actor is borrowed; the host must not re-enter the same actor from a guard or action. Exports are compiled only for wasm32 (component export names do not link natively). Build with `cargo build -p xstate-wasi --target wasm32-wasip2 --release` (about 1 MB); `cargo test -p xstate-wasi-host` builds it into `target/wasi` and drives it from Wasmtime 50. A per-machine typed component (codegen'd trait implemented in the guest) and WASI 0.3 async for host-provided actors are possible follow-ups.
-- **Redpanda (performance target):** a native Rust service co-located on each broker node, not in-broker Data Transforms, which have no network or disk access and only support single-record transforms. Use follower fetching (`enable_rack_awareness`, per-node `rack`, `client.rack`) to read the local replica. Shard by partition with one thread per core. Keep actors in memory, back them with a compacted changelog topic per machine (binary snapshots via postcard or rkyv) plus a local embedded store, and use Kafka transactions to commit emitted events, changelog writes, and offsets atomically in batches. Persist timer firings through the changelog in the same transaction. Use `rdkafka`.
+- **Redpanda (milestone 6, done): `crates/xstate-redpanda`.** A native Rust service co-located on each broker node, not in-broker Data Transforms (no network or disk access, single-record transforms only).
+  - Input records are JSON events keyed by actor id; output records are emitted events keyed the same way; a compacted changelog topic, partitioned like the input, holds each actor's latest snapshot (or a tombstone once it finishes, `evict_final`); bad records go to an optional dead-letter topic with a `reason` header.
+  - `engine::Partition` is deterministic (records and the time in, `Output` out) and holds one `Actor` per key, a lazy timer heap, and the keys changed since the last flush (one changelog record per changed actor per transaction).
+  - `kafka::Service` runs one worker thread per core. Each worker has its own consumer (one consumer group, `read_committed`) and its own transactional producer (`transactional.id` = prefix + worker index; EOS v2 / KIP-447 fencing by group generation). A batch (up to `max_batch` records, collected for at most `batch_linger`) plus due timers commits output, changelog records and input offsets in one transaction; timer firings commit the same way. Newly assigned partitions are restored from the changelog together (`enable.partition.eof`, a reused restore consumer); on a failed transaction the worker aborts, forgets its partitions and rewinds to the committed offsets. Time is the wall clock (`clock_ms`), never moving backwards per partition.
+  - Follower fetching: set `rack` (`client.rack`) to the node's rack with `enable_rack_awareness` on the cluster.
+  - Not done yet: the local embedded store (restore always reads the changelog), async invoked actors (nothing resolves their effects in the service), a CLI/binary with config loading, and metrics.
+  - Testing without a broker: librdkafka's mock cluster (`rdkafka::mocking`) supports consumer groups and transactions, but its `TxnOffsetCommit` handler never stores offsets; `tests/kafka.rs` commits the processed positions itself before restarting the service. Docker Hub and Redpanda's registry are not reachable from this environment.
+  - Numbers (4 cores, release): the engine handles about 250k records/s per core including changelog snapshots (`cargo bench -p xstate-redpanda --bench engine`); on the mock cluster a worker processes 10 000 records in about 90 ms and commits a transaction in about 100 ms, about 43k events/s per worker (`cargo run --release -p xstate-redpanda --features kafka --example mock_throughput`, `XSTATE_REDPANDA_DEBUG=1` for per-batch times).
 
 ## Testing strategy
 
@@ -186,7 +193,7 @@ When v6 behavior is uncertain, add a fixture before choosing semantics.
 3. ~~Codegen pipeline and the TS extract script.~~ Done (`tools/extract`, `xstate-codegen`, `examples/checkout`). Open: typed `ActorRef<Child>` handles from `schemas.children`.
 4. ~~Differential test harness: extend fixtures to actors; add generated random event sequences.~~ Done: random machines and actor systems (`gen.mjs`, `fuzz.mjs`, `fuzz-system.mjs`, `fuzz.sh`), committed corpora, and the fixes they found.
 5. ~~WASI component adapter.~~ Done (`xstate-wasi`, tested from Wasmtime in `xstate-wasi-host`).
-6. Redpanda co-located service with benchmarks.
+6. ~~Redpanda co-located service with benchmarks.~~ Done (`xstate-redpanda`), tested against librdkafka's mock cluster; a run against a real Redpanda cluster is still to do.
 
 ## Conventions
 
@@ -194,4 +201,4 @@ When v6 behavior is uncertain, add a fixture before choosing semantics.
 - No `unsafe` in `xstate-rt`. No platform clocks, threads, or I/O in the core.
 - Every unsupported v6 feature produces a clear error naming the feature and its JSON path.
 - When v6 behavior is uncertain, write a differential test before choosing semantics, and record the decision in this file.
-- `cargo fmt`, `cargo clippy --all-targets --workspace` clean, `cargo test` green before pushing; after touching `core.rs`, also `tools/xstate-suite/run.sh`; after touching `xstate-wasi` or the actor API, also `cargo test -p xstate-wasi-host`.
+- `cargo fmt`, `cargo clippy --all-targets --workspace` clean, `cargo test` green before pushing; after touching `core.rs`, also `tools/xstate-suite/run.sh`; after touching `xstate-wasi` or the actor API, also `cargo test -p xstate-wasi-host`; after touching `xstate-redpanda`, `cargo test -p xstate-redpanda --features kafka` (builds librdkafka).

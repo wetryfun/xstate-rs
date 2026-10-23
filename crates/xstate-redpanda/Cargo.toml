@@ -1,0 +1,32 @@
+[package]
+name = "xstate-redpanda"
+version = "0.1.0"
+description = "Runs XState machines as partition-sharded actors next to a Redpanda (Kafka API) broker, with exactly-once state"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+
+[features]
+default = []
+# The Kafka driver (librdkafka, built from source).
+kafka = ["dep:rdkafka"]
+
+[dependencies]
+xstate-rt = { path = "../xstate-rt" }
+serde.workspace = true
+serde_json.workspace = true
+rmp-serde = "1.3"
+rdkafka = { version = "0.39", default-features = false, optional = true }
+
+[dev-dependencies]
+criterion = { version = "0.8", default-features = false }
+
+[[bench]]
+name = "engine"
+harness = false
+
+[[example]]
+name = "mock_throughput"
+required-features = ["kafka"]
