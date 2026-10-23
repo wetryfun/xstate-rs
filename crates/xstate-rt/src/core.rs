@@ -323,6 +323,9 @@ pooled!(u32, NID_POOL);
 pooled!(bool, BOOL_POOL);
 pooled!(TRef, TREF_POOL);
 
+/// "No domain" in a plan of transition domains.
+const NO_DOMAIN: Nid = Nid::MAX;
+
 /// A scratch vector taken from a per-thread pool and returned to it on drop,
 /// so the algorithm's temporaries do not allocate once the pool is warm.
 /// Re-entrant calls (a guard running another actor) simply take other
@@ -770,6 +773,26 @@ pub fn select_eventless<H: Host>(tree: &Tree, h: &mut H) -> Result<Buf<TRef>, H:
 
 // ---- domains and sets -------------------------------------------------------------
 
+/// The head and the rest of `[...effective, source]` (XState's
+/// `[...targetStates, transition.source]` in `getTransitionDomain`).
+fn split_with_source(effective: &[Nid], source: Nid) -> (Nid, TailWithSource<'_>) {
+    match effective.split_first() {
+        Some((&head, rest)) => (head, TailWithSource { rest, source: Some(source) }),
+        None => (source, TailWithSource { rest: &[], source: None }),
+    }
+}
+
+struct TailWithSource<'a> {
+    rest: &'a [Nid],
+    source: Option<Nid>,
+}
+
+impl TailWithSource<'_> {
+    fn all(&self, f: impl Fn(Nid) -> bool) -> bool {
+        self.rest.iter().all(|&x| f(x)) && self.source.map_or(true, &f)
+    }
+}
+
 struct Ctx<'a, H> {
     tree: &'a Tree,
     h: &'a mut H,
@@ -849,8 +872,13 @@ impl<H: Host> Ctx<'_, H> {
 
     /// `getTransitionDomain`. `None` is "no domain": the whole machine.
     fn domain(&mut self, t: TRef) -> Result<Option<Nid>, H::Error> {
-        let tree = self.tree;
         let effective = self.effective_targets(t)?;
+        self.domain_with(t, &effective)
+    }
+
+    /// [`Ctx::domain`] with the transition's effective target states known.
+    fn domain_with(&mut self, t: TRef, effective: &[Nid]) -> Result<Option<Nid>, H::Error> {
+        let tree = self.tree;
         let Resolved { targets, reenter } = self.resolve(t)?;
         let source = self.source(t);
 
@@ -862,12 +890,9 @@ impl<H: Host> Ctx<'_, H> {
             {
                 return Ok(Some(source));
             }
-            let mut all = effective.clone();
-            all.push(source);
-            let (head, tail) = (all[0], &all[1..]);
+            let (head, tail) = split_with_source(effective, source);
             for ancestor in tree.ancestors(head, None) {
-                if tree.kind(ancestor) == Kind::Compound && tail.iter().all(|&x| tree.is_descendant(x, Some(ancestor)))
-                {
+                if tree.kind(ancestor) == Kind::Compound && tail.all(|x| tree.is_descendant(x, Some(ancestor))) {
                     return Ok(Some(ancestor));
                 }
             }
@@ -878,20 +903,18 @@ impl<H: Host> Ctx<'_, H> {
             targets.as_ref().is_some_and(|ts| ts.iter().any(|&x| tree.is_history(x))) && effective.contains(&source);
         if !restores_source_via_history && effective.iter().all(|&x| x == source || tree.is_descendant(x, Some(source)))
         {
-            return Ok(Some(if reenter { source } else { self.narrow_parallel(source, &effective) }));
+            return Ok(Some(if reenter { source } else { self.narrow_parallel(source, effective) }));
         }
-        let mut all = effective.clone();
-        all.push(source);
-        let (head, tail) = (all[0], &all[1..]);
+        let (head, tail) = split_with_source(effective, source);
         for ancestor in tree.ancestors(head, None) {
-            if tail.iter().all(|&x| tree.is_descendant(x, Some(ancestor))) {
-                return Ok(Some(if reenter { ancestor } else { self.narrow_parallel(ancestor, &effective) }));
+            if tail.all(|x| tree.is_descendant(x, Some(ancestor))) {
+                return Ok(Some(if reenter { ancestor } else { self.narrow_parallel(ancestor, effective) }));
             }
         }
         if reenter {
             return Ok(None);
         }
-        Ok(Some(self.narrow_parallel(0, &effective)))
+        Ok(Some(self.narrow_parallel(0, effective)))
     }
 
     /// `computeExitSet`.
@@ -901,18 +924,39 @@ impl<H: Host> Ctx<'_, H> {
             let Resolved { targets, reenter } = self.resolve(t)?;
             if targets.is_some_and(|ts| !ts.is_empty()) {
                 let domain = self.domain(t)?;
-                let source = self.source(t);
-                if reenter && Some(source) == domain {
-                    out.insert(source);
-                }
-                for &s in config.as_slice() {
-                    if self.tree.is_descendant(s, domain) {
-                        out.insert(s);
-                    }
-                }
+                self.add_exits(&mut out, t, reenter, domain, config);
             }
         }
         Ok(out)
+    }
+
+    /// [`Ctx::exit_set`] with the transitions' domains known.
+    fn exit_set_with(
+        &mut self,
+        transitions: &[TRef],
+        domain_of: impl Fn(usize) -> Option<Nid>,
+        config: &OrderedSet,
+    ) -> Result<OrderedSet, H::Error> {
+        let mut out = OrderedSet::new(self.tree.nodes.len());
+        for (i, &t) in transitions.iter().enumerate() {
+            let Resolved { targets, reenter } = self.resolve(t)?;
+            if targets.is_some_and(|ts| !ts.is_empty()) {
+                self.add_exits(&mut out, t, reenter, domain_of(i), config);
+            }
+        }
+        Ok(out)
+    }
+
+    fn add_exits(&self, out: &mut OrderedSet, t: TRef, reenter: bool, domain: Option<Nid>, config: &OrderedSet) {
+        let source = self.source(t);
+        if reenter && Some(source) == domain {
+            out.insert(source);
+        }
+        for &s in config.as_slice() {
+            if self.tree.is_descendant(s, domain) {
+                out.insert(s);
+            }
+        }
     }
 
     /// `removeConflictingTransitions`.
@@ -1166,10 +1210,44 @@ pub fn microstep<H: Host>(
         }
     }
 
+    // Each transition's domain and effective target states. XState computes
+    // them for the exit set and again for the entry set, from inputs fixed
+    // for the whole microstep (the current resolver's result, which it
+    // caches, and the snapshot's history, which changes only when the
+    // microstep is applied), so computing them once here is the same.
+    // `plan` holds (domain or NO_DOMAIN, end of its targets in `effective`)
+    // per transition.
+    let mut plan: Buf<Nid> = Buf::new();
+    let mut effective: Option<Buf<Nid>> = None;
+    if is_initial || changes_state {
+        for &t in &filtered {
+            let targets = ctx.effective_targets(t)?;
+            let domain = ctx.domain_with(t, &targets)?;
+            let end = match &mut effective {
+                Some(all) => {
+                    all.extend_from_slice(&targets);
+                    all.len()
+                }
+                None => {
+                    let end = targets.len();
+                    effective = Some(targets);
+                    end
+                }
+            };
+            plan.push(domain.unwrap_or(NO_DOMAIN));
+            plan.push(end as Nid);
+        }
+    }
+    let domain_of = |i: usize| Some(plan[2 * i]).filter(|&d| d != NO_DOMAIN);
+    let targets_of = |i: usize| {
+        let start = if i == 0 { 0 } else { plan[2 * i - 1] as usize };
+        &effective.as_deref().expect("planned")[start..plan[2 * i + 1] as usize]
+    };
+
     // Exit states.
     let mut history_updates: Option<Vec<(Nid, Vec<Nid>)>> = None;
     if !is_initial && changes_state {
-        let exit = ctx.exit_set(&filtered, &set)?;
+        let exit = ctx.exit_set_with(&filtered, domain_of, &set)?;
         let mut to_exit = Buf::from_slice(exit.as_slice());
         to_exit.sort_by(|a, b| b.cmp(a));
         let current = Buf::from_slice(set.as_slice());
@@ -1212,8 +1290,8 @@ pub fn microstep<H: Host>(
             history_defaults: Vec::new(),
         };
         let mut entered: Vec<(TRef, Buf<Nid>)> = Vec::with_capacity(filtered.len());
-        for &t in &filtered {
-            let domain = ctx.domain(t)?;
+        for (i, &t) in filtered.iter().enumerate() {
+            let domain = domain_of(i);
             let Resolved { targets, reenter } = ctx.resolve(t)?;
             let source = ctx.source(t);
             let mut entered_targets = Buf::new();
@@ -1228,7 +1306,7 @@ pub fn microstep<H: Host>(
                 ctx.add_descendants(&mut e, &history, target)?;
             }
             entered.push((t, entered_targets));
-            for &s in ctx.effective_targets(t)?.iter() {
+            for &s in targets_of(i) {
                 let mut ancestors: Buf<Nid> = tree.ancestors(s, domain).collect();
                 if let Some(d) = domain {
                     if tree.kind(d) == Kind::Parallel {
