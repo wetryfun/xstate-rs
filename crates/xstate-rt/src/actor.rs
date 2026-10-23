@@ -266,6 +266,12 @@ where
         self.system.to_json()
     }
 
+    /// [`Actor::persist`] as a view that serializes to the same data without
+    /// building it: write it straight into an encoding with serde.
+    pub fn persist_view(&self) -> crate::system::SystemView<'_> {
+        self.system.view()
+    }
+
     pub fn machine(&self) -> &Arc<Machine<C, E>> {
         &self.machine
     }

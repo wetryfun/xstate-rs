@@ -53,6 +53,8 @@ fn record(actor: &mut Actor<Value, Value>, label: &str) -> Value {
     if let Some(output) = actor.output() {
         entry["output"] = output.clone();
     }
+    let viewed = serde_json::to_string(&actor.persist_view()).unwrap();
+    assert_eq!(viewed, actor.persist().to_string(), "the persist view differs from persist");
     entry
 }
 

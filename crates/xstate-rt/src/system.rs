@@ -21,6 +21,8 @@ use std::fmt;
 use std::sync::Arc;
 
 use indexmap::IndexMap;
+use serde::ser::{SerializeMap, SerializeSeq};
+use serde::{Serialize, Serializer};
 use serde_json::{json, Map, Value};
 
 /// The lifecycle status of an actor.
@@ -210,6 +212,11 @@ pub trait Logic: Send + Sync + 'static {
     }
     /// XState's snapshot data, as stored in a system snapshot.
     fn snapshot_data(&self, snapshot: &dyn AnySnapshot) -> Value;
+    /// [`Logic::snapshot_data`] as something that serializes to the same
+    /// data, so a snapshot can be written without building it as a `Value`.
+    fn snapshot_serialize<'a>(&'a self, snapshot: &'a dyn AnySnapshot) -> Box<dyn erased_serde::Serialize + 'a> {
+        Box::new(self.snapshot_data(snapshot))
+    }
     /// The initial snapshot and effects for `input`.
     fn initial_transition(&self, input: Option<&Value>, cx: &mut dyn Context) -> Result<Transition, SystemError>;
     /// Transitions `snapshot` (in place, or by replacing it) for `event`
@@ -496,27 +503,105 @@ pub(crate) fn builtin_timer_identity(event: &Value) -> Option<Value> {
     Some(Value::Object(m))
 }
 
-/// XState's `serializeTimerKey`.
-fn serialize_timer_key(key: &Value) -> String {
-    if let Some(id) = key.get("id") {
-        return json!(["id", id]).to_string();
-    }
-    if let Some(seq) = key.get("seq") {
-        return json!(["seq", seq]).to_string();
-    }
-    let event = key.get("event").cloned().unwrap_or(Value::Null);
-    json!(["event", builtin_timer_identity(&event).unwrap_or(event)]).to_string()
+/// Appends `v` as JSON.
+fn push_json(out: &mut String, v: &Value) {
+    use std::fmt::Write;
+    let _ = write!(out, "{v}");
 }
 
-/// XState's `systemTimerKey`.
-fn system_timer_key(source: &ActorRef, event: &Value) -> String {
-    let ty = event.get("type").and_then(Value::as_str).unwrap_or("");
-    let key = if ty == "xstate.timer" { read_timer_key(event) } else { None };
-    let tail = match key {
-        Some(k) => Value::String(serialize_timer_key(&k)),
-        None => Value::String(ty.to_owned()),
+fn push_json_str(out: &mut String, s: &str) {
+    push_json(out, &Value::String(s.to_owned()));
+}
+
+/// XState's `serializeTimerKey`, appended to `out`: equal keys give equal
+/// text and different keys different text (every part is JSON).
+fn push_timer_key(out: &mut String, key: &Value) {
+    if let Some(id) = key.get("id") {
+        out.push_str("id,");
+        push_json(out, id);
+        return;
+    }
+    if let Some(seq) = key.get("seq") {
+        out.push_str("seq,");
+        push_json(out, seq);
+        return;
+    }
+    out.push_str("event,");
+    match key.get("event") {
+        Some(event) => push_event_identity(out, event),
+        None => out.push_str("null"),
+    }
+}
+
+/// [`builtin_timer_identity`] (or the whole event) as JSON, without
+/// building the identity object.
+fn push_event_identity(out: &mut String, event: &Value) {
+    let fields: &[&str] = match event.get("type").and_then(Value::as_str) {
+        Some("xstate.after") => &["delay", "stateId"],
+        Some("xstate.timeout.state") => &["stateId"],
+        Some("xstate.timeout.actor") => &["actorId"],
+        _ => return push_json(out, event),
     };
-    json!([&*source.address, source.incarnation.to_string(), tail]).to_string()
+    out.push_str("{\"type\":");
+    push_json(out, &event["type"]);
+    for f in fields {
+        if let Some(v) = event.get(*f) {
+            out.push_str(",\"");
+            out.push_str(f);
+            out.push_str("\":");
+            push_json(out, v);
+        }
+    }
+    out.push('}');
+}
+
+/// XState's `systemTimerKey`: the source actor and the timer's key.
+fn system_timer_key(source: &ActorRef, event: &Value) -> String {
+    let mut out = String::with_capacity(64);
+    push_json_str(&mut out, &source.address);
+    out.push(',');
+    out.push_str(&source.incarnation.to_string());
+    out.push(',');
+    let ty = event.get("type").and_then(Value::as_str);
+    if ty != Some("xstate.timer") || !push_timer_event_key(&mut out, event) {
+        push_json_str(&mut out, ty.unwrap_or(""));
+    }
+    out
+}
+
+/// The key of a `{ type: 'xstate.timer', ...key }` event, appended as
+/// [`push_timer_key`] would append [`read_timer_key`]'s result. Returns
+/// whether the event has a key.
+fn push_timer_event_key(out: &mut String, event: &Value) -> bool {
+    if let Some(id) = event.get("id").filter(|v| v.is_string()) {
+        out.push_str("id,");
+        push_json(out, id);
+        return true;
+    }
+    if let Some(seq) = event.get("seq").filter(|v| v.is_number()) {
+        out.push_str("seq,");
+        push_json(out, seq);
+        return true;
+    }
+    match event.get("event") {
+        Some(e @ Value::Object(o)) if o.get("type").is_some_and(Value::is_string) => {
+            out.push_str("event,");
+            push_event_identity(out, e);
+            true
+        }
+        _ => false,
+    }
+}
+
+/// The system timer key for a machine timer `key` (`{ id } | { seq } | { event }`).
+fn system_timer_key_for(source: &ActorRef, key: &Value) -> String {
+    let mut out = String::with_capacity(64);
+    push_json_str(&mut out, &source.address);
+    out.push(',');
+    out.push_str(&source.incarnation.to_string());
+    out.push(',');
+    push_timer_key(&mut out, key);
+    out
 }
 
 /// `{ type: 'xstate.timer', ...key }`.
@@ -758,7 +843,7 @@ impl System {
     }
 
     fn cancel(&mut self, r: &ActorRef, key: Option<&Value>) {
-        let cancelled = key.map(|k| system_timer_key(r, &timer_event(k)));
+        let cancelled = key.map(|k| system_timer_key_for(r, k));
         self.timers
             .retain(|timer_key, timer| !(timer.source == *r && cancelled.as_ref().map_or(true, |c| c == timer_key)));
     }
@@ -1209,22 +1294,24 @@ impl System {
                 Value::Object(o)
             })
             .collect();
-        json!({
-            "root": self.root,
-            "executionId": self.execution_id,
-            "now": self.now,
-            "actors": actors,
-            "registry": registry,
-            "messages": messages,
-            "timers": timers,
-            "externalEffects": effects,
-            "counters": {
-                "actor": self.counters.actor,
-                "timer": self.counters.timer,
-                "sequence": self.counters.sequence,
-                "effect": self.counters.effect,
-            },
-        })
+        // Built by moving the parts in: `json!` would copy maps through
+        // serialization.
+        let mut counters = Map::with_capacity(4);
+        counters.insert("actor".into(), Value::from(self.counters.actor));
+        counters.insert("timer".into(), Value::from(self.counters.timer));
+        counters.insert("sequence".into(), Value::from(self.counters.sequence));
+        counters.insert("effect".into(), Value::from(self.counters.effect));
+        let mut out = Map::with_capacity(9);
+        out.insert("root".into(), Value::String(self.root.to_string()));
+        out.insert("executionId".into(), Value::String(self.execution_id.clone()));
+        out.insert("now".into(), Value::from(self.now));
+        out.insert("actors".into(), Value::Object(actors));
+        out.insert("registry".into(), Value::Object(registry));
+        out.insert("messages".into(), Value::Array(messages));
+        out.insert("timers".into(), Value::Array(timers));
+        out.insert("externalEffects".into(), Value::Object(effects));
+        out.insert("counters".into(), Value::Object(counters));
+        Value::Object(out)
     }
 
     /// Restores a system from [`System::to_json`] data and the same logic.
@@ -1397,6 +1484,137 @@ pub fn downcast<T: 'static>(snapshot: &dyn AnySnapshot) -> Option<&T> {
     snapshot.as_any().downcast_ref::<T>()
 }
 
+/// A borrowed view of a [`System`] that serializes exactly as
+/// [`System::to_json`] does, without building the `Value` first: snapshots
+/// are written straight into the output encoding.
+pub struct SystemView<'a>(&'a System);
+
+struct RefView<'a>(&'a ActorRef);
+
+impl Serialize for RefView<'_> {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        let mut m = s.serialize_map(Some(2))?;
+        m.serialize_entry("$actor", &*self.0.address)?;
+        m.serialize_entry("incarnation", &self.0.incarnation.to_string())?;
+        m.end()
+    }
+}
+
+struct EntryView<'a>(&'a System, &'a ActorEntry);
+
+impl Serialize for EntryView<'_> {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        let (sys, a) = (self.0, self.1);
+        let mut m = s.serialize_map(None)?;
+        m.serialize_entry("id", &a.id)?;
+        m.serialize_entry("address", &*a.address)?;
+        m.serialize_entry("incarnation", &a.incarnation.to_string())?;
+        m.serialize_entry("src", &a.src)?;
+        if let Some(v) = &a.logic_version {
+            m.serialize_entry("logicVersion", v)?;
+        }
+        if let Some(p) = &a.parent {
+            m.serialize_entry("parent", &RefView(p))?;
+        }
+        if let Some(k) = &a.registry_key {
+            m.serialize_entry("registryKey", k)?;
+        }
+        if let Some(v) = a.sync_snapshot {
+            m.serialize_entry("syncSnapshot", &v)?;
+        }
+        m.serialize_entry("started", &a.started)?;
+        if let Some(i) = &a.input {
+            m.serialize_entry("input", i)?;
+        }
+        let logic = sys.logic_of(&a.src);
+        match (&a.snapshot, &logic) {
+            (Some(snap), Some(l)) => m.serialize_entry("snapshot", &*l.snapshot_serialize(&**snap))?,
+            _ => m.serialize_entry("snapshot", &a.snapshot_data(logic.as_ref()))?,
+        }
+        m.end()
+    }
+}
+
+struct ActorsView<'a>(&'a System);
+
+impl Serialize for ActorsView<'_> {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        let mut m = s.serialize_map(Some(self.0.actors.len()))?;
+        for (address, a) in &self.0.actors {
+            m.serialize_entry(&**address, &EntryView(self.0, a))?;
+        }
+        m.end()
+    }
+}
+
+struct TimerView<'a>(&'a SystemTimer);
+
+impl Serialize for TimerView<'_> {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        let t = self.0;
+        let mut m = s.serialize_map(Some(6))?;
+        m.serialize_entry("source", &RefView(&t.source))?;
+        m.serialize_entry("occurrence", &t.occurrence)?;
+        m.serialize_entry("scheduledAt", &t.scheduled_at)?;
+        m.serialize_entry("dueAt", &t.due_at)?;
+        m.serialize_entry("sequence", &t.sequence)?;
+        m.serialize_entry("event", &t.event)?;
+        m.end()
+    }
+}
+
+struct Seq<I>(std::cell::RefCell<Option<I>>);
+
+impl<I: Iterator<Item = T>, T: Serialize> Serialize for Seq<I> {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        let items = self.0.borrow_mut().take().expect("serialized once");
+        let mut seq = s.serialize_seq(None)?;
+        for item in items {
+            seq.serialize_element(&item)?;
+        }
+        seq.end()
+    }
+}
+
+impl Serialize for SystemView<'_> {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        let sys = self.0;
+        let mut m = s.serialize_map(Some(9))?;
+        m.serialize_entry("root", &*sys.root)?;
+        m.serialize_entry("executionId", &sys.execution_id)?;
+        m.serialize_entry("now", &sys.now)?;
+        m.serialize_entry("actors", &ActorsView(sys))?;
+        let registry: Map<String, Value> = sys.registry.iter().map(|(k, v)| (k.clone(), v.to_json())).collect();
+        m.serialize_entry("registry", &registry)?;
+        // Messages and external effects are rare at rest; reuse `to_json`'s.
+        let rest = if sys.messages.is_empty() && sys.external_effects.is_empty() { None } else { Some(sys.to_json()) };
+        match &rest {
+            Some(v) => m.serialize_entry("messages", &v["messages"])?,
+            None => m.serialize_entry("messages", &[(); 0])?,
+        }
+        m.serialize_entry("timers", &Seq(std::cell::RefCell::new(Some(sys.timers.values().map(TimerView)))))?;
+        match &rest {
+            Some(v) => m.serialize_entry("externalEffects", &v["externalEffects"])?,
+            None => m.serialize_entry("externalEffects", &Map::new())?,
+        }
+        let mut counters = Map::with_capacity(4);
+        counters.insert("actor".into(), Value::from(sys.counters.actor));
+        counters.insert("timer".into(), Value::from(sys.counters.timer));
+        counters.insert("sequence".into(), Value::from(sys.counters.sequence));
+        counters.insert("effect".into(), Value::from(sys.counters.effect));
+        m.serialize_entry("counters", &counters)?;
+        m.end()
+    }
+}
+
+impl System {
+    /// The system snapshot as a [`SystemView`]: serializes to the same data
+    /// as [`System::to_json`], without building it.
+    pub fn view(&self) -> SystemView<'_> {
+        SystemView(self)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1404,7 +1622,13 @@ mod tests {
     #[test]
     fn timer_keys() {
         let r = ActorRef { address: "a".into(), incarnation: 0 };
-        assert_eq!(system_timer_key(&r, &json!({"type":"xstate.timer","seq":0})), r#"["a","0","[\"seq\",0]"]"#);
+        let seq = system_timer_key(&r, &json!({"type":"xstate.timer","seq":0}));
+        assert_eq!(seq, system_timer_key_for(&r, &json!({"seq":0})));
+        assert_ne!(seq, system_timer_key(&r, &json!({"type":"xstate.timer","id":"0"})));
+        let after = json!({"type":"xstate.after","delay":10,"stateId":"m.a","extra":1});
+        let k = system_timer_key(&r, &json!({"type":"xstate.timer","event":after}));
+        assert_eq!(k, system_timer_key_for(&r, &json!({"event":{"stateId":"m.a","type":"xstate.after","delay":10}})));
+        assert_eq!(k, r#""a",0,event,{"type":"xstate.after","delay":10,"stateId":"m.a"}"#);
         assert_eq!(read_timer_key(&json!({"type":"xstate.timer","id":"t"})), Some(json!({"id":"t"})));
         assert_eq!(encode_address_segment("a/b%"), "a%2Fb%25");
     }

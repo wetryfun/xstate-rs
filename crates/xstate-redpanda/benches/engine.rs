@@ -47,6 +47,11 @@ fn bench(c: &mut Criterion) {
         g.bench_function(format!("{codec:?}/decode"), |b| b.iter(|| Codec::decode(black_box(&encoded)).unwrap()));
     }
     g.bench_function("persist", |b| b.iter(|| black_box(actor.persist())));
+    for codec in [Codec::Json, Codec::MessagePack] {
+        g.bench_function(format!("{codec:?}/persist_view_encode"), |b| {
+            b.iter(|| codec.encode_serialize(black_box(&actor.persist_view())))
+        });
+    }
     g.finish();
 
     // 1000 records over 100 keys per batch, then one flush (100 snapshots).

@@ -110,7 +110,16 @@ fn run(fixture: &Value, expected: &[Value]) -> Result<(), String> {
             (None, Ok(effects)) => {
                 let effects = Value::Array(effects.iter().map(|e| e.to_json()).collect());
                 compare(&format!("{label} effects"), &exp["effects"], &effects)?;
-                compare(&format!("{label} snapshot"), &exp["snapshot"], &sys.unwrap().to_json())?;
+                let actual = sys.unwrap().to_json();
+                compare(&format!("{label} snapshot"), &exp["snapshot"], &actual)?;
+                // The serialize-without-building view writes the same data.
+                let viewed = serde_json::to_string(&sys.unwrap().view()).unwrap();
+                let text = actual.to_string();
+                if viewed != text {
+                    return Err(format!(
+                        "{label}: the view differs from to_json\n  view:    {viewed}\n  to_json: {actual}"
+                    ));
+                }
                 // XState's own snapshot data restores into an equal Rust system.
                 let restored = System::from_json(&logic, &exp["snapshot"], 10_000)
                     .map_err(|e| format!("{label}: restoring XState's snapshot failed: {e}"))?;

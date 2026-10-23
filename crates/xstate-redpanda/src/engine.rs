@@ -229,7 +229,7 @@ where
                 self.actors.remove(&key);
                 self.output.changelog.push((key, None));
             } else {
-                let record = self.config.codec.encode(&actor.persist());
+                let record = self.config.codec.encode_serialize(&actor.persist_view());
                 self.output.changelog.push((key, Some(record)));
             }
         }

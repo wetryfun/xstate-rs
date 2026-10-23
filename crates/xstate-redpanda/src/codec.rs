@@ -21,16 +21,22 @@ const MESSAGE_PACK: u8 = 2;
 
 impl Codec {
     pub fn encode(self, snapshot: &Value) -> Vec<u8> {
+        self.encode_serialize(snapshot)
+    }
+
+    /// Encodes anything that serializes as JSON data would, such as
+    /// [`xstate_rt::Actor::persist_view`], without building a `Value`.
+    pub fn encode_serialize<T: serde::Serialize + ?Sized>(self, snapshot: &T) -> Vec<u8> {
         match self {
             Codec::Json => {
                 let mut out = vec![JSON];
-                serde_json::to_writer(&mut out, snapshot).expect("a JSON value serializes");
+                serde_json::to_writer(&mut out, snapshot).expect("snapshots serialize");
                 out
             }
             Codec::MessagePack => {
                 let mut out = vec![MESSAGE_PACK];
                 // Maps as maps with string keys, so any reader can decode it.
-                rmp_serde::encode::write_named(&mut out, snapshot).expect("a JSON value serializes");
+                rmp_serde::encode::write_named(&mut out, snapshot).expect("snapshots serialize");
                 out
             }
         }

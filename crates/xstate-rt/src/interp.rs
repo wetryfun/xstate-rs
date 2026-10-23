@@ -51,8 +51,22 @@ impl<E: EventType> LogicalTimer<E> {
         if let Some(seq) = self.seq {
             return json!({ "seq": seq });
         }
-        let event = self.event.to_json();
-        json!({ "event": builtin_timer_identity(&event).unwrap_or(event) })
+        let ty = self.event.event_type();
+        let fields: &[&str] = match ty {
+            "xstate.after" => &["delay", "stateId"],
+            "xstate.timeout.state" => &["stateId"],
+            "xstate.timeout.actor" => &["actorId"],
+            _ => return json!({ "event": self.event.to_json() }),
+        };
+        // `builtinTimerIdentity`, from the fields it keeps.
+        let mut identity = Map::with_capacity(fields.len() + 1);
+        identity.insert("type".into(), Value::String(ty.to_owned()));
+        for f in fields {
+            if let Some(v) = self.event.field(f) {
+                identity.insert((*f).to_owned(), v);
+            }
+        }
+        json!({ "event": identity })
     }
 
     /// XState's `matchesTimerKey`.
@@ -69,9 +83,11 @@ impl<E: EventType> LogicalTimer<E> {
         if self.seq.is_some() {
             return false;
         }
-        let event = self.event.to_json();
         match key.get("event").and_then(Value::as_object) {
-            Some(pattern) => pattern.iter().all(|(k, v)| event.get(k) == Some(v)),
+            Some(pattern) => pattern.iter().all(|(k, v)| match k.as_str() {
+                "type" => v.as_str() == Some(self.event.event_type()),
+                _ => self.event.field(k).as_ref() == Some(v),
+            }),
             None => false,
         }
     }
@@ -248,6 +264,81 @@ impl<E: Clone> Saved<E> {
     }
 }
 
+/// A context as JSON: a clone for untyped (`Value`) contexts, serde for
+/// typed ones (with numbers as JavaScript writes them).
+fn context_json<C: Serialize + 'static>(context: &C) -> Value {
+    if let Some(v) = (context as &dyn Any).downcast_ref::<Value>() {
+        let mut v = v.clone();
+        crate::event::js_numbers(&mut v);
+        return v;
+    }
+    let mut v = serde_json::to_value(context).unwrap_or(Value::Null);
+    crate::event::js_numbers(&mut v);
+    v
+}
+
+/// A machine snapshot that serializes as [`Machine::snapshot_data`] builds it.
+struct SnapshotView<'a, C, E> {
+    m: &'a Machine<C, E>,
+    st: &'a State<C, E>,
+}
+
+impl<C, E> Serialize for SnapshotView<'_, C, E>
+where
+    C: Serialize + DeserializeOwned + Clone + 'static,
+    E: EventType,
+{
+    fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+        use serde::ser::SerializeMap;
+        struct Ids<'a, C, E>(&'a Machine<C, E>, &'a [Nid]);
+        impl<C, E> Serialize for Ids<'_, C, E> {
+            fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+                s.collect_seq(self.1.iter().map(|&n| self.0.data(n).id.as_str()))
+            }
+        }
+        struct StateNodes<'a, C, E>(&'a Machine<C, E>, &'a [Nid]);
+        impl<C, E> Serialize for StateNodes<'_, C, E> {
+            fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+                s.collect_seq(self.1.iter().map(|&n| {
+                    let mut one = std::collections::BTreeMap::new();
+                    one.insert("$stateNode", self.0.data(n).id.as_str());
+                    one
+                }))
+            }
+        }
+        struct History<'a, C, E>(&'a Machine<C, E>, &'a [(Nid, Vec<Nid>)]);
+        impl<C, E> Serialize for History<'_, C, E> {
+            fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+                s.collect_map(self.1.iter().map(|(h, nodes)| (self.0.data(*h).id.as_str(), StateNodes(self.0, nodes))))
+            }
+        }
+        struct Children<'a>(&'a IndexMap<String, ActorRef>);
+        impl Serialize for Children<'_> {
+            fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
+                s.collect_map(self.0.iter().map(|(k, r)| (k, r.to_json())))
+            }
+        }
+        let (m, st) = (self.m, self.st);
+        let mut map = s.serialize_map(None)?;
+        map.serialize_entry("status", st.status.as_str())?;
+        if let Some(o) = &st.output {
+            map.serialize_entry("output", o)?;
+        }
+        if let Some(e) = &st.error {
+            map.serialize_entry("error", e)?;
+        }
+        map.serialize_entry("context", &context_json(&st.context))?;
+        map.serialize_entry("value", &m.state_value(&st.nodes))?;
+        map.serialize_entry("children", &Children(&st.children))?;
+        map.serialize_entry("timers", &st.timers.iter().map(LogicalTimer::to_data).collect::<Vec<_>>())?;
+        map.serialize_entry("historyValue", &History(m, &st.history))?;
+        map.serialize_entry("_stateInputs", &Map::new())?;
+        map.serialize_entry("_nextTimerId", &st.next_timer_id)?;
+        map.serialize_entry("nodeIds", &Ids(m, &st.nodes))?;
+        map.end()
+    }
+}
+
 /// Which macrostep is being run.
 pub(crate) enum MacroEvent {
     Init,
@@ -280,10 +371,15 @@ struct NativeHost<'a, C, E> {
 
 impl<C, E> NativeHost<'_, C, E>
 where
-    C: Serialize + DeserializeOwned + Clone,
+    C: Serialize + DeserializeOwned + Clone + 'static,
     E: EventType,
 {
     fn context_object(&self) -> Result<Map<String, Value>, SystemError> {
+        if let Some(v) = (&self.st.context as &dyn Any).downcast_ref::<Value>() {
+            let mut map = v.as_object().cloned().unwrap_or_default();
+            map.values_mut().for_each(crate::event::js_numbers);
+            return Ok(map);
+        }
         match serde_json::to_value(&self.st.context) {
             Ok(Value::Object(mut map)) => {
                 map.values_mut().for_each(crate::event::js_numbers);
@@ -300,15 +396,19 @@ where
         for (k, v) in patch {
             map.insert(k.clone(), v.clone());
         }
-        let context =
-            C::deserialize(&Value::Object(map)).map_err(|e| SystemError::Failed(format!("invalid context: {e}")))?;
+        let merged = Value::Object(map);
+        let context = if std::any::TypeId::of::<C>() == std::any::TypeId::of::<Value>() {
+            // An untyped context takes the object as it is.
+            *(Box::new(merged) as Box<dyn Any>).downcast::<C>().expect("C is Value")
+        } else {
+            C::deserialize(&merged).map_err(|e| SystemError::Failed(format!("invalid context: {e}")))?
+        };
         let previous = std::mem::replace(&mut self.st.context, context);
         self.context_backup.get_or_insert(previous);
         self.cloned = true;
         Ok(())
     }
 
-    /// `executeActions` from `machineFromJSON`, against `base` as the context.
     /// The context an action list starts from, which only `@xstate.assign`
     /// reads (serializing the context is skipped otherwise).
     fn action_base(&self, actions: &[Action]) -> Result<Map<String, Value>, SystemError> {
@@ -319,6 +419,7 @@ where
         }
     }
 
+    /// `executeActions` from `machineFromJSON`, against `base` as the context.
     fn execute_actions(&self, actions: &[Action], base: &Map<String, Value>) -> Outcome<E> {
         let mut assigned: Option<Map<String, Value>> = None;
         let mut out = Outcome::empty();
@@ -589,7 +690,7 @@ where
 
 impl<C, E> Host for NativeHost<'_, C, E>
 where
-    C: Serialize + DeserializeOwned + Clone,
+    C: Serialize + DeserializeOwned + Clone + 'static,
     E: EventType,
 {
     type Error = SystemError;
@@ -895,7 +996,7 @@ where
 
 impl<C, E> Machine<C, E>
 where
-    C: Serialize + DeserializeOwned + Clone,
+    C: Serialize + DeserializeOwned + Clone + 'static,
     E: EventType,
 {
     /// One macrostep of XState's machine logic (`initialTransition` or
@@ -1022,9 +1123,7 @@ where
         if let Some(e) = &st.error {
             m.insert("error".into(), e.clone());
         }
-        let mut context = serde_json::to_value(&st.context).unwrap_or(Value::Null);
-        crate::event::js_numbers(&mut context);
-        m.insert("context".into(), context);
+        m.insert("context".into(), context_json(&st.context));
         m.insert("value".into(), self.state_value(&st.nodes));
         m.insert("children".into(), Value::Object(st.children.iter().map(|(k, r)| (k.clone(), r.to_json())).collect()));
         m.insert("timers".into(), Value::Array(st.timers.iter().map(LogicalTimer::to_data).collect()));
@@ -1153,6 +1252,13 @@ where
         match snapshot.as_any().downcast_ref::<State<C, E>>() {
             Some(st) => Machine::snapshot_data(self, st),
             None => Value::Null,
+        }
+    }
+
+    fn snapshot_serialize<'a>(&'a self, snapshot: &'a dyn AnySnapshot) -> Box<dyn erased_serde::Serialize + 'a> {
+        match snapshot.as_any().downcast_ref::<State<C, E>>() {
+            Some(st) => Box::new(SnapshotView { m: self, st }),
+            None => Box::new(Value::Null),
         }
     }
 
