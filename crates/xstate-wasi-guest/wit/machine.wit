@@ -1,0 +1,73 @@
+package xstate:machine@0.1.0;
+
+/// The machine a component was built for.
+interface info {
+  /// The machine's `id`.
+  id: func() -> string;
+
+  /// The definition's `version`, if any.
+  version: func() -> option<string>;
+
+  /// The `MachineJSON` definition.
+  definition: func() -> string;
+
+  /// The JSON Schemas of its context, events, emitted events, input and
+  /// output (the extract bundle's `schemas`).
+  schemas: func() -> string;
+}
+
+/// Actors of the component's machine. Its guards, actions, delays and
+/// invoked actors are implemented inside the component; an invoke source the
+/// component leaves to the host is async work in `pending-effects`. Values
+/// cross the boundary as JSON text and are checked against the machine's
+/// types inside. The runtime never reads a clock: every call that can fire
+/// timers takes the current time in milliseconds.
+interface actors {
+  resource actor {
+    /// Starts an actor at `now`. Options (JSON, all optional):
+    /// `{ "input": any, "id": string, "maxSteps": number }`.
+    start: static func(options: string, now: u64) -> result<actor, string>;
+
+    /// Restores an actor from `persist` output. Runs no actions.
+    restore: static func(snapshot: string) -> result<actor, string>;
+
+    /// Sends an event of the machine (`{ "type": ..., ... }`, checked against
+    /// its event types) to the root at `now`. Due timers fire first.
+    send: func(event: string, now: u64) -> result<_, string>;
+
+    /// Sends an event to any actor in the system by address.
+    send-to: func(address: string, event: string, now: u64) -> result<_, string>;
+
+    /// Fires every timer due at or before `now`.
+    advance: func(now: u64) -> result<_, string>;
+
+    /// When the next timer is due.
+    next-deadline: func() -> option<u64>;
+
+    /// The root's snapshot: `{ "status", "value", "context", "output"?, "error"? }`.
+    snapshot: func() -> string;
+
+    /// The whole system (XState's `SystemSnapshot` shape), for `restore`.
+    persist: func() -> string;
+
+    /// Events the root emitted since the last call, oldest first.
+    take-emitted: func() -> list<string>;
+
+    /// Argument lists of the root's `@xstate.log` actions since the last call.
+    take-logs: func() -> list<string>;
+
+    /// External work waiting for the host (XState's external effect data).
+    pending-effects: func() -> list<string>;
+
+    /// Completes a pending effect, optionally with a result event.
+    resolve-effect: func(id: string, event: option<string>) -> result<_, string>;
+
+    /// Stops the root and its children.
+    stop: func() -> result<_, string>;
+  }
+}
+
+world machine {
+  export info;
+  export actors;
+}

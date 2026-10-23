@@ -163,6 +163,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "checkout-component"
+version = "0.0.0"
+dependencies = [
+ "xstate-codegen",
+ "xstate-rt",
+ "xstate-wasi-guest",
+]
+
+[[package]]
 name = "checkout-example"
 version = "0.0.0"
 dependencies = [
@@ -2688,6 +2697,16 @@ dependencies = [
 name = "xstate-wasi"
 version = "0.1.0"
 dependencies = [
+ "serde_json",
+ "wit-bindgen",
+ "xstate-rt",
+]
+
+[[package]]
+name = "xstate-wasi-guest"
+version = "0.1.0"
+dependencies = [
+ "serde",
  "serde_json",
  "wit-bindgen",
  "xstate-rt",

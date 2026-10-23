@@ -1,0 +1,18 @@
+[package]
+name = "checkout-component"
+version = "0.0.0"
+description = "The checkout machine as a typed WASI component: its guards, actions, delays and actors are Rust inside the component"
+publish = false
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+xstate-rt = { path = "../../crates/xstate-rt" }
+xstate-wasi-guest = { path = "../../crates/xstate-wasi-guest" }
+
+[build-dependencies]
+xstate-codegen = { path = "../../crates/xstate-codegen" }

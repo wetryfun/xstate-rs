@@ -1,0 +1,15 @@
+[package]
+name = "xstate-wasi-guest"
+version = "0.1.0"
+description = "Typed WASI 0.2 components for one XState v6 machine each, with its guards and actions in Rust inside the component"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+xstate-rt = { path = "../xstate-rt" }
+serde.workspace = true
+serde_json.workspace = true
+wit-bindgen = "0.63"
