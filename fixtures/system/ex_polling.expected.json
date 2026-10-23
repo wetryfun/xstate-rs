@@ -1,0 +1,1115 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "poller",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "poller": {
+          "id": "poller",
+          "address": "poller",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "jobId": null,
+              "status": "pending"
+            },
+            "value": "submitting",
+            "children": {
+              "poller.submitting:0": {
+                "$actor": "poller/poller.submitting:0",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "poller",
+              "poller.submitting"
+            ]
+          }
+        },
+        "poller/poller.submitting:0": {
+          "id": "poller.submitting:0",
+          "address": "poller/poller.submitting:0",
+          "incarnation": "1",
+          "src": "root/actors/submitJob",
+          "parent": {
+            "$actor": "poller",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "poller/poller.submitting:0",
+            "incarnation": "1"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 0,
+        "effect": 1
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "poller/poller.submitting:0",
+          "incarnation": "1"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "poller",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "poller": {
+          "id": "poller",
+          "address": "poller",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "jobId": "job-42",
+              "status": "pending"
+            },
+            "value": "polling",
+            "children": {},
+            "timers": [
+              {
+                "delay": 500,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 500,
+                  "stateId": "poller.polling"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "poller",
+              "poller.polling"
+            ]
+          }
+        },
+        "poller/poller.submitting:0": {
+          "id": "poller.submitting:0",
+          "address": "poller/poller.submitting:0",
+          "incarnation": "1",
+          "src": "root/actors/submitJob",
+          "parent": {
+            "$actor": "poller",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "jobId": "job-42"
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "jobId": "job-42"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "poller",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 500,
+          "sequence": 2,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 500,
+              "stateId": "poller.polling"
+            }
+          }
+        }
+      ],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 3,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "poller",
+      "executionId": "system",
+      "now": 499,
+      "actors": {
+        "poller": {
+          "id": "poller",
+          "address": "poller",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "jobId": "job-42",
+              "status": "pending"
+            },
+            "value": "polling",
+            "children": {},
+            "timers": [
+              {
+                "delay": 500,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 500,
+                  "stateId": "poller.polling"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "poller",
+              "poller.polling"
+            ]
+          }
+        },
+        "poller/poller.submitting:0": {
+          "id": "poller.submitting:0",
+          "address": "poller/poller.submitting:0",
+          "incarnation": "1",
+          "src": "root/actors/submitJob",
+          "parent": {
+            "$actor": "poller",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "jobId": "job-42"
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "jobId": "job-42"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "poller",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 500,
+          "sequence": 2,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 500,
+              "stateId": "poller.polling"
+            }
+          }
+        }
+      ],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 3,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "poller",
+      "executionId": "system",
+      "now": 500,
+      "actors": {
+        "poller": {
+          "id": "poller",
+          "address": "poller",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "jobId": "job-42",
+              "status": "pending"
+            },
+            "value": "checking",
+            "children": {
+              "poller.checking:0": {
+                "$actor": "poller/poller.checking:0",
+                "incarnation": "2"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "poller",
+              "poller.checking"
+            ]
+          }
+        },
+        "poller/poller.submitting:0": {
+          "id": "poller.submitting:0",
+          "address": "poller/poller.submitting:0",
+          "incarnation": "1",
+          "src": "root/actors/submitJob",
+          "parent": {
+            "$actor": "poller",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "jobId": "job-42"
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "jobId": "job-42"
+                }
+              }
+            }
+          }
+        },
+        "poller/poller.checking:0": {
+          "id": "poller.checking:0",
+          "address": "poller/poller.checking:0",
+          "incarnation": "2",
+          "src": "root/actors/getJobStatus",
+          "parent": {
+            "$actor": "poller",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "poller/poller.checking:0",
+            "incarnation": "2"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 1,
+        "sequence": 4,
+        "effect": 2
+      }
+    },
+    "effects": [
+      {
+        "id": "system:1",
+        "source": {
+          "$actor": "poller/poller.checking:0",
+          "incarnation": "2"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "snapshot": {
+      "root": "poller",
+      "executionId": "system",
+      "now": 500,
+      "actors": {
+        "poller": {
+          "id": "poller",
+          "address": "poller",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "jobId": "job-42",
+              "status": "running"
+            },
+            "value": "polling",
+            "children": {},
+            "timers": [
+              {
+                "delay": 500,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 500,
+                  "stateId": "poller.polling"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "poller",
+              "poller.polling"
+            ]
+          }
+        },
+        "poller/poller.submitting:0": {
+          "id": "poller.submitting:0",
+          "address": "poller/poller.submitting:0",
+          "incarnation": "1",
+          "src": "root/actors/submitJob",
+          "parent": {
+            "$actor": "poller",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "jobId": "job-42"
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "jobId": "job-42"
+                }
+              }
+            }
+          }
+        },
+        "poller/poller.checking:0": {
+          "id": "poller.checking:0",
+          "address": "poller/poller.checking:0",
+          "incarnation": "2",
+          "src": "root/actors/getJobStatus",
+          "parent": {
+            "$actor": "poller",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": "pending",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "pending"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "poller",
+            "incarnation": "0"
+          },
+          "occurrence": 1,
+          "scheduledAt": 500,
+          "dueAt": 1000,
+          "sequence": 6,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 500,
+              "stateId": "poller.polling"
+            }
+          }
+        }
+      ],
+      "externalEffects": {},
+      "counters": {
+        "actor": 3,
+        "timer": 2,
+        "sequence": 7,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 4",
+    "snapshot": {
+      "root": "poller",
+      "executionId": "system",
+      "now": 1000,
+      "actors": {
+        "poller": {
+          "id": "poller",
+          "address": "poller",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "jobId": "job-42",
+              "status": "running"
+            },
+            "value": "checking",
+            "children": {
+              "poller.checking:0": {
+                "$actor": "poller/poller.checking:0",
+                "incarnation": "3"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "poller",
+              "poller.checking"
+            ]
+          }
+        },
+        "poller/poller.submitting:0": {
+          "id": "poller.submitting:0",
+          "address": "poller/poller.submitting:0",
+          "incarnation": "1",
+          "src": "root/actors/submitJob",
+          "parent": {
+            "$actor": "poller",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "jobId": "job-42"
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "jobId": "job-42"
+                }
+              }
+            }
+          }
+        },
+        "poller/poller.checking:0": {
+          "id": "poller.checking:0",
+          "address": "poller/poller.checking:0",
+          "incarnation": "3",
+          "src": "root/actors/getJobStatus",
+          "parent": {
+            "$actor": "poller",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "poller/poller.checking:0",
+            "incarnation": "3"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 4,
+        "timer": 2,
+        "sequence": 8,
+        "effect": 3
+      }
+    },
+    "effects": [
+      {
+        "id": "system:2",
+        "source": {
+          "$actor": "poller/poller.checking:0",
+          "incarnation": "3"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 5",
+    "snapshot": {
+      "root": "poller",
+      "executionId": "system",
+      "now": 1000,
+      "actors": {
+        "poller": {
+          "id": "poller",
+          "address": "poller",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "jobId": "job-42",
+              "status": "running"
+            },
+            "value": "polling",
+            "children": {},
+            "timers": [
+              {
+                "delay": 500,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 500,
+                  "stateId": "poller.polling"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "poller",
+              "poller.polling"
+            ]
+          }
+        },
+        "poller/poller.submitting:0": {
+          "id": "poller.submitting:0",
+          "address": "poller/poller.submitting:0",
+          "incarnation": "1",
+          "src": "root/actors/submitJob",
+          "parent": {
+            "$actor": "poller",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "jobId": "job-42"
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "jobId": "job-42"
+                }
+              }
+            }
+          }
+        },
+        "poller/poller.checking:0": {
+          "id": "poller.checking:0",
+          "address": "poller/poller.checking:0",
+          "incarnation": "3",
+          "src": "root/actors/getJobStatus",
+          "parent": {
+            "$actor": "poller",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": "running",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "running"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "poller",
+            "incarnation": "0"
+          },
+          "occurrence": 2,
+          "scheduledAt": 1000,
+          "dueAt": 1500,
+          "sequence": 10,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 500,
+              "stateId": "poller.polling"
+            }
+          }
+        }
+      ],
+      "externalEffects": {},
+      "counters": {
+        "actor": 4,
+        "timer": 3,
+        "sequence": 11,
+        "effect": 3
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 6",
+    "snapshot": {
+      "root": "poller",
+      "executionId": "system",
+      "now": 1400,
+      "actors": {
+        "poller": {
+          "id": "poller",
+          "address": "poller",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "jobId": "job-42",
+              "status": "running"
+            },
+            "value": "polling",
+            "children": {},
+            "timers": [
+              {
+                "delay": 500,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 500,
+                  "stateId": "poller.polling"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "poller",
+              "poller.polling"
+            ]
+          }
+        },
+        "poller/poller.submitting:0": {
+          "id": "poller.submitting:0",
+          "address": "poller/poller.submitting:0",
+          "incarnation": "1",
+          "src": "root/actors/submitJob",
+          "parent": {
+            "$actor": "poller",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "jobId": "job-42"
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "jobId": "job-42"
+                }
+              }
+            }
+          }
+        },
+        "poller/poller.checking:0": {
+          "id": "poller.checking:0",
+          "address": "poller/poller.checking:0",
+          "incarnation": "3",
+          "src": "root/actors/getJobStatus",
+          "parent": {
+            "$actor": "poller",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": "running",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "running"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "poller",
+            "incarnation": "0"
+          },
+          "occurrence": 2,
+          "scheduledAt": 1000,
+          "dueAt": 1500,
+          "sequence": 10,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 500,
+              "stateId": "poller.polling"
+            }
+          }
+        }
+      ],
+      "externalEffects": {},
+      "counters": {
+        "actor": 4,
+        "timer": 3,
+        "sequence": 11,
+        "effect": 3
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 7",
+    "snapshot": {
+      "root": "poller",
+      "executionId": "system",
+      "now": 1500,
+      "actors": {
+        "poller": {
+          "id": "poller",
+          "address": "poller",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "jobId": "job-42",
+              "status": "running"
+            },
+            "value": "checking",
+            "children": {
+              "poller.checking:0": {
+                "$actor": "poller/poller.checking:0",
+                "incarnation": "4"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "poller",
+              "poller.checking"
+            ]
+          }
+        },
+        "poller/poller.submitting:0": {
+          "id": "poller.submitting:0",
+          "address": "poller/poller.submitting:0",
+          "incarnation": "1",
+          "src": "root/actors/submitJob",
+          "parent": {
+            "$actor": "poller",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "jobId": "job-42"
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "jobId": "job-42"
+                }
+              }
+            }
+          }
+        },
+        "poller/poller.checking:0": {
+          "id": "poller.checking:0",
+          "address": "poller/poller.checking:0",
+          "incarnation": "4",
+          "src": "root/actors/getJobStatus",
+          "parent": {
+            "$actor": "poller",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "poller/poller.checking:0",
+            "incarnation": "4"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 5,
+        "timer": 3,
+        "sequence": 12,
+        "effect": 4
+      }
+    },
+    "effects": [
+      {
+        "id": "system:3",
+        "source": {
+          "$actor": "poller/poller.checking:0",
+          "incarnation": "4"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 8",
+    "snapshot": {
+      "root": "poller",
+      "executionId": "system",
+      "now": 1500,
+      "actors": {
+        "poller": {
+          "id": "poller",
+          "address": "poller",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "jobId": "job-42"
+            },
+            "context": {
+              "jobId": "job-42",
+              "status": "succeeded"
+            },
+            "value": "succeeded",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "poller.succeeded",
+              "poller"
+            ]
+          }
+        },
+        "poller/poller.submitting:0": {
+          "id": "poller.submitting:0",
+          "address": "poller/poller.submitting:0",
+          "incarnation": "1",
+          "src": "root/actors/submitJob",
+          "parent": {
+            "$actor": "poller",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "jobId": "job-42"
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "jobId": "job-42"
+                }
+              }
+            }
+          }
+        },
+        "poller/poller.checking:0": {
+          "id": "poller.checking:0",
+          "address": "poller/poller.checking:0",
+          "incarnation": "4",
+          "src": "root/actors/getJobStatus",
+          "parent": {
+            "$actor": "poller",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": "succeeded",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "succeeded"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 5,
+        "timer": 3,
+        "sequence": 14,
+        "effect": 4
+      }
+    },
+    "effects": []
+  }
+]

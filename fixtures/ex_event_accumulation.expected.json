@@ -1,0 +1,130 @@
+[
+  {
+    "label": "start",
+    "value": "open",
+    "context": {
+      "lot": "Lot 7: vintage sign",
+      "highest": 0,
+      "leader": null
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 0",
+    "value": "open",
+    "context": {
+      "lot": "Lot 7: vintage sign",
+      "highest": 100,
+      "leader": "ada"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "accepted",
+        "amount": 100
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "value": "open",
+    "context": {
+      "lot": "Lot 7: vintage sign",
+      "highest": 150,
+      "leader": "grace"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "accepted",
+        "amount": 150
+      }
+    ]
+  },
+  {
+    "label": "step 2",
+    "value": "open",
+    "context": {
+      "lot": "Lot 7: vintage sign",
+      "highest": 150,
+      "leader": "grace"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "rejected"
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "value": "open",
+    "context": {
+      "lot": "Lot 7: vintage sign",
+      "highest": 200,
+      "leader": "ada"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "accepted",
+        "amount": 200
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "value": "open",
+    "context": {
+      "lot": "Lot 7: vintage sign",
+      "highest": 200,
+      "leader": "ada"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "rejected"
+      }
+    ]
+  },
+  {
+    "label": "step 5",
+    "value": "open",
+    "context": {
+      "lot": "Lot 7: vintage sign",
+      "highest": 200,
+      "leader": "ada"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 6",
+    "value": "closed",
+    "context": {
+      "lot": "Lot 7: vintage sign",
+      "highest": 200,
+      "leader": "ada"
+    },
+    "status": "done",
+    "emitted": [],
+    "output": {
+      "lot": "Lot 7: vintage sign"
+    }
+  },
+  {
+    "label": "step 7",
+    "value": "closed",
+    "context": {
+      "lot": "Lot 7: vintage sign",
+      "highest": 200,
+      "leader": "ada"
+    },
+    "status": "done",
+    "emitted": [],
+    "output": {
+      "lot": "Lot 7: vintage sign"
+    }
+  }
+]

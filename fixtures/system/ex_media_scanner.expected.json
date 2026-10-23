@@ -1,0 +1,3594 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "mediaScanner",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "mediaScanner": {
+          "id": "mediaScanner",
+          "address": "mediaScanner",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "basePath": "/media",
+              "destinationPath": "/library",
+              "directoriesToCheck": [],
+              "dirsToEvaluate": [],
+              "dirsToMove": [],
+              "dirsToReport": [],
+              "acceptedFileTypes": [
+                "mp4",
+                "mkv",
+                "avi",
+                "mov",
+                "m4v",
+                "mpg",
+                "mpeg",
+                "wmv",
+                "flv",
+                "ts",
+                "mts"
+              ]
+            },
+            "value": "idle",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mediaScanner",
+              "mediaScanner.idle"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 0,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "mediaScanner",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "mediaScanner": {
+          "id": "mediaScanner",
+          "address": "mediaScanner",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "basePath": "/media",
+              "destinationPath": "/library",
+              "directoriesToCheck": [],
+              "dirsToEvaluate": [],
+              "dirsToMove": [],
+              "dirsToReport": [],
+              "acceptedFileTypes": [
+                "mp4",
+                "mkv",
+                "avi",
+                "mov",
+                "m4v",
+                "mpg",
+                "mpeg",
+                "wmv",
+                "flv",
+                "ts",
+                "mts"
+              ]
+            },
+            "value": "scanning",
+            "children": {
+              "mediaScanner.scanning:0": {
+                "$actor": "mediaScanner/mediaScanner.scanning:0",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mediaScanner",
+              "mediaScanner.scanning"
+            ]
+          }
+        },
+        "mediaScanner/mediaScanner.scanning:0": {
+          "id": "mediaScanner.scanning:0",
+          "address": "mediaScanner/mediaScanner.scanning:0",
+          "incarnation": "1",
+          "src": "root/actors/scanLibrary",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "mediaScanner/mediaScanner.scanning:0",
+            "incarnation": "1"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 1,
+        "effect": 1
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "mediaScanner/mediaScanner.scanning:0",
+          "incarnation": "1"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "mediaScanner",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "mediaScanner": {
+          "id": "mediaScanner",
+          "address": "mediaScanner",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "basePath": "/media",
+              "destinationPath": "/library",
+              "directoriesToCheck": [
+                "a",
+                "b",
+                "c"
+              ],
+              "dirsToEvaluate": [],
+              "dirsToMove": [],
+              "dirsToReport": [],
+              "acceptedFileTypes": [
+                "mp4",
+                "mkv",
+                "avi",
+                "mov",
+                "m4v",
+                "mpg",
+                "mpeg",
+                "wmv",
+                "flv",
+                "ts",
+                "mts"
+              ]
+            },
+            "value": "checkingFilePermissions",
+            "children": {
+              "mediaScanner.checkingFilePermissions:0": {
+                "$actor": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+                "incarnation": "2"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mediaScanner",
+              "mediaScanner.checkingFilePermissions"
+            ]
+          }
+        },
+        "mediaScanner/mediaScanner.scanning:0": {
+          "id": "mediaScanner.scanning:0",
+          "address": "mediaScanner/mediaScanner.scanning:0",
+          "incarnation": "1",
+          "src": "root/actors/scanLibrary",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": [
+              "a",
+              "b",
+              "c"
+            ],
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": [
+                  "a",
+                  "b",
+                  "c"
+                ]
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.checkingFilePermissions:0": {
+          "id": "mediaScanner.checkingFilePermissions:0",
+          "address": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+          "incarnation": "2",
+          "src": "root/actors/checkFilePermissions",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+            "incarnation": "2"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 0,
+        "sequence": 3,
+        "effect": 2
+      }
+    },
+    "effects": [
+      {
+        "id": "system:1",
+        "source": {
+          "$actor": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+          "incarnation": "2"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "mediaScanner",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "mediaScanner": {
+          "id": "mediaScanner",
+          "address": "mediaScanner",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "basePath": "/media",
+              "destinationPath": "/library",
+              "directoriesToCheck": [
+                "a",
+                "b",
+                "c"
+              ],
+              "dirsToEvaluate": [
+                "a",
+                "b"
+              ],
+              "dirsToMove": [],
+              "dirsToReport": [
+                "c"
+              ],
+              "acceptedFileTypes": [
+                "mp4",
+                "mkv",
+                "avi",
+                "mov",
+                "m4v",
+                "mpg",
+                "mpeg",
+                "wmv",
+                "flv",
+                "ts",
+                "mts"
+              ]
+            },
+            "value": "evaluatingFiles",
+            "children": {
+              "mediaScanner.evaluatingFiles:0": {
+                "$actor": "mediaScanner/mediaScanner.evaluatingFiles:0",
+                "incarnation": "3"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mediaScanner",
+              "mediaScanner.evaluatingFiles"
+            ]
+          }
+        },
+        "mediaScanner/mediaScanner.scanning:0": {
+          "id": "mediaScanner.scanning:0",
+          "address": "mediaScanner/mediaScanner.scanning:0",
+          "incarnation": "1",
+          "src": "root/actors/scanLibrary",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": [
+              "a",
+              "b",
+              "c"
+            ],
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": [
+                  "a",
+                  "b",
+                  "c"
+                ]
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.checkingFilePermissions:0": {
+          "id": "mediaScanner.checkingFilePermissions:0",
+          "address": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+          "incarnation": "2",
+          "src": "root/actors/checkFilePermissions",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.evaluatingFiles:0": {
+          "id": "mediaScanner.evaluatingFiles:0",
+          "address": "mediaScanner/mediaScanner.evaluatingFiles:0",
+          "incarnation": "3",
+          "src": "root/actors/evaluateFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "mediaScanner/mediaScanner.evaluatingFiles:0",
+            "incarnation": "3"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 4,
+        "timer": 0,
+        "sequence": 5,
+        "effect": 3
+      }
+    },
+    "effects": [
+      {
+        "id": "system:2",
+        "source": {
+          "$actor": "mediaScanner/mediaScanner.evaluatingFiles:0",
+          "incarnation": "3"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "snapshot": {
+      "root": "mediaScanner",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "mediaScanner": {
+          "id": "mediaScanner",
+          "address": "mediaScanner",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "basePath": "/media",
+              "destinationPath": "/library",
+              "directoriesToCheck": [
+                "a",
+                "b",
+                "c"
+              ],
+              "dirsToEvaluate": [
+                "a",
+                "b"
+              ],
+              "dirsToMove": [
+                "a"
+              ],
+              "dirsToReport": [
+                "c"
+              ],
+              "acceptedFileTypes": [
+                "mp4",
+                "mkv",
+                "avi",
+                "mov",
+                "m4v",
+                "mpg",
+                "mpeg",
+                "wmv",
+                "flv",
+                "ts",
+                "mts"
+              ]
+            },
+            "value": "movingFiles",
+            "children": {
+              "mediaScanner.movingFiles:0": {
+                "$actor": "mediaScanner/mediaScanner.movingFiles:0",
+                "incarnation": "4"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mediaScanner",
+              "mediaScanner.movingFiles"
+            ]
+          }
+        },
+        "mediaScanner/mediaScanner.scanning:0": {
+          "id": "mediaScanner.scanning:0",
+          "address": "mediaScanner/mediaScanner.scanning:0",
+          "incarnation": "1",
+          "src": "root/actors/scanLibrary",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": [
+              "a",
+              "b",
+              "c"
+            ],
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": [
+                  "a",
+                  "b",
+                  "c"
+                ]
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.checkingFilePermissions:0": {
+          "id": "mediaScanner.checkingFilePermissions:0",
+          "address": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+          "incarnation": "2",
+          "src": "root/actors/checkFilePermissions",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.evaluatingFiles:0": {
+          "id": "mediaScanner.evaluatingFiles:0",
+          "address": "mediaScanner/mediaScanner.evaluatingFiles:0",
+          "incarnation": "3",
+          "src": "root/actors/evaluateFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.movingFiles:0": {
+          "id": "mediaScanner.movingFiles:0",
+          "address": "mediaScanner/mediaScanner.movingFiles:0",
+          "incarnation": "4",
+          "src": "root/actors/moveFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "mediaScanner/mediaScanner.movingFiles:0",
+            "incarnation": "4"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 5,
+        "timer": 0,
+        "sequence": 7,
+        "effect": 4
+      }
+    },
+    "effects": [
+      {
+        "id": "system:3",
+        "source": {
+          "$actor": "mediaScanner/mediaScanner.movingFiles:0",
+          "incarnation": "4"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "snapshot": {
+      "root": "mediaScanner",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "mediaScanner": {
+          "id": "mediaScanner",
+          "address": "mediaScanner",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "basePath": "/media",
+              "destinationPath": "/library",
+              "directoriesToCheck": [
+                "a",
+                "b",
+                "c"
+              ],
+              "dirsToEvaluate": [
+                "a",
+                "b"
+              ],
+              "dirsToMove": [
+                "a"
+              ],
+              "dirsToReport": [
+                "c"
+              ],
+              "acceptedFileTypes": [
+                "mp4",
+                "mkv",
+                "avi",
+                "mov",
+                "m4v",
+                "mpg",
+                "mpeg",
+                "wmv",
+                "flv",
+                "ts",
+                "mts"
+              ]
+            },
+            "value": "idle",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mediaScanner",
+              "mediaScanner.idle"
+            ]
+          }
+        },
+        "mediaScanner/mediaScanner.scanning:0": {
+          "id": "mediaScanner.scanning:0",
+          "address": "mediaScanner/mediaScanner.scanning:0",
+          "incarnation": "1",
+          "src": "root/actors/scanLibrary",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": [
+              "a",
+              "b",
+              "c"
+            ],
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": [
+                  "a",
+                  "b",
+                  "c"
+                ]
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.checkingFilePermissions:0": {
+          "id": "mediaScanner.checkingFilePermissions:0",
+          "address": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+          "incarnation": "2",
+          "src": "root/actors/checkFilePermissions",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.evaluatingFiles:0": {
+          "id": "mediaScanner.evaluatingFiles:0",
+          "address": "mediaScanner/mediaScanner.evaluatingFiles:0",
+          "incarnation": "3",
+          "src": "root/actors/evaluateFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.movingFiles:0": {
+          "id": "mediaScanner.movingFiles:0",
+          "address": "mediaScanner/mediaScanner.movingFiles:0",
+          "incarnation": "4",
+          "src": "root/actors/moveFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 5,
+        "timer": 0,
+        "sequence": 9,
+        "effect": 4
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 5",
+    "snapshot": {
+      "root": "mediaScanner",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "mediaScanner": {
+          "id": "mediaScanner",
+          "address": "mediaScanner",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "basePath": "/media",
+              "destinationPath": "/library",
+              "directoriesToCheck": [
+                "a",
+                "b",
+                "c"
+              ],
+              "dirsToEvaluate": [
+                "a",
+                "b"
+              ],
+              "dirsToMove": [
+                "a"
+              ],
+              "dirsToReport": [
+                "c"
+              ],
+              "acceptedFileTypes": [
+                "mp4",
+                "mkv",
+                "avi",
+                "mov",
+                "m4v",
+                "mpg",
+                "mpeg",
+                "wmv",
+                "flv",
+                "ts",
+                "mts"
+              ]
+            },
+            "value": "scanning",
+            "children": {
+              "mediaScanner.scanning:0": {
+                "$actor": "mediaScanner/mediaScanner.scanning:0",
+                "incarnation": "5"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mediaScanner",
+              "mediaScanner.scanning"
+            ]
+          }
+        },
+        "mediaScanner/mediaScanner.scanning:0": {
+          "id": "mediaScanner.scanning:0",
+          "address": "mediaScanner/mediaScanner.scanning:0",
+          "incarnation": "5",
+          "src": "root/actors/scanLibrary",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.checkingFilePermissions:0": {
+          "id": "mediaScanner.checkingFilePermissions:0",
+          "address": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+          "incarnation": "2",
+          "src": "root/actors/checkFilePermissions",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.evaluatingFiles:0": {
+          "id": "mediaScanner.evaluatingFiles:0",
+          "address": "mediaScanner/mediaScanner.evaluatingFiles:0",
+          "incarnation": "3",
+          "src": "root/actors/evaluateFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.movingFiles:0": {
+          "id": "mediaScanner.movingFiles:0",
+          "address": "mediaScanner/mediaScanner.movingFiles:0",
+          "incarnation": "4",
+          "src": "root/actors/moveFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "mediaScanner/mediaScanner.scanning:0",
+            "incarnation": "5"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 6,
+        "timer": 0,
+        "sequence": 10,
+        "effect": 5
+      }
+    },
+    "effects": [
+      {
+        "id": "system:4",
+        "source": {
+          "$actor": "mediaScanner/mediaScanner.scanning:0",
+          "incarnation": "5"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 6",
+    "snapshot": {
+      "root": "mediaScanner",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "mediaScanner": {
+          "id": "mediaScanner",
+          "address": "mediaScanner",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "basePath": "/media",
+              "destinationPath": "/library",
+              "directoriesToCheck": [
+                "a",
+                "b",
+                "c"
+              ],
+              "dirsToEvaluate": [
+                "a",
+                "b"
+              ],
+              "dirsToMove": [
+                "a"
+              ],
+              "dirsToReport": [
+                "c"
+              ],
+              "acceptedFileTypes": [
+                "mp4",
+                "mkv",
+                "avi",
+                "mov",
+                "m4v",
+                "mpg",
+                "mpeg",
+                "wmv",
+                "flv",
+                "ts",
+                "mts"
+              ]
+            },
+            "value": "checkingFilePermissions",
+            "children": {
+              "mediaScanner.checkingFilePermissions:0": {
+                "$actor": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+                "incarnation": "6"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mediaScanner",
+              "mediaScanner.checkingFilePermissions"
+            ]
+          }
+        },
+        "mediaScanner/mediaScanner.scanning:0": {
+          "id": "mediaScanner.scanning:0",
+          "address": "mediaScanner/mediaScanner.scanning:0",
+          "incarnation": "5",
+          "src": "root/actors/scanLibrary",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.checkingFilePermissions:0": {
+          "id": "mediaScanner.checkingFilePermissions:0",
+          "address": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+          "incarnation": "6",
+          "src": "root/actors/checkFilePermissions",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.evaluatingFiles:0": {
+          "id": "mediaScanner.evaluatingFiles:0",
+          "address": "mediaScanner/mediaScanner.evaluatingFiles:0",
+          "incarnation": "3",
+          "src": "root/actors/evaluateFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.movingFiles:0": {
+          "id": "mediaScanner.movingFiles:0",
+          "address": "mediaScanner/mediaScanner.movingFiles:0",
+          "incarnation": "4",
+          "src": "root/actors/moveFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+            "incarnation": "6"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 7,
+        "timer": 0,
+        "sequence": 12,
+        "effect": 6
+      }
+    },
+    "effects": [
+      {
+        "id": "system:5",
+        "source": {
+          "$actor": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+          "incarnation": "6"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 7",
+    "snapshot": {
+      "root": "mediaScanner",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "mediaScanner": {
+          "id": "mediaScanner",
+          "address": "mediaScanner",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "basePath": "/media",
+              "destinationPath": "/library",
+              "directoriesToCheck": [
+                "a",
+                "b",
+                "c"
+              ],
+              "dirsToEvaluate": [
+                "a",
+                "b"
+              ],
+              "dirsToMove": [
+                "a"
+              ],
+              "dirsToReport": [
+                "c"
+              ],
+              "acceptedFileTypes": [
+                "mp4",
+                "mkv",
+                "avi",
+                "mov",
+                "m4v",
+                "mpg",
+                "mpeg",
+                "wmv",
+                "flv",
+                "ts",
+                "mts"
+              ]
+            },
+            "value": "reportingErrors",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mediaScanner",
+              "mediaScanner.reportingErrors"
+            ]
+          }
+        },
+        "mediaScanner/mediaScanner.scanning:0": {
+          "id": "mediaScanner.scanning:0",
+          "address": "mediaScanner/mediaScanner.scanning:0",
+          "incarnation": "5",
+          "src": "root/actors/scanLibrary",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.checkingFilePermissions:0": {
+          "id": "mediaScanner.checkingFilePermissions:0",
+          "address": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+          "incarnation": "6",
+          "src": "root/actors/checkFilePermissions",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "EACCES"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "EACCES"
+                }
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.evaluatingFiles:0": {
+          "id": "mediaScanner.evaluatingFiles:0",
+          "address": "mediaScanner/mediaScanner.evaluatingFiles:0",
+          "incarnation": "3",
+          "src": "root/actors/evaluateFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.movingFiles:0": {
+          "id": "mediaScanner.movingFiles:0",
+          "address": "mediaScanner/mediaScanner.movingFiles:0",
+          "incarnation": "4",
+          "src": "root/actors/moveFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "type": "emailErrors",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailErrors"
+          }
+        }
+      },
+      "counters": {
+        "actor": 7,
+        "timer": 0,
+        "sequence": 14,
+        "effect": 7
+      }
+    },
+    "effects": [
+      {
+        "id": "system:6",
+        "source": {
+          "$actor": "mediaScanner",
+          "incarnation": "0"
+        },
+        "type": "emailErrors",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "emailErrors"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 8",
+    "snapshot": {
+      "root": "mediaScanner",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "mediaScanner": {
+          "id": "mediaScanner",
+          "address": "mediaScanner",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "basePath": "/media",
+              "destinationPath": "/library",
+              "directoriesToCheck": [
+                "a",
+                "b",
+                "c"
+              ],
+              "dirsToEvaluate": [
+                "a",
+                "b"
+              ],
+              "dirsToMove": [
+                "a"
+              ],
+              "dirsToReport": [
+                "c"
+              ],
+              "acceptedFileTypes": [
+                "mp4",
+                "mkv",
+                "avi",
+                "mov",
+                "m4v",
+                "mpg",
+                "mpeg",
+                "wmv",
+                "flv",
+                "ts",
+                "mts"
+              ]
+            },
+            "value": "reportingErrors",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mediaScanner",
+              "mediaScanner.reportingErrors"
+            ]
+          }
+        },
+        "mediaScanner/mediaScanner.scanning:0": {
+          "id": "mediaScanner.scanning:0",
+          "address": "mediaScanner/mediaScanner.scanning:0",
+          "incarnation": "5",
+          "src": "root/actors/scanLibrary",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.checkingFilePermissions:0": {
+          "id": "mediaScanner.checkingFilePermissions:0",
+          "address": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+          "incarnation": "6",
+          "src": "root/actors/checkFilePermissions",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "EACCES"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "EACCES"
+                }
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.evaluatingFiles:0": {
+          "id": "mediaScanner.evaluatingFiles:0",
+          "address": "mediaScanner/mediaScanner.evaluatingFiles:0",
+          "incarnation": "3",
+          "src": "root/actors/evaluateFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.movingFiles:0": {
+          "id": "mediaScanner.movingFiles:0",
+          "address": "mediaScanner/mediaScanner.movingFiles:0",
+          "incarnation": "4",
+          "src": "root/actors/moveFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "type": "emailErrors",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailErrors"
+          }
+        }
+      },
+      "counters": {
+        "actor": 7,
+        "timer": 0,
+        "sequence": 15,
+        "effect": 7
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 9",
+    "snapshot": {
+      "root": "mediaScanner",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "mediaScanner": {
+          "id": "mediaScanner",
+          "address": "mediaScanner",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "basePath": "/media",
+              "destinationPath": "/library",
+              "directoriesToCheck": [
+                "a",
+                "b",
+                "c"
+              ],
+              "dirsToEvaluate": [
+                "a",
+                "b"
+              ],
+              "dirsToMove": [
+                "a"
+              ],
+              "dirsToReport": [
+                "c"
+              ],
+              "acceptedFileTypes": [
+                "mp4",
+                "mkv",
+                "avi",
+                "mov",
+                "m4v",
+                "mpg",
+                "mpeg",
+                "wmv",
+                "flv",
+                "ts",
+                "mts"
+              ]
+            },
+            "value": "idle",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mediaScanner",
+              "mediaScanner.idle"
+            ]
+          }
+        },
+        "mediaScanner/mediaScanner.scanning:0": {
+          "id": "mediaScanner.scanning:0",
+          "address": "mediaScanner/mediaScanner.scanning:0",
+          "incarnation": "5",
+          "src": "root/actors/scanLibrary",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.checkingFilePermissions:0": {
+          "id": "mediaScanner.checkingFilePermissions:0",
+          "address": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+          "incarnation": "6",
+          "src": "root/actors/checkFilePermissions",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "EACCES"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "EACCES"
+                }
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.evaluatingFiles:0": {
+          "id": "mediaScanner.evaluatingFiles:0",
+          "address": "mediaScanner/mediaScanner.evaluatingFiles:0",
+          "incarnation": "3",
+          "src": "root/actors/evaluateFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.movingFiles:0": {
+          "id": "mediaScanner.movingFiles:0",
+          "address": "mediaScanner/mediaScanner.movingFiles:0",
+          "incarnation": "4",
+          "src": "root/actors/moveFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "type": "emailErrors",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailErrors"
+          }
+        }
+      },
+      "counters": {
+        "actor": 7,
+        "timer": 0,
+        "sequence": 16,
+        "effect": 7
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 10",
+    "snapshot": {
+      "root": "mediaScanner",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "mediaScanner": {
+          "id": "mediaScanner",
+          "address": "mediaScanner",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "basePath": "/media",
+              "destinationPath": "/library",
+              "directoriesToCheck": [
+                "a",
+                "b",
+                "c"
+              ],
+              "dirsToEvaluate": [
+                "a",
+                "b"
+              ],
+              "dirsToMove": [
+                "a"
+              ],
+              "dirsToReport": [
+                "c"
+              ],
+              "acceptedFileTypes": [
+                "mp4",
+                "mkv",
+                "avi",
+                "mov",
+                "m4v",
+                "mpg",
+                "mpeg",
+                "wmv",
+                "flv",
+                "ts",
+                "mts"
+              ]
+            },
+            "value": "scanning",
+            "children": {
+              "mediaScanner.scanning:0": {
+                "$actor": "mediaScanner/mediaScanner.scanning:0",
+                "incarnation": "7"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mediaScanner",
+              "mediaScanner.scanning"
+            ]
+          }
+        },
+        "mediaScanner/mediaScanner.scanning:0": {
+          "id": "mediaScanner.scanning:0",
+          "address": "mediaScanner/mediaScanner.scanning:0",
+          "incarnation": "7",
+          "src": "root/actors/scanLibrary",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.checkingFilePermissions:0": {
+          "id": "mediaScanner.checkingFilePermissions:0",
+          "address": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+          "incarnation": "6",
+          "src": "root/actors/checkFilePermissions",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "EACCES"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "EACCES"
+                }
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.evaluatingFiles:0": {
+          "id": "mediaScanner.evaluatingFiles:0",
+          "address": "mediaScanner/mediaScanner.evaluatingFiles:0",
+          "incarnation": "3",
+          "src": "root/actors/evaluateFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.movingFiles:0": {
+          "id": "mediaScanner.movingFiles:0",
+          "address": "mediaScanner/mediaScanner.movingFiles:0",
+          "incarnation": "4",
+          "src": "root/actors/moveFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "type": "emailErrors",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailErrors"
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "mediaScanner/mediaScanner.scanning:0",
+            "incarnation": "7"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 8,
+        "timer": 0,
+        "sequence": 17,
+        "effect": 8
+      }
+    },
+    "effects": [
+      {
+        "id": "system:7",
+        "source": {
+          "$actor": "mediaScanner/mediaScanner.scanning:0",
+          "incarnation": "7"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 11",
+    "snapshot": {
+      "root": "mediaScanner",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "mediaScanner": {
+          "id": "mediaScanner",
+          "address": "mediaScanner",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "basePath": "/media",
+              "destinationPath": "/library",
+              "directoriesToCheck": [
+                "a",
+                "b",
+                "c"
+              ],
+              "dirsToEvaluate": [
+                "a",
+                "b"
+              ],
+              "dirsToMove": [
+                "a"
+              ],
+              "dirsToReport": [
+                "c"
+              ],
+              "acceptedFileTypes": [
+                "mp4",
+                "mkv",
+                "avi",
+                "mov",
+                "m4v",
+                "mpg",
+                "mpeg",
+                "wmv",
+                "flv",
+                "ts",
+                "mts"
+              ]
+            },
+            "value": "reportingErrors",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mediaScanner",
+              "mediaScanner.reportingErrors"
+            ]
+          }
+        },
+        "mediaScanner/mediaScanner.scanning:0": {
+          "id": "mediaScanner.scanning:0",
+          "address": "mediaScanner/mediaScanner.scanning:0",
+          "incarnation": "7",
+          "src": "root/actors/scanLibrary",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "ENOENT"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "ENOENT"
+                }
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.checkingFilePermissions:0": {
+          "id": "mediaScanner.checkingFilePermissions:0",
+          "address": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+          "incarnation": "6",
+          "src": "root/actors/checkFilePermissions",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "EACCES"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "EACCES"
+                }
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.evaluatingFiles:0": {
+          "id": "mediaScanner.evaluatingFiles:0",
+          "address": "mediaScanner/mediaScanner.evaluatingFiles:0",
+          "incarnation": "3",
+          "src": "root/actors/evaluateFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.movingFiles:0": {
+          "id": "mediaScanner.movingFiles:0",
+          "address": "mediaScanner/mediaScanner.movingFiles:0",
+          "incarnation": "4",
+          "src": "root/actors/moveFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "type": "emailErrors",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailErrors"
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "type": "emailErrors",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailErrors"
+          }
+        }
+      },
+      "counters": {
+        "actor": 8,
+        "timer": 0,
+        "sequence": 19,
+        "effect": 9
+      }
+    },
+    "effects": [
+      {
+        "id": "system:8",
+        "source": {
+          "$actor": "mediaScanner",
+          "incarnation": "0"
+        },
+        "type": "emailErrors",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "emailErrors"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 12",
+    "snapshot": {
+      "root": "mediaScanner",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "mediaScanner": {
+          "id": "mediaScanner",
+          "address": "mediaScanner",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "basePath": "/media",
+              "destinationPath": "/library",
+              "directoriesToCheck": [
+                "a",
+                "b",
+                "c"
+              ],
+              "dirsToEvaluate": [
+                "a",
+                "b"
+              ],
+              "dirsToMove": [
+                "a"
+              ],
+              "dirsToReport": [
+                "c"
+              ],
+              "acceptedFileTypes": [
+                "mp4",
+                "mkv",
+                "avi",
+                "mov",
+                "m4v",
+                "mpg",
+                "mpeg",
+                "wmv",
+                "flv",
+                "ts",
+                "mts"
+              ]
+            },
+            "value": "idle",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mediaScanner",
+              "mediaScanner.idle"
+            ]
+          }
+        },
+        "mediaScanner/mediaScanner.scanning:0": {
+          "id": "mediaScanner.scanning:0",
+          "address": "mediaScanner/mediaScanner.scanning:0",
+          "incarnation": "7",
+          "src": "root/actors/scanLibrary",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "ENOENT"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "ENOENT"
+                }
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.checkingFilePermissions:0": {
+          "id": "mediaScanner.checkingFilePermissions:0",
+          "address": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+          "incarnation": "6",
+          "src": "root/actors/checkFilePermissions",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "EACCES"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "EACCES"
+                }
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.evaluatingFiles:0": {
+          "id": "mediaScanner.evaluatingFiles:0",
+          "address": "mediaScanner/mediaScanner.evaluatingFiles:0",
+          "incarnation": "3",
+          "src": "root/actors/evaluateFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.movingFiles:0": {
+          "id": "mediaScanner.movingFiles:0",
+          "address": "mediaScanner/mediaScanner.movingFiles:0",
+          "incarnation": "4",
+          "src": "root/actors/moveFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "type": "emailErrors",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailErrors"
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "type": "emailErrors",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailErrors"
+          }
+        }
+      },
+      "counters": {
+        "actor": 8,
+        "timer": 0,
+        "sequence": 20,
+        "effect": 9
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 13",
+    "snapshot": {
+      "root": "mediaScanner",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "mediaScanner": {
+          "id": "mediaScanner",
+          "address": "mediaScanner",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "basePath": "/media",
+              "destinationPath": "/library",
+              "directoriesToCheck": [
+                "a",
+                "b",
+                "c"
+              ],
+              "dirsToEvaluate": [
+                "a",
+                "b"
+              ],
+              "dirsToMove": [
+                "a"
+              ],
+              "dirsToReport": [
+                "c"
+              ],
+              "acceptedFileTypes": [
+                "mp4",
+                "mkv",
+                "avi",
+                "mov",
+                "m4v",
+                "mpg",
+                "mpeg",
+                "wmv",
+                "flv",
+                "ts",
+                "mts"
+              ]
+            },
+            "value": "scanning",
+            "children": {
+              "mediaScanner.scanning:0": {
+                "$actor": "mediaScanner/mediaScanner.scanning:0",
+                "incarnation": "8"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mediaScanner",
+              "mediaScanner.scanning"
+            ]
+          }
+        },
+        "mediaScanner/mediaScanner.scanning:0": {
+          "id": "mediaScanner.scanning:0",
+          "address": "mediaScanner/mediaScanner.scanning:0",
+          "incarnation": "8",
+          "src": "root/actors/scanLibrary",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.checkingFilePermissions:0": {
+          "id": "mediaScanner.checkingFilePermissions:0",
+          "address": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+          "incarnation": "6",
+          "src": "root/actors/checkFilePermissions",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "EACCES"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "EACCES"
+                }
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.evaluatingFiles:0": {
+          "id": "mediaScanner.evaluatingFiles:0",
+          "address": "mediaScanner/mediaScanner.evaluatingFiles:0",
+          "incarnation": "3",
+          "src": "root/actors/evaluateFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.movingFiles:0": {
+          "id": "mediaScanner.movingFiles:0",
+          "address": "mediaScanner/mediaScanner.movingFiles:0",
+          "incarnation": "4",
+          "src": "root/actors/moveFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "type": "emailErrors",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailErrors"
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "type": "emailErrors",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailErrors"
+          }
+        },
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "mediaScanner/mediaScanner.scanning:0",
+            "incarnation": "8"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 9,
+        "timer": 0,
+        "sequence": 21,
+        "effect": 10
+      }
+    },
+    "effects": [
+      {
+        "id": "system:9",
+        "source": {
+          "$actor": "mediaScanner/mediaScanner.scanning:0",
+          "incarnation": "8"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 14",
+    "snapshot": {
+      "root": "mediaScanner",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "mediaScanner": {
+          "id": "mediaScanner",
+          "address": "mediaScanner",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "basePath": "/media",
+              "destinationPath": "/library",
+              "directoriesToCheck": [
+                "a",
+                "b",
+                "c"
+              ],
+              "dirsToEvaluate": [
+                "a",
+                "b"
+              ],
+              "dirsToMove": [
+                "a"
+              ],
+              "dirsToReport": [
+                "c"
+              ],
+              "acceptedFileTypes": [
+                "mp4",
+                "mkv",
+                "avi",
+                "mov",
+                "m4v",
+                "mpg",
+                "mpeg",
+                "wmv",
+                "flv",
+                "ts",
+                "mts"
+              ]
+            },
+            "value": "checkingFilePermissions",
+            "children": {
+              "mediaScanner.checkingFilePermissions:0": {
+                "$actor": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+                "incarnation": "9"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mediaScanner",
+              "mediaScanner.checkingFilePermissions"
+            ]
+          }
+        },
+        "mediaScanner/mediaScanner.scanning:0": {
+          "id": "mediaScanner.scanning:0",
+          "address": "mediaScanner/mediaScanner.scanning:0",
+          "incarnation": "8",
+          "src": "root/actors/scanLibrary",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.checkingFilePermissions:0": {
+          "id": "mediaScanner.checkingFilePermissions:0",
+          "address": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+          "incarnation": "9",
+          "src": "root/actors/checkFilePermissions",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.evaluatingFiles:0": {
+          "id": "mediaScanner.evaluatingFiles:0",
+          "address": "mediaScanner/mediaScanner.evaluatingFiles:0",
+          "incarnation": "3",
+          "src": "root/actors/evaluateFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.movingFiles:0": {
+          "id": "mediaScanner.movingFiles:0",
+          "address": "mediaScanner/mediaScanner.movingFiles:0",
+          "incarnation": "4",
+          "src": "root/actors/moveFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "type": "emailErrors",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailErrors"
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "type": "emailErrors",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailErrors"
+          }
+        },
+        "system:10": {
+          "id": "system:10",
+          "source": {
+            "$actor": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+            "incarnation": "9"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 10,
+        "timer": 0,
+        "sequence": 23,
+        "effect": 11
+      }
+    },
+    "effects": [
+      {
+        "id": "system:10",
+        "source": {
+          "$actor": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+          "incarnation": "9"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 15",
+    "snapshot": {
+      "root": "mediaScanner",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "mediaScanner": {
+          "id": "mediaScanner",
+          "address": "mediaScanner",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "basePath": "/media",
+              "destinationPath": "/library",
+              "directoriesToCheck": [
+                "a",
+                "b",
+                "c"
+              ],
+              "dirsToEvaluate": [
+                "a",
+                "b"
+              ],
+              "dirsToMove": [
+                "a"
+              ],
+              "dirsToReport": [
+                "c"
+              ],
+              "acceptedFileTypes": [
+                "mp4",
+                "mkv",
+                "avi",
+                "mov",
+                "m4v",
+                "mpg",
+                "mpeg",
+                "wmv",
+                "flv",
+                "ts",
+                "mts"
+              ]
+            },
+            "value": "evaluatingFiles",
+            "children": {
+              "mediaScanner.evaluatingFiles:0": {
+                "$actor": "mediaScanner/mediaScanner.evaluatingFiles:0",
+                "incarnation": "10"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mediaScanner",
+              "mediaScanner.evaluatingFiles"
+            ]
+          }
+        },
+        "mediaScanner/mediaScanner.scanning:0": {
+          "id": "mediaScanner.scanning:0",
+          "address": "mediaScanner/mediaScanner.scanning:0",
+          "incarnation": "8",
+          "src": "root/actors/scanLibrary",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.checkingFilePermissions:0": {
+          "id": "mediaScanner.checkingFilePermissions:0",
+          "address": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+          "incarnation": "9",
+          "src": "root/actors/checkFilePermissions",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.evaluatingFiles:0": {
+          "id": "mediaScanner.evaluatingFiles:0",
+          "address": "mediaScanner/mediaScanner.evaluatingFiles:0",
+          "incarnation": "10",
+          "src": "root/actors/evaluateFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.movingFiles:0": {
+          "id": "mediaScanner.movingFiles:0",
+          "address": "mediaScanner/mediaScanner.movingFiles:0",
+          "incarnation": "4",
+          "src": "root/actors/moveFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "type": "emailErrors",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailErrors"
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "type": "emailErrors",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailErrors"
+          }
+        },
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "mediaScanner/mediaScanner.evaluatingFiles:0",
+            "incarnation": "10"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 11,
+        "timer": 0,
+        "sequence": 25,
+        "effect": 12
+      }
+    },
+    "effects": [
+      {
+        "id": "system:11",
+        "source": {
+          "$actor": "mediaScanner/mediaScanner.evaluatingFiles:0",
+          "incarnation": "10"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 16",
+    "snapshot": {
+      "root": "mediaScanner",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "mediaScanner": {
+          "id": "mediaScanner",
+          "address": "mediaScanner",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "basePath": "/media",
+              "destinationPath": "/library",
+              "directoriesToCheck": [
+                "a",
+                "b",
+                "c"
+              ],
+              "dirsToEvaluate": [
+                "a",
+                "b"
+              ],
+              "dirsToMove": [
+                "a"
+              ],
+              "dirsToReport": [
+                "c"
+              ],
+              "acceptedFileTypes": [
+                "mp4",
+                "mkv",
+                "avi",
+                "mov",
+                "m4v",
+                "mpg",
+                "mpeg",
+                "wmv",
+                "flv",
+                "ts",
+                "mts"
+              ]
+            },
+            "value": "movingFiles",
+            "children": {
+              "mediaScanner.movingFiles:0": {
+                "$actor": "mediaScanner/mediaScanner.movingFiles:0",
+                "incarnation": "11"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mediaScanner",
+              "mediaScanner.movingFiles"
+            ]
+          }
+        },
+        "mediaScanner/mediaScanner.scanning:0": {
+          "id": "mediaScanner.scanning:0",
+          "address": "mediaScanner/mediaScanner.scanning:0",
+          "incarnation": "8",
+          "src": "root/actors/scanLibrary",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.checkingFilePermissions:0": {
+          "id": "mediaScanner.checkingFilePermissions:0",
+          "address": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+          "incarnation": "9",
+          "src": "root/actors/checkFilePermissions",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.evaluatingFiles:0": {
+          "id": "mediaScanner.evaluatingFiles:0",
+          "address": "mediaScanner/mediaScanner.evaluatingFiles:0",
+          "incarnation": "10",
+          "src": "root/actors/evaluateFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.movingFiles:0": {
+          "id": "mediaScanner.movingFiles:0",
+          "address": "mediaScanner/mediaScanner.movingFiles:0",
+          "incarnation": "11",
+          "src": "root/actors/moveFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "type": "emailErrors",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailErrors"
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "type": "emailErrors",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailErrors"
+          }
+        },
+        "system:12": {
+          "id": "system:12",
+          "source": {
+            "$actor": "mediaScanner/mediaScanner.movingFiles:0",
+            "incarnation": "11"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 12,
+        "timer": 0,
+        "sequence": 27,
+        "effect": 13
+      }
+    },
+    "effects": [
+      {
+        "id": "system:12",
+        "source": {
+          "$actor": "mediaScanner/mediaScanner.movingFiles:0",
+          "incarnation": "11"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 17",
+    "snapshot": {
+      "root": "mediaScanner",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "mediaScanner": {
+          "id": "mediaScanner",
+          "address": "mediaScanner",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "basePath": "/media",
+              "destinationPath": "/library",
+              "directoriesToCheck": [
+                "a",
+                "b",
+                "c"
+              ],
+              "dirsToEvaluate": [
+                "a",
+                "b"
+              ],
+              "dirsToMove": [
+                "a"
+              ],
+              "dirsToReport": [
+                "c"
+              ],
+              "acceptedFileTypes": [
+                "mp4",
+                "mkv",
+                "avi",
+                "mov",
+                "m4v",
+                "mpg",
+                "mpeg",
+                "wmv",
+                "flv",
+                "ts",
+                "mts"
+              ]
+            },
+            "value": "reportingErrors",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mediaScanner",
+              "mediaScanner.reportingErrors"
+            ]
+          }
+        },
+        "mediaScanner/mediaScanner.scanning:0": {
+          "id": "mediaScanner.scanning:0",
+          "address": "mediaScanner/mediaScanner.scanning:0",
+          "incarnation": "8",
+          "src": "root/actors/scanLibrary",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.checkingFilePermissions:0": {
+          "id": "mediaScanner.checkingFilePermissions:0",
+          "address": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+          "incarnation": "9",
+          "src": "root/actors/checkFilePermissions",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.evaluatingFiles:0": {
+          "id": "mediaScanner.evaluatingFiles:0",
+          "address": "mediaScanner/mediaScanner.evaluatingFiles:0",
+          "incarnation": "10",
+          "src": "root/actors/evaluateFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.movingFiles:0": {
+          "id": "mediaScanner.movingFiles:0",
+          "address": "mediaScanner/mediaScanner.movingFiles:0",
+          "incarnation": "11",
+          "src": "root/actors/moveFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "EXDEV"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "EXDEV"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "type": "emailErrors",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailErrors"
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "type": "emailErrors",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailErrors"
+          }
+        },
+        "system:13": {
+          "id": "system:13",
+          "source": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "type": "emailErrors",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailErrors"
+          }
+        }
+      },
+      "counters": {
+        "actor": 12,
+        "timer": 0,
+        "sequence": 29,
+        "effect": 14
+      }
+    },
+    "effects": [
+      {
+        "id": "system:13",
+        "source": {
+          "$actor": "mediaScanner",
+          "incarnation": "0"
+        },
+        "type": "emailErrors",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "emailErrors"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 18",
+    "snapshot": {
+      "root": "mediaScanner",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "mediaScanner": {
+          "id": "mediaScanner",
+          "address": "mediaScanner",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "basePath": "/media",
+              "destinationPath": "/library",
+              "directoriesToCheck": [
+                "a",
+                "b",
+                "c"
+              ],
+              "dirsToEvaluate": [
+                "a",
+                "b"
+              ],
+              "dirsToMove": [
+                "a"
+              ],
+              "dirsToReport": [
+                "c"
+              ],
+              "acceptedFileTypes": [
+                "mp4",
+                "mkv",
+                "avi",
+                "mov",
+                "m4v",
+                "mpg",
+                "mpeg",
+                "wmv",
+                "flv",
+                "ts",
+                "mts"
+              ]
+            },
+            "value": "idle",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mediaScanner",
+              "mediaScanner.idle"
+            ]
+          }
+        },
+        "mediaScanner/mediaScanner.scanning:0": {
+          "id": "mediaScanner.scanning:0",
+          "address": "mediaScanner/mediaScanner.scanning:0",
+          "incarnation": "8",
+          "src": "root/actors/scanLibrary",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.checkingFilePermissions:0": {
+          "id": "mediaScanner.checkingFilePermissions:0",
+          "address": "mediaScanner/mediaScanner.checkingFilePermissions:0",
+          "incarnation": "9",
+          "src": "root/actors/checkFilePermissions",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.evaluatingFiles:0": {
+          "id": "mediaScanner.evaluatingFiles:0",
+          "address": "mediaScanner/mediaScanner.evaluatingFiles:0",
+          "incarnation": "10",
+          "src": "root/actors/evaluateFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "mediaScanner/mediaScanner.movingFiles:0": {
+          "id": "mediaScanner.movingFiles:0",
+          "address": "mediaScanner/mediaScanner.movingFiles:0",
+          "incarnation": "11",
+          "src": "root/actors/moveFiles",
+          "parent": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "EXDEV"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "EXDEV"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "type": "emailErrors",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailErrors"
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "type": "emailErrors",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailErrors"
+          }
+        },
+        "system:13": {
+          "id": "system:13",
+          "source": {
+            "$actor": "mediaScanner",
+            "incarnation": "0"
+          },
+          "type": "emailErrors",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailErrors"
+          }
+        }
+      },
+      "counters": {
+        "actor": 12,
+        "timer": 0,
+        "sequence": 30,
+        "effect": 14
+      }
+    },
+    "effects": []
+  }
+]

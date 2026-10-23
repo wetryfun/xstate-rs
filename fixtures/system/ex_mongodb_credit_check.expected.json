@@ -1,0 +1,4825 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "multipleCreditCheck",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "multipleCreditCheck": {
+          "id": "multipleCreditCheck",
+          "address": "multipleCreditCheck",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "SSN": "",
+              "FirstName": "",
+              "LastName": "",
+              "scoreEquiGavin": 0,
+              "scoreGavUnion": 0,
+              "scoreGavperian": 0,
+              "anyFailed": false,
+              "MiddleScore": 0,
+              "InterestRateOptions": [],
+              "ErrorMessage": ""
+            },
+            "value": "enteringInformation",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "multipleCreditCheck",
+              "multipleCreditCheck.enteringInformation"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 0,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "multipleCreditCheck",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "multipleCreditCheck": {
+          "id": "multipleCreditCheck",
+          "address": "multipleCreditCheck",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "SSN": "123-45-6789",
+              "FirstName": "Ada",
+              "LastName": "Lovelace",
+              "scoreEquiGavin": 0,
+              "scoreGavUnion": 0,
+              "scoreGavperian": 0,
+              "anyFailed": false,
+              "MiddleScore": 0,
+              "InterestRateOptions": [],
+              "ErrorMessage": ""
+            },
+            "value": "verifyingCredentials",
+            "children": {
+              "multipleCreditCheck.verifyingCredentials:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "multipleCreditCheck",
+              "multipleCreditCheck.verifyingCredentials"
+            ]
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0": {
+          "id": "multipleCreditCheck.verifyingCredentials:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+          "incarnation": "1",
+          "src": "root/actors/verifyCredentials",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "SSN": "123-45-6789"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "SSN": "123-45-6789"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+            "incarnation": "1"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 1,
+        "effect": 1
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+          "incarnation": "1"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "multipleCreditCheck",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "multipleCreditCheck": {
+          "id": "multipleCreditCheck",
+          "address": "multipleCreditCheck",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "SSN": "123-45-6789",
+              "FirstName": "Ada",
+              "LastName": "Lovelace",
+              "scoreEquiGavin": 0,
+              "scoreGavUnion": 0,
+              "scoreGavperian": 0,
+              "anyFailed": false,
+              "MiddleScore": 0,
+              "InterestRateOptions": [],
+              "ErrorMessage": "Failed to verify credentials."
+            },
+            "value": "enteringInformation",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "multipleCreditCheck",
+              "multipleCreditCheck.enteringInformation"
+            ]
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0": {
+          "id": "multipleCreditCheck.verifyingCredentials:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+          "incarnation": "1",
+          "src": "root/actors/verifyCredentials",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "SSN": "123-45-6789"
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "unknown SSN"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "unknown SSN"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 3,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "multipleCreditCheck",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "multipleCreditCheck": {
+          "id": "multipleCreditCheck",
+          "address": "multipleCreditCheck",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "SSN": "123-45-6789",
+              "FirstName": "Ada",
+              "LastName": "Lovelace",
+              "scoreEquiGavin": 0,
+              "scoreGavUnion": 0,
+              "scoreGavperian": 0,
+              "anyFailed": false,
+              "MiddleScore": 0,
+              "InterestRateOptions": [],
+              "ErrorMessage": ""
+            },
+            "value": "verifyingCredentials",
+            "children": {
+              "multipleCreditCheck.verifyingCredentials:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+                "incarnation": "2"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "multipleCreditCheck",
+              "multipleCreditCheck.verifyingCredentials"
+            ]
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0": {
+          "id": "multipleCreditCheck.verifyingCredentials:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+          "incarnation": "2",
+          "src": "root/actors/verifyCredentials",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "SSN": "123-45-6789"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "SSN": "123-45-6789"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+            "incarnation": "2"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 0,
+        "sequence": 4,
+        "effect": 2
+      }
+    },
+    "effects": [
+      {
+        "id": "system:1",
+        "source": {
+          "$actor": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+          "incarnation": "2"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "snapshot": {
+      "root": "multipleCreditCheck",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "multipleCreditCheck": {
+          "id": "multipleCreditCheck",
+          "address": "multipleCreditCheck",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "SSN": "123-45-6789",
+              "FirstName": "Ada",
+              "LastName": "Lovelace",
+              "scoreEquiGavin": 0,
+              "scoreGavUnion": 0,
+              "scoreGavperian": 0,
+              "anyFailed": false,
+              "MiddleScore": 0,
+              "InterestRateOptions": [],
+              "ErrorMessage": ""
+            },
+            "value": {
+              "checkingCreditScores": {
+                "EquiGavin": "checkingForExistingReport",
+                "GavUnion": "checkingForExistingReport",
+                "Gavperian": "checkingForExistingReport"
+              }
+            },
+            "children": {
+              "multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+                "incarnation": "3"
+              },
+              "multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+                "incarnation": "4"
+              },
+              "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+                "incarnation": "5"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "multipleCreditCheck",
+              "multipleCreditCheck.checkingCreditScores",
+              "multipleCreditCheck.checkingCreditScores.EquiGavin",
+              "multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport",
+              "multipleCreditCheck.checkingCreditScores.GavUnion",
+              "multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport",
+              "multipleCreditCheck.checkingCreditScores.Gavperian",
+              "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport"
+            ]
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0": {
+          "id": "multipleCreditCheck.verifyingCredentials:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+          "incarnation": "2",
+          "src": "root/actors/verifyCredentials",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "SSN": "123-45-6789"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "incarnation": "3",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "EquiGavin"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "bureauName": "EquiGavin"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "incarnation": "4",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "bureauName": "GavUnion"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "incarnation": "5",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "Gavperian"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "bureauName": "Gavperian"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+            "incarnation": "3"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+            "incarnation": "4"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+            "incarnation": "5"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 6,
+        "timer": 0,
+        "sequence": 6,
+        "effect": 5
+      }
+    },
+    "effects": [
+      {
+        "id": "system:2",
+        "source": {
+          "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "incarnation": "3"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      },
+      {
+        "id": "system:3",
+        "source": {
+          "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "incarnation": "4"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      },
+      {
+        "id": "system:4",
+        "source": {
+          "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "incarnation": "5"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "snapshot": {
+      "root": "multipleCreditCheck",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "multipleCreditCheck": {
+          "id": "multipleCreditCheck",
+          "address": "multipleCreditCheck",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "SSN": "123-45-6789",
+              "FirstName": "Ada",
+              "LastName": "Lovelace",
+              "scoreEquiGavin": 700,
+              "scoreGavUnion": 0,
+              "scoreGavperian": 0,
+              "anyFailed": false,
+              "MiddleScore": 0,
+              "InterestRateOptions": [],
+              "ErrorMessage": ""
+            },
+            "value": {
+              "checkingCreditScores": {
+                "EquiGavin": "fetchingComplete",
+                "GavUnion": "checkingForExistingReport",
+                "Gavperian": "checkingForExistingReport"
+              }
+            },
+            "children": {
+              "multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+                "incarnation": "4"
+              },
+              "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+                "incarnation": "5"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "multipleCreditCheck",
+              "multipleCreditCheck.checkingCreditScores",
+              "multipleCreditCheck.checkingCreditScores.EquiGavin",
+              "multipleCreditCheck.checkingCreditScores.GavUnion",
+              "multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport",
+              "multipleCreditCheck.checkingCreditScores.Gavperian",
+              "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport",
+              "multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingComplete"
+            ]
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0": {
+          "id": "multipleCreditCheck.verifyingCredentials:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+          "incarnation": "2",
+          "src": "root/actors/verifyCredentials",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "SSN": "123-45-6789"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "incarnation": "3",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "EquiGavin"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "incarnation": "4",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "bureauName": "GavUnion"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "incarnation": "5",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "Gavperian"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "bureauName": "Gavperian"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+            "incarnation": "4"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+            "incarnation": "5"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "EquiGavin"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "EquiGavin"
+          }
+        }
+      },
+      "counters": {
+        "actor": 6,
+        "timer": 0,
+        "sequence": 8,
+        "effect": 6
+      }
+    },
+    "effects": [
+      {
+        "id": "system:5",
+        "source": {
+          "$actor": "multipleCreditCheck",
+          "incarnation": "0"
+        },
+        "type": "saveReport",
+        "kind": "emit",
+        "params": {
+          "bureau": "EquiGavin"
+        },
+        "args": [],
+        "event": {
+          "type": "saveReport",
+          "bureau": "EquiGavin"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 5",
+    "snapshot": {
+      "root": "multipleCreditCheck",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "multipleCreditCheck": {
+          "id": "multipleCreditCheck",
+          "address": "multipleCreditCheck",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "SSN": "123-45-6789",
+              "FirstName": "Ada",
+              "LastName": "Lovelace",
+              "scoreEquiGavin": 700,
+              "scoreGavUnion": 0,
+              "scoreGavperian": 0,
+              "anyFailed": false,
+              "MiddleScore": 0,
+              "InterestRateOptions": [],
+              "ErrorMessage": ""
+            },
+            "value": {
+              "checkingCreditScores": {
+                "EquiGavin": "fetchingComplete",
+                "GavUnion": "fetchingReport",
+                "Gavperian": "checkingForExistingReport"
+              }
+            },
+            "children": {
+              "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+                "incarnation": "5"
+              },
+              "multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+                "incarnation": "6"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "multipleCreditCheck",
+              "multipleCreditCheck.checkingCreditScores",
+              "multipleCreditCheck.checkingCreditScores.EquiGavin",
+              "multipleCreditCheck.checkingCreditScores.GavUnion",
+              "multipleCreditCheck.checkingCreditScores.Gavperian",
+              "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport",
+              "multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingComplete",
+              "multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport"
+            ]
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0": {
+          "id": "multipleCreditCheck.verifyingCredentials:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+          "incarnation": "2",
+          "src": "root/actors/verifyCredentials",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "SSN": "123-45-6789"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "incarnation": "3",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "EquiGavin"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "incarnation": "4",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "incarnation": "5",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "Gavperian"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "bureauName": "Gavperian"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "incarnation": "6",
+          "src": "root/actors/checkBureau",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "bureauName": "GavUnion"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+            "incarnation": "5"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "EquiGavin"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "EquiGavin"
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+            "incarnation": "6"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 7,
+        "timer": 0,
+        "sequence": 10,
+        "effect": 7
+      }
+    },
+    "effects": [
+      {
+        "id": "system:6",
+        "source": {
+          "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "incarnation": "6"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 6",
+    "snapshot": {
+      "root": "multipleCreditCheck",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "multipleCreditCheck": {
+          "id": "multipleCreditCheck",
+          "address": "multipleCreditCheck",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "SSN": "123-45-6789",
+              "FirstName": "Ada",
+              "LastName": "Lovelace",
+              "scoreEquiGavin": 700,
+              "scoreGavUnion": 0,
+              "scoreGavperian": 0,
+              "anyFailed": true,
+              "MiddleScore": 0,
+              "InterestRateOptions": [],
+              "ErrorMessage": ""
+            },
+            "value": {
+              "checkingCreditScores": {
+                "EquiGavin": "fetchingComplete",
+                "GavUnion": "fetchingReport",
+                "Gavperian": "fetchingFailed"
+              }
+            },
+            "children": {
+              "multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+                "incarnation": "6"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "multipleCreditCheck",
+              "multipleCreditCheck.checkingCreditScores",
+              "multipleCreditCheck.checkingCreditScores.EquiGavin",
+              "multipleCreditCheck.checkingCreditScores.GavUnion",
+              "multipleCreditCheck.checkingCreditScores.Gavperian",
+              "multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingComplete",
+              "multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport",
+              "multipleCreditCheck.checkingCreditScores.Gavperian.fetchingFailed"
+            ]
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0": {
+          "id": "multipleCreditCheck.verifyingCredentials:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+          "incarnation": "2",
+          "src": "root/actors/verifyCredentials",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "SSN": "123-45-6789"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "incarnation": "3",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "EquiGavin"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "incarnation": "4",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "incarnation": "5",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "Gavperian"
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "timeout"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "timeout"
+                }
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "incarnation": "6",
+          "src": "root/actors/checkBureau",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "bureauName": "GavUnion"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "EquiGavin"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "EquiGavin"
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+            "incarnation": "6"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 7,
+        "timer": 0,
+        "sequence": 12,
+        "effect": 7
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 7",
+    "snapshot": {
+      "root": "multipleCreditCheck",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "multipleCreditCheck": {
+          "id": "multipleCreditCheck",
+          "address": "multipleCreditCheck",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "SSN": "123-45-6789",
+              "FirstName": "Ada",
+              "LastName": "Lovelace",
+              "scoreEquiGavin": 700,
+              "scoreGavUnion": 650,
+              "scoreGavperian": 0,
+              "anyFailed": true,
+              "MiddleScore": 0,
+              "InterestRateOptions": [],
+              "ErrorMessage": "Failed to retrieve credit scores."
+            },
+            "value": "enteringInformation",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "multipleCreditCheck",
+              "multipleCreditCheck.enteringInformation"
+            ]
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0": {
+          "id": "multipleCreditCheck.verifyingCredentials:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+          "incarnation": "2",
+          "src": "root/actors/verifyCredentials",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "SSN": "123-45-6789"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "incarnation": "3",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "EquiGavin"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "incarnation": "4",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "incarnation": "5",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "Gavperian"
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "timeout"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "timeout"
+                }
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "incarnation": "6",
+          "src": "root/actors/checkBureau",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": 640,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": 640
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "EquiGavin"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "EquiGavin"
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "GavUnion"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "GavUnion"
+          }
+        }
+      },
+      "counters": {
+        "actor": 7,
+        "timer": 0,
+        "sequence": 14,
+        "effect": 8
+      }
+    },
+    "effects": [
+      {
+        "id": "system:7",
+        "source": {
+          "$actor": "multipleCreditCheck",
+          "incarnation": "0"
+        },
+        "type": "saveReport",
+        "kind": "emit",
+        "params": {
+          "bureau": "GavUnion"
+        },
+        "args": [],
+        "event": {
+          "type": "saveReport",
+          "bureau": "GavUnion"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 8",
+    "snapshot": {
+      "root": "multipleCreditCheck",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "multipleCreditCheck": {
+          "id": "multipleCreditCheck",
+          "address": "multipleCreditCheck",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "SSN": "123-45-6789",
+              "FirstName": "Ada",
+              "LastName": "Lovelace",
+              "scoreEquiGavin": 700,
+              "scoreGavUnion": 650,
+              "scoreGavperian": 0,
+              "anyFailed": false,
+              "MiddleScore": 0,
+              "InterestRateOptions": [],
+              "ErrorMessage": ""
+            },
+            "value": "verifyingCredentials",
+            "children": {
+              "multipleCreditCheck.verifyingCredentials:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+                "incarnation": "7"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "multipleCreditCheck",
+              "multipleCreditCheck.verifyingCredentials"
+            ]
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0": {
+          "id": "multipleCreditCheck.verifyingCredentials:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+          "incarnation": "7",
+          "src": "root/actors/verifyCredentials",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "SSN": "123-45-6789"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "SSN": "123-45-6789"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "incarnation": "3",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "EquiGavin"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "incarnation": "4",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "incarnation": "5",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "Gavperian"
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "timeout"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "timeout"
+                }
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "incarnation": "6",
+          "src": "root/actors/checkBureau",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": 640,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": 640
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "EquiGavin"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "EquiGavin"
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "GavUnion"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "GavUnion"
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+            "incarnation": "7"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 8,
+        "timer": 0,
+        "sequence": 15,
+        "effect": 9
+      }
+    },
+    "effects": [
+      {
+        "id": "system:8",
+        "source": {
+          "$actor": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+          "incarnation": "7"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 9",
+    "snapshot": {
+      "root": "multipleCreditCheck",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "multipleCreditCheck": {
+          "id": "multipleCreditCheck",
+          "address": "multipleCreditCheck",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "SSN": "123-45-6789",
+              "FirstName": "Ada",
+              "LastName": "Lovelace",
+              "scoreEquiGavin": 700,
+              "scoreGavUnion": 650,
+              "scoreGavperian": 0,
+              "anyFailed": false,
+              "MiddleScore": 0,
+              "InterestRateOptions": [],
+              "ErrorMessage": ""
+            },
+            "value": {
+              "checkingCreditScores": {
+                "EquiGavin": "checkingForExistingReport",
+                "GavUnion": "checkingForExistingReport",
+                "Gavperian": "checkingForExistingReport"
+              }
+            },
+            "children": {
+              "multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+                "incarnation": "8"
+              },
+              "multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+                "incarnation": "9"
+              },
+              "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+                "incarnation": "10"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "multipleCreditCheck",
+              "multipleCreditCheck.checkingCreditScores",
+              "multipleCreditCheck.checkingCreditScores.EquiGavin",
+              "multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport",
+              "multipleCreditCheck.checkingCreditScores.GavUnion",
+              "multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport",
+              "multipleCreditCheck.checkingCreditScores.Gavperian",
+              "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport"
+            ]
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0": {
+          "id": "multipleCreditCheck.verifyingCredentials:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+          "incarnation": "7",
+          "src": "root/actors/verifyCredentials",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "SSN": "123-45-6789"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "incarnation": "8",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "EquiGavin"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "bureauName": "EquiGavin"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "incarnation": "9",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "bureauName": "GavUnion"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "incarnation": "10",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "Gavperian"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "bureauName": "Gavperian"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "incarnation": "6",
+          "src": "root/actors/checkBureau",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": 640,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": 640
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "EquiGavin"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "EquiGavin"
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "GavUnion"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "GavUnion"
+          }
+        },
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+            "incarnation": "8"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        },
+        "system:10": {
+          "id": "system:10",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+            "incarnation": "9"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        },
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+            "incarnation": "10"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 11,
+        "timer": 0,
+        "sequence": 17,
+        "effect": 12
+      }
+    },
+    "effects": [
+      {
+        "id": "system:9",
+        "source": {
+          "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "incarnation": "8"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      },
+      {
+        "id": "system:10",
+        "source": {
+          "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "incarnation": "9"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      },
+      {
+        "id": "system:11",
+        "source": {
+          "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "incarnation": "10"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 10",
+    "snapshot": {
+      "root": "multipleCreditCheck",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "multipleCreditCheck": {
+          "id": "multipleCreditCheck",
+          "address": "multipleCreditCheck",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "SSN": "123-45-6789",
+              "FirstName": "Ada",
+              "LastName": "Lovelace",
+              "scoreEquiGavin": 700,
+              "scoreGavUnion": 650,
+              "scoreGavperian": 0,
+              "anyFailed": false,
+              "MiddleScore": 0,
+              "InterestRateOptions": [],
+              "ErrorMessage": ""
+            },
+            "value": {
+              "checkingCreditScores": {
+                "EquiGavin": "fetchingReport",
+                "GavUnion": "checkingForExistingReport",
+                "Gavperian": "checkingForExistingReport"
+              }
+            },
+            "children": {
+              "multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+                "incarnation": "9"
+              },
+              "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+                "incarnation": "10"
+              },
+              "multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0",
+                "incarnation": "11"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "multipleCreditCheck",
+              "multipleCreditCheck.checkingCreditScores",
+              "multipleCreditCheck.checkingCreditScores.EquiGavin",
+              "multipleCreditCheck.checkingCreditScores.GavUnion",
+              "multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport",
+              "multipleCreditCheck.checkingCreditScores.Gavperian",
+              "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport",
+              "multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport"
+            ]
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0": {
+          "id": "multipleCreditCheck.verifyingCredentials:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+          "incarnation": "7",
+          "src": "root/actors/verifyCredentials",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "SSN": "123-45-6789"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "incarnation": "8",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "EquiGavin"
+          },
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "incarnation": "9",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "bureauName": "GavUnion"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "incarnation": "10",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "Gavperian"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "bureauName": "Gavperian"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "incarnation": "6",
+          "src": "root/actors/checkBureau",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": 640,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": 640
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0",
+          "incarnation": "11",
+          "src": "root/actors/checkBureau",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "EquiGavin"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "bureauName": "EquiGavin"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "EquiGavin"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "EquiGavin"
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "GavUnion"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "GavUnion"
+          }
+        },
+        "system:10": {
+          "id": "system:10",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+            "incarnation": "9"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        },
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+            "incarnation": "10"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        },
+        "system:12": {
+          "id": "system:12",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0",
+            "incarnation": "11"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 12,
+        "timer": 0,
+        "sequence": 19,
+        "effect": 13
+      }
+    },
+    "effects": [
+      {
+        "id": "system:12",
+        "source": {
+          "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0",
+          "incarnation": "11"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 11",
+    "snapshot": {
+      "root": "multipleCreditCheck",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "multipleCreditCheck": {
+          "id": "multipleCreditCheck",
+          "address": "multipleCreditCheck",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "SSN": "123-45-6789",
+              "FirstName": "Ada",
+              "LastName": "Lovelace",
+              "scoreEquiGavin": 700,
+              "scoreGavUnion": 650,
+              "scoreGavperian": 0,
+              "anyFailed": false,
+              "MiddleScore": 0,
+              "InterestRateOptions": [],
+              "ErrorMessage": ""
+            },
+            "value": {
+              "checkingCreditScores": {
+                "EquiGavin": "fetchingReport",
+                "GavUnion": "fetchingReport",
+                "Gavperian": "checkingForExistingReport"
+              }
+            },
+            "children": {
+              "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+                "incarnation": "10"
+              },
+              "multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0",
+                "incarnation": "11"
+              },
+              "multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+                "incarnation": "12"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "multipleCreditCheck",
+              "multipleCreditCheck.checkingCreditScores",
+              "multipleCreditCheck.checkingCreditScores.EquiGavin",
+              "multipleCreditCheck.checkingCreditScores.GavUnion",
+              "multipleCreditCheck.checkingCreditScores.Gavperian",
+              "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport",
+              "multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport",
+              "multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport"
+            ]
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0": {
+          "id": "multipleCreditCheck.verifyingCredentials:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+          "incarnation": "7",
+          "src": "root/actors/verifyCredentials",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "SSN": "123-45-6789"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "incarnation": "8",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "EquiGavin"
+          },
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "incarnation": "9",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "incarnation": "10",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "Gavperian"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "bureauName": "Gavperian"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "incarnation": "12",
+          "src": "root/actors/checkBureau",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "bureauName": "GavUnion"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0",
+          "incarnation": "11",
+          "src": "root/actors/checkBureau",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "EquiGavin"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "bureauName": "EquiGavin"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "EquiGavin"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "EquiGavin"
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "GavUnion"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "GavUnion"
+          }
+        },
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+            "incarnation": "10"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        },
+        "system:12": {
+          "id": "system:12",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0",
+            "incarnation": "11"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        },
+        "system:13": {
+          "id": "system:13",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+            "incarnation": "12"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 13,
+        "timer": 0,
+        "sequence": 21,
+        "effect": 14
+      }
+    },
+    "effects": [
+      {
+        "id": "system:13",
+        "source": {
+          "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "incarnation": "12"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 12",
+    "snapshot": {
+      "root": "multipleCreditCheck",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "multipleCreditCheck": {
+          "id": "multipleCreditCheck",
+          "address": "multipleCreditCheck",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "SSN": "123-45-6789",
+              "FirstName": "Ada",
+              "LastName": "Lovelace",
+              "scoreEquiGavin": 700,
+              "scoreGavUnion": 650,
+              "scoreGavperian": 700,
+              "anyFailed": false,
+              "MiddleScore": 0,
+              "InterestRateOptions": [],
+              "ErrorMessage": ""
+            },
+            "value": {
+              "checkingCreditScores": {
+                "EquiGavin": "fetchingReport",
+                "GavUnion": "fetchingReport",
+                "Gavperian": "fetchingComplete"
+              }
+            },
+            "children": {
+              "multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0",
+                "incarnation": "11"
+              },
+              "multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+                "incarnation": "12"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "multipleCreditCheck",
+              "multipleCreditCheck.checkingCreditScores",
+              "multipleCreditCheck.checkingCreditScores.EquiGavin",
+              "multipleCreditCheck.checkingCreditScores.GavUnion",
+              "multipleCreditCheck.checkingCreditScores.Gavperian",
+              "multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport",
+              "multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport",
+              "multipleCreditCheck.checkingCreditScores.Gavperian.fetchingComplete"
+            ]
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0": {
+          "id": "multipleCreditCheck.verifyingCredentials:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+          "incarnation": "7",
+          "src": "root/actors/verifyCredentials",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "SSN": "123-45-6789"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "incarnation": "8",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "EquiGavin"
+          },
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "incarnation": "9",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "incarnation": "10",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "Gavperian"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "incarnation": "12",
+          "src": "root/actors/checkBureau",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "bureauName": "GavUnion"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0",
+          "incarnation": "11",
+          "src": "root/actors/checkBureau",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "EquiGavin"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "bureauName": "EquiGavin"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "EquiGavin"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "EquiGavin"
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "GavUnion"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "GavUnion"
+          }
+        },
+        "system:12": {
+          "id": "system:12",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0",
+            "incarnation": "11"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        },
+        "system:13": {
+          "id": "system:13",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+            "incarnation": "12"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        },
+        "system:14": {
+          "id": "system:14",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "Gavperian"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "Gavperian"
+          }
+        }
+      },
+      "counters": {
+        "actor": 13,
+        "timer": 0,
+        "sequence": 23,
+        "effect": 15
+      }
+    },
+    "effects": [
+      {
+        "id": "system:14",
+        "source": {
+          "$actor": "multipleCreditCheck",
+          "incarnation": "0"
+        },
+        "type": "saveReport",
+        "kind": "emit",
+        "params": {
+          "bureau": "Gavperian"
+        },
+        "args": [],
+        "event": {
+          "type": "saveReport",
+          "bureau": "Gavperian"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 13",
+    "snapshot": {
+      "root": "multipleCreditCheck",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "multipleCreditCheck": {
+          "id": "multipleCreditCheck",
+          "address": "multipleCreditCheck",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "SSN": "123-45-6789",
+              "FirstName": "Ada",
+              "LastName": "Lovelace",
+              "scoreEquiGavin": 650,
+              "scoreGavUnion": 650,
+              "scoreGavperian": 700,
+              "anyFailed": false,
+              "MiddleScore": 0,
+              "InterestRateOptions": [],
+              "ErrorMessage": ""
+            },
+            "value": {
+              "checkingCreditScores": {
+                "EquiGavin": "fetchingComplete",
+                "GavUnion": "fetchingReport",
+                "Gavperian": "fetchingComplete"
+              }
+            },
+            "children": {
+              "multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+                "incarnation": "12"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "multipleCreditCheck",
+              "multipleCreditCheck.checkingCreditScores",
+              "multipleCreditCheck.checkingCreditScores.EquiGavin",
+              "multipleCreditCheck.checkingCreditScores.GavUnion",
+              "multipleCreditCheck.checkingCreditScores.Gavperian",
+              "multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport",
+              "multipleCreditCheck.checkingCreditScores.Gavperian.fetchingComplete",
+              "multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingComplete"
+            ]
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0": {
+          "id": "multipleCreditCheck.verifyingCredentials:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+          "incarnation": "7",
+          "src": "root/actors/verifyCredentials",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "SSN": "123-45-6789"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "incarnation": "8",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "EquiGavin"
+          },
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "incarnation": "9",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "incarnation": "10",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "Gavperian"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "incarnation": "12",
+          "src": "root/actors/checkBureau",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "bureauName": "GavUnion"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0",
+          "incarnation": "11",
+          "src": "root/actors/checkBureau",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "EquiGavin"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": 610,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": 610
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "EquiGavin"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "EquiGavin"
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "GavUnion"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "GavUnion"
+          }
+        },
+        "system:13": {
+          "id": "system:13",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+            "incarnation": "12"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        },
+        "system:14": {
+          "id": "system:14",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "Gavperian"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "Gavperian"
+          }
+        },
+        "system:15": {
+          "id": "system:15",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "EquiGavin"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "EquiGavin"
+          }
+        }
+      },
+      "counters": {
+        "actor": 13,
+        "timer": 0,
+        "sequence": 25,
+        "effect": 16
+      }
+    },
+    "effects": [
+      {
+        "id": "system:15",
+        "source": {
+          "$actor": "multipleCreditCheck",
+          "incarnation": "0"
+        },
+        "type": "saveReport",
+        "kind": "emit",
+        "params": {
+          "bureau": "EquiGavin"
+        },
+        "args": [],
+        "event": {
+          "type": "saveReport",
+          "bureau": "EquiGavin"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 14",
+    "snapshot": {
+      "root": "multipleCreditCheck",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "multipleCreditCheck": {
+          "id": "multipleCreditCheck",
+          "address": "multipleCreditCheck",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "SSN": "123-45-6789",
+              "FirstName": "Ada",
+              "LastName": "Lovelace",
+              "scoreEquiGavin": 650,
+              "scoreGavUnion": 650,
+              "scoreGavperian": 700,
+              "anyFailed": false,
+              "MiddleScore": 0,
+              "InterestRateOptions": [],
+              "ErrorMessage": ""
+            },
+            "value": {
+              "determiningInterestRateOptions": "determiningMiddleScore"
+            },
+            "children": {
+              "multipleCreditCheck.determiningInterestRateOptions.determiningMiddleScore:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.determiningInterestRateOptions.determiningMiddleScore:0",
+                "incarnation": "13"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "multipleCreditCheck",
+              "multipleCreditCheck.determiningInterestRateOptions",
+              "multipleCreditCheck.determiningInterestRateOptions.determiningMiddleScore"
+            ]
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0": {
+          "id": "multipleCreditCheck.verifyingCredentials:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+          "incarnation": "7",
+          "src": "root/actors/verifyCredentials",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "SSN": "123-45-6789"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "incarnation": "8",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "EquiGavin"
+          },
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "incarnation": "9",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "incarnation": "10",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "Gavperian"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "incarnation": "12",
+          "src": "root/actors/checkBureau",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": 680,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": 680
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0",
+          "incarnation": "11",
+          "src": "root/actors/checkBureau",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "EquiGavin"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": 610,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": 610
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.determiningInterestRateOptions.determiningMiddleScore:0": {
+          "id": "multipleCreditCheck.determiningInterestRateOptions.determiningMiddleScore:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.determiningInterestRateOptions.determiningMiddleScore:0",
+          "incarnation": "13",
+          "src": "root/actors/determineMiddleScore",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "EquiGavin"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "EquiGavin"
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "GavUnion"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "GavUnion"
+          }
+        },
+        "system:14": {
+          "id": "system:14",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "Gavperian"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "Gavperian"
+          }
+        },
+        "system:15": {
+          "id": "system:15",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "EquiGavin"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "EquiGavin"
+          }
+        },
+        "system:16": {
+          "id": "system:16",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "GavUnion"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "GavUnion"
+          }
+        },
+        "system:17": {
+          "id": "system:17",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.determiningInterestRateOptions.determiningMiddleScore:0",
+            "incarnation": "13"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 14,
+        "timer": 0,
+        "sequence": 27,
+        "effect": 18
+      }
+    },
+    "effects": [
+      {
+        "id": "system:16",
+        "source": {
+          "$actor": "multipleCreditCheck",
+          "incarnation": "0"
+        },
+        "type": "saveReport",
+        "kind": "emit",
+        "params": {
+          "bureau": "GavUnion"
+        },
+        "args": [],
+        "event": {
+          "type": "saveReport",
+          "bureau": "GavUnion"
+        }
+      },
+      {
+        "id": "system:17",
+        "source": {
+          "$actor": "multipleCreditCheck/multipleCreditCheck.determiningInterestRateOptions.determiningMiddleScore:0",
+          "incarnation": "13"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 15",
+    "snapshot": {
+      "root": "multipleCreditCheck",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "multipleCreditCheck": {
+          "id": "multipleCreditCheck",
+          "address": "multipleCreditCheck",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "SSN": "123-45-6789",
+              "FirstName": "Ada",
+              "LastName": "Lovelace",
+              "scoreEquiGavin": 650,
+              "scoreGavUnion": 650,
+              "scoreGavperian": 700,
+              "anyFailed": false,
+              "MiddleScore": 700,
+              "InterestRateOptions": [],
+              "ErrorMessage": ""
+            },
+            "value": {
+              "determiningInterestRateOptions": "fetchingRates"
+            },
+            "children": {
+              "multipleCreditCheck.determiningInterestRateOptions.fetchingRates:0": {
+                "$actor": "multipleCreditCheck/multipleCreditCheck.determiningInterestRateOptions.fetchingRates:0",
+                "incarnation": "14"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "multipleCreditCheck",
+              "multipleCreditCheck.determiningInterestRateOptions",
+              "multipleCreditCheck.determiningInterestRateOptions.fetchingRates"
+            ]
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0": {
+          "id": "multipleCreditCheck.verifyingCredentials:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+          "incarnation": "7",
+          "src": "root/actors/verifyCredentials",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "SSN": "123-45-6789"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "incarnation": "8",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "EquiGavin"
+          },
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "incarnation": "9",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "incarnation": "10",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "Gavperian"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "incarnation": "12",
+          "src": "root/actors/checkBureau",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": 680,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": 680
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0",
+          "incarnation": "11",
+          "src": "root/actors/checkBureau",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "EquiGavin"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": 610,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": 610
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.determiningInterestRateOptions.determiningMiddleScore:0": {
+          "id": "multipleCreditCheck.determiningInterestRateOptions.determiningMiddleScore:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.determiningInterestRateOptions.determiningMiddleScore:0",
+          "incarnation": "13",
+          "src": "root/actors/determineMiddleScore",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": 650,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": 650
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.determiningInterestRateOptions.fetchingRates:0": {
+          "id": "multipleCreditCheck.determiningInterestRateOptions.fetchingRates:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.determiningInterestRateOptions.fetchingRates:0",
+          "incarnation": "14",
+          "src": "root/actors/generateInterestRate",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "EquiGavin"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "EquiGavin"
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "GavUnion"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "GavUnion"
+          }
+        },
+        "system:14": {
+          "id": "system:14",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "Gavperian"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "Gavperian"
+          }
+        },
+        "system:15": {
+          "id": "system:15",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "EquiGavin"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "EquiGavin"
+          }
+        },
+        "system:16": {
+          "id": "system:16",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "GavUnion"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "GavUnion"
+          }
+        },
+        "system:18": {
+          "id": "system:18",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveProfile",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "saveProfile"
+          }
+        },
+        "system:19": {
+          "id": "system:19",
+          "source": {
+            "$actor": "multipleCreditCheck/multipleCreditCheck.determiningInterestRateOptions.fetchingRates:0",
+            "incarnation": "14"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 15,
+        "timer": 0,
+        "sequence": 29,
+        "effect": 20
+      }
+    },
+    "effects": [
+      {
+        "id": "system:18",
+        "source": {
+          "$actor": "multipleCreditCheck",
+          "incarnation": "0"
+        },
+        "type": "saveProfile",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "saveProfile"
+        }
+      },
+      {
+        "id": "system:19",
+        "source": {
+          "$actor": "multipleCreditCheck/multipleCreditCheck.determiningInterestRateOptions.fetchingRates:0",
+          "incarnation": "14"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 16",
+    "snapshot": {
+      "root": "multipleCreditCheck",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "multipleCreditCheck": {
+          "id": "multipleCreditCheck",
+          "address": "multipleCreditCheck",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "SSN": "123-45-6789",
+              "FirstName": "Ada",
+              "LastName": "Lovelace",
+              "scoreEquiGavin": 650,
+              "scoreGavUnion": 650,
+              "scoreGavperian": 700,
+              "anyFailed": false,
+              "MiddleScore": 700,
+              "InterestRateOptions": [
+                3.5
+              ],
+              "ErrorMessage": ""
+            },
+            "value": {
+              "determiningInterestRateOptions": "ratesProvided"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "multipleCreditCheck",
+              "multipleCreditCheck.determiningInterestRateOptions",
+              "multipleCreditCheck.determiningInterestRateOptions.ratesProvided"
+            ]
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0": {
+          "id": "multipleCreditCheck.verifyingCredentials:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+          "incarnation": "7",
+          "src": "root/actors/verifyCredentials",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "SSN": "123-45-6789"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "incarnation": "8",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "EquiGavin"
+          },
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "incarnation": "9",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "incarnation": "10",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "Gavperian"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "incarnation": "12",
+          "src": "root/actors/checkBureau",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": 680,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": 680
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0",
+          "incarnation": "11",
+          "src": "root/actors/checkBureau",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "EquiGavin"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": 610,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": 610
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.determiningInterestRateOptions.determiningMiddleScore:0": {
+          "id": "multipleCreditCheck.determiningInterestRateOptions.determiningMiddleScore:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.determiningInterestRateOptions.determiningMiddleScore:0",
+          "incarnation": "13",
+          "src": "root/actors/determineMiddleScore",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": 650,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": 650
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.determiningInterestRateOptions.fetchingRates:0": {
+          "id": "multipleCreditCheck.determiningInterestRateOptions.fetchingRates:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.determiningInterestRateOptions.fetchingRates:0",
+          "incarnation": "14",
+          "src": "root/actors/generateInterestRate",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": 3.5,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": 3.5
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "EquiGavin"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "EquiGavin"
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "GavUnion"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "GavUnion"
+          }
+        },
+        "system:14": {
+          "id": "system:14",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "Gavperian"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "Gavperian"
+          }
+        },
+        "system:15": {
+          "id": "system:15",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "EquiGavin"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "EquiGavin"
+          }
+        },
+        "system:16": {
+          "id": "system:16",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "GavUnion"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "GavUnion"
+          }
+        },
+        "system:18": {
+          "id": "system:18",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveProfile",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "saveProfile"
+          }
+        },
+        "system:20": {
+          "id": "system:20",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "emailUser",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailUser"
+          }
+        },
+        "system:21": {
+          "id": "system:21",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "emailSalesTeam",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailSalesTeam"
+          }
+        }
+      },
+      "counters": {
+        "actor": 15,
+        "timer": 0,
+        "sequence": 31,
+        "effect": 22
+      }
+    },
+    "effects": [
+      {
+        "id": "system:20",
+        "source": {
+          "$actor": "multipleCreditCheck",
+          "incarnation": "0"
+        },
+        "type": "emailUser",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "emailUser"
+        }
+      },
+      {
+        "id": "system:21",
+        "source": {
+          "$actor": "multipleCreditCheck",
+          "incarnation": "0"
+        },
+        "type": "emailSalesTeam",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "emailSalesTeam"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 17",
+    "snapshot": {
+      "root": "multipleCreditCheck",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "multipleCreditCheck": {
+          "id": "multipleCreditCheck",
+          "address": "multipleCreditCheck",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "SSN": "123-45-6789",
+              "FirstName": "Ada",
+              "LastName": "Lovelace",
+              "scoreEquiGavin": 650,
+              "scoreGavUnion": 650,
+              "scoreGavperian": 700,
+              "anyFailed": false,
+              "MiddleScore": 700,
+              "InterestRateOptions": [
+                3.5
+              ],
+              "ErrorMessage": ""
+            },
+            "value": {
+              "determiningInterestRateOptions": "ratesProvided"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "multipleCreditCheck",
+              "multipleCreditCheck.determiningInterestRateOptions",
+              "multipleCreditCheck.determiningInterestRateOptions.ratesProvided"
+            ]
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0": {
+          "id": "multipleCreditCheck.verifyingCredentials:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.verifyingCredentials:0",
+          "incarnation": "7",
+          "src": "root/actors/verifyCredentials",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "SSN": "123-45-6789"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.checkingForExistingReport:0",
+          "incarnation": "8",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "EquiGavin"
+          },
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.checkingForExistingReport:0",
+          "incarnation": "9",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.Gavperian.checkingForExistingReport:0",
+          "incarnation": "10",
+          "src": "root/actors/checkReportsTable",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "Gavperian"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": true,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": true
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.GavUnion.fetchingReport:0",
+          "incarnation": "12",
+          "src": "root/actors/checkBureau",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "GavUnion"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": 680,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": 680
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0": {
+          "id": "multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.checkingCreditScores.EquiGavin.fetchingReport:0",
+          "incarnation": "11",
+          "src": "root/actors/checkBureau",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "bureauName": "EquiGavin"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": 610,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": 610
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.determiningInterestRateOptions.determiningMiddleScore:0": {
+          "id": "multipleCreditCheck.determiningInterestRateOptions.determiningMiddleScore:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.determiningInterestRateOptions.determiningMiddleScore:0",
+          "incarnation": "13",
+          "src": "root/actors/determineMiddleScore",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": 650,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": 650
+              }
+            }
+          }
+        },
+        "multipleCreditCheck/multipleCreditCheck.determiningInterestRateOptions.fetchingRates:0": {
+          "id": "multipleCreditCheck.determiningInterestRateOptions.fetchingRates:0",
+          "address": "multipleCreditCheck/multipleCreditCheck.determiningInterestRateOptions.fetchingRates:0",
+          "incarnation": "14",
+          "src": "root/actors/generateInterestRate",
+          "parent": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": 3.5,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": 3.5
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "EquiGavin"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "EquiGavin"
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "GavUnion"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "GavUnion"
+          }
+        },
+        "system:14": {
+          "id": "system:14",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "Gavperian"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "Gavperian"
+          }
+        },
+        "system:15": {
+          "id": "system:15",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "EquiGavin"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "EquiGavin"
+          }
+        },
+        "system:16": {
+          "id": "system:16",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveReport",
+          "kind": "emit",
+          "params": {
+            "bureau": "GavUnion"
+          },
+          "args": [],
+          "event": {
+            "type": "saveReport",
+            "bureau": "GavUnion"
+          }
+        },
+        "system:18": {
+          "id": "system:18",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "saveProfile",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "saveProfile"
+          }
+        },
+        "system:20": {
+          "id": "system:20",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "emailUser",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailUser"
+          }
+        },
+        "system:21": {
+          "id": "system:21",
+          "source": {
+            "$actor": "multipleCreditCheck",
+            "incarnation": "0"
+          },
+          "type": "emailSalesTeam",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "emailSalesTeam"
+          }
+        }
+      },
+      "counters": {
+        "actor": 15,
+        "timer": 0,
+        "sequence": 32,
+        "effect": 22
+      }
+    },
+    "effects": []
+  }
+]

@@ -1,0 +1,229 @@
+{
+  "source": "examples/pattern-retry-policy/src/main.ts",
+  "notes": "The attempts counter and the backoff delay (100 * 2^attempts) are unrolled: onError is a guarded array (ctxEquals attempts n), and backingOff has one guarded `after` per attempt count; outputs are static.",
+  "logic": [
+    {
+      "name": "storePatient",
+      "async": {}
+    },
+    {
+      "name": "retry",
+      "actors": [
+        "storePatient"
+      ],
+      "machine": {
+        "id": "retry",
+        "context": {
+          "name": "Ada Lovelace",
+          "attempts": 0,
+          "recordId": null,
+          "error": null
+        },
+        "initial": "attempting",
+        "states": {
+          "attempting": {
+            "invoke": {
+              "src": "storePatient",
+              "input": {
+                "name": "Ada Lovelace"
+              },
+              "onDone": {
+                "target": "stored",
+                "context": {
+                  "recordId": "rec-4"
+                }
+              },
+              "onError": [
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "attempts",
+                      "value": 0
+                    }
+                  },
+                  "target": "backingOff",
+                  "context": {
+                    "attempts": 1,
+                    "error": "ServiceUnavailable"
+                  }
+                },
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "attempts",
+                      "value": 1
+                    }
+                  },
+                  "target": "backingOff",
+                  "context": {
+                    "attempts": 2,
+                    "error": "ServiceUnavailable"
+                  }
+                },
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "attempts",
+                      "value": 2
+                    }
+                  },
+                  "target": "backingOff",
+                  "context": {
+                    "attempts": 3,
+                    "error": "ServiceUnavailable"
+                  }
+                },
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "attempts",
+                      "value": 3
+                    }
+                  },
+                  "target": "backingOff",
+                  "context": {
+                    "attempts": 4,
+                    "error": "ServiceUnavailable"
+                  }
+                },
+                {
+                  "target": "gaveUp",
+                  "context": {
+                    "attempts": 5,
+                    "error": "ServiceUnavailable"
+                  }
+                }
+              ]
+            }
+          },
+          "backingOff": {
+            "entry": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "log",
+                  "message": "attempt failed; retrying"
+                }
+              }
+            ],
+            "after": {
+              "200": {
+                "guard": {
+                  "type": "ctxEquals",
+                  "params": {
+                    "key": "attempts",
+                    "value": 1
+                  }
+                },
+                "target": "attempting"
+              },
+              "400": {
+                "guard": {
+                  "type": "ctxEquals",
+                  "params": {
+                    "key": "attempts",
+                    "value": 2
+                  }
+                },
+                "target": "attempting"
+              },
+              "800": {
+                "guard": {
+                  "type": "ctxEquals",
+                  "params": {
+                    "key": "attempts",
+                    "value": 3
+                  }
+                },
+                "target": "attempting"
+              },
+              "1600": {
+                "guard": {
+                  "type": "ctxEquals",
+                  "params": {
+                    "key": "attempts",
+                    "value": 4
+                  }
+                },
+                "target": "attempting"
+              }
+            }
+          },
+          "stored": {
+            "type": "final",
+            "output": {
+              "ok": true
+            }
+          },
+          "gaveUp": {
+            "type": "final",
+            "output": {
+              "ok": false
+            }
+          }
+        }
+      }
+    }
+  ],
+  "root": "retry",
+  "steps": [
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "ServiceUnavailable"
+        }
+      }
+    },
+    {
+      "advance": 199
+    },
+    {
+      "advance": 200
+    },
+    {
+      "resolve": 1,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "ServiceUnavailable"
+        }
+      }
+    },
+    {
+      "advance": 500
+    },
+    {
+      "advance": 600
+    },
+    {
+      "resolve": 2,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "ServiceUnavailable"
+        }
+      }
+    },
+    {
+      "advance": 1300
+    },
+    {
+      "advance": 1400
+    },
+    {
+      "resolve": 3,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "recordId": "rec-4"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,529 @@
+{
+  "source": "examples/mongodb-credit-check-api/machine.ts",
+  "notes": "Scores are flat context keys with static values (the source writes event outputs into a nested scores object); allBureausSucceeded is an anyFailed flag set by each region's fetchingFailed entry; the cached-report branch tests eventEquals output true; inputs are static; the save/email actions are emits.",
+  "logic": [
+    {
+      "name": "verifyCredentials",
+      "async": {}
+    },
+    {
+      "name": "checkReportsTable",
+      "async": {}
+    },
+    {
+      "name": "checkBureau",
+      "async": {}
+    },
+    {
+      "name": "determineMiddleScore",
+      "async": {}
+    },
+    {
+      "name": "generateInterestRate",
+      "async": {}
+    },
+    {
+      "name": "creditCheck",
+      "actors": [
+        "verifyCredentials",
+        "checkReportsTable",
+        "checkBureau",
+        "determineMiddleScore",
+        "generateInterestRate"
+      ],
+      "machine": {
+        "id": "multipleCreditCheck",
+        "context": {
+          "SSN": "",
+          "FirstName": "",
+          "LastName": "",
+          "scoreEquiGavin": 0,
+          "scoreGavUnion": 0,
+          "scoreGavperian": 0,
+          "anyFailed": false,
+          "MiddleScore": 0,
+          "InterestRateOptions": [],
+          "ErrorMessage": ""
+        },
+        "initial": "enteringInformation",
+        "states": {
+          "enteringInformation": {
+            "on": {
+              "Submit": {
+                "target": "verifyingCredentials",
+                "context": {
+                  "SSN": "123-45-6789",
+                  "FirstName": "Ada",
+                  "LastName": "Lovelace",
+                  "ErrorMessage": "",
+                  "anyFailed": false
+                }
+              }
+            }
+          },
+          "verifyingCredentials": {
+            "invoke": {
+              "src": "verifyCredentials",
+              "input": {
+                "SSN": "123-45-6789"
+              },
+              "onDone": {
+                "target": "checkingCreditScores"
+              },
+              "onError": {
+                "target": "enteringInformation",
+                "context": {
+                  "ErrorMessage": "Failed to verify credentials."
+                }
+              }
+            }
+          },
+          "checkingCreditScores": {
+            "description": "Requests a report from each of the three credit bureaus in parallel and waits for all of them.",
+            "type": "parallel",
+            "states": {
+              "EquiGavin": {
+                "initial": "checkingForExistingReport",
+                "states": {
+                  "checkingForExistingReport": {
+                    "invoke": {
+                      "src": "checkReportsTable",
+                      "input": {
+                        "bureauName": "EquiGavin"
+                      },
+                      "onDone": [
+                        {
+                          "guard": {
+                            "type": "eventEquals",
+                            "params": {
+                              "key": "output",
+                              "value": true
+                            }
+                          },
+                          "target": "fetchingComplete",
+                          "context": {
+                            "scoreEquiGavin": 700
+                          }
+                        },
+                        {
+                          "target": "fetchingReport"
+                        }
+                      ],
+                      "onError": {
+                        "target": "fetchingFailed"
+                      }
+                    }
+                  },
+                  "fetchingReport": {
+                    "invoke": {
+                      "src": "checkBureau",
+                      "input": {
+                        "bureauName": "EquiGavin"
+                      },
+                      "onDone": {
+                        "target": "fetchingComplete",
+                        "context": {
+                          "scoreEquiGavin": 650
+                        }
+                      },
+                      "onError": {
+                        "target": "fetchingFailed"
+                      }
+                    }
+                  },
+                  "fetchingComplete": {
+                    "type": "final",
+                    "entry": [
+                      {
+                        "type": "@xstate.emit",
+                        "event": {
+                          "type": "saveReport",
+                          "bureau": "EquiGavin"
+                        }
+                      }
+                    ]
+                  },
+                  "fetchingFailed": {
+                    "type": "final",
+                    "entry": [
+                      {
+                        "type": "@xstate.assign",
+                        "context": {
+                          "anyFailed": true
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "GavUnion": {
+                "initial": "checkingForExistingReport",
+                "states": {
+                  "checkingForExistingReport": {
+                    "invoke": {
+                      "src": "checkReportsTable",
+                      "input": {
+                        "bureauName": "GavUnion"
+                      },
+                      "onDone": [
+                        {
+                          "guard": {
+                            "type": "eventEquals",
+                            "params": {
+                              "key": "output",
+                              "value": true
+                            }
+                          },
+                          "target": "fetchingComplete",
+                          "context": {
+                            "scoreGavUnion": 700
+                          }
+                        },
+                        {
+                          "target": "fetchingReport"
+                        }
+                      ],
+                      "onError": {
+                        "target": "fetchingFailed"
+                      }
+                    }
+                  },
+                  "fetchingReport": {
+                    "invoke": {
+                      "src": "checkBureau",
+                      "input": {
+                        "bureauName": "GavUnion"
+                      },
+                      "onDone": {
+                        "target": "fetchingComplete",
+                        "context": {
+                          "scoreGavUnion": 650
+                        }
+                      },
+                      "onError": {
+                        "target": "fetchingFailed"
+                      }
+                    }
+                  },
+                  "fetchingComplete": {
+                    "type": "final",
+                    "entry": [
+                      {
+                        "type": "@xstate.emit",
+                        "event": {
+                          "type": "saveReport",
+                          "bureau": "GavUnion"
+                        }
+                      }
+                    ]
+                  },
+                  "fetchingFailed": {
+                    "type": "final",
+                    "entry": [
+                      {
+                        "type": "@xstate.assign",
+                        "context": {
+                          "anyFailed": true
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "Gavperian": {
+                "initial": "checkingForExistingReport",
+                "states": {
+                  "checkingForExistingReport": {
+                    "invoke": {
+                      "src": "checkReportsTable",
+                      "input": {
+                        "bureauName": "Gavperian"
+                      },
+                      "onDone": [
+                        {
+                          "guard": {
+                            "type": "eventEquals",
+                            "params": {
+                              "key": "output",
+                              "value": true
+                            }
+                          },
+                          "target": "fetchingComplete",
+                          "context": {
+                            "scoreGavperian": 700
+                          }
+                        },
+                        {
+                          "target": "fetchingReport"
+                        }
+                      ],
+                      "onError": {
+                        "target": "fetchingFailed"
+                      }
+                    }
+                  },
+                  "fetchingReport": {
+                    "invoke": {
+                      "src": "checkBureau",
+                      "input": {
+                        "bureauName": "Gavperian"
+                      },
+                      "onDone": {
+                        "target": "fetchingComplete",
+                        "context": {
+                          "scoreGavperian": 650
+                        }
+                      },
+                      "onError": {
+                        "target": "fetchingFailed"
+                      }
+                    }
+                  },
+                  "fetchingComplete": {
+                    "type": "final",
+                    "entry": [
+                      {
+                        "type": "@xstate.emit",
+                        "event": {
+                          "type": "saveReport",
+                          "bureau": "Gavperian"
+                        }
+                      }
+                    ]
+                  },
+                  "fetchingFailed": {
+                    "type": "final",
+                    "entry": [
+                      {
+                        "type": "@xstate.assign",
+                        "context": {
+                          "anyFailed": true
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            },
+            "on": {
+              "xstate.done.state": [
+                {
+                  "matches": {
+                    "stateId": "multipleCreditCheck.checkingCreditScores"
+                  },
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "anyFailed",
+                      "value": false
+                    }
+                  },
+                  "target": "determiningInterestRateOptions"
+                },
+                {
+                  "matches": {
+                    "stateId": "multipleCreditCheck.checkingCreditScores"
+                  },
+                  "target": "enteringInformation",
+                  "context": {
+                    "ErrorMessage": "Failed to retrieve credit scores."
+                  }
+                }
+              ]
+            }
+          },
+          "determiningInterestRateOptions": {
+            "description": "Uses the middle of the three scores to decide the home loan interest rate.",
+            "initial": "determiningMiddleScore",
+            "states": {
+              "determiningMiddleScore": {
+                "invoke": {
+                  "src": "determineMiddleScore",
+                  "onDone": {
+                    "target": "fetchingRates",
+                    "context": {
+                      "MiddleScore": 700
+                    },
+                    "actions": [
+                      {
+                        "type": "@xstate.emit",
+                        "event": {
+                          "type": "saveProfile"
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "fetchingRates": {
+                "invoke": {
+                  "src": "generateInterestRate",
+                  "onDone": {
+                    "target": "ratesProvided",
+                    "context": {
+                      "InterestRateOptions": [
+                        3.5
+                      ]
+                    }
+                  }
+                }
+              },
+              "ratesProvided": {
+                "type": "final",
+                "entry": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "emailUser"
+                    }
+                  },
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "emailSalesTeam"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "root": "creditCheck",
+  "steps": [
+    {
+      "send": "multipleCreditCheck",
+      "event": {
+        "type": "Submit",
+        "SSN": "123-45-6789",
+        "firstName": "Ada",
+        "lastName": "Lovelace"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "unknown SSN"
+        }
+      }
+    },
+    {
+      "send": "multipleCreditCheck",
+      "event": {
+        "type": "Submit",
+        "SSN": "123-45-6789",
+        "firstName": "Ada",
+        "lastName": "Lovelace"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": true
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": true
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "timeout"
+        }
+      }
+    },
+    {
+      "resolve": 1,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": 640
+      }
+    },
+    {
+      "send": "multipleCreditCheck",
+      "event": {
+        "type": "Submit",
+        "SSN": "123-45-6789",
+        "firstName": "Ada",
+        "lastName": "Lovelace"
+      }
+    },
+    {
+      "resolve": 2,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": true
+      }
+    },
+    {
+      "resolve": 2,
+      "event": {
+        "type": "xstate.async.resolve"
+      }
+    },
+    {
+      "resolve": 2,
+      "event": {
+        "type": "xstate.async.resolve"
+      }
+    },
+    {
+      "resolve": 2,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": true
+      }
+    },
+    {
+      "resolve": 2,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": 610
+      }
+    },
+    {
+      "resolve": 2,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": 680
+      }
+    },
+    {
+      "resolve": 5,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": 650
+      }
+    },
+    {
+      "resolve": 6,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": 3.5
+      }
+    },
+    {
+      "send": "multipleCreditCheck",
+      "event": {
+        "type": "Submit"
+      }
+    }
+  ]
+}

@@ -1,0 +1,148 @@
+{
+  "source": "examples/pattern-parallel-branches/src/main.ts",
+  "notes": "The branches finish in the source's order (inventory, fraud, payment) through resolve steps; the output is static.",
+  "logic": [
+    {
+      "name": "checkInventory",
+      "async": {}
+    },
+    {
+      "name": "authorizePayment",
+      "async": {}
+    },
+    {
+      "name": "screenForFraud",
+      "async": {}
+    },
+    {
+      "name": "checkout",
+      "actors": [
+        "checkInventory",
+        "authorizePayment",
+        "screenForFraud"
+      ],
+      "machine": {
+        "id": "checkout",
+        "context": {
+          "inventory": null,
+          "payment": null,
+          "fraud": null
+        },
+        "initial": "checking",
+        "states": {
+          "checking": {
+            "type": "parallel",
+            "states": {
+              "inventory": {
+                "initial": "running",
+                "states": {
+                  "running": {
+                    "invoke": {
+                      "src": "checkInventory",
+                      "onDone": {
+                        "target": "done",
+                        "context": {
+                          "inventory": "in stock"
+                        }
+                      }
+                    }
+                  },
+                  "done": {
+                    "type": "final"
+                  }
+                }
+              },
+              "payment": {
+                "initial": "running",
+                "states": {
+                  "running": {
+                    "invoke": {
+                      "src": "authorizePayment",
+                      "onDone": {
+                        "target": "done",
+                        "context": {
+                          "payment": "authorized"
+                        }
+                      }
+                    }
+                  },
+                  "done": {
+                    "type": "final"
+                  }
+                }
+              },
+              "fraud": {
+                "initial": "running",
+                "states": {
+                  "running": {
+                    "invoke": {
+                      "src": "screenForFraud",
+                      "onDone": {
+                        "target": "done",
+                        "context": {
+                          "fraud": "clean"
+                        }
+                      }
+                    }
+                  },
+                  "done": {
+                    "type": "final"
+                  }
+                }
+              }
+            },
+            "on": {
+              "xstate.done.state": {
+                "matches": {
+                  "stateId": "checkout.checking"
+                },
+                "target": "approved"
+              }
+            }
+          },
+          "approved": {
+            "type": "final",
+            "output": {
+              "inventory": "in stock",
+              "payment": "authorized",
+              "fraud": "clean"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "root": "checkout",
+  "steps": [
+    {
+      "advance": 300
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": "in stock"
+      }
+    },
+    {
+      "advance": 600
+    },
+    {
+      "resolve": 1,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": "clean"
+      }
+    },
+    {
+      "advance": 900
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": "authorized"
+      }
+    }
+  ]
+}

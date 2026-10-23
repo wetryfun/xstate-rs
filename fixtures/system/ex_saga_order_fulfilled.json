@@ -1,0 +1,211 @@
+{
+  "source": "examples/saga-order-fulfillment/src/main.ts",
+  "notes": "Outputs are static per final state (the source builds them from context); ids written into context are static; logs are emits.",
+  "logic": [
+    {
+      "name": "reserveInventory",
+      "async": {}
+    },
+    {
+      "name": "releaseInventory",
+      "async": {}
+    },
+    {
+      "name": "chargePayment",
+      "async": {}
+    },
+    {
+      "name": "refundPayment",
+      "async": {}
+    },
+    {
+      "name": "scheduleShipping",
+      "async": {}
+    },
+    {
+      "name": "saga",
+      "actors": [
+        "reserveInventory",
+        "releaseInventory",
+        "chargePayment",
+        "refundPayment",
+        "scheduleShipping"
+      ],
+      "machine": {
+        "id": "saga",
+        "context": {
+          "reservationId": null,
+          "chargeId": null,
+          "shipmentId": null,
+          "failure": null
+        },
+        "initial": "reservingInventory",
+        "states": {
+          "reservingInventory": {
+            "entry": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "log",
+                  "message": "saga start"
+                }
+              }
+            ],
+            "invoke": {
+              "src": "reserveInventory",
+              "onDone": {
+                "target": "chargingPayment",
+                "context": {
+                  "reservationId": "res-1"
+                }
+              },
+              "onError": {
+                "target": "failed",
+                "context": {
+                  "failure": "ReserveFailed"
+                }
+              }
+            }
+          },
+          "chargingPayment": {
+            "invoke": {
+              "src": "chargePayment",
+              "onDone": {
+                "target": "schedulingShipping",
+                "context": {
+                  "chargeId": "ch-1"
+                }
+              },
+              "onError": {
+                "target": "releasingInventory",
+                "context": {
+                  "failure": "CardDeclined"
+                },
+                "actions": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "log",
+                      "message": "payment failed"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "schedulingShipping": {
+            "invoke": {
+              "src": "scheduleShipping",
+              "onDone": {
+                "target": "fulfilled",
+                "context": {
+                  "shipmentId": "shp-1"
+                }
+              },
+              "onError": {
+                "target": "refundingPayment",
+                "context": {
+                  "failure": "NoCarrier"
+                }
+              }
+            }
+          },
+          "refundingPayment": {
+            "entry": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "log",
+                  "message": "compensating: refund"
+                }
+              }
+            ],
+            "invoke": {
+              "src": "refundPayment",
+              "onDone": {
+                "target": "releasingInventory"
+              },
+              "onError": {
+                "target": "compensationFailed"
+              }
+            }
+          },
+          "releasingInventory": {
+            "entry": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "log",
+                  "message": "compensating: release reservation"
+                }
+              }
+            ],
+            "invoke": {
+              "src": "releaseInventory",
+              "onDone": {
+                "target": "rolledBack"
+              },
+              "onError": {
+                "target": "compensationFailed"
+              }
+            }
+          },
+          "fulfilled": {
+            "type": "final",
+            "output": {
+              "status": "fulfilled"
+            }
+          },
+          "rolledBack": {
+            "type": "final",
+            "output": {
+              "status": "rolled-back"
+            }
+          },
+          "failed": {
+            "type": "final",
+            "output": {
+              "status": "failed"
+            }
+          },
+          "compensationFailed": {
+            "type": "final",
+            "output": {
+              "status": "compensation-failed"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "root": "saga",
+  "steps": [
+    {
+      "resolve": 1,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "reservationId": "res-1"
+        }
+      }
+    },
+    {
+      "resolve": 1,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "chargeId": "ch-1"
+        }
+      }
+    },
+    {
+      "resolve": 1,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "shipmentId": "shp-1"
+        }
+      }
+    }
+  ]
+}

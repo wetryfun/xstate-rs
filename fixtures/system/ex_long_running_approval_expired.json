@@ -1,0 +1,166 @@
+{
+  "source": "examples/pattern-long-running-approval/src/main.ts",
+  "notes": "The reminders counter is unrolled into a guarded `after` array (MAX_REMINDERS = 2); decisions and outputs are static.",
+  "logic": [
+    {
+      "name": "notifyApprover",
+      "async": {}
+    },
+    {
+      "name": "recordDecision",
+      "async": {}
+    },
+    {
+      "name": "approval",
+      "actors": [
+        "notifyApprover",
+        "recordDecision"
+      ],
+      "machine": {
+        "id": "approval",
+        "context": {
+          "request": "PR-118 budget increase",
+          "reminders": 0,
+          "decision": null
+        },
+        "initial": "notifying",
+        "states": {
+          "notifying": {
+            "invoke": {
+              "src": "notifyApprover",
+              "onDone": {
+                "target": "awaitingDecision"
+              }
+            }
+          },
+          "awaitingDecision": {
+            "on": {
+              "approve": {
+                "target": "recording",
+                "context": {
+                  "decision": "approved"
+                },
+                "actions": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "log",
+                      "message": "approver approved"
+                    }
+                  }
+                ]
+              },
+              "reject": {
+                "target": "recording",
+                "context": {
+                  "decision": "rejected"
+                },
+                "actions": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "log",
+                      "message": "approver rejected"
+                    }
+                  }
+                ]
+              }
+            },
+            "after": {
+              "700": [
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "reminders",
+                      "value": 0
+                    }
+                  },
+                  "target": "notifying",
+                  "context": {
+                    "reminders": 1
+                  }
+                },
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "reminders",
+                      "value": 1
+                    }
+                  },
+                  "target": "notifying",
+                  "context": {
+                    "reminders": 2
+                  }
+                },
+                {
+                  "target": "expired"
+                }
+              ]
+            }
+          },
+          "recording": {
+            "invoke": {
+              "src": "recordDecision",
+              "onDone": {
+                "target": "settled"
+              }
+            }
+          },
+          "settled": {
+            "type": "final",
+            "output": {
+              "outcome": "decided"
+            }
+          },
+          "expired": {
+            "type": "final",
+            "output": {
+              "outcome": "expired"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "root": "approval",
+  "steps": [
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve"
+      }
+    },
+    {
+      "advance": 700
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve"
+      }
+    },
+    {
+      "advance": 1400
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve"
+      }
+    },
+    {
+      "advance": 2099
+    },
+    {
+      "advance": 2100
+    },
+    {
+      "send": "approval",
+      "event": {
+        "type": "approve"
+      }
+    }
+  ]
+}

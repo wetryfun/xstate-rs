@@ -1,0 +1,727 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "order",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "order": {
+          "id": "order",
+          "address": "order",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "orderId": "A-1001",
+              "amount": 4200,
+              "chargeId": null
+            },
+            "value": "awaitingPayment",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "order",
+              "order.awaitingPayment"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 0,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "order",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "order": {
+          "id": "order",
+          "address": "order",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "orderId": "A-1001",
+              "amount": 4200,
+              "chargeId": null
+            },
+            "value": "charging",
+            "children": {
+              "order.charging:0": {
+                "$actor": "order/order.charging:0",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "order",
+              "order.charging"
+            ]
+          }
+        },
+        "order/order.charging:0": {
+          "id": "order.charging:0",
+          "address": "order/order.charging:0",
+          "incarnation": "1",
+          "src": "root/actors/chargeCard",
+          "parent": {
+            "$actor": "order",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "orderId": "A-1001",
+            "amount": 4200
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "orderId": "A-1001",
+              "amount": 4200
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "order/order.charging:0",
+            "incarnation": "1"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 1,
+        "effect": 1
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "order/order.charging:0",
+          "incarnation": "1"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "order",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "order": {
+          "id": "order",
+          "address": "order",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "orderId": "A-1001",
+              "amount": 4200,
+              "chargeId": null
+            },
+            "value": "charging",
+            "children": {
+              "order.charging:0": {
+                "$actor": "order/order.charging:0",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "order",
+              "order.charging"
+            ]
+          }
+        },
+        "order/order.charging:0": {
+          "id": "order.charging:0",
+          "address": "order/order.charging:0",
+          "incarnation": "1",
+          "src": "root/actors/chargeCard",
+          "parent": {
+            "$actor": "order",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "orderId": "A-1001",
+            "amount": 4200
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "orderId": "A-1001",
+              "amount": 4200
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "order/order.charging:0",
+            "incarnation": "1"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 2,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "order",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "order": {
+          "id": "order",
+          "address": "order",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "orderId": "A-1001",
+              "amount": 4200,
+              "chargeId": "ch_A-1001_4200"
+            },
+            "value": "packing",
+            "children": {},
+            "timers": [
+              {
+                "delay": 5000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 5000,
+                  "stateId": "order.packing"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "order",
+              "order.packing"
+            ]
+          }
+        },
+        "order/order.charging:0": {
+          "id": "order.charging:0",
+          "address": "order/order.charging:0",
+          "incarnation": "1",
+          "src": "root/actors/chargeCard",
+          "parent": {
+            "$actor": "order",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "orderId": "A-1001",
+            "amount": 4200
+          },
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "chargeId": "ch_A-1001_4200"
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "chargeId": "ch_A-1001_4200"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "order",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 5000,
+          "sequence": 4,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 5000,
+              "stateId": "order.packing"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "order",
+            "incarnation": "0"
+          },
+          "type": "emailReceipt",
+          "kind": "emit",
+          "params": {
+            "chargeId": "ch_A-1001_4200"
+          },
+          "args": [],
+          "event": {
+            "type": "emailReceipt",
+            "chargeId": "ch_A-1001_4200"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 5,
+        "effect": 2
+      }
+    },
+    "effects": [
+      {
+        "id": "system:1",
+        "source": {
+          "$actor": "order",
+          "incarnation": "0"
+        },
+        "type": "emailReceipt",
+        "kind": "emit",
+        "params": {
+          "chargeId": "ch_A-1001_4200"
+        },
+        "args": [],
+        "event": {
+          "type": "emailReceipt",
+          "chargeId": "ch_A-1001_4200"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "snapshot": {
+      "root": "order",
+      "executionId": "system",
+      "now": 4999,
+      "actors": {
+        "order": {
+          "id": "order",
+          "address": "order",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "orderId": "A-1001",
+              "amount": 4200,
+              "chargeId": "ch_A-1001_4200"
+            },
+            "value": "packing",
+            "children": {},
+            "timers": [
+              {
+                "delay": 5000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 5000,
+                  "stateId": "order.packing"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "order",
+              "order.packing"
+            ]
+          }
+        },
+        "order/order.charging:0": {
+          "id": "order.charging:0",
+          "address": "order/order.charging:0",
+          "incarnation": "1",
+          "src": "root/actors/chargeCard",
+          "parent": {
+            "$actor": "order",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "orderId": "A-1001",
+            "amount": 4200
+          },
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "chargeId": "ch_A-1001_4200"
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "chargeId": "ch_A-1001_4200"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "order",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 5000,
+          "sequence": 4,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 5000,
+              "stateId": "order.packing"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "order",
+            "incarnation": "0"
+          },
+          "type": "emailReceipt",
+          "kind": "emit",
+          "params": {
+            "chargeId": "ch_A-1001_4200"
+          },
+          "args": [],
+          "event": {
+            "type": "emailReceipt",
+            "chargeId": "ch_A-1001_4200"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 5,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 4",
+    "snapshot": {
+      "root": "order",
+      "executionId": "system",
+      "now": 4999,
+      "actors": {
+        "order": {
+          "id": "order",
+          "address": "order",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "orderId": "A-1001",
+              "amount": 4200,
+              "chargeId": "ch_A-1001_4200"
+            },
+            "value": "packing",
+            "children": {},
+            "timers": [
+              {
+                "delay": 5000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 5000,
+                  "stateId": "order.packing"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "order",
+              "order.packing"
+            ]
+          }
+        },
+        "order/order.charging:0": {
+          "id": "order.charging:0",
+          "address": "order/order.charging:0",
+          "incarnation": "1",
+          "src": "root/actors/chargeCard",
+          "parent": {
+            "$actor": "order",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "orderId": "A-1001",
+            "amount": 4200
+          },
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "chargeId": "ch_A-1001_4200"
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "chargeId": "ch_A-1001_4200"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "order",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 5000,
+          "sequence": 4,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 5000,
+              "stateId": "order.packing"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "order",
+            "incarnation": "0"
+          },
+          "type": "emailReceipt",
+          "kind": "emit",
+          "params": {
+            "chargeId": "ch_A-1001_4200"
+          },
+          "args": [],
+          "event": {
+            "type": "emailReceipt",
+            "chargeId": "ch_A-1001_4200"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 6,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 5",
+    "snapshot": {
+      "root": "order",
+      "executionId": "system",
+      "now": 5000,
+      "actors": {
+        "order": {
+          "id": "order",
+          "address": "order",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "orderId": "A-1001",
+              "chargeId": "ch_A-1001_4200"
+            },
+            "context": {
+              "orderId": "A-1001",
+              "amount": 4200,
+              "chargeId": "ch_A-1001_4200"
+            },
+            "value": "shipped",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "order.shipped",
+              "order"
+            ]
+          }
+        },
+        "order/order.charging:0": {
+          "id": "order.charging:0",
+          "address": "order/order.charging:0",
+          "incarnation": "1",
+          "src": "root/actors/chargeCard",
+          "parent": {
+            "$actor": "order",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "orderId": "A-1001",
+            "amount": 4200
+          },
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "chargeId": "ch_A-1001_4200"
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "chargeId": "ch_A-1001_4200"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "order",
+            "incarnation": "0"
+          },
+          "type": "emailReceipt",
+          "kind": "emit",
+          "params": {
+            "chargeId": "ch_A-1001_4200"
+          },
+          "args": [],
+          "event": {
+            "type": "emailReceipt",
+            "chargeId": "ch_A-1001_4200"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 7,
+        "effect": 2
+      }
+    },
+    "effects": []
+  }
+]

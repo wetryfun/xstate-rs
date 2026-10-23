@@ -1,0 +1,123 @@
+{
+  "source": "examples/pattern-deadline-timeout/src/main.ts",
+  "notes": "Logs are emits.",
+  "logic": [
+    {
+      "name": "cancelOrder",
+      "async": {}
+    },
+    {
+      "name": "po",
+      "actors": [
+        "cancelOrder"
+      ],
+      "machine": {
+        "id": "purchaseOrder",
+        "context": {
+          "orderId": "PO-1001",
+          "confirmed": false,
+          "shipped": false
+        },
+        "after": {
+          "2000": {
+            "target": ".cancelling",
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "log",
+                  "message": "deadline expired"
+                }
+              }
+            ]
+          }
+        },
+        "initial": "awaitingConfirmation",
+        "states": {
+          "awaitingConfirmation": {
+            "on": {
+              "confirm": {
+                "target": "awaitingShipment",
+                "context": {
+                  "confirmed": true
+                },
+                "actions": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "log",
+                      "message": "order confirmed"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "awaitingShipment": {
+            "on": {
+              "ship": {
+                "target": "completed",
+                "context": {
+                  "shipped": true
+                },
+                "actions": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "log",
+                      "message": "order shipped"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "cancelling": {
+            "invoke": {
+              "src": "cancelOrder",
+              "onDone": {
+                "target": "cancelled"
+              }
+            }
+          },
+          "completed": {
+            "type": "final",
+            "output": {
+              "outcome": "completed"
+            }
+          },
+          "cancelled": {
+            "type": "final",
+            "output": {
+              "outcome": "cancelled"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "root": "po",
+  "steps": [
+    {
+      "advance": 500
+    },
+    {
+      "send": "purchaseOrder",
+      "event": {
+        "type": "confirm"
+      }
+    },
+    {
+      "advance": 1500
+    },
+    {
+      "send": "purchaseOrder",
+      "event": {
+        "type": "ship"
+      }
+    },
+    {
+      "advance": 2500
+    }
+  ]
+}

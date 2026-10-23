@@ -1,0 +1,276 @@
+{
+  "source": "examples/workflow-media-scanner/src/mediaScannerMachine.ts",
+  "notes": "Context written from outputs is static; emailErrors is an emit; inputs are omitted.",
+  "logic": [
+    {
+      "name": "scanLibrary",
+      "async": {}
+    },
+    {
+      "name": "checkFilePermissions",
+      "async": {}
+    },
+    {
+      "name": "evaluateFiles",
+      "async": {}
+    },
+    {
+      "name": "moveFiles",
+      "async": {}
+    },
+    {
+      "name": "scanner",
+      "actors": [
+        "scanLibrary",
+        "checkFilePermissions",
+        "evaluateFiles",
+        "moveFiles"
+      ],
+      "machine": {
+        "id": "mediaScanner",
+        "context": {
+          "basePath": "/media",
+          "destinationPath": "/library",
+          "directoriesToCheck": [],
+          "dirsToEvaluate": [],
+          "dirsToMove": [],
+          "dirsToReport": [],
+          "acceptedFileTypes": [
+            "mp4",
+            "mkv",
+            "avi",
+            "mov",
+            "m4v",
+            "mpg",
+            "mpeg",
+            "wmv",
+            "flv",
+            "ts",
+            "mts"
+          ]
+        },
+        "initial": "idle",
+        "states": {
+          "idle": {
+            "on": {
+              "START_SCAN": {
+                "target": "scanning"
+              }
+            }
+          },
+          "scanning": {
+            "invoke": {
+              "src": "scanLibrary",
+              "onDone": {
+                "target": "checkingFilePermissions",
+                "context": {
+                  "directoriesToCheck": [
+                    "a",
+                    "b",
+                    "c"
+                  ]
+                }
+              },
+              "onError": {
+                "target": "reportingErrors"
+              }
+            }
+          },
+          "checkingFilePermissions": {
+            "invoke": {
+              "src": "checkFilePermissions",
+              "onDone": {
+                "target": "evaluatingFiles",
+                "context": {
+                  "dirsToEvaluate": [
+                    "a",
+                    "b"
+                  ],
+                  "dirsToReport": [
+                    "c"
+                  ]
+                }
+              },
+              "onError": {
+                "target": "reportingErrors"
+              }
+            }
+          },
+          "evaluatingFiles": {
+            "invoke": {
+              "src": "evaluateFiles",
+              "onDone": {
+                "target": "movingFiles",
+                "context": {
+                  "dirsToMove": [
+                    "a"
+                  ]
+                }
+              },
+              "onError": {
+                "target": "reportingErrors"
+              }
+            }
+          },
+          "movingFiles": {
+            "invoke": {
+              "src": "moveFiles",
+              "onDone": {
+                "target": "idle"
+              },
+              "onError": {
+                "target": "reportingErrors"
+              }
+            }
+          },
+          "reportingErrors": {
+            "entry": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "emailErrors"
+                }
+              }
+            ],
+            "on": {
+              "RESTART": {
+                "target": "idle"
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "root": "scanner",
+  "steps": [
+    {
+      "send": "mediaScanner",
+      "event": {
+        "type": "START_SCAN"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": [
+          "a",
+          "b",
+          "c"
+        ]
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve"
+      }
+    },
+    {
+      "send": "mediaScanner",
+      "event": {
+        "type": "START_SCAN"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "EACCES"
+        }
+      }
+    },
+    {
+      "send": "mediaScanner",
+      "event": {
+        "type": "START_SCAN"
+      }
+    },
+    {
+      "send": "mediaScanner",
+      "event": {
+        "type": "RESTART"
+      }
+    },
+    {
+      "send": "mediaScanner",
+      "event": {
+        "type": "START_SCAN"
+      }
+    },
+    {
+      "resolve": 1,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "ENOENT"
+        }
+      }
+    },
+    {
+      "send": "mediaScanner",
+      "event": {
+        "type": "RESTART"
+      }
+    },
+    {
+      "send": "mediaScanner",
+      "event": {
+        "type": "START_SCAN"
+      }
+    },
+    {
+      "resolve": 2,
+      "event": {
+        "type": "xstate.async.resolve"
+      }
+    },
+    {
+      "resolve": 2,
+      "event": {
+        "type": "xstate.async.resolve"
+      }
+    },
+    {
+      "resolve": 2,
+      "event": {
+        "type": "xstate.async.resolve"
+      }
+    },
+    {
+      "resolve": 2,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "EXDEV"
+        }
+      }
+    },
+    {
+      "send": "mediaScanner",
+      "event": {
+        "type": "RESTART"
+      }
+    }
+  ]
+}

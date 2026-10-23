@@ -1,0 +1,114 @@
+{
+  "source": "examples/durable-execution/src/main.ts",
+  "notes": "The pay amount and charge id are static; the receipt action is an emit; the journal host is not part of the port.",
+  "logic": [
+    {
+      "name": "chargeCard",
+      "async": {}
+    },
+    {
+      "name": "order",
+      "actors": [
+        "chargeCard"
+      ],
+      "machine": {
+        "id": "order",
+        "context": {
+          "orderId": "A-1001",
+          "amount": 4200,
+          "chargeId": null
+        },
+        "initial": "awaitingPayment",
+        "states": {
+          "awaitingPayment": {
+            "on": {
+              "pay": {
+                "target": "charging",
+                "context": {
+                  "amount": 4200
+                }
+              }
+            }
+          },
+          "charging": {
+            "invoke": {
+              "src": "chargeCard",
+              "input": {
+                "orderId": "A-1001",
+                "amount": 4200
+              },
+              "onDone": {
+                "target": "packing",
+                "context": {
+                  "chargeId": "ch_A-1001_4200"
+                },
+                "actions": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "emailReceipt",
+                      "chargeId": "ch_A-1001_4200"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "packing": {
+            "after": {
+              "5000": {
+                "target": "shipped"
+              }
+            }
+          },
+          "shipped": {
+            "type": "final",
+            "output": {
+              "orderId": "A-1001",
+              "chargeId": "ch_A-1001_4200"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "root": "order",
+  "steps": [
+    {
+      "send": "order",
+      "event": {
+        "type": "pay",
+        "amount": 4200
+      }
+    },
+    {
+      "send": "order",
+      "event": {
+        "type": "pay",
+        "amount": 1
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "chargeId": "ch_A-1001_4200"
+        }
+      }
+    },
+    {
+      "advance": 4999
+    },
+    {
+      "send": "order",
+      "event": {
+        "type": "pay",
+        "amount": 2
+      }
+    },
+    {
+      "advance": 5000
+    }
+  ]
+}

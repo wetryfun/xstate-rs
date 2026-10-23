@@ -1,0 +1,148 @@
+{
+  "source": "examples/pattern-polling/src/main.ts",
+  "notes": "The job status is the async output itself (the source returns { status }); the polls counter is dropped; outputs are static.",
+  "logic": [
+    {
+      "name": "submitJob",
+      "async": {}
+    },
+    {
+      "name": "getJobStatus",
+      "async": {}
+    },
+    {
+      "name": "poller",
+      "actors": [
+        "submitJob",
+        "getJobStatus"
+      ],
+      "machine": {
+        "id": "poller",
+        "context": {
+          "jobId": null,
+          "status": "pending"
+        },
+        "initial": "submitting",
+        "states": {
+          "submitting": {
+            "invoke": {
+              "src": "submitJob",
+              "onDone": {
+                "target": "polling",
+                "context": {
+                  "jobId": "job-42"
+                }
+              }
+            }
+          },
+          "polling": {
+            "after": {
+              "500": {
+                "target": "checking"
+              }
+            }
+          },
+          "checking": {
+            "invoke": {
+              "src": "getJobStatus",
+              "onDone": [
+                {
+                  "guard": {
+                    "type": "eventEquals",
+                    "params": {
+                      "key": "output",
+                      "value": "succeeded"
+                    }
+                  },
+                  "target": "succeeded",
+                  "context": {
+                    "status": "succeeded"
+                  }
+                },
+                {
+                  "guard": {
+                    "type": "eventEquals",
+                    "params": {
+                      "key": "output",
+                      "value": "failed"
+                    }
+                  },
+                  "target": "failed",
+                  "context": {
+                    "status": "failed"
+                  }
+                },
+                {
+                  "target": "polling",
+                  "context": {
+                    "status": "running"
+                  }
+                }
+              ]
+            }
+          },
+          "succeeded": {
+            "type": "final",
+            "output": {
+              "jobId": "job-42"
+            }
+          },
+          "failed": {
+            "type": "final",
+            "output": {
+              "jobId": "job-42"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "root": "poller",
+  "steps": [
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "jobId": "job-42"
+        }
+      }
+    },
+    {
+      "advance": 499
+    },
+    {
+      "advance": 500
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": "pending"
+      }
+    },
+    {
+      "advance": 1000
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": "running"
+      }
+    },
+    {
+      "advance": 1400
+    },
+    {
+      "advance": 1500
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": "succeeded"
+      }
+    }
+  ]
+}

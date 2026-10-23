@@ -1,0 +1,119 @@
+{
+  "source": "examples/effect-workflows/src/approval.ts",
+  "notes": "The deploy service is async logic resolved by steps; the url is static.",
+  "logic": [
+    {
+      "name": "deploy",
+      "async": {}
+    },
+    {
+      "name": "deploy_approval",
+      "actors": [
+        "deploy"
+      ],
+      "machine": {
+        "id": "deployApproval",
+        "context": {
+          "release": "v1.2.0",
+          "url": ""
+        },
+        "initial": "awaitingApproval",
+        "states": {
+          "awaitingApproval": {
+            "after": {
+              "30000": {
+                "target": "expired"
+              }
+            },
+            "on": {
+              "APPROVE": {
+                "target": "deploying"
+              },
+              "CANCEL": {
+                "target": "cancelled"
+              }
+            }
+          },
+          "deploying": {
+            "invoke": {
+              "src": "deploy",
+              "input": {
+                "release": "v1.2.0"
+              },
+              "onDone": {
+                "target": "deployed",
+                "context": {
+                  "url": "https://example.com/v1.2.0"
+                }
+              },
+              "onError": {
+                "target": "failed"
+              }
+            },
+            "on": {
+              "CANCEL": {
+                "target": "cancelled"
+              }
+            }
+          },
+          "failed": {
+            "on": {
+              "RETRY": {
+                "target": "deploying"
+              },
+              "CANCEL": {
+                "target": "cancelled"
+              }
+            }
+          },
+          "deployed": {
+            "type": "final"
+          },
+          "expired": {
+            "type": "final"
+          },
+          "cancelled": {
+            "type": "final"
+          }
+        }
+      }
+    }
+  ],
+  "root": "deploy_approval",
+  "steps": [
+    {
+      "advance": 29999
+    },
+    {
+      "send": "deployApproval",
+      "event": {
+        "type": "APPROVE"
+      }
+    },
+    {
+      "advance": 30000
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "boom"
+        }
+      }
+    },
+    {
+      "send": "deployApproval",
+      "event": {
+        "type": "RETRY"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": "https://example.com/v1.2.0"
+      }
+    }
+  ]
+}

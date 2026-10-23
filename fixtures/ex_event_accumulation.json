@@ -1,0 +1,473 @@
+{
+  "source": "examples/pattern-event-accumulation/src/main.ts",
+  "notes": "The bids list becomes the highest bid and its bidder; 'amount above the highest' is `matches` on each scripted amount plus a ctxEquals guard per lower level; the output is static.",
+  "machine": {
+    "id": "auction",
+    "context": {
+      "lot": "Lot 7: vintage sign",
+      "highest": 0,
+      "leader": null
+    },
+    "initial": "open",
+    "states": {
+      "open": {
+        "on": {
+          "bid": [
+            {
+              "matches": {
+                "amount": 100
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "highest",
+                  "value": 0
+                }
+              },
+              "context": {
+                "highest": 100,
+                "leader": "ada"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "accepted",
+                    "amount": 100
+                  }
+                }
+              ]
+            },
+            {
+              "matches": {
+                "amount": 120
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "highest",
+                  "value": 0
+                }
+              },
+              "context": {
+                "highest": 120,
+                "leader": "alan"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "accepted",
+                    "amount": 120
+                  }
+                }
+              ]
+            },
+            {
+              "matches": {
+                "amount": 120
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "highest",
+                  "value": 100
+                }
+              },
+              "context": {
+                "highest": 120,
+                "leader": "alan"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "accepted",
+                    "amount": 120
+                  }
+                }
+              ]
+            },
+            {
+              "matches": {
+                "amount": 150
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "highest",
+                  "value": 0
+                }
+              },
+              "context": {
+                "highest": 150,
+                "leader": "grace"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "accepted",
+                    "amount": 150
+                  }
+                }
+              ]
+            },
+            {
+              "matches": {
+                "amount": 150
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "highest",
+                  "value": 100
+                }
+              },
+              "context": {
+                "highest": 150,
+                "leader": "grace"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "accepted",
+                    "amount": 150
+                  }
+                }
+              ]
+            },
+            {
+              "matches": {
+                "amount": 150
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "highest",
+                  "value": 120
+                }
+              },
+              "context": {
+                "highest": 150,
+                "leader": "grace"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "accepted",
+                    "amount": 150
+                  }
+                }
+              ]
+            },
+            {
+              "matches": {
+                "amount": 200
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "highest",
+                  "value": 0
+                }
+              },
+              "context": {
+                "highest": 200,
+                "leader": "ada"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "accepted",
+                    "amount": 200
+                  }
+                }
+              ]
+            },
+            {
+              "matches": {
+                "amount": 200
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "highest",
+                  "value": 100
+                }
+              },
+              "context": {
+                "highest": 200,
+                "leader": "ada"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "accepted",
+                    "amount": 200
+                  }
+                }
+              ]
+            },
+            {
+              "matches": {
+                "amount": 200
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "highest",
+                  "value": 120
+                }
+              },
+              "context": {
+                "highest": 200,
+                "leader": "ada"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "accepted",
+                    "amount": 200
+                  }
+                }
+              ]
+            },
+            {
+              "matches": {
+                "amount": 200
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "highest",
+                  "value": 150
+                }
+              },
+              "context": {
+                "highest": 200,
+                "leader": "ada"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "accepted",
+                    "amount": 200
+                  }
+                }
+              ]
+            },
+            {
+              "matches": {
+                "amount": 500
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "highest",
+                  "value": 0
+                }
+              },
+              "context": {
+                "highest": 500,
+                "leader": "grace"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "accepted",
+                    "amount": 500
+                  }
+                }
+              ]
+            },
+            {
+              "matches": {
+                "amount": 500
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "highest",
+                  "value": 100
+                }
+              },
+              "context": {
+                "highest": 500,
+                "leader": "grace"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "accepted",
+                    "amount": 500
+                  }
+                }
+              ]
+            },
+            {
+              "matches": {
+                "amount": 500
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "highest",
+                  "value": 120
+                }
+              },
+              "context": {
+                "highest": 500,
+                "leader": "grace"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "accepted",
+                    "amount": 500
+                  }
+                }
+              ]
+            },
+            {
+              "matches": {
+                "amount": 500
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "highest",
+                  "value": 150
+                }
+              },
+              "context": {
+                "highest": 500,
+                "leader": "grace"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "accepted",
+                    "amount": 500
+                  }
+                }
+              ]
+            },
+            {
+              "matches": {
+                "amount": 500
+              },
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "highest",
+                  "value": 200
+                }
+              },
+              "context": {
+                "highest": 500,
+                "leader": "grace"
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "accepted",
+                    "amount": 500
+                  }
+                }
+              ]
+            },
+            {
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "rejected"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "after": {
+          "2000": {
+            "target": "closed"
+          }
+        }
+      },
+      "closed": {
+        "type": "final",
+        "output": {
+          "lot": "Lot 7: vintage sign"
+        }
+      }
+    }
+  },
+  "steps": [
+    {
+      "at": 300,
+      "send": {
+        "type": "bid",
+        "bidder": "ada",
+        "amount": 100
+      }
+    },
+    {
+      "at": 700,
+      "send": {
+        "type": "bid",
+        "bidder": "grace",
+        "amount": 150
+      }
+    },
+    {
+      "at": 1000,
+      "send": {
+        "type": "bid",
+        "bidder": "alan",
+        "amount": 120
+      }
+    },
+    {
+      "at": 1400,
+      "send": {
+        "type": "bid",
+        "bidder": "ada",
+        "amount": 200
+      }
+    },
+    {
+      "at": 1500,
+      "send": {
+        "type": "bid",
+        "bidder": "grace",
+        "amount": 150
+      }
+    },
+    {
+      "at": 1999
+    },
+    {
+      "at": 2000
+    },
+    {
+      "at": 3400,
+      "send": {
+        "type": "bid",
+        "bidder": "grace",
+        "amount": 500
+      }
+    }
+  ]
+}

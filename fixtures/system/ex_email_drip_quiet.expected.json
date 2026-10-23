@@ -1,0 +1,949 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "drip",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "drip": {
+          "id": "drip",
+          "address": "drip",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "email": "ada@example.com",
+              "sent": [],
+              "opened": false,
+              "clicked": false
+            },
+            "value": "welcome",
+            "children": {
+              "drip.welcome:0": {
+                "$actor": "drip/drip.welcome:0",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "drip",
+              "drip.welcome"
+            ]
+          }
+        },
+        "drip/drip.welcome:0": {
+          "id": "drip.welcome:0",
+          "address": "drip/drip.welcome:0",
+          "incarnation": "1",
+          "src": "root/actors/sendEmail",
+          "parent": {
+            "$actor": "drip",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "template": "welcome"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "template": "welcome"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "drip/drip.welcome:0",
+            "incarnation": "1"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 0,
+        "effect": 1
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "drip/drip.welcome:0",
+          "incarnation": "1"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "drip",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "drip": {
+          "id": "drip",
+          "address": "drip",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "email": "ada@example.com",
+              "sent": [
+                "welcome"
+              ],
+              "opened": false,
+              "clicked": false
+            },
+            "value": "waitingDay1",
+            "children": {},
+            "timers": [
+              {
+                "delay": 600,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 600,
+                  "stateId": "drip.waitingDay1"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "drip",
+              "drip.waitingDay1"
+            ]
+          }
+        },
+        "drip/drip.welcome:0": {
+          "id": "drip.welcome:0",
+          "address": "drip/drip.welcome:0",
+          "incarnation": "1",
+          "src": "root/actors/sendEmail",
+          "parent": {
+            "$actor": "drip",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "template": "welcome"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "welcome",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "welcome"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "drip",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 600,
+          "sequence": 2,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 600,
+              "stateId": "drip.waitingDay1"
+            }
+          }
+        }
+      ],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 3,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "drip",
+      "executionId": "system",
+      "now": 600,
+      "actors": {
+        "drip": {
+          "id": "drip",
+          "address": "drip",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "email": "ada@example.com",
+              "sent": [
+                "welcome"
+              ],
+              "opened": false,
+              "clicked": false
+            },
+            "value": "day1Tip",
+            "children": {
+              "drip.day1Tip:0": {
+                "$actor": "drip/drip.day1Tip:0",
+                "incarnation": "2"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "drip",
+              "drip.day1Tip"
+            ]
+          }
+        },
+        "drip/drip.welcome:0": {
+          "id": "drip.welcome:0",
+          "address": "drip/drip.welcome:0",
+          "incarnation": "1",
+          "src": "root/actors/sendEmail",
+          "parent": {
+            "$actor": "drip",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "template": "welcome"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "welcome",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "welcome"
+              }
+            }
+          }
+        },
+        "drip/drip.day1Tip:0": {
+          "id": "drip.day1Tip:0",
+          "address": "drip/drip.day1Tip:0",
+          "incarnation": "2",
+          "src": "root/actors/sendEmail",
+          "parent": {
+            "$actor": "drip",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "template": "day1-tip"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "template": "day1-tip"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "drip/drip.day1Tip:0",
+            "incarnation": "2"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 1,
+        "sequence": 4,
+        "effect": 2
+      }
+    },
+    "effects": [
+      {
+        "id": "system:1",
+        "source": {
+          "$actor": "drip/drip.day1Tip:0",
+          "incarnation": "2"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "drip",
+      "executionId": "system",
+      "now": 600,
+      "actors": {
+        "drip": {
+          "id": "drip",
+          "address": "drip",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "email": "ada@example.com",
+              "sent": [
+                "welcome"
+              ],
+              "opened": true,
+              "clicked": false
+            },
+            "value": "day1Tip",
+            "children": {
+              "drip.day1Tip:0": {
+                "$actor": "drip/drip.day1Tip:0",
+                "incarnation": "2"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "drip",
+              "drip.day1Tip"
+            ]
+          }
+        },
+        "drip/drip.welcome:0": {
+          "id": "drip.welcome:0",
+          "address": "drip/drip.welcome:0",
+          "incarnation": "1",
+          "src": "root/actors/sendEmail",
+          "parent": {
+            "$actor": "drip",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "template": "welcome"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "welcome",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "welcome"
+              }
+            }
+          }
+        },
+        "drip/drip.day1Tip:0": {
+          "id": "drip.day1Tip:0",
+          "address": "drip/drip.day1Tip:0",
+          "incarnation": "2",
+          "src": "root/actors/sendEmail",
+          "parent": {
+            "$actor": "drip",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "template": "day1-tip"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "template": "day1-tip"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "drip/drip.day1Tip:0",
+            "incarnation": "2"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "drip",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "opened"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "opened"
+          }
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 1,
+        "sequence": 5,
+        "effect": 3
+      }
+    },
+    "effects": [
+      {
+        "id": "system:2",
+        "source": {
+          "$actor": "drip",
+          "incarnation": "0"
+        },
+        "type": "log",
+        "kind": "emit",
+        "params": {
+          "message": "opened"
+        },
+        "args": [],
+        "event": {
+          "type": "log",
+          "message": "opened"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "snapshot": {
+      "root": "drip",
+      "executionId": "system",
+      "now": 600,
+      "actors": {
+        "drip": {
+          "id": "drip",
+          "address": "drip",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "email": "ada@example.com",
+              "sent": [
+                "welcome",
+                "day1-tip"
+              ],
+              "opened": true,
+              "clicked": false
+            },
+            "value": "waitingDay3",
+            "children": {},
+            "timers": [
+              {
+                "delay": 700,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 700,
+                  "stateId": "drip.waitingDay3"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "drip",
+              "drip.waitingDay3"
+            ]
+          }
+        },
+        "drip/drip.welcome:0": {
+          "id": "drip.welcome:0",
+          "address": "drip/drip.welcome:0",
+          "incarnation": "1",
+          "src": "root/actors/sendEmail",
+          "parent": {
+            "$actor": "drip",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "template": "welcome"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "welcome",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "welcome"
+              }
+            }
+          }
+        },
+        "drip/drip.day1Tip:0": {
+          "id": "drip.day1Tip:0",
+          "address": "drip/drip.day1Tip:0",
+          "incarnation": "2",
+          "src": "root/actors/sendEmail",
+          "parent": {
+            "$actor": "drip",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "template": "day1-tip"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "day1-tip",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "day1-tip"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "drip",
+            "incarnation": "0"
+          },
+          "occurrence": 1,
+          "scheduledAt": 600,
+          "dueAt": 1300,
+          "sequence": 7,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 700,
+              "stateId": "drip.waitingDay3"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "drip",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "opened"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "opened"
+          }
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 2,
+        "sequence": 8,
+        "effect": 3
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 4",
+    "snapshot": {
+      "root": "drip",
+      "executionId": "system",
+      "now": 1300,
+      "actors": {
+        "drip": {
+          "id": "drip",
+          "address": "drip",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "email": "ada@example.com",
+              "sent": [
+                "welcome",
+                "day1-tip"
+              ],
+              "opened": true,
+              "clicked": false
+            },
+            "value": "day3Nudge",
+            "children": {
+              "drip.day3Nudge:0": {
+                "$actor": "drip/drip.day3Nudge:0",
+                "incarnation": "3"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "drip",
+              "drip.day3Nudge"
+            ]
+          }
+        },
+        "drip/drip.welcome:0": {
+          "id": "drip.welcome:0",
+          "address": "drip/drip.welcome:0",
+          "incarnation": "1",
+          "src": "root/actors/sendEmail",
+          "parent": {
+            "$actor": "drip",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "template": "welcome"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "welcome",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "welcome"
+              }
+            }
+          }
+        },
+        "drip/drip.day1Tip:0": {
+          "id": "drip.day1Tip:0",
+          "address": "drip/drip.day1Tip:0",
+          "incarnation": "2",
+          "src": "root/actors/sendEmail",
+          "parent": {
+            "$actor": "drip",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "template": "day1-tip"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "day1-tip",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "day1-tip"
+              }
+            }
+          }
+        },
+        "drip/drip.day3Nudge:0": {
+          "id": "drip.day3Nudge:0",
+          "address": "drip/drip.day3Nudge:0",
+          "incarnation": "3",
+          "src": "root/actors/sendEmail",
+          "parent": {
+            "$actor": "drip",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "template": "day3-nudge"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "template": "day3-nudge"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "drip",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "opened"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "opened"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "drip/drip.day3Nudge:0",
+            "incarnation": "3"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 4,
+        "timer": 2,
+        "sequence": 9,
+        "effect": 4
+      }
+    },
+    "effects": [
+      {
+        "id": "system:3",
+        "source": {
+          "$actor": "drip/drip.day3Nudge:0",
+          "incarnation": "3"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 5",
+    "snapshot": {
+      "root": "drip",
+      "executionId": "system",
+      "now": 1300,
+      "actors": {
+        "drip": {
+          "id": "drip",
+          "address": "drip",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "outcome": "completed"
+            },
+            "context": {
+              "email": "ada@example.com",
+              "sent": [
+                "welcome",
+                "day1-tip",
+                "day3-nudge"
+              ],
+              "opened": true,
+              "clicked": false
+            },
+            "value": "completed",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "drip.completed",
+              "drip"
+            ]
+          }
+        },
+        "drip/drip.welcome:0": {
+          "id": "drip.welcome:0",
+          "address": "drip/drip.welcome:0",
+          "incarnation": "1",
+          "src": "root/actors/sendEmail",
+          "parent": {
+            "$actor": "drip",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "template": "welcome"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "welcome",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "welcome"
+              }
+            }
+          }
+        },
+        "drip/drip.day1Tip:0": {
+          "id": "drip.day1Tip:0",
+          "address": "drip/drip.day1Tip:0",
+          "incarnation": "2",
+          "src": "root/actors/sendEmail",
+          "parent": {
+            "$actor": "drip",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "template": "day1-tip"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "day1-tip",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "day1-tip"
+              }
+            }
+          }
+        },
+        "drip/drip.day3Nudge:0": {
+          "id": "drip.day3Nudge:0",
+          "address": "drip/drip.day3Nudge:0",
+          "incarnation": "3",
+          "src": "root/actors/sendEmail",
+          "parent": {
+            "$actor": "drip",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "template": "day3-nudge"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "day3-nudge",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "day3-nudge"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "drip",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "opened"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "opened"
+          }
+        }
+      },
+      "counters": {
+        "actor": 4,
+        "timer": 2,
+        "sequence": 11,
+        "effect": 4
+      }
+    },
+    "effects": []
+  }
+]

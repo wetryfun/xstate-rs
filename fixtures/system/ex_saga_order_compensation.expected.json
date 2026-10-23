@@ -1,0 +1,1085 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "saga",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "saga": {
+          "id": "saga",
+          "address": "saga",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "reservationId": null,
+              "chargeId": null,
+              "shipmentId": null,
+              "failure": null
+            },
+            "value": "reservingInventory",
+            "children": {
+              "saga.reservingInventory:0": {
+                "$actor": "saga/saga.reservingInventory:0",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "saga",
+              "saga.reservingInventory"
+            ]
+          }
+        },
+        "saga/saga.reservingInventory:0": {
+          "id": "saga.reservingInventory:0",
+          "address": "saga/saga.reservingInventory:0",
+          "incarnation": "1",
+          "src": "root/actors/reserveInventory",
+          "parent": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "saga start"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "saga start"
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "saga/saga.reservingInventory:0",
+            "incarnation": "1"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 0,
+        "effect": 2
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "saga",
+          "incarnation": "0"
+        },
+        "type": "log",
+        "kind": "emit",
+        "params": {
+          "message": "saga start"
+        },
+        "args": [],
+        "event": {
+          "type": "log",
+          "message": "saga start"
+        }
+      },
+      {
+        "id": "system:1",
+        "source": {
+          "$actor": "saga/saga.reservingInventory:0",
+          "incarnation": "1"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "saga",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "saga": {
+          "id": "saga",
+          "address": "saga",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "reservationId": "res-1",
+              "chargeId": null,
+              "shipmentId": null,
+              "failure": null
+            },
+            "value": "chargingPayment",
+            "children": {
+              "saga.chargingPayment:0": {
+                "$actor": "saga/saga.chargingPayment:0",
+                "incarnation": "2"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "saga",
+              "saga.chargingPayment"
+            ]
+          }
+        },
+        "saga/saga.reservingInventory:0": {
+          "id": "saga.reservingInventory:0",
+          "address": "saga/saga.reservingInventory:0",
+          "incarnation": "1",
+          "src": "root/actors/reserveInventory",
+          "parent": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "saga/saga.chargingPayment:0": {
+          "id": "saga.chargingPayment:0",
+          "address": "saga/saga.chargingPayment:0",
+          "incarnation": "2",
+          "src": "root/actors/chargePayment",
+          "parent": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "saga start"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "saga start"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "saga/saga.chargingPayment:0",
+            "incarnation": "2"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 0,
+        "sequence": 2,
+        "effect": 3
+      }
+    },
+    "effects": [
+      {
+        "id": "system:2",
+        "source": {
+          "$actor": "saga/saga.chargingPayment:0",
+          "incarnation": "2"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "saga",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "saga": {
+          "id": "saga",
+          "address": "saga",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "reservationId": "res-1",
+              "chargeId": "ch-1",
+              "shipmentId": null,
+              "failure": null
+            },
+            "value": "schedulingShipping",
+            "children": {
+              "saga.schedulingShipping:0": {
+                "$actor": "saga/saga.schedulingShipping:0",
+                "incarnation": "3"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "saga",
+              "saga.schedulingShipping"
+            ]
+          }
+        },
+        "saga/saga.reservingInventory:0": {
+          "id": "saga.reservingInventory:0",
+          "address": "saga/saga.reservingInventory:0",
+          "incarnation": "1",
+          "src": "root/actors/reserveInventory",
+          "parent": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "saga/saga.chargingPayment:0": {
+          "id": "saga.chargingPayment:0",
+          "address": "saga/saga.chargingPayment:0",
+          "incarnation": "2",
+          "src": "root/actors/chargePayment",
+          "parent": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "saga/saga.schedulingShipping:0": {
+          "id": "saga.schedulingShipping:0",
+          "address": "saga/saga.schedulingShipping:0",
+          "incarnation": "3",
+          "src": "root/actors/scheduleShipping",
+          "parent": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "saga start"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "saga start"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "saga/saga.schedulingShipping:0",
+            "incarnation": "3"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 4,
+        "timer": 0,
+        "sequence": 4,
+        "effect": 4
+      }
+    },
+    "effects": [
+      {
+        "id": "system:3",
+        "source": {
+          "$actor": "saga/saga.schedulingShipping:0",
+          "incarnation": "3"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "saga",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "saga": {
+          "id": "saga",
+          "address": "saga",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "reservationId": "res-1",
+              "chargeId": "ch-1",
+              "shipmentId": null,
+              "failure": "NoCarrier"
+            },
+            "value": "refundingPayment",
+            "children": {
+              "saga.refundingPayment:0": {
+                "$actor": "saga/saga.refundingPayment:0",
+                "incarnation": "4"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "saga",
+              "saga.refundingPayment"
+            ]
+          }
+        },
+        "saga/saga.reservingInventory:0": {
+          "id": "saga.reservingInventory:0",
+          "address": "saga/saga.reservingInventory:0",
+          "incarnation": "1",
+          "src": "root/actors/reserveInventory",
+          "parent": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "saga/saga.chargingPayment:0": {
+          "id": "saga.chargingPayment:0",
+          "address": "saga/saga.chargingPayment:0",
+          "incarnation": "2",
+          "src": "root/actors/chargePayment",
+          "parent": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "saga/saga.schedulingShipping:0": {
+          "id": "saga.schedulingShipping:0",
+          "address": "saga/saga.schedulingShipping:0",
+          "incarnation": "3",
+          "src": "root/actors/scheduleShipping",
+          "parent": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "NoCarrier"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "NoCarrier"
+                }
+              }
+            }
+          }
+        },
+        "saga/saga.refundingPayment:0": {
+          "id": "saga.refundingPayment:0",
+          "address": "saga/saga.refundingPayment:0",
+          "incarnation": "4",
+          "src": "root/actors/refundPayment",
+          "parent": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "saga start"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "saga start"
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "compensating: refund"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "compensating: refund"
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "saga/saga.refundingPayment:0",
+            "incarnation": "4"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 5,
+        "timer": 0,
+        "sequence": 6,
+        "effect": 6
+      }
+    },
+    "effects": [
+      {
+        "id": "system:4",
+        "source": {
+          "$actor": "saga",
+          "incarnation": "0"
+        },
+        "type": "log",
+        "kind": "emit",
+        "params": {
+          "message": "compensating: refund"
+        },
+        "args": [],
+        "event": {
+          "type": "log",
+          "message": "compensating: refund"
+        }
+      },
+      {
+        "id": "system:5",
+        "source": {
+          "$actor": "saga/saga.refundingPayment:0",
+          "incarnation": "4"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "snapshot": {
+      "root": "saga",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "saga": {
+          "id": "saga",
+          "address": "saga",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "reservationId": "res-1",
+              "chargeId": "ch-1",
+              "shipmentId": null,
+              "failure": "NoCarrier"
+            },
+            "value": "releasingInventory",
+            "children": {
+              "saga.releasingInventory:0": {
+                "$actor": "saga/saga.releasingInventory:0",
+                "incarnation": "5"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "saga",
+              "saga.releasingInventory"
+            ]
+          }
+        },
+        "saga/saga.reservingInventory:0": {
+          "id": "saga.reservingInventory:0",
+          "address": "saga/saga.reservingInventory:0",
+          "incarnation": "1",
+          "src": "root/actors/reserveInventory",
+          "parent": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "saga/saga.chargingPayment:0": {
+          "id": "saga.chargingPayment:0",
+          "address": "saga/saga.chargingPayment:0",
+          "incarnation": "2",
+          "src": "root/actors/chargePayment",
+          "parent": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "saga/saga.schedulingShipping:0": {
+          "id": "saga.schedulingShipping:0",
+          "address": "saga/saga.schedulingShipping:0",
+          "incarnation": "3",
+          "src": "root/actors/scheduleShipping",
+          "parent": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "NoCarrier"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "NoCarrier"
+                }
+              }
+            }
+          }
+        },
+        "saga/saga.refundingPayment:0": {
+          "id": "saga.refundingPayment:0",
+          "address": "saga/saga.refundingPayment:0",
+          "incarnation": "4",
+          "src": "root/actors/refundPayment",
+          "parent": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "saga/saga.releasingInventory:0": {
+          "id": "saga.releasingInventory:0",
+          "address": "saga/saga.releasingInventory:0",
+          "incarnation": "5",
+          "src": "root/actors/releaseInventory",
+          "parent": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "saga start"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "saga start"
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "compensating: refund"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "compensating: refund"
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "compensating: release reservation"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "compensating: release reservation"
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "saga/saga.releasingInventory:0",
+            "incarnation": "5"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 6,
+        "timer": 0,
+        "sequence": 8,
+        "effect": 8
+      }
+    },
+    "effects": [
+      {
+        "id": "system:6",
+        "source": {
+          "$actor": "saga",
+          "incarnation": "0"
+        },
+        "type": "log",
+        "kind": "emit",
+        "params": {
+          "message": "compensating: release reservation"
+        },
+        "args": [],
+        "event": {
+          "type": "log",
+          "message": "compensating: release reservation"
+        }
+      },
+      {
+        "id": "system:7",
+        "source": {
+          "$actor": "saga/saga.releasingInventory:0",
+          "incarnation": "5"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "snapshot": {
+      "root": "saga",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "saga": {
+          "id": "saga",
+          "address": "saga",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "status": "compensation-failed"
+            },
+            "context": {
+              "reservationId": "res-1",
+              "chargeId": "ch-1",
+              "shipmentId": null,
+              "failure": "NoCarrier"
+            },
+            "value": "compensationFailed",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "saga.compensationFailed",
+              "saga"
+            ]
+          }
+        },
+        "saga/saga.reservingInventory:0": {
+          "id": "saga.reservingInventory:0",
+          "address": "saga/saga.reservingInventory:0",
+          "incarnation": "1",
+          "src": "root/actors/reserveInventory",
+          "parent": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "saga/saga.chargingPayment:0": {
+          "id": "saga.chargingPayment:0",
+          "address": "saga/saga.chargingPayment:0",
+          "incarnation": "2",
+          "src": "root/actors/chargePayment",
+          "parent": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "saga/saga.schedulingShipping:0": {
+          "id": "saga.schedulingShipping:0",
+          "address": "saga/saga.schedulingShipping:0",
+          "incarnation": "3",
+          "src": "root/actors/scheduleShipping",
+          "parent": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "NoCarrier"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "NoCarrier"
+                }
+              }
+            }
+          }
+        },
+        "saga/saga.refundingPayment:0": {
+          "id": "saga.refundingPayment:0",
+          "address": "saga/saga.refundingPayment:0",
+          "incarnation": "4",
+          "src": "root/actors/refundPayment",
+          "parent": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "saga/saga.releasingInventory:0": {
+          "id": "saga.releasingInventory:0",
+          "address": "saga/saga.releasingInventory:0",
+          "incarnation": "5",
+          "src": "root/actors/releaseInventory",
+          "parent": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "lost"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "lost"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "saga start"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "saga start"
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "compensating: refund"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "compensating: refund"
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "saga",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "compensating: release reservation"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "compensating: release reservation"
+          }
+        }
+      },
+      "counters": {
+        "actor": 6,
+        "timer": 0,
+        "sequence": 10,
+        "effect": 8
+      }
+    },
+    "effects": []
+  }
+]

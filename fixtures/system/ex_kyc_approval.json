@@ -1,0 +1,210 @@
+{
+  "source": "examples/kyc-approval-api/src/kycMachine.ts",
+  "notes": "Context written from events and outputs is static; the decided output is static.",
+  "logic": [
+    {
+      "name": "verifyDocuments",
+      "async": {}
+    },
+    {
+      "name": "screenSanctions",
+      "async": {}
+    },
+    {
+      "name": "kyc",
+      "actors": [
+        "verifyDocuments",
+        "screenSanctions"
+      ],
+      "machine": {
+        "id": "kyc",
+        "context": {
+          "documents": null,
+          "sanctions": null,
+          "question": null,
+          "decision": null
+        },
+        "initial": "submitted",
+        "states": {
+          "submitted": {
+            "always": {
+              "target": "automatedChecks"
+            }
+          },
+          "automatedChecks": {
+            "type": "parallel",
+            "states": {
+              "documents": {
+                "initial": "checking",
+                "states": {
+                  "checking": {
+                    "invoke": {
+                      "src": "verifyDocuments",
+                      "input": {
+                        "name": "Ada"
+                      },
+                      "onDone": {
+                        "target": "checked",
+                        "context": {
+                          "documents": "legible"
+                        }
+                      }
+                    }
+                  },
+                  "checked": {
+                    "type": "final"
+                  }
+                }
+              },
+              "sanctions": {
+                "initial": "screening",
+                "states": {
+                  "screening": {
+                    "invoke": {
+                      "src": "screenSanctions",
+                      "input": {
+                        "country": "SE"
+                      },
+                      "onDone": {
+                        "target": "screened",
+                        "context": {
+                          "sanctions": "clear"
+                        }
+                      }
+                    }
+                  },
+                  "screened": {
+                    "type": "final"
+                  }
+                }
+              }
+            },
+            "on": {
+              "xstate.done.state": {
+                "matches": {
+                  "stateId": "kyc.automatedChecks"
+                },
+                "target": "manualReview"
+              }
+            }
+          },
+          "manualReview": {
+            "on": {
+              "approve": {
+                "target": "decided",
+                "context": {
+                  "decision": "approved"
+                }
+              },
+              "reject": {
+                "target": "decided",
+                "context": {
+                  "decision": "rejected"
+                }
+              },
+              "requestInfo": {
+                "target": "awaitingInfo",
+                "context": {
+                  "question": "proof of address?"
+                }
+              }
+            }
+          },
+          "awaitingInfo": {
+            "on": {
+              "provideInfo": {
+                "target": "manualReview",
+                "context": {
+                  "question": null,
+                  "documents": "legible (+ answer)"
+                }
+              }
+            }
+          },
+          "decided": {
+            "type": "final",
+            "output": {
+              "applicant": "Ada"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "root": "kyc",
+  "steps": [
+    {
+      "send": "kyc",
+      "event": {
+        "type": "approve",
+        "reviewer": "early"
+      }
+    },
+    {
+      "resolve": 1,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": "clear"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": "legible"
+      }
+    },
+    {
+      "send": "kyc",
+      "event": {
+        "type": "requestInfo",
+        "reviewer": "Grace",
+        "question": "proof of address?"
+      }
+    },
+    {
+      "send": "kyc",
+      "event": {
+        "type": "approve",
+        "reviewer": "Grace"
+      }
+    },
+    {
+      "send": "kyc",
+      "event": {
+        "type": "provideInfo",
+        "answer": "utility bill"
+      }
+    },
+    {
+      "send": "kyc",
+      "event": {
+        "type": "requestInfo",
+        "reviewer": "Grace",
+        "question": "again?"
+      }
+    },
+    {
+      "send": "kyc",
+      "event": {
+        "type": "provideInfo",
+        "answer": "passport"
+      }
+    },
+    {
+      "send": "kyc",
+      "event": {
+        "type": "reject",
+        "reviewer": "Grace",
+        "reason": "mismatch"
+      }
+    },
+    {
+      "send": "kyc",
+      "event": {
+        "type": "approve",
+        "reviewer": "late"
+      }
+    }
+  ]
+}

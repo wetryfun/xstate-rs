@@ -1,0 +1,242 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "deployApproval",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "deployApproval": {
+          "id": "deployApproval",
+          "address": "deployApproval",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "release": "v1.2.0",
+              "url": ""
+            },
+            "value": "awaitingApproval",
+            "children": {},
+            "timers": [
+              {
+                "delay": 30000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 30000,
+                  "stateId": "deployApproval.awaitingApproval"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "deployApproval",
+              "deployApproval.awaitingApproval"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "deployApproval",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 30000,
+          "sequence": 0,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 30000,
+              "stateId": "deployApproval.awaitingApproval"
+            }
+          }
+        }
+      ],
+      "externalEffects": {},
+      "counters": {
+        "actor": 1,
+        "timer": 1,
+        "sequence": 1,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "deployApproval",
+      "executionId": "system",
+      "now": 29999,
+      "actors": {
+        "deployApproval": {
+          "id": "deployApproval",
+          "address": "deployApproval",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "release": "v1.2.0",
+              "url": ""
+            },
+            "value": "awaitingApproval",
+            "children": {},
+            "timers": [
+              {
+                "delay": 30000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 30000,
+                  "stateId": "deployApproval.awaitingApproval"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "deployApproval",
+              "deployApproval.awaitingApproval"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "deployApproval",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 30000,
+          "sequence": 0,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 30000,
+              "stateId": "deployApproval.awaitingApproval"
+            }
+          }
+        }
+      ],
+      "externalEffects": {},
+      "counters": {
+        "actor": 1,
+        "timer": 1,
+        "sequence": 1,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "deployApproval",
+      "executionId": "system",
+      "now": 30000,
+      "actors": {
+        "deployApproval": {
+          "id": "deployApproval",
+          "address": "deployApproval",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "context": {
+              "release": "v1.2.0",
+              "url": ""
+            },
+            "value": "expired",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "deployApproval.expired",
+              "deployApproval"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 1,
+        "timer": 1,
+        "sequence": 2,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "deployApproval",
+      "executionId": "system",
+      "now": 30000,
+      "actors": {
+        "deployApproval": {
+          "id": "deployApproval",
+          "address": "deployApproval",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "context": {
+              "release": "v1.2.0",
+              "url": ""
+            },
+            "value": "expired",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "deployApproval.expired",
+              "deployApproval"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 1,
+        "timer": 1,
+        "sequence": 3,
+        "effect": 0
+      }
+    },
+    "effects": []
+  }
+]

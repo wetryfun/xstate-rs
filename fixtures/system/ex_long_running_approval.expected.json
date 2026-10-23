@@ -1,0 +1,1013 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "approval",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "approval": {
+          "id": "approval",
+          "address": "approval",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "request": "PR-118 budget increase",
+              "reminders": 0,
+              "decision": null
+            },
+            "value": "notifying",
+            "children": {
+              "approval.notifying:0": {
+                "$actor": "approval/approval.notifying:0",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "approval",
+              "approval.notifying"
+            ]
+          }
+        },
+        "approval/approval.notifying:0": {
+          "id": "approval.notifying:0",
+          "address": "approval/approval.notifying:0",
+          "incarnation": "1",
+          "src": "root/actors/notifyApprover",
+          "parent": {
+            "$actor": "approval",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "approval/approval.notifying:0",
+            "incarnation": "1"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 0,
+        "effect": 1
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "approval/approval.notifying:0",
+          "incarnation": "1"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "approval",
+      "executionId": "system",
+      "now": 100,
+      "actors": {
+        "approval": {
+          "id": "approval",
+          "address": "approval",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "request": "PR-118 budget increase",
+              "reminders": 0,
+              "decision": null
+            },
+            "value": "notifying",
+            "children": {
+              "approval.notifying:0": {
+                "$actor": "approval/approval.notifying:0",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "approval",
+              "approval.notifying"
+            ]
+          }
+        },
+        "approval/approval.notifying:0": {
+          "id": "approval.notifying:0",
+          "address": "approval/approval.notifying:0",
+          "incarnation": "1",
+          "src": "root/actors/notifyApprover",
+          "parent": {
+            "$actor": "approval",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "approval/approval.notifying:0",
+            "incarnation": "1"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 0,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "approval",
+      "executionId": "system",
+      "now": 100,
+      "actors": {
+        "approval": {
+          "id": "approval",
+          "address": "approval",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "request": "PR-118 budget increase",
+              "reminders": 0,
+              "decision": null
+            },
+            "value": "awaitingDecision",
+            "children": {},
+            "timers": [
+              {
+                "delay": 700,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 700,
+                  "stateId": "approval.awaitingDecision"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "approval",
+              "approval.awaitingDecision"
+            ]
+          }
+        },
+        "approval/approval.notifying:0": {
+          "id": "approval.notifying:0",
+          "address": "approval/approval.notifying:0",
+          "incarnation": "1",
+          "src": "root/actors/notifyApprover",
+          "parent": {
+            "$actor": "approval",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "approval",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 100,
+          "dueAt": 800,
+          "sequence": 2,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 700,
+              "stateId": "approval.awaitingDecision"
+            }
+          }
+        }
+      ],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 3,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "approval",
+      "executionId": "system",
+      "now": 800,
+      "actors": {
+        "approval": {
+          "id": "approval",
+          "address": "approval",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "request": "PR-118 budget increase",
+              "reminders": 1,
+              "decision": null
+            },
+            "value": "notifying",
+            "children": {
+              "approval.notifying:0": {
+                "$actor": "approval/approval.notifying:0",
+                "incarnation": "2"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "approval",
+              "approval.notifying"
+            ]
+          }
+        },
+        "approval/approval.notifying:0": {
+          "id": "approval.notifying:0",
+          "address": "approval/approval.notifying:0",
+          "incarnation": "2",
+          "src": "root/actors/notifyApprover",
+          "parent": {
+            "$actor": "approval",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "approval/approval.notifying:0",
+            "incarnation": "2"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 1,
+        "sequence": 4,
+        "effect": 2
+      }
+    },
+    "effects": [
+      {
+        "id": "system:1",
+        "source": {
+          "$actor": "approval/approval.notifying:0",
+          "incarnation": "2"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "snapshot": {
+      "root": "approval",
+      "executionId": "system",
+      "now": 900,
+      "actors": {
+        "approval": {
+          "id": "approval",
+          "address": "approval",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "request": "PR-118 budget increase",
+              "reminders": 1,
+              "decision": null
+            },
+            "value": "notifying",
+            "children": {
+              "approval.notifying:0": {
+                "$actor": "approval/approval.notifying:0",
+                "incarnation": "2"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "approval",
+              "approval.notifying"
+            ]
+          }
+        },
+        "approval/approval.notifying:0": {
+          "id": "approval.notifying:0",
+          "address": "approval/approval.notifying:0",
+          "incarnation": "2",
+          "src": "root/actors/notifyApprover",
+          "parent": {
+            "$actor": "approval",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "approval/approval.notifying:0",
+            "incarnation": "2"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 1,
+        "sequence": 4,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 4",
+    "snapshot": {
+      "root": "approval",
+      "executionId": "system",
+      "now": 900,
+      "actors": {
+        "approval": {
+          "id": "approval",
+          "address": "approval",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "request": "PR-118 budget increase",
+              "reminders": 1,
+              "decision": null
+            },
+            "value": "awaitingDecision",
+            "children": {},
+            "timers": [
+              {
+                "delay": 700,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 700,
+                  "stateId": "approval.awaitingDecision"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "approval",
+              "approval.awaitingDecision"
+            ]
+          }
+        },
+        "approval/approval.notifying:0": {
+          "id": "approval.notifying:0",
+          "address": "approval/approval.notifying:0",
+          "incarnation": "2",
+          "src": "root/actors/notifyApprover",
+          "parent": {
+            "$actor": "approval",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "approval",
+            "incarnation": "0"
+          },
+          "occurrence": 1,
+          "scheduledAt": 900,
+          "dueAt": 1600,
+          "sequence": 6,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 700,
+              "stateId": "approval.awaitingDecision"
+            }
+          }
+        }
+      ],
+      "externalEffects": {},
+      "counters": {
+        "actor": 3,
+        "timer": 2,
+        "sequence": 7,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 5",
+    "snapshot": {
+      "root": "approval",
+      "executionId": "system",
+      "now": 1200,
+      "actors": {
+        "approval": {
+          "id": "approval",
+          "address": "approval",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "request": "PR-118 budget increase",
+              "reminders": 1,
+              "decision": null
+            },
+            "value": "awaitingDecision",
+            "children": {},
+            "timers": [
+              {
+                "delay": 700,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 700,
+                  "stateId": "approval.awaitingDecision"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "approval",
+              "approval.awaitingDecision"
+            ]
+          }
+        },
+        "approval/approval.notifying:0": {
+          "id": "approval.notifying:0",
+          "address": "approval/approval.notifying:0",
+          "incarnation": "2",
+          "src": "root/actors/notifyApprover",
+          "parent": {
+            "$actor": "approval",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "approval",
+            "incarnation": "0"
+          },
+          "occurrence": 1,
+          "scheduledAt": 900,
+          "dueAt": 1600,
+          "sequence": 6,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 700,
+              "stateId": "approval.awaitingDecision"
+            }
+          }
+        }
+      ],
+      "externalEffects": {},
+      "counters": {
+        "actor": 3,
+        "timer": 2,
+        "sequence": 7,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 6",
+    "snapshot": {
+      "root": "approval",
+      "executionId": "system",
+      "now": 1200,
+      "actors": {
+        "approval": {
+          "id": "approval",
+          "address": "approval",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "request": "PR-118 budget increase",
+              "reminders": 1,
+              "decision": "approved"
+            },
+            "value": "recording",
+            "children": {
+              "approval.recording:0": {
+                "$actor": "approval/approval.recording:0",
+                "incarnation": "3"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "approval",
+              "approval.recording"
+            ]
+          }
+        },
+        "approval/approval.notifying:0": {
+          "id": "approval.notifying:0",
+          "address": "approval/approval.notifying:0",
+          "incarnation": "2",
+          "src": "root/actors/notifyApprover",
+          "parent": {
+            "$actor": "approval",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "approval/approval.recording:0": {
+          "id": "approval.recording:0",
+          "address": "approval/approval.recording:0",
+          "incarnation": "3",
+          "src": "root/actors/recordDecision",
+          "parent": {
+            "$actor": "approval",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "approval",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "approver approved"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "approver approved"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "approval/approval.recording:0",
+            "incarnation": "3"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 4,
+        "timer": 2,
+        "sequence": 8,
+        "effect": 4
+      }
+    },
+    "effects": [
+      {
+        "id": "system:2",
+        "source": {
+          "$actor": "approval",
+          "incarnation": "0"
+        },
+        "type": "log",
+        "kind": "emit",
+        "params": {
+          "message": "approver approved"
+        },
+        "args": [],
+        "event": {
+          "type": "log",
+          "message": "approver approved"
+        }
+      },
+      {
+        "id": "system:3",
+        "source": {
+          "$actor": "approval/approval.recording:0",
+          "incarnation": "3"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 7",
+    "snapshot": {
+      "root": "approval",
+      "executionId": "system",
+      "now": 1200,
+      "actors": {
+        "approval": {
+          "id": "approval",
+          "address": "approval",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "request": "PR-118 budget increase",
+              "reminders": 1,
+              "decision": "approved"
+            },
+            "value": "recording",
+            "children": {
+              "approval.recording:0": {
+                "$actor": "approval/approval.recording:0",
+                "incarnation": "3"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "approval",
+              "approval.recording"
+            ]
+          }
+        },
+        "approval/approval.notifying:0": {
+          "id": "approval.notifying:0",
+          "address": "approval/approval.notifying:0",
+          "incarnation": "2",
+          "src": "root/actors/notifyApprover",
+          "parent": {
+            "$actor": "approval",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "approval/approval.recording:0": {
+          "id": "approval.recording:0",
+          "address": "approval/approval.recording:0",
+          "incarnation": "3",
+          "src": "root/actors/recordDecision",
+          "parent": {
+            "$actor": "approval",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "approval",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "approver approved"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "approver approved"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "approval/approval.recording:0",
+            "incarnation": "3"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 4,
+        "timer": 2,
+        "sequence": 9,
+        "effect": 4
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 8",
+    "snapshot": {
+      "root": "approval",
+      "executionId": "system",
+      "now": 1200,
+      "actors": {
+        "approval": {
+          "id": "approval",
+          "address": "approval",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "outcome": "decided"
+            },
+            "context": {
+              "request": "PR-118 budget increase",
+              "reminders": 1,
+              "decision": "approved"
+            },
+            "value": "settled",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "approval.settled",
+              "approval"
+            ]
+          }
+        },
+        "approval/approval.notifying:0": {
+          "id": "approval.notifying:0",
+          "address": "approval/approval.notifying:0",
+          "incarnation": "2",
+          "src": "root/actors/notifyApprover",
+          "parent": {
+            "$actor": "approval",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        },
+        "approval/approval.recording:0": {
+          "id": "approval.recording:0",
+          "address": "approval/approval.recording:0",
+          "incarnation": "3",
+          "src": "root/actors/recordDecision",
+          "parent": {
+            "$actor": "approval",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "effects": {
+              "async": {
+                "status": "done"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "approval",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "approver approved"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "approver approved"
+          }
+        }
+      },
+      "counters": {
+        "actor": 4,
+        "timer": 2,
+        "sequence": 11,
+        "effect": 4
+      }
+    },
+    "effects": []
+  }
+]

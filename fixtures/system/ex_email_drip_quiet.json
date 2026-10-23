@@ -1,0 +1,213 @@
+{
+  "source": "examples/email-drip-campaign/src/main.ts",
+  "notes": "The opens and clicks counters are flags (the day-3 branch tests clicks > 0); the sent list is a static patch per send; outputs are static; logs are emits.",
+  "logic": [
+    {
+      "name": "sendEmail",
+      "async": {}
+    },
+    {
+      "name": "drip",
+      "actors": [
+        "sendEmail"
+      ],
+      "machine": {
+        "id": "drip",
+        "context": {
+          "email": "ada@example.com",
+          "sent": [],
+          "opened": false,
+          "clicked": false
+        },
+        "initial": "welcome",
+        "on": {
+          "open": {
+            "context": {
+              "opened": true
+            },
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "log",
+                  "message": "opened"
+                }
+              }
+            ]
+          },
+          "click": {
+            "context": {
+              "clicked": true
+            },
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "log",
+                  "message": "clicked"
+                }
+              }
+            ]
+          },
+          "unsubscribe": {
+            "target": ".unsubscribed"
+          }
+        },
+        "states": {
+          "welcome": {
+            "invoke": {
+              "src": "sendEmail",
+              "input": {
+                "template": "welcome"
+              },
+              "onDone": {
+                "target": "waitingDay1",
+                "context": {
+                  "sent": [
+                    "welcome"
+                  ]
+                }
+              }
+            }
+          },
+          "waitingDay1": {
+            "after": {
+              "600": {
+                "target": "day1Tip"
+              }
+            }
+          },
+          "day1Tip": {
+            "invoke": {
+              "src": "sendEmail",
+              "input": {
+                "template": "day1-tip"
+              },
+              "onDone": {
+                "target": "waitingDay3",
+                "context": {
+                  "sent": [
+                    "welcome",
+                    "day1-tip"
+                  ]
+                }
+              }
+            }
+          },
+          "waitingDay3": {
+            "after": {
+              "700": [
+                {
+                  "guard": {
+                    "type": "ctxEquals",
+                    "params": {
+                      "key": "clicked",
+                      "value": true
+                    }
+                  },
+                  "target": "day3Upsell"
+                },
+                {
+                  "target": "day3Nudge"
+                }
+              ]
+            }
+          },
+          "day3Upsell": {
+            "invoke": {
+              "src": "sendEmail",
+              "input": {
+                "template": "day3-upsell"
+              },
+              "onDone": {
+                "target": "completed",
+                "context": {
+                  "sent": [
+                    "welcome",
+                    "day1-tip",
+                    "day3-upsell"
+                  ]
+                }
+              }
+            }
+          },
+          "day3Nudge": {
+            "invoke": {
+              "src": "sendEmail",
+              "input": {
+                "template": "day3-nudge"
+              },
+              "onDone": {
+                "target": "completed",
+                "context": {
+                  "sent": [
+                    "welcome",
+                    "day1-tip",
+                    "day3-nudge"
+                  ]
+                }
+              }
+            }
+          },
+          "completed": {
+            "type": "final",
+            "output": {
+              "outcome": "completed"
+            }
+          },
+          "unsubscribed": {
+            "type": "final",
+            "entry": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "log",
+                  "message": "unsubscribed, sequence halted"
+                }
+              }
+            ],
+            "output": {
+              "outcome": "unsubscribed"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "root": "drip",
+  "steps": [
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": "welcome"
+      }
+    },
+    {
+      "advance": 600
+    },
+    {
+      "send": "drip",
+      "event": {
+        "type": "open"
+      }
+    },
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": "day1-tip"
+      }
+    },
+    {
+      "advance": 1300
+    },
+    {
+      "resolve": 1,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": "day3-nudge"
+      }
+    }
+  ]
+}

@@ -1,0 +1,1826 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "retry",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "retry": {
+          "id": "retry",
+          "address": "retry",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "name": "Ada Lovelace",
+              "attempts": 0,
+              "recordId": null,
+              "error": null
+            },
+            "value": "attempting",
+            "children": {
+              "retry.attempting:0": {
+                "$actor": "retry/retry.attempting:0",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "retry",
+              "retry.attempting"
+            ]
+          }
+        },
+        "retry/retry.attempting:0": {
+          "id": "retry.attempting:0",
+          "address": "retry/retry.attempting:0",
+          "incarnation": "1",
+          "src": "root/actors/storePatient",
+          "parent": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "name": "Ada Lovelace"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "name": "Ada Lovelace"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "retry/retry.attempting:0",
+            "incarnation": "1"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 0,
+        "effect": 1
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "retry/retry.attempting:0",
+          "incarnation": "1"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "retry",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "retry": {
+          "id": "retry",
+          "address": "retry",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "name": "Ada Lovelace",
+              "attempts": 1,
+              "recordId": null,
+              "error": "ServiceUnavailable"
+            },
+            "value": "backingOff",
+            "children": {},
+            "timers": [
+              {
+                "delay": 200,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 200,
+                  "stateId": "retry.backingOff"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 400,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 400,
+                  "stateId": "retry.backingOff"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 800,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 800,
+                  "stateId": "retry.backingOff"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 1600,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 1600,
+                  "stateId": "retry.backingOff"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "retry",
+              "retry.backingOff"
+            ]
+          }
+        },
+        "retry/retry.attempting:0": {
+          "id": "retry.attempting:0",
+          "address": "retry/retry.attempting:0",
+          "incarnation": "1",
+          "src": "root/actors/storePatient",
+          "parent": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "name": "Ada Lovelace"
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "boom"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "boom"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 200,
+          "sequence": 2,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 200,
+              "stateId": "retry.backingOff"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "occurrence": 1,
+          "scheduledAt": 0,
+          "dueAt": 400,
+          "sequence": 3,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 400,
+              "stateId": "retry.backingOff"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "occurrence": 2,
+          "scheduledAt": 0,
+          "dueAt": 800,
+          "sequence": 4,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 800,
+              "stateId": "retry.backingOff"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "occurrence": 3,
+          "scheduledAt": 0,
+          "dueAt": 1600,
+          "sequence": 5,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 1600,
+              "stateId": "retry.backingOff"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "attempt failed; retrying"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "attempt failed; retrying"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 4,
+        "sequence": 6,
+        "effect": 2
+      }
+    },
+    "effects": [
+      {
+        "id": "system:1",
+        "source": {
+          "$actor": "retry",
+          "incarnation": "0"
+        },
+        "type": "log",
+        "kind": "emit",
+        "params": {
+          "message": "attempt failed; retrying"
+        },
+        "args": [],
+        "event": {
+          "type": "log",
+          "message": "attempt failed; retrying"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "retry",
+      "executionId": "system",
+      "now": 200,
+      "actors": {
+        "retry": {
+          "id": "retry",
+          "address": "retry",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "name": "Ada Lovelace",
+              "attempts": 1,
+              "recordId": null,
+              "error": "ServiceUnavailable"
+            },
+            "value": "attempting",
+            "children": {
+              "retry.attempting:0": {
+                "$actor": "retry/retry.attempting:0",
+                "incarnation": "2"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "retry",
+              "retry.attempting"
+            ]
+          }
+        },
+        "retry/retry.attempting:0": {
+          "id": "retry.attempting:0",
+          "address": "retry/retry.attempting:0",
+          "incarnation": "2",
+          "src": "root/actors/storePatient",
+          "parent": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "name": "Ada Lovelace"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "name": "Ada Lovelace"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "attempt failed; retrying"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "attempt failed; retrying"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "retry/retry.attempting:0",
+            "incarnation": "2"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 4,
+        "sequence": 7,
+        "effect": 3
+      }
+    },
+    "effects": [
+      {
+        "id": "system:2",
+        "source": {
+          "$actor": "retry/retry.attempting:0",
+          "incarnation": "2"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "retry",
+      "executionId": "system",
+      "now": 200,
+      "actors": {
+        "retry": {
+          "id": "retry",
+          "address": "retry",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "name": "Ada Lovelace",
+              "attempts": 2,
+              "recordId": null,
+              "error": "ServiceUnavailable"
+            },
+            "value": "backingOff",
+            "children": {},
+            "timers": [
+              {
+                "delay": 200,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 200,
+                  "stateId": "retry.backingOff"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 400,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 400,
+                  "stateId": "retry.backingOff"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 800,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 800,
+                  "stateId": "retry.backingOff"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 1600,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 1600,
+                  "stateId": "retry.backingOff"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "retry",
+              "retry.backingOff"
+            ]
+          }
+        },
+        "retry/retry.attempting:0": {
+          "id": "retry.attempting:0",
+          "address": "retry/retry.attempting:0",
+          "incarnation": "2",
+          "src": "root/actors/storePatient",
+          "parent": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "name": "Ada Lovelace"
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "boom"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "boom"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "occurrence": 4,
+          "scheduledAt": 200,
+          "dueAt": 400,
+          "sequence": 9,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 200,
+              "stateId": "retry.backingOff"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "occurrence": 5,
+          "scheduledAt": 200,
+          "dueAt": 600,
+          "sequence": 10,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 400,
+              "stateId": "retry.backingOff"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "occurrence": 6,
+          "scheduledAt": 200,
+          "dueAt": 1000,
+          "sequence": 11,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 800,
+              "stateId": "retry.backingOff"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "occurrence": 7,
+          "scheduledAt": 200,
+          "dueAt": 1800,
+          "sequence": 12,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 1600,
+              "stateId": "retry.backingOff"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "attempt failed; retrying"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "attempt failed; retrying"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "attempt failed; retrying"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "attempt failed; retrying"
+          }
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 8,
+        "sequence": 13,
+        "effect": 4
+      }
+    },
+    "effects": [
+      {
+        "id": "system:3",
+        "source": {
+          "$actor": "retry",
+          "incarnation": "0"
+        },
+        "type": "log",
+        "kind": "emit",
+        "params": {
+          "message": "attempt failed; retrying"
+        },
+        "args": [],
+        "event": {
+          "type": "log",
+          "message": "attempt failed; retrying"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "snapshot": {
+      "root": "retry",
+      "executionId": "system",
+      "now": 600,
+      "actors": {
+        "retry": {
+          "id": "retry",
+          "address": "retry",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "name": "Ada Lovelace",
+              "attempts": 2,
+              "recordId": null,
+              "error": "ServiceUnavailable"
+            },
+            "value": "attempting",
+            "children": {
+              "retry.attempting:0": {
+                "$actor": "retry/retry.attempting:0",
+                "incarnation": "3"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "retry",
+              "retry.attempting"
+            ]
+          }
+        },
+        "retry/retry.attempting:0": {
+          "id": "retry.attempting:0",
+          "address": "retry/retry.attempting:0",
+          "incarnation": "3",
+          "src": "root/actors/storePatient",
+          "parent": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "name": "Ada Lovelace"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "name": "Ada Lovelace"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "attempt failed; retrying"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "attempt failed; retrying"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "attempt failed; retrying"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "attempt failed; retrying"
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "retry/retry.attempting:0",
+            "incarnation": "3"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 4,
+        "timer": 8,
+        "sequence": 15,
+        "effect": 5
+      }
+    },
+    "effects": [
+      {
+        "id": "system:4",
+        "source": {
+          "$actor": "retry/retry.attempting:0",
+          "incarnation": "3"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "snapshot": {
+      "root": "retry",
+      "executionId": "system",
+      "now": 600,
+      "actors": {
+        "retry": {
+          "id": "retry",
+          "address": "retry",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "name": "Ada Lovelace",
+              "attempts": 3,
+              "recordId": null,
+              "error": "ServiceUnavailable"
+            },
+            "value": "backingOff",
+            "children": {},
+            "timers": [
+              {
+                "delay": 200,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 200,
+                  "stateId": "retry.backingOff"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 400,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 400,
+                  "stateId": "retry.backingOff"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 800,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 800,
+                  "stateId": "retry.backingOff"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 1600,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 1600,
+                  "stateId": "retry.backingOff"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "retry",
+              "retry.backingOff"
+            ]
+          }
+        },
+        "retry/retry.attempting:0": {
+          "id": "retry.attempting:0",
+          "address": "retry/retry.attempting:0",
+          "incarnation": "3",
+          "src": "root/actors/storePatient",
+          "parent": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "name": "Ada Lovelace"
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "boom"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "boom"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "occurrence": 8,
+          "scheduledAt": 600,
+          "dueAt": 800,
+          "sequence": 17,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 200,
+              "stateId": "retry.backingOff"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "occurrence": 9,
+          "scheduledAt": 600,
+          "dueAt": 1000,
+          "sequence": 18,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 400,
+              "stateId": "retry.backingOff"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "occurrence": 10,
+          "scheduledAt": 600,
+          "dueAt": 1400,
+          "sequence": 19,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 800,
+              "stateId": "retry.backingOff"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "occurrence": 11,
+          "scheduledAt": 600,
+          "dueAt": 2200,
+          "sequence": 20,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 1600,
+              "stateId": "retry.backingOff"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "attempt failed; retrying"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "attempt failed; retrying"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "attempt failed; retrying"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "attempt failed; retrying"
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "attempt failed; retrying"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "attempt failed; retrying"
+          }
+        }
+      },
+      "counters": {
+        "actor": 4,
+        "timer": 12,
+        "sequence": 21,
+        "effect": 6
+      }
+    },
+    "effects": [
+      {
+        "id": "system:5",
+        "source": {
+          "$actor": "retry",
+          "incarnation": "0"
+        },
+        "type": "log",
+        "kind": "emit",
+        "params": {
+          "message": "attempt failed; retrying"
+        },
+        "args": [],
+        "event": {
+          "type": "log",
+          "message": "attempt failed; retrying"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 5",
+    "snapshot": {
+      "root": "retry",
+      "executionId": "system",
+      "now": 1400,
+      "actors": {
+        "retry": {
+          "id": "retry",
+          "address": "retry",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "name": "Ada Lovelace",
+              "attempts": 3,
+              "recordId": null,
+              "error": "ServiceUnavailable"
+            },
+            "value": "attempting",
+            "children": {
+              "retry.attempting:0": {
+                "$actor": "retry/retry.attempting:0",
+                "incarnation": "4"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "retry",
+              "retry.attempting"
+            ]
+          }
+        },
+        "retry/retry.attempting:0": {
+          "id": "retry.attempting:0",
+          "address": "retry/retry.attempting:0",
+          "incarnation": "4",
+          "src": "root/actors/storePatient",
+          "parent": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "name": "Ada Lovelace"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "name": "Ada Lovelace"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "attempt failed; retrying"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "attempt failed; retrying"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "attempt failed; retrying"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "attempt failed; retrying"
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "attempt failed; retrying"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "attempt failed; retrying"
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "retry/retry.attempting:0",
+            "incarnation": "4"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 5,
+        "timer": 12,
+        "sequence": 24,
+        "effect": 7
+      }
+    },
+    "effects": [
+      {
+        "id": "system:6",
+        "source": {
+          "$actor": "retry/retry.attempting:0",
+          "incarnation": "4"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 6",
+    "snapshot": {
+      "root": "retry",
+      "executionId": "system",
+      "now": 1400,
+      "actors": {
+        "retry": {
+          "id": "retry",
+          "address": "retry",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "name": "Ada Lovelace",
+              "attempts": 4,
+              "recordId": null,
+              "error": "ServiceUnavailable"
+            },
+            "value": "backingOff",
+            "children": {},
+            "timers": [
+              {
+                "delay": 200,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 200,
+                  "stateId": "retry.backingOff"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 400,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 400,
+                  "stateId": "retry.backingOff"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 800,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 800,
+                  "stateId": "retry.backingOff"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 1600,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 1600,
+                  "stateId": "retry.backingOff"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "retry",
+              "retry.backingOff"
+            ]
+          }
+        },
+        "retry/retry.attempting:0": {
+          "id": "retry.attempting:0",
+          "address": "retry/retry.attempting:0",
+          "incarnation": "4",
+          "src": "root/actors/storePatient",
+          "parent": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "name": "Ada Lovelace"
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "boom"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "boom"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "occurrence": 12,
+          "scheduledAt": 1400,
+          "dueAt": 1600,
+          "sequence": 26,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 200,
+              "stateId": "retry.backingOff"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "occurrence": 13,
+          "scheduledAt": 1400,
+          "dueAt": 1800,
+          "sequence": 27,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 400,
+              "stateId": "retry.backingOff"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "occurrence": 14,
+          "scheduledAt": 1400,
+          "dueAt": 2200,
+          "sequence": 28,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 800,
+              "stateId": "retry.backingOff"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "occurrence": 15,
+          "scheduledAt": 1400,
+          "dueAt": 3000,
+          "sequence": 29,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 1600,
+              "stateId": "retry.backingOff"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "attempt failed; retrying"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "attempt failed; retrying"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "attempt failed; retrying"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "attempt failed; retrying"
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "attempt failed; retrying"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "attempt failed; retrying"
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "attempt failed; retrying"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "attempt failed; retrying"
+          }
+        }
+      },
+      "counters": {
+        "actor": 5,
+        "timer": 16,
+        "sequence": 30,
+        "effect": 8
+      }
+    },
+    "effects": [
+      {
+        "id": "system:7",
+        "source": {
+          "$actor": "retry",
+          "incarnation": "0"
+        },
+        "type": "log",
+        "kind": "emit",
+        "params": {
+          "message": "attempt failed; retrying"
+        },
+        "args": [],
+        "event": {
+          "type": "log",
+          "message": "attempt failed; retrying"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 7",
+    "snapshot": {
+      "root": "retry",
+      "executionId": "system",
+      "now": 3000,
+      "actors": {
+        "retry": {
+          "id": "retry",
+          "address": "retry",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "name": "Ada Lovelace",
+              "attempts": 4,
+              "recordId": null,
+              "error": "ServiceUnavailable"
+            },
+            "value": "attempting",
+            "children": {
+              "retry.attempting:0": {
+                "$actor": "retry/retry.attempting:0",
+                "incarnation": "5"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "retry",
+              "retry.attempting"
+            ]
+          }
+        },
+        "retry/retry.attempting:0": {
+          "id": "retry.attempting:0",
+          "address": "retry/retry.attempting:0",
+          "incarnation": "5",
+          "src": "root/actors/storePatient",
+          "parent": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "name": "Ada Lovelace"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "name": "Ada Lovelace"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "attempt failed; retrying"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "attempt failed; retrying"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "attempt failed; retrying"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "attempt failed; retrying"
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "attempt failed; retrying"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "attempt failed; retrying"
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "attempt failed; retrying"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "attempt failed; retrying"
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "retry/retry.attempting:0",
+            "incarnation": "5"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 6,
+        "timer": 16,
+        "sequence": 34,
+        "effect": 9
+      }
+    },
+    "effects": [
+      {
+        "id": "system:8",
+        "source": {
+          "$actor": "retry/retry.attempting:0",
+          "incarnation": "5"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 8",
+    "snapshot": {
+      "root": "retry",
+      "executionId": "system",
+      "now": 3000,
+      "actors": {
+        "retry": {
+          "id": "retry",
+          "address": "retry",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "ok": false
+            },
+            "context": {
+              "name": "Ada Lovelace",
+              "attempts": 5,
+              "recordId": null,
+              "error": "ServiceUnavailable"
+            },
+            "value": "gaveUp",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "retry.gaveUp",
+              "retry"
+            ]
+          }
+        },
+        "retry/retry.attempting:0": {
+          "id": "retry.attempting:0",
+          "address": "retry/retry.attempting:0",
+          "incarnation": "5",
+          "src": "root/actors/storePatient",
+          "parent": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "name": "Ada Lovelace"
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "boom"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "boom"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "attempt failed; retrying"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "attempt failed; retrying"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "attempt failed; retrying"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "attempt failed; retrying"
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "attempt failed; retrying"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "attempt failed; retrying"
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "retry",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "attempt failed; retrying"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "attempt failed; retrying"
+          }
+        }
+      },
+      "counters": {
+        "actor": 6,
+        "timer": 16,
+        "sequence": 36,
+        "effect": 9
+      }
+    },
+    "effects": []
+  }
+]

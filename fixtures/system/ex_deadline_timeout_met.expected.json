@@ -1,0 +1,546 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "purchaseOrder",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "purchaseOrder": {
+          "id": "purchaseOrder",
+          "address": "purchaseOrder",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "orderId": "PO-1001",
+              "confirmed": false,
+              "shipped": false
+            },
+            "value": "awaitingConfirmation",
+            "children": {},
+            "timers": [
+              {
+                "delay": 2000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 2000,
+                  "stateId": "purchaseOrder"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "purchaseOrder",
+              "purchaseOrder.awaitingConfirmation"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "purchaseOrder",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 2000,
+          "sequence": 0,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 2000,
+              "stateId": "purchaseOrder"
+            }
+          }
+        }
+      ],
+      "externalEffects": {},
+      "counters": {
+        "actor": 1,
+        "timer": 1,
+        "sequence": 1,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "purchaseOrder",
+      "executionId": "system",
+      "now": 500,
+      "actors": {
+        "purchaseOrder": {
+          "id": "purchaseOrder",
+          "address": "purchaseOrder",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "orderId": "PO-1001",
+              "confirmed": false,
+              "shipped": false
+            },
+            "value": "awaitingConfirmation",
+            "children": {},
+            "timers": [
+              {
+                "delay": 2000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 2000,
+                  "stateId": "purchaseOrder"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "purchaseOrder",
+              "purchaseOrder.awaitingConfirmation"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "purchaseOrder",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 2000,
+          "sequence": 0,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 2000,
+              "stateId": "purchaseOrder"
+            }
+          }
+        }
+      ],
+      "externalEffects": {},
+      "counters": {
+        "actor": 1,
+        "timer": 1,
+        "sequence": 1,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "purchaseOrder",
+      "executionId": "system",
+      "now": 500,
+      "actors": {
+        "purchaseOrder": {
+          "id": "purchaseOrder",
+          "address": "purchaseOrder",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "orderId": "PO-1001",
+              "confirmed": true,
+              "shipped": false
+            },
+            "value": "awaitingShipment",
+            "children": {},
+            "timers": [
+              {
+                "delay": 2000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 2000,
+                  "stateId": "purchaseOrder"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "purchaseOrder",
+              "purchaseOrder.awaitingShipment"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "purchaseOrder",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 2000,
+          "sequence": 0,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 2000,
+              "stateId": "purchaseOrder"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "purchaseOrder",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "order confirmed"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "order confirmed"
+          }
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 1,
+        "sequence": 2,
+        "effect": 1
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "purchaseOrder",
+          "incarnation": "0"
+        },
+        "type": "log",
+        "kind": "emit",
+        "params": {
+          "message": "order confirmed"
+        },
+        "args": [],
+        "event": {
+          "type": "log",
+          "message": "order confirmed"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "purchaseOrder",
+      "executionId": "system",
+      "now": 1500,
+      "actors": {
+        "purchaseOrder": {
+          "id": "purchaseOrder",
+          "address": "purchaseOrder",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "orderId": "PO-1001",
+              "confirmed": true,
+              "shipped": false
+            },
+            "value": "awaitingShipment",
+            "children": {},
+            "timers": [
+              {
+                "delay": 2000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 2000,
+                  "stateId": "purchaseOrder"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "purchaseOrder",
+              "purchaseOrder.awaitingShipment"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "purchaseOrder",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 2000,
+          "sequence": 0,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 2000,
+              "stateId": "purchaseOrder"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "purchaseOrder",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "order confirmed"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "order confirmed"
+          }
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 1,
+        "sequence": 2,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 3",
+    "snapshot": {
+      "root": "purchaseOrder",
+      "executionId": "system",
+      "now": 1500,
+      "actors": {
+        "purchaseOrder": {
+          "id": "purchaseOrder",
+          "address": "purchaseOrder",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "outcome": "completed"
+            },
+            "context": {
+              "orderId": "PO-1001",
+              "confirmed": true,
+              "shipped": true
+            },
+            "value": "completed",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "purchaseOrder.completed",
+              "purchaseOrder"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "purchaseOrder",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "order confirmed"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "order confirmed"
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "purchaseOrder",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "order shipped"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "order shipped"
+          }
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 1,
+        "sequence": 3,
+        "effect": 2
+      }
+    },
+    "effects": [
+      {
+        "id": "system:1",
+        "source": {
+          "$actor": "purchaseOrder",
+          "incarnation": "0"
+        },
+        "type": "log",
+        "kind": "emit",
+        "params": {
+          "message": "order shipped"
+        },
+        "args": [],
+        "event": {
+          "type": "log",
+          "message": "order shipped"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "snapshot": {
+      "root": "purchaseOrder",
+      "executionId": "system",
+      "now": 2500,
+      "actors": {
+        "purchaseOrder": {
+          "id": "purchaseOrder",
+          "address": "purchaseOrder",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "outcome": "completed"
+            },
+            "context": {
+              "orderId": "PO-1001",
+              "confirmed": true,
+              "shipped": true
+            },
+            "value": "completed",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "purchaseOrder.completed",
+              "purchaseOrder"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "purchaseOrder",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "order confirmed"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "order confirmed"
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "purchaseOrder",
+            "incarnation": "0"
+          },
+          "type": "log",
+          "kind": "emit",
+          "params": {
+            "message": "order shipped"
+          },
+          "args": [],
+          "event": {
+            "type": "log",
+            "message": "order shipped"
+          }
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 1,
+        "sequence": 3,
+        "effect": 2
+      }
+    },
+    "effects": []
+  }
+]

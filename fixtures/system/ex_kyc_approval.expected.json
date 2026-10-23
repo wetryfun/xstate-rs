@@ -1,0 +1,1204 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "kyc",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "kyc": {
+          "id": "kyc",
+          "address": "kyc",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "documents": null,
+              "sanctions": null,
+              "question": null,
+              "decision": null
+            },
+            "value": {
+              "automatedChecks": {
+                "documents": "checking",
+                "sanctions": "screening"
+              }
+            },
+            "children": {
+              "kyc.automatedChecks.documents.checking:0": {
+                "$actor": "kyc/kyc.automatedChecks.documents.checking:0",
+                "incarnation": "1"
+              },
+              "kyc.automatedChecks.sanctions.screening:0": {
+                "$actor": "kyc/kyc.automatedChecks.sanctions.screening:0",
+                "incarnation": "2"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kyc",
+              "kyc.automatedChecks",
+              "kyc.automatedChecks.documents",
+              "kyc.automatedChecks.documents.checking",
+              "kyc.automatedChecks.sanctions",
+              "kyc.automatedChecks.sanctions.screening"
+            ]
+          }
+        },
+        "kyc/kyc.automatedChecks.documents.checking:0": {
+          "id": "kyc.automatedChecks.documents.checking:0",
+          "address": "kyc/kyc.automatedChecks.documents.checking:0",
+          "incarnation": "1",
+          "src": "root/actors/verifyDocuments",
+          "parent": {
+            "$actor": "kyc",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "name": "Ada"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "name": "Ada"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "kyc/kyc.automatedChecks.sanctions.screening:0": {
+          "id": "kyc.automatedChecks.sanctions.screening:0",
+          "address": "kyc/kyc.automatedChecks.sanctions.screening:0",
+          "incarnation": "2",
+          "src": "root/actors/screenSanctions",
+          "parent": {
+            "$actor": "kyc",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "country": "SE"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "country": "SE"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "kyc/kyc.automatedChecks.documents.checking:0",
+            "incarnation": "1"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "kyc/kyc.automatedChecks.sanctions.screening:0",
+            "incarnation": "2"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 0,
+        "sequence": 0,
+        "effect": 2
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "kyc/kyc.automatedChecks.documents.checking:0",
+          "incarnation": "1"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      },
+      {
+        "id": "system:1",
+        "source": {
+          "$actor": "kyc/kyc.automatedChecks.sanctions.screening:0",
+          "incarnation": "2"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "kyc",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "kyc": {
+          "id": "kyc",
+          "address": "kyc",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "documents": null,
+              "sanctions": null,
+              "question": null,
+              "decision": null
+            },
+            "value": {
+              "automatedChecks": {
+                "documents": "checking",
+                "sanctions": "screening"
+              }
+            },
+            "children": {
+              "kyc.automatedChecks.documents.checking:0": {
+                "$actor": "kyc/kyc.automatedChecks.documents.checking:0",
+                "incarnation": "1"
+              },
+              "kyc.automatedChecks.sanctions.screening:0": {
+                "$actor": "kyc/kyc.automatedChecks.sanctions.screening:0",
+                "incarnation": "2"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kyc",
+              "kyc.automatedChecks",
+              "kyc.automatedChecks.documents",
+              "kyc.automatedChecks.documents.checking",
+              "kyc.automatedChecks.sanctions",
+              "kyc.automatedChecks.sanctions.screening"
+            ]
+          }
+        },
+        "kyc/kyc.automatedChecks.documents.checking:0": {
+          "id": "kyc.automatedChecks.documents.checking:0",
+          "address": "kyc/kyc.automatedChecks.documents.checking:0",
+          "incarnation": "1",
+          "src": "root/actors/verifyDocuments",
+          "parent": {
+            "$actor": "kyc",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "name": "Ada"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "name": "Ada"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "kyc/kyc.automatedChecks.sanctions.screening:0": {
+          "id": "kyc.automatedChecks.sanctions.screening:0",
+          "address": "kyc/kyc.automatedChecks.sanctions.screening:0",
+          "incarnation": "2",
+          "src": "root/actors/screenSanctions",
+          "parent": {
+            "$actor": "kyc",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "country": "SE"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "country": "SE"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "kyc/kyc.automatedChecks.documents.checking:0",
+            "incarnation": "1"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "kyc/kyc.automatedChecks.sanctions.screening:0",
+            "incarnation": "2"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 0,
+        "sequence": 1,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "kyc",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "kyc": {
+          "id": "kyc",
+          "address": "kyc",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "documents": null,
+              "sanctions": "clear",
+              "question": null,
+              "decision": null
+            },
+            "value": {
+              "automatedChecks": {
+                "documents": "checking",
+                "sanctions": "screened"
+              }
+            },
+            "children": {
+              "kyc.automatedChecks.documents.checking:0": {
+                "$actor": "kyc/kyc.automatedChecks.documents.checking:0",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kyc",
+              "kyc.automatedChecks",
+              "kyc.automatedChecks.documents",
+              "kyc.automatedChecks.documents.checking",
+              "kyc.automatedChecks.sanctions",
+              "kyc.automatedChecks.sanctions.screened"
+            ]
+          }
+        },
+        "kyc/kyc.automatedChecks.documents.checking:0": {
+          "id": "kyc.automatedChecks.documents.checking:0",
+          "address": "kyc/kyc.automatedChecks.documents.checking:0",
+          "incarnation": "1",
+          "src": "root/actors/verifyDocuments",
+          "parent": {
+            "$actor": "kyc",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "name": "Ada"
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "name": "Ada"
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "kyc/kyc.automatedChecks.sanctions.screening:0": {
+          "id": "kyc.automatedChecks.sanctions.screening:0",
+          "address": "kyc/kyc.automatedChecks.sanctions.screening:0",
+          "incarnation": "2",
+          "src": "root/actors/screenSanctions",
+          "parent": {
+            "$actor": "kyc",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "country": "SE"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "clear",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "clear"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "kyc/kyc.automatedChecks.documents.checking:0",
+            "incarnation": "1"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 0,
+        "sequence": 3,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "kyc",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "kyc": {
+          "id": "kyc",
+          "address": "kyc",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "documents": "legible",
+              "sanctions": "clear",
+              "question": null,
+              "decision": null
+            },
+            "value": "manualReview",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kyc",
+              "kyc.manualReview"
+            ]
+          }
+        },
+        "kyc/kyc.automatedChecks.documents.checking:0": {
+          "id": "kyc.automatedChecks.documents.checking:0",
+          "address": "kyc/kyc.automatedChecks.documents.checking:0",
+          "incarnation": "1",
+          "src": "root/actors/verifyDocuments",
+          "parent": {
+            "$actor": "kyc",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "name": "Ada"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "legible",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "legible"
+              }
+            }
+          }
+        },
+        "kyc/kyc.automatedChecks.sanctions.screening:0": {
+          "id": "kyc.automatedChecks.sanctions.screening:0",
+          "address": "kyc/kyc.automatedChecks.sanctions.screening:0",
+          "incarnation": "2",
+          "src": "root/actors/screenSanctions",
+          "parent": {
+            "$actor": "kyc",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "country": "SE"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "clear",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "clear"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 3,
+        "timer": 0,
+        "sequence": 5,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 3",
+    "snapshot": {
+      "root": "kyc",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "kyc": {
+          "id": "kyc",
+          "address": "kyc",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "documents": "legible",
+              "sanctions": "clear",
+              "question": "proof of address?",
+              "decision": null
+            },
+            "value": "awaitingInfo",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kyc",
+              "kyc.awaitingInfo"
+            ]
+          }
+        },
+        "kyc/kyc.automatedChecks.documents.checking:0": {
+          "id": "kyc.automatedChecks.documents.checking:0",
+          "address": "kyc/kyc.automatedChecks.documents.checking:0",
+          "incarnation": "1",
+          "src": "root/actors/verifyDocuments",
+          "parent": {
+            "$actor": "kyc",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "name": "Ada"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "legible",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "legible"
+              }
+            }
+          }
+        },
+        "kyc/kyc.automatedChecks.sanctions.screening:0": {
+          "id": "kyc.automatedChecks.sanctions.screening:0",
+          "address": "kyc/kyc.automatedChecks.sanctions.screening:0",
+          "incarnation": "2",
+          "src": "root/actors/screenSanctions",
+          "parent": {
+            "$actor": "kyc",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "country": "SE"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "clear",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "clear"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 3,
+        "timer": 0,
+        "sequence": 6,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 4",
+    "snapshot": {
+      "root": "kyc",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "kyc": {
+          "id": "kyc",
+          "address": "kyc",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "documents": "legible",
+              "sanctions": "clear",
+              "question": "proof of address?",
+              "decision": null
+            },
+            "value": "awaitingInfo",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kyc",
+              "kyc.awaitingInfo"
+            ]
+          }
+        },
+        "kyc/kyc.automatedChecks.documents.checking:0": {
+          "id": "kyc.automatedChecks.documents.checking:0",
+          "address": "kyc/kyc.automatedChecks.documents.checking:0",
+          "incarnation": "1",
+          "src": "root/actors/verifyDocuments",
+          "parent": {
+            "$actor": "kyc",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "name": "Ada"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "legible",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "legible"
+              }
+            }
+          }
+        },
+        "kyc/kyc.automatedChecks.sanctions.screening:0": {
+          "id": "kyc.automatedChecks.sanctions.screening:0",
+          "address": "kyc/kyc.automatedChecks.sanctions.screening:0",
+          "incarnation": "2",
+          "src": "root/actors/screenSanctions",
+          "parent": {
+            "$actor": "kyc",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "country": "SE"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "clear",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "clear"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 3,
+        "timer": 0,
+        "sequence": 7,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 5",
+    "snapshot": {
+      "root": "kyc",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "kyc": {
+          "id": "kyc",
+          "address": "kyc",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "documents": "legible (+ answer)",
+              "sanctions": "clear",
+              "question": null,
+              "decision": null
+            },
+            "value": "manualReview",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kyc",
+              "kyc.manualReview"
+            ]
+          }
+        },
+        "kyc/kyc.automatedChecks.documents.checking:0": {
+          "id": "kyc.automatedChecks.documents.checking:0",
+          "address": "kyc/kyc.automatedChecks.documents.checking:0",
+          "incarnation": "1",
+          "src": "root/actors/verifyDocuments",
+          "parent": {
+            "$actor": "kyc",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "name": "Ada"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "legible",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "legible"
+              }
+            }
+          }
+        },
+        "kyc/kyc.automatedChecks.sanctions.screening:0": {
+          "id": "kyc.automatedChecks.sanctions.screening:0",
+          "address": "kyc/kyc.automatedChecks.sanctions.screening:0",
+          "incarnation": "2",
+          "src": "root/actors/screenSanctions",
+          "parent": {
+            "$actor": "kyc",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "country": "SE"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "clear",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "clear"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 3,
+        "timer": 0,
+        "sequence": 8,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 6",
+    "snapshot": {
+      "root": "kyc",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "kyc": {
+          "id": "kyc",
+          "address": "kyc",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "documents": "legible (+ answer)",
+              "sanctions": "clear",
+              "question": "proof of address?",
+              "decision": null
+            },
+            "value": "awaitingInfo",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kyc",
+              "kyc.awaitingInfo"
+            ]
+          }
+        },
+        "kyc/kyc.automatedChecks.documents.checking:0": {
+          "id": "kyc.automatedChecks.documents.checking:0",
+          "address": "kyc/kyc.automatedChecks.documents.checking:0",
+          "incarnation": "1",
+          "src": "root/actors/verifyDocuments",
+          "parent": {
+            "$actor": "kyc",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "name": "Ada"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "legible",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "legible"
+              }
+            }
+          }
+        },
+        "kyc/kyc.automatedChecks.sanctions.screening:0": {
+          "id": "kyc.automatedChecks.sanctions.screening:0",
+          "address": "kyc/kyc.automatedChecks.sanctions.screening:0",
+          "incarnation": "2",
+          "src": "root/actors/screenSanctions",
+          "parent": {
+            "$actor": "kyc",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "country": "SE"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "clear",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "clear"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 3,
+        "timer": 0,
+        "sequence": 9,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 7",
+    "snapshot": {
+      "root": "kyc",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "kyc": {
+          "id": "kyc",
+          "address": "kyc",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "documents": "legible (+ answer)",
+              "sanctions": "clear",
+              "question": null,
+              "decision": null
+            },
+            "value": "manualReview",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kyc",
+              "kyc.manualReview"
+            ]
+          }
+        },
+        "kyc/kyc.automatedChecks.documents.checking:0": {
+          "id": "kyc.automatedChecks.documents.checking:0",
+          "address": "kyc/kyc.automatedChecks.documents.checking:0",
+          "incarnation": "1",
+          "src": "root/actors/verifyDocuments",
+          "parent": {
+            "$actor": "kyc",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "name": "Ada"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "legible",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "legible"
+              }
+            }
+          }
+        },
+        "kyc/kyc.automatedChecks.sanctions.screening:0": {
+          "id": "kyc.automatedChecks.sanctions.screening:0",
+          "address": "kyc/kyc.automatedChecks.sanctions.screening:0",
+          "incarnation": "2",
+          "src": "root/actors/screenSanctions",
+          "parent": {
+            "$actor": "kyc",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "country": "SE"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "clear",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "clear"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 3,
+        "timer": 0,
+        "sequence": 10,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 8",
+    "snapshot": {
+      "root": "kyc",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "kyc": {
+          "id": "kyc",
+          "address": "kyc",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "applicant": "Ada"
+            },
+            "context": {
+              "documents": "legible (+ answer)",
+              "sanctions": "clear",
+              "question": null,
+              "decision": "rejected"
+            },
+            "value": "decided",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kyc.decided",
+              "kyc"
+            ]
+          }
+        },
+        "kyc/kyc.automatedChecks.documents.checking:0": {
+          "id": "kyc.automatedChecks.documents.checking:0",
+          "address": "kyc/kyc.automatedChecks.documents.checking:0",
+          "incarnation": "1",
+          "src": "root/actors/verifyDocuments",
+          "parent": {
+            "$actor": "kyc",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "name": "Ada"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "legible",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "legible"
+              }
+            }
+          }
+        },
+        "kyc/kyc.automatedChecks.sanctions.screening:0": {
+          "id": "kyc.automatedChecks.sanctions.screening:0",
+          "address": "kyc/kyc.automatedChecks.sanctions.screening:0",
+          "incarnation": "2",
+          "src": "root/actors/screenSanctions",
+          "parent": {
+            "$actor": "kyc",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "country": "SE"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "clear",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "clear"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 3,
+        "timer": 0,
+        "sequence": 11,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 9",
+    "snapshot": {
+      "root": "kyc",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "kyc": {
+          "id": "kyc",
+          "address": "kyc",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "applicant": "Ada"
+            },
+            "context": {
+              "documents": "legible (+ answer)",
+              "sanctions": "clear",
+              "question": null,
+              "decision": "rejected"
+            },
+            "value": "decided",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kyc.decided",
+              "kyc"
+            ]
+          }
+        },
+        "kyc/kyc.automatedChecks.documents.checking:0": {
+          "id": "kyc.automatedChecks.documents.checking:0",
+          "address": "kyc/kyc.automatedChecks.documents.checking:0",
+          "incarnation": "1",
+          "src": "root/actors/verifyDocuments",
+          "parent": {
+            "$actor": "kyc",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "name": "Ada"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "legible",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "legible"
+              }
+            }
+          }
+        },
+        "kyc/kyc.automatedChecks.sanctions.screening:0": {
+          "id": "kyc.automatedChecks.sanctions.screening:0",
+          "address": "kyc/kyc.automatedChecks.sanctions.screening:0",
+          "incarnation": "2",
+          "src": "root/actors/screenSanctions",
+          "parent": {
+            "$actor": "kyc",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "country": "SE"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "clear",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "clear"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 3,
+        "timer": 0,
+        "sequence": 12,
+        "effect": 2
+      }
+    },
+    "effects": []
+  }
+]
