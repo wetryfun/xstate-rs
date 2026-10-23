@@ -15,6 +15,16 @@ export const exprs = {
   eventOutput: ({ event }) => event.output,
   totalFromOutput: ({ context, event }) => context.total + event.output.total,
   summary: ({ context }) => ({ count: context.count, total: context.total }),
+  // examples/pattern-retry-policy (fixtures/system/ex_retry_policy*).
+  canRetry: ({ context }) => context.attempts + 1 < 5,
+  contextName: ({ context }) => context.name,
+  errorMessage: ({ event }) => String(event.error.message),
+  outputRecordId: ({ event }) => event.output.recordId,
+  retryMessage: ({ context }) =>
+    `attempt ${context.attempts} failed (${context.error}); retrying in ${100 * 2 ** context.attempts}ms`,
+  storedOutput: ({ context }) => ({ ok: true, recordId: context.recordId }),
+  gaveUpOutput: ({ context }) => ({ ok: false, attempts: context.attempts }),
+  retryContext: ({ input }) => ({ name: input.name, attempts: 0, recordId: null, error: null }),
   // Root `context` (scope: the actor's input).
   contextFromInput: ({ input }) => ({ count: input?.start ?? 0, total: 0, attempts: 0, items: [] })
 };

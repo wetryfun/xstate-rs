@@ -53,7 +53,8 @@ export const machine = {
   states: {
     cart: {
       on: {
-        'cart.add': { actions: [{ type: 'audit' }] },
+        // The new line list is computed in Rust (`expr_add_line`).
+        'cart.add': { context: { lines: { '@code': 'addLine', '@lang': 'rust' } }, actions: [{ type: 'audit' }] },
         'payment.method': { actions: [{ type: 'audit' }] },
         checkout: [
           { target: 'paying', guard: { type: 'withinLimit', params: { max: 1000 } } },

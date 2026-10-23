@@ -10,13 +10,14 @@
 use std::sync::Arc;
 
 use xstate_rt::step::async_logic;
-use xstate_rt::{Ev, GuardArgs, Logic, Machine};
+use xstate_rt::{Ev, ExprArgs, GuardArgs, Logic, Machine};
 
 pub mod checkout {
     xstate_rt::include_machine!("checkout");
 }
 
-use checkout::{CheckoutImpl, Context, Event, NotifyParams, WithinLimitParams};
+use checkout::{CheckoutImpl, Context, ContextLinesItem, Event, NotifyParams, WithinLimitParams};
+use xstate_rt::__codegen::serde_json;
 
 /// The shop's side of the checkout. Actions write a line to stderr (the
 /// host's to capture), the way a component without other imports reports.
@@ -37,6 +38,15 @@ impl CheckoutImpl for Shop {
 
     fn action_audit(&self) {
         eprintln!("audit");
+    }
+
+    fn expr_add_line(&self, args: &ExprArgs<'_, Context, Event>) -> serde_json::Value {
+        // The cart's lines with the added one (the transition's `context.lines`).
+        let mut lines = args.context.lines.clone();
+        if let Ev::User(Event::CartAdd { line }) = args.event {
+            lines.push(ContextLinesItem { sku: line.sku.clone(), quantity: line.quantity });
+        }
+        serde_json::to_value(lines).expect("lines serialize")
     }
 
     fn delay_backoff(&self, context: &Context, _event: &Ev<Event>) -> u64 {

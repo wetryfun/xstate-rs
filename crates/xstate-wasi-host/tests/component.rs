@@ -65,6 +65,22 @@ impl xstate::runtime::implementations::Host for Host {
         let context: Value = serde_json::from_str(&context).unwrap();
         100 * (1 + context["tries"].as_u64().unwrap_or(0))
     }
+
+    fn expr(&mut self, name: String, scope: String) -> String {
+        let scope: Value = serde_json::from_str(&scope).unwrap();
+        match name.as_str() {
+            "nextTries" => json!(scope["context"]["tries"].as_u64().unwrap() + 1),
+            "carEvent" => json!({ "type": "seen", "n": scope["event"]["n"], "label": scope["params"]["label"] }),
+            other => panic!("unexpected expression {other}"),
+        }
+        .to_string()
+    }
+
+    fn context_expr(&mut self, name: String, input: Option<String>) -> String {
+        assert_eq!(name, "fromInput");
+        let input: Value = input.map_or(Value::Null, |i| serde_json::from_str(&i).unwrap());
+        json!({ "tries": input["tries"].as_u64().unwrap_or(0) }).to_string()
+    }
 }
 
 /// A component instance with its store.
@@ -228,6 +244,27 @@ fn guards_actions_and_delays_come_from_the_host() {
         rt.snapshot(a),
         json!({ "status": "done", "value": "done", "context": { "tries": 1 }, "output": { "ok": true } })
     );
+}
+
+#[test]
+fn expressions_come_from_the_host() {
+    let code = |name: &str| json!({ "@code": name, "@lang": "rust" });
+    let definition = json!({
+        "id": "counted",
+        "context": code("fromInput"),
+        "actions": { "report": [{ "type": "@xstate.emit", "event": code("carEvent") }] },
+        "initial": "a",
+        "states": { "a": { "on": { "car": {
+            "context": { "tries": code("nextTries") },
+            "actions": [{ "type": "report", "params": { "label": "car" } }]
+        } } } }
+    });
+    let mut rt = Rt::new();
+    let a = rt.start(&definition, &json!({ "input": { "tries": 4 } }), 0).unwrap();
+    assert_eq!(rt.snapshot(a)["context"], json!({ "tries": 4 }));
+    rt.send(a, json!({ "type": "car", "n": 2 }), 1).unwrap();
+    assert_eq!(rt.snapshot(a)["context"], json!({ "tries": 5 }));
+    assert_eq!(rt.take_emitted(a), vec![json!({ "type": "seen", "n": 2, "label": "car" })]);
 }
 
 #[test]

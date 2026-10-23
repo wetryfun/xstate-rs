@@ -141,3 +141,15 @@ fn the_charge_child_is_typed() {
     assert!(actor.matches("paid"));
     assert!(checkout::child_charge(&mut actor).is_none(), "done children are gone");
 }
+
+#[test]
+fn added_lines_are_computed_in_rust() {
+    let shop = Arc::new(Shop::default());
+    let mut actor = start(&shop);
+    let line = |sku: &str, quantity| checkout::CartAddLine { sku: sku.into(), quantity };
+    actor.send(Event::CartAdd { line: line("A-1", 2) }, 1).unwrap();
+    actor.send(Event::CartAdd { line: line("B-7", 1) }, 2).unwrap();
+    let lines: Vec<(&str, i64)> = actor.context().lines.iter().map(|l| (l.sku.as_str(), l.quantity)).collect();
+    assert_eq!(lines, [("A-1", 2), ("B-7", 1)]);
+    assert_eq!(shop.audited.load(std::sync::atomic::Ordering::Relaxed), 2);
+}

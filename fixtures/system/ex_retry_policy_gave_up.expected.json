@@ -12,6 +12,9 @@
           "incarnation": "0",
           "src": "root",
           "started": true,
+          "input": {
+            "name": "Ada Lovelace"
+          },
           "snapshot": {
             "status": "active",
             "context": {
@@ -112,13 +115,16 @@
           "incarnation": "0",
           "src": "root",
           "started": true,
+          "input": {
+            "name": "Ada Lovelace"
+          },
           "snapshot": {
             "status": "active",
             "context": {
               "name": "Ada Lovelace",
               "attempts": 1,
               "recordId": null,
-              "error": "ServiceUnavailable"
+              "error": "boom"
             },
             "value": "backingOff",
             "children": {},
@@ -128,37 +134,7 @@
                 "type": "@xstate.raise",
                 "event": {
                   "type": "xstate.after",
-                  "delay": 200,
-                  "stateId": "retry.backingOff"
-                },
-                "target": "self"
-              },
-              {
-                "delay": 400,
-                "type": "@xstate.raise",
-                "event": {
-                  "type": "xstate.after",
-                  "delay": 400,
-                  "stateId": "retry.backingOff"
-                },
-                "target": "self"
-              },
-              {
-                "delay": 800,
-                "type": "@xstate.raise",
-                "event": {
-                  "type": "xstate.after",
-                  "delay": 800,
-                  "stateId": "retry.backingOff"
-                },
-                "target": "self"
-              },
-              {
-                "delay": 1600,
-                "type": "@xstate.raise",
-                "event": {
-                  "type": "xstate.after",
-                  "delay": 1600,
+                  "delay": "backoff",
                   "stateId": "retry.backingOff"
                 },
                 "target": "self"
@@ -219,61 +195,7 @@
             "type": "xstate.timer",
             "event": {
               "type": "xstate.after",
-              "delay": 200,
-              "stateId": "retry.backingOff"
-            }
-          }
-        },
-        {
-          "source": {
-            "$actor": "retry",
-            "incarnation": "0"
-          },
-          "occurrence": 1,
-          "scheduledAt": 0,
-          "dueAt": 400,
-          "sequence": 3,
-          "event": {
-            "type": "xstate.timer",
-            "event": {
-              "type": "xstate.after",
-              "delay": 400,
-              "stateId": "retry.backingOff"
-            }
-          }
-        },
-        {
-          "source": {
-            "$actor": "retry",
-            "incarnation": "0"
-          },
-          "occurrence": 2,
-          "scheduledAt": 0,
-          "dueAt": 800,
-          "sequence": 4,
-          "event": {
-            "type": "xstate.timer",
-            "event": {
-              "type": "xstate.after",
-              "delay": 800,
-              "stateId": "retry.backingOff"
-            }
-          }
-        },
-        {
-          "source": {
-            "$actor": "retry",
-            "incarnation": "0"
-          },
-          "occurrence": 3,
-          "scheduledAt": 0,
-          "dueAt": 1600,
-          "sequence": 5,
-          "event": {
-            "type": "xstate.timer",
-            "event": {
-              "type": "xstate.after",
-              "delay": 1600,
+              "delay": "backoff",
               "stateId": "retry.backingOff"
             }
           }
@@ -289,19 +211,19 @@
           "type": "log",
           "kind": "emit",
           "params": {
-            "message": "attempt failed; retrying"
+            "message": "attempt 1 failed (boom); retrying in 200ms"
           },
           "args": [],
           "event": {
             "type": "log",
-            "message": "attempt failed; retrying"
+            "message": "attempt 1 failed (boom); retrying in 200ms"
           }
         }
       },
       "counters": {
         "actor": 2,
-        "timer": 4,
-        "sequence": 6,
+        "timer": 1,
+        "sequence": 3,
         "effect": 2
       }
     },
@@ -315,12 +237,12 @@
         "type": "log",
         "kind": "emit",
         "params": {
-          "message": "attempt failed; retrying"
+          "message": "attempt 1 failed (boom); retrying in 200ms"
         },
         "args": [],
         "event": {
           "type": "log",
-          "message": "attempt failed; retrying"
+          "message": "attempt 1 failed (boom); retrying in 200ms"
         }
       }
     ]
@@ -338,13 +260,16 @@
           "incarnation": "0",
           "src": "root",
           "started": true,
+          "input": {
+            "name": "Ada Lovelace"
+          },
           "snapshot": {
             "status": "active",
             "context": {
               "name": "Ada Lovelace",
               "attempts": 1,
               "recordId": null,
-              "error": "ServiceUnavailable"
+              "error": "boom"
             },
             "value": "attempting",
             "children": {
@@ -403,12 +328,12 @@
           "type": "log",
           "kind": "emit",
           "params": {
-            "message": "attempt failed; retrying"
+            "message": "attempt 1 failed (boom); retrying in 200ms"
           },
           "args": [],
           "event": {
             "type": "log",
-            "message": "attempt failed; retrying"
+            "message": "attempt 1 failed (boom); retrying in 200ms"
           }
         },
         "system:2": {
@@ -424,8 +349,8 @@
       },
       "counters": {
         "actor": 3,
-        "timer": 4,
-        "sequence": 7,
+        "timer": 1,
+        "sequence": 4,
         "effect": 3
       }
     },
@@ -455,53 +380,26 @@
           "incarnation": "0",
           "src": "root",
           "started": true,
+          "input": {
+            "name": "Ada Lovelace"
+          },
           "snapshot": {
             "status": "active",
             "context": {
               "name": "Ada Lovelace",
               "attempts": 2,
               "recordId": null,
-              "error": "ServiceUnavailable"
+              "error": "boom"
             },
             "value": "backingOff",
             "children": {},
             "timers": [
               {
-                "delay": 200,
-                "type": "@xstate.raise",
-                "event": {
-                  "type": "xstate.after",
-                  "delay": 200,
-                  "stateId": "retry.backingOff"
-                },
-                "target": "self"
-              },
-              {
                 "delay": 400,
                 "type": "@xstate.raise",
                 "event": {
                   "type": "xstate.after",
-                  "delay": 400,
-                  "stateId": "retry.backingOff"
-                },
-                "target": "self"
-              },
-              {
-                "delay": 800,
-                "type": "@xstate.raise",
-                "event": {
-                  "type": "xstate.after",
-                  "delay": 800,
-                  "stateId": "retry.backingOff"
-                },
-                "target": "self"
-              },
-              {
-                "delay": 1600,
-                "type": "@xstate.raise",
-                "event": {
-                  "type": "xstate.after",
-                  "delay": 1600,
+                  "delay": "backoff",
                   "stateId": "retry.backingOff"
                 },
                 "target": "self"
@@ -554,69 +452,15 @@
             "$actor": "retry",
             "incarnation": "0"
           },
-          "occurrence": 4,
-          "scheduledAt": 200,
-          "dueAt": 400,
-          "sequence": 9,
-          "event": {
-            "type": "xstate.timer",
-            "event": {
-              "type": "xstate.after",
-              "delay": 200,
-              "stateId": "retry.backingOff"
-            }
-          }
-        },
-        {
-          "source": {
-            "$actor": "retry",
-            "incarnation": "0"
-          },
-          "occurrence": 5,
+          "occurrence": 1,
           "scheduledAt": 200,
           "dueAt": 600,
-          "sequence": 10,
+          "sequence": 6,
           "event": {
             "type": "xstate.timer",
             "event": {
               "type": "xstate.after",
-              "delay": 400,
-              "stateId": "retry.backingOff"
-            }
-          }
-        },
-        {
-          "source": {
-            "$actor": "retry",
-            "incarnation": "0"
-          },
-          "occurrence": 6,
-          "scheduledAt": 200,
-          "dueAt": 1000,
-          "sequence": 11,
-          "event": {
-            "type": "xstate.timer",
-            "event": {
-              "type": "xstate.after",
-              "delay": 800,
-              "stateId": "retry.backingOff"
-            }
-          }
-        },
-        {
-          "source": {
-            "$actor": "retry",
-            "incarnation": "0"
-          },
-          "occurrence": 7,
-          "scheduledAt": 200,
-          "dueAt": 1800,
-          "sequence": 12,
-          "event": {
-            "type": "xstate.timer",
-            "event": {
-              "type": "xstate.after",
-              "delay": 1600,
+              "delay": "backoff",
               "stateId": "retry.backingOff"
             }
           }
@@ -632,12 +476,12 @@
           "type": "log",
           "kind": "emit",
           "params": {
-            "message": "attempt failed; retrying"
+            "message": "attempt 1 failed (boom); retrying in 200ms"
           },
           "args": [],
           "event": {
             "type": "log",
-            "message": "attempt failed; retrying"
+            "message": "attempt 1 failed (boom); retrying in 200ms"
           }
         },
         "system:3": {
@@ -649,19 +493,19 @@
           "type": "log",
           "kind": "emit",
           "params": {
-            "message": "attempt failed; retrying"
+            "message": "attempt 2 failed (boom); retrying in 400ms"
           },
           "args": [],
           "event": {
             "type": "log",
-            "message": "attempt failed; retrying"
+            "message": "attempt 2 failed (boom); retrying in 400ms"
           }
         }
       },
       "counters": {
         "actor": 3,
-        "timer": 8,
-        "sequence": 13,
+        "timer": 2,
+        "sequence": 7,
         "effect": 4
       }
     },
@@ -675,12 +519,12 @@
         "type": "log",
         "kind": "emit",
         "params": {
-          "message": "attempt failed; retrying"
+          "message": "attempt 2 failed (boom); retrying in 400ms"
         },
         "args": [],
         "event": {
           "type": "log",
-          "message": "attempt failed; retrying"
+          "message": "attempt 2 failed (boom); retrying in 400ms"
         }
       }
     ]
@@ -698,13 +542,16 @@
           "incarnation": "0",
           "src": "root",
           "started": true,
+          "input": {
+            "name": "Ada Lovelace"
+          },
           "snapshot": {
             "status": "active",
             "context": {
               "name": "Ada Lovelace",
               "attempts": 2,
               "recordId": null,
-              "error": "ServiceUnavailable"
+              "error": "boom"
             },
             "value": "attempting",
             "children": {
@@ -763,12 +610,12 @@
           "type": "log",
           "kind": "emit",
           "params": {
-            "message": "attempt failed; retrying"
+            "message": "attempt 1 failed (boom); retrying in 200ms"
           },
           "args": [],
           "event": {
             "type": "log",
-            "message": "attempt failed; retrying"
+            "message": "attempt 1 failed (boom); retrying in 200ms"
           }
         },
         "system:3": {
@@ -780,12 +627,12 @@
           "type": "log",
           "kind": "emit",
           "params": {
-            "message": "attempt failed; retrying"
+            "message": "attempt 2 failed (boom); retrying in 400ms"
           },
           "args": [],
           "event": {
             "type": "log",
-            "message": "attempt failed; retrying"
+            "message": "attempt 2 failed (boom); retrying in 400ms"
           }
         },
         "system:4": {
@@ -801,8 +648,8 @@
       },
       "counters": {
         "actor": 4,
-        "timer": 8,
-        "sequence": 15,
+        "timer": 2,
+        "sequence": 8,
         "effect": 5
       }
     },
@@ -832,53 +679,26 @@
           "incarnation": "0",
           "src": "root",
           "started": true,
+          "input": {
+            "name": "Ada Lovelace"
+          },
           "snapshot": {
             "status": "active",
             "context": {
               "name": "Ada Lovelace",
               "attempts": 3,
               "recordId": null,
-              "error": "ServiceUnavailable"
+              "error": "boom"
             },
             "value": "backingOff",
             "children": {},
             "timers": [
               {
-                "delay": 200,
-                "type": "@xstate.raise",
-                "event": {
-                  "type": "xstate.after",
-                  "delay": 200,
-                  "stateId": "retry.backingOff"
-                },
-                "target": "self"
-              },
-              {
-                "delay": 400,
-                "type": "@xstate.raise",
-                "event": {
-                  "type": "xstate.after",
-                  "delay": 400,
-                  "stateId": "retry.backingOff"
-                },
-                "target": "self"
-              },
-              {
                 "delay": 800,
                 "type": "@xstate.raise",
                 "event": {
                   "type": "xstate.after",
-                  "delay": 800,
-                  "stateId": "retry.backingOff"
-                },
-                "target": "self"
-              },
-              {
-                "delay": 1600,
-                "type": "@xstate.raise",
-                "event": {
-                  "type": "xstate.after",
-                  "delay": 1600,
+                  "delay": "backoff",
                   "stateId": "retry.backingOff"
                 },
                 "target": "self"
@@ -931,69 +751,15 @@
             "$actor": "retry",
             "incarnation": "0"
           },
-          "occurrence": 8,
-          "scheduledAt": 600,
-          "dueAt": 800,
-          "sequence": 17,
-          "event": {
-            "type": "xstate.timer",
-            "event": {
-              "type": "xstate.after",
-              "delay": 200,
-              "stateId": "retry.backingOff"
-            }
-          }
-        },
-        {
-          "source": {
-            "$actor": "retry",
-            "incarnation": "0"
-          },
-          "occurrence": 9,
-          "scheduledAt": 600,
-          "dueAt": 1000,
-          "sequence": 18,
-          "event": {
-            "type": "xstate.timer",
-            "event": {
-              "type": "xstate.after",
-              "delay": 400,
-              "stateId": "retry.backingOff"
-            }
-          }
-        },
-        {
-          "source": {
-            "$actor": "retry",
-            "incarnation": "0"
-          },
-          "occurrence": 10,
+          "occurrence": 2,
           "scheduledAt": 600,
           "dueAt": 1400,
-          "sequence": 19,
+          "sequence": 10,
           "event": {
             "type": "xstate.timer",
             "event": {
               "type": "xstate.after",
-              "delay": 800,
-              "stateId": "retry.backingOff"
-            }
-          }
-        },
-        {
-          "source": {
-            "$actor": "retry",
-            "incarnation": "0"
-          },
-          "occurrence": 11,
-          "scheduledAt": 600,
-          "dueAt": 2200,
-          "sequence": 20,
-          "event": {
-            "type": "xstate.timer",
-            "event": {
-              "type": "xstate.after",
-              "delay": 1600,
+              "delay": "backoff",
               "stateId": "retry.backingOff"
             }
           }
@@ -1009,12 +775,12 @@
           "type": "log",
           "kind": "emit",
           "params": {
-            "message": "attempt failed; retrying"
+            "message": "attempt 1 failed (boom); retrying in 200ms"
           },
           "args": [],
           "event": {
             "type": "log",
-            "message": "attempt failed; retrying"
+            "message": "attempt 1 failed (boom); retrying in 200ms"
           }
         },
         "system:3": {
@@ -1026,12 +792,12 @@
           "type": "log",
           "kind": "emit",
           "params": {
-            "message": "attempt failed; retrying"
+            "message": "attempt 2 failed (boom); retrying in 400ms"
           },
           "args": [],
           "event": {
             "type": "log",
-            "message": "attempt failed; retrying"
+            "message": "attempt 2 failed (boom); retrying in 400ms"
           }
         },
         "system:5": {
@@ -1043,19 +809,19 @@
           "type": "log",
           "kind": "emit",
           "params": {
-            "message": "attempt failed; retrying"
+            "message": "attempt 3 failed (boom); retrying in 800ms"
           },
           "args": [],
           "event": {
             "type": "log",
-            "message": "attempt failed; retrying"
+            "message": "attempt 3 failed (boom); retrying in 800ms"
           }
         }
       },
       "counters": {
         "actor": 4,
-        "timer": 12,
-        "sequence": 21,
+        "timer": 3,
+        "sequence": 11,
         "effect": 6
       }
     },
@@ -1069,12 +835,12 @@
         "type": "log",
         "kind": "emit",
         "params": {
-          "message": "attempt failed; retrying"
+          "message": "attempt 3 failed (boom); retrying in 800ms"
         },
         "args": [],
         "event": {
           "type": "log",
-          "message": "attempt failed; retrying"
+          "message": "attempt 3 failed (boom); retrying in 800ms"
         }
       }
     ]
@@ -1092,13 +858,16 @@
           "incarnation": "0",
           "src": "root",
           "started": true,
+          "input": {
+            "name": "Ada Lovelace"
+          },
           "snapshot": {
             "status": "active",
             "context": {
               "name": "Ada Lovelace",
               "attempts": 3,
               "recordId": null,
-              "error": "ServiceUnavailable"
+              "error": "boom"
             },
             "value": "attempting",
             "children": {
@@ -1157,12 +926,12 @@
           "type": "log",
           "kind": "emit",
           "params": {
-            "message": "attempt failed; retrying"
+            "message": "attempt 1 failed (boom); retrying in 200ms"
           },
           "args": [],
           "event": {
             "type": "log",
-            "message": "attempt failed; retrying"
+            "message": "attempt 1 failed (boom); retrying in 200ms"
           }
         },
         "system:3": {
@@ -1174,12 +943,12 @@
           "type": "log",
           "kind": "emit",
           "params": {
-            "message": "attempt failed; retrying"
+            "message": "attempt 2 failed (boom); retrying in 400ms"
           },
           "args": [],
           "event": {
             "type": "log",
-            "message": "attempt failed; retrying"
+            "message": "attempt 2 failed (boom); retrying in 400ms"
           }
         },
         "system:5": {
@@ -1191,12 +960,12 @@
           "type": "log",
           "kind": "emit",
           "params": {
-            "message": "attempt failed; retrying"
+            "message": "attempt 3 failed (boom); retrying in 800ms"
           },
           "args": [],
           "event": {
             "type": "log",
-            "message": "attempt failed; retrying"
+            "message": "attempt 3 failed (boom); retrying in 800ms"
           }
         },
         "system:6": {
@@ -1212,8 +981,8 @@
       },
       "counters": {
         "actor": 5,
-        "timer": 12,
-        "sequence": 24,
+        "timer": 3,
+        "sequence": 12,
         "effect": 7
       }
     },
@@ -1243,53 +1012,26 @@
           "incarnation": "0",
           "src": "root",
           "started": true,
+          "input": {
+            "name": "Ada Lovelace"
+          },
           "snapshot": {
             "status": "active",
             "context": {
               "name": "Ada Lovelace",
               "attempts": 4,
               "recordId": null,
-              "error": "ServiceUnavailable"
+              "error": "boom"
             },
             "value": "backingOff",
             "children": {},
             "timers": [
               {
-                "delay": 200,
-                "type": "@xstate.raise",
-                "event": {
-                  "type": "xstate.after",
-                  "delay": 200,
-                  "stateId": "retry.backingOff"
-                },
-                "target": "self"
-              },
-              {
-                "delay": 400,
-                "type": "@xstate.raise",
-                "event": {
-                  "type": "xstate.after",
-                  "delay": 400,
-                  "stateId": "retry.backingOff"
-                },
-                "target": "self"
-              },
-              {
-                "delay": 800,
-                "type": "@xstate.raise",
-                "event": {
-                  "type": "xstate.after",
-                  "delay": 800,
-                  "stateId": "retry.backingOff"
-                },
-                "target": "self"
-              },
-              {
                 "delay": 1600,
                 "type": "@xstate.raise",
                 "event": {
                   "type": "xstate.after",
-                  "delay": 1600,
+                  "delay": "backoff",
                   "stateId": "retry.backingOff"
                 },
                 "target": "self"
@@ -1342,69 +1084,15 @@
             "$actor": "retry",
             "incarnation": "0"
           },
-          "occurrence": 12,
-          "scheduledAt": 1400,
-          "dueAt": 1600,
-          "sequence": 26,
-          "event": {
-            "type": "xstate.timer",
-            "event": {
-              "type": "xstate.after",
-              "delay": 200,
-              "stateId": "retry.backingOff"
-            }
-          }
-        },
-        {
-          "source": {
-            "$actor": "retry",
-            "incarnation": "0"
-          },
-          "occurrence": 13,
-          "scheduledAt": 1400,
-          "dueAt": 1800,
-          "sequence": 27,
-          "event": {
-            "type": "xstate.timer",
-            "event": {
-              "type": "xstate.after",
-              "delay": 400,
-              "stateId": "retry.backingOff"
-            }
-          }
-        },
-        {
-          "source": {
-            "$actor": "retry",
-            "incarnation": "0"
-          },
-          "occurrence": 14,
-          "scheduledAt": 1400,
-          "dueAt": 2200,
-          "sequence": 28,
-          "event": {
-            "type": "xstate.timer",
-            "event": {
-              "type": "xstate.after",
-              "delay": 800,
-              "stateId": "retry.backingOff"
-            }
-          }
-        },
-        {
-          "source": {
-            "$actor": "retry",
-            "incarnation": "0"
-          },
-          "occurrence": 15,
+          "occurrence": 3,
           "scheduledAt": 1400,
           "dueAt": 3000,
-          "sequence": 29,
+          "sequence": 14,
           "event": {
             "type": "xstate.timer",
             "event": {
               "type": "xstate.after",
-              "delay": 1600,
+              "delay": "backoff",
               "stateId": "retry.backingOff"
             }
           }
@@ -1420,12 +1108,12 @@
           "type": "log",
           "kind": "emit",
           "params": {
-            "message": "attempt failed; retrying"
+            "message": "attempt 1 failed (boom); retrying in 200ms"
           },
           "args": [],
           "event": {
             "type": "log",
-            "message": "attempt failed; retrying"
+            "message": "attempt 1 failed (boom); retrying in 200ms"
           }
         },
         "system:3": {
@@ -1437,12 +1125,12 @@
           "type": "log",
           "kind": "emit",
           "params": {
-            "message": "attempt failed; retrying"
+            "message": "attempt 2 failed (boom); retrying in 400ms"
           },
           "args": [],
           "event": {
             "type": "log",
-            "message": "attempt failed; retrying"
+            "message": "attempt 2 failed (boom); retrying in 400ms"
           }
         },
         "system:5": {
@@ -1454,12 +1142,12 @@
           "type": "log",
           "kind": "emit",
           "params": {
-            "message": "attempt failed; retrying"
+            "message": "attempt 3 failed (boom); retrying in 800ms"
           },
           "args": [],
           "event": {
             "type": "log",
-            "message": "attempt failed; retrying"
+            "message": "attempt 3 failed (boom); retrying in 800ms"
           }
         },
         "system:7": {
@@ -1471,19 +1159,19 @@
           "type": "log",
           "kind": "emit",
           "params": {
-            "message": "attempt failed; retrying"
+            "message": "attempt 4 failed (boom); retrying in 1600ms"
           },
           "args": [],
           "event": {
             "type": "log",
-            "message": "attempt failed; retrying"
+            "message": "attempt 4 failed (boom); retrying in 1600ms"
           }
         }
       },
       "counters": {
         "actor": 5,
-        "timer": 16,
-        "sequence": 30,
+        "timer": 4,
+        "sequence": 15,
         "effect": 8
       }
     },
@@ -1497,12 +1185,12 @@
         "type": "log",
         "kind": "emit",
         "params": {
-          "message": "attempt failed; retrying"
+          "message": "attempt 4 failed (boom); retrying in 1600ms"
         },
         "args": [],
         "event": {
           "type": "log",
-          "message": "attempt failed; retrying"
+          "message": "attempt 4 failed (boom); retrying in 1600ms"
         }
       }
     ]
@@ -1520,13 +1208,16 @@
           "incarnation": "0",
           "src": "root",
           "started": true,
+          "input": {
+            "name": "Ada Lovelace"
+          },
           "snapshot": {
             "status": "active",
             "context": {
               "name": "Ada Lovelace",
               "attempts": 4,
               "recordId": null,
-              "error": "ServiceUnavailable"
+              "error": "boom"
             },
             "value": "attempting",
             "children": {
@@ -1585,12 +1276,12 @@
           "type": "log",
           "kind": "emit",
           "params": {
-            "message": "attempt failed; retrying"
+            "message": "attempt 1 failed (boom); retrying in 200ms"
           },
           "args": [],
           "event": {
             "type": "log",
-            "message": "attempt failed; retrying"
+            "message": "attempt 1 failed (boom); retrying in 200ms"
           }
         },
         "system:3": {
@@ -1602,12 +1293,12 @@
           "type": "log",
           "kind": "emit",
           "params": {
-            "message": "attempt failed; retrying"
+            "message": "attempt 2 failed (boom); retrying in 400ms"
           },
           "args": [],
           "event": {
             "type": "log",
-            "message": "attempt failed; retrying"
+            "message": "attempt 2 failed (boom); retrying in 400ms"
           }
         },
         "system:5": {
@@ -1619,12 +1310,12 @@
           "type": "log",
           "kind": "emit",
           "params": {
-            "message": "attempt failed; retrying"
+            "message": "attempt 3 failed (boom); retrying in 800ms"
           },
           "args": [],
           "event": {
             "type": "log",
-            "message": "attempt failed; retrying"
+            "message": "attempt 3 failed (boom); retrying in 800ms"
           }
         },
         "system:7": {
@@ -1636,12 +1327,12 @@
           "type": "log",
           "kind": "emit",
           "params": {
-            "message": "attempt failed; retrying"
+            "message": "attempt 4 failed (boom); retrying in 1600ms"
           },
           "args": [],
           "event": {
             "type": "log",
-            "message": "attempt failed; retrying"
+            "message": "attempt 4 failed (boom); retrying in 1600ms"
           }
         },
         "system:8": {
@@ -1657,8 +1348,8 @@
       },
       "counters": {
         "actor": 6,
-        "timer": 16,
-        "sequence": 34,
+        "timer": 4,
+        "sequence": 16,
         "effect": 9
       }
     },
@@ -1688,16 +1379,20 @@
           "incarnation": "0",
           "src": "root",
           "started": true,
+          "input": {
+            "name": "Ada Lovelace"
+          },
           "snapshot": {
             "status": "done",
             "output": {
-              "ok": false
+              "ok": false,
+              "attempts": 5
             },
             "context": {
               "name": "Ada Lovelace",
               "attempts": 5,
               "recordId": null,
-              "error": "ServiceUnavailable"
+              "error": "boom"
             },
             "value": "gaveUp",
             "children": {},
@@ -1754,12 +1449,12 @@
           "type": "log",
           "kind": "emit",
           "params": {
-            "message": "attempt failed; retrying"
+            "message": "attempt 1 failed (boom); retrying in 200ms"
           },
           "args": [],
           "event": {
             "type": "log",
-            "message": "attempt failed; retrying"
+            "message": "attempt 1 failed (boom); retrying in 200ms"
           }
         },
         "system:3": {
@@ -1771,12 +1466,12 @@
           "type": "log",
           "kind": "emit",
           "params": {
-            "message": "attempt failed; retrying"
+            "message": "attempt 2 failed (boom); retrying in 400ms"
           },
           "args": [],
           "event": {
             "type": "log",
-            "message": "attempt failed; retrying"
+            "message": "attempt 2 failed (boom); retrying in 400ms"
           }
         },
         "system:5": {
@@ -1788,12 +1483,12 @@
           "type": "log",
           "kind": "emit",
           "params": {
-            "message": "attempt failed; retrying"
+            "message": "attempt 3 failed (boom); retrying in 800ms"
           },
           "args": [],
           "event": {
             "type": "log",
-            "message": "attempt failed; retrying"
+            "message": "attempt 3 failed (boom); retrying in 800ms"
           }
         },
         "system:7": {
@@ -1805,19 +1500,19 @@
           "type": "log",
           "kind": "emit",
           "params": {
-            "message": "attempt failed; retrying"
+            "message": "attempt 4 failed (boom); retrying in 1600ms"
           },
           "args": [],
           "event": {
             "type": "log",
-            "message": "attempt failed; retrying"
+            "message": "attempt 4 failed (boom); retrying in 1600ms"
           }
         }
       },
       "counters": {
         "actor": 6,
-        "timer": 16,
-        "sequence": 36,
+        "timer": 4,
+        "sequence": 18,
         "effect": 9
       }
     },

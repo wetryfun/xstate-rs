@@ -1,232 +1,184 @@
 {
-  "source": "examples/pattern-retry-policy/src/main.ts",
-  "notes": "The attempts counter and the backoff delay (100 * 2^attempts) are unrolled: onError is a guarded array (ctxEquals attempts n), and backingOff has one guarded `after` per attempt count; outputs are static.",
-  "logic": [
-    {
-      "name": "storePatient",
-      "async": {}
+ "source": "examples/pattern-retry-policy/src/main.ts",
+ "notes": "A faithful port with Rust expressions: the context from input, the invoke input, the attempts counter and error (the source's onError function becomes a guarded pair, its guards.canRetry(attempts + 1) an expression guard), the exponential backoff delay (100 * 2^attempts), the log message and both outputs. MAX_ATTEMPTS = 5.",
+ "logic": [
+  {
+   "name": "storePatient",
+   "async": {}
+  },
+  {
+   "name": "retry",
+   "actors": [
+    "storePatient"
+   ],
+   "machine": {
+    "id": "retry",
+    "context": {
+     "@code": "retryContext",
+     "@lang": "rust"
     },
-    {
-      "name": "retry",
-      "actors": [
-        "storePatient"
-      ],
-      "machine": {
-        "id": "retry",
+    "delays": {
+     "backoff": {
+      "duration": {
+       "@code": "backoff",
+       "@lang": "rust"
+      }
+     }
+    },
+    "initial": "attempting",
+    "states": {
+     "attempting": {
+      "invoke": {
+       "src": "storePatient",
+       "input": {
+        "name": {
+         "@code": "contextName",
+         "@lang": "rust"
+        }
+       },
+       "onDone": {
+        "target": "stored",
         "context": {
-          "name": "Ada Lovelace",
-          "attempts": 0,
-          "recordId": null,
-          "error": null
-        },
-        "initial": "attempting",
-        "states": {
-          "attempting": {
-            "invoke": {
-              "src": "storePatient",
-              "input": {
-                "name": "Ada Lovelace"
-              },
-              "onDone": {
-                "target": "stored",
-                "context": {
-                  "recordId": "rec-4"
-                }
-              },
-              "onError": [
-                {
-                  "guard": {
-                    "type": "ctxEquals",
-                    "params": {
-                      "key": "attempts",
-                      "value": 0
-                    }
-                  },
-                  "target": "backingOff",
-                  "context": {
-                    "attempts": 1,
-                    "error": "ServiceUnavailable"
-                  }
-                },
-                {
-                  "guard": {
-                    "type": "ctxEquals",
-                    "params": {
-                      "key": "attempts",
-                      "value": 1
-                    }
-                  },
-                  "target": "backingOff",
-                  "context": {
-                    "attempts": 2,
-                    "error": "ServiceUnavailable"
-                  }
-                },
-                {
-                  "guard": {
-                    "type": "ctxEquals",
-                    "params": {
-                      "key": "attempts",
-                      "value": 2
-                    }
-                  },
-                  "target": "backingOff",
-                  "context": {
-                    "attempts": 3,
-                    "error": "ServiceUnavailable"
-                  }
-                },
-                {
-                  "guard": {
-                    "type": "ctxEquals",
-                    "params": {
-                      "key": "attempts",
-                      "value": 3
-                    }
-                  },
-                  "target": "backingOff",
-                  "context": {
-                    "attempts": 4,
-                    "error": "ServiceUnavailable"
-                  }
-                },
-                {
-                  "target": "gaveUp",
-                  "context": {
-                    "attempts": 5,
-                    "error": "ServiceUnavailable"
-                  }
-                }
-              ]
-            }
+         "recordId": {
+          "@code": "outputRecordId",
+          "@lang": "rust"
+         }
+        }
+       },
+       "onError": [
+        {
+         "guard": {
+          "@code": "canRetry",
+          "@lang": "rust"
+         },
+         "target": "backingOff",
+         "context": {
+          "attempts": {
+           "@code": "attemptsPlusOne",
+           "@lang": "rust"
           },
-          "backingOff": {
-            "entry": [
-              {
-                "type": "@xstate.emit",
-                "event": {
-                  "type": "log",
-                  "message": "attempt failed; retrying"
-                }
-              }
-            ],
-            "after": {
-              "200": {
-                "guard": {
-                  "type": "ctxEquals",
-                  "params": {
-                    "key": "attempts",
-                    "value": 1
-                  }
-                },
-                "target": "attempting"
-              },
-              "400": {
-                "guard": {
-                  "type": "ctxEquals",
-                  "params": {
-                    "key": "attempts",
-                    "value": 2
-                  }
-                },
-                "target": "attempting"
-              },
-              "800": {
-                "guard": {
-                  "type": "ctxEquals",
-                  "params": {
-                    "key": "attempts",
-                    "value": 3
-                  }
-                },
-                "target": "attempting"
-              },
-              "1600": {
-                "guard": {
-                  "type": "ctxEquals",
-                  "params": {
-                    "key": "attempts",
-                    "value": 4
-                  }
-                },
-                "target": "attempting"
-              }
-            }
-          },
-          "stored": {
-            "type": "final",
-            "output": {
-              "ok": true
-            }
-          },
-          "gaveUp": {
-            "type": "final",
-            "output": {
-              "ok": false
-            }
+          "error": {
+           "@code": "errorMessage",
+           "@lang": "rust"
           }
+         }
+        },
+        {
+         "target": "gaveUp",
+         "context": {
+          "attempts": {
+           "@code": "attemptsPlusOne",
+           "@lang": "rust"
+          },
+          "error": {
+           "@code": "errorMessage",
+           "@lang": "rust"
+          }
+         }
         }
+       ]
       }
+     },
+     "backingOff": {
+      "entry": [
+       {
+        "type": "@xstate.emit",
+        "event": {
+         "type": "log",
+         "message": {
+          "@code": "retryMessage",
+          "@lang": "rust"
+         }
+        }
+       }
+      ],
+      "after": {
+       "backoff": {
+        "target": "attempting"
+       }
+      }
+     },
+     "stored": {
+      "type": "final",
+      "output": {
+       "@code": "storedOutput",
+       "@lang": "rust"
+      }
+     },
+     "gaveUp": {
+      "type": "final",
+      "output": {
+       "@code": "gaveUpOutput",
+       "@lang": "rust"
+      }
+     }
     }
-  ],
-  "root": "retry",
-  "steps": [
-    {
-      "resolve": 0,
-      "event": {
-        "type": "xstate.async.reject",
-        "data": {
-          "message": "boom"
-        }
-      }
-    },
-    {
-      "advance": 200
-    },
-    {
-      "resolve": 1,
-      "event": {
-        "type": "xstate.async.reject",
-        "data": {
-          "message": "boom"
-        }
-      }
-    },
-    {
-      "advance": 600
-    },
-    {
-      "resolve": 2,
-      "event": {
-        "type": "xstate.async.reject",
-        "data": {
-          "message": "boom"
-        }
-      }
-    },
-    {
-      "advance": 1400
-    },
-    {
-      "resolve": 3,
-      "event": {
-        "type": "xstate.async.reject",
-        "data": {
-          "message": "boom"
-        }
-      }
-    },
-    {
-      "advance": 3000
-    },
-    {
-      "resolve": 4,
-      "event": {
-        "type": "xstate.async.reject",
-        "data": {
-          "message": "boom"
-        }
-      }
+   }
+  }
+ ],
+ "root": "retry",
+ "init": {
+  "input": {
+   "name": "Ada Lovelace"
+  }
+ },
+ "steps": [
+  {
+   "resolve": 0,
+   "event": {
+    "type": "xstate.async.reject",
+    "data": {
+     "message": "boom"
     }
-  ]
+   }
+  },
+  {
+   "advance": 200
+  },
+  {
+   "resolve": 1,
+   "event": {
+    "type": "xstate.async.reject",
+    "data": {
+     "message": "boom"
+    }
+   }
+  },
+  {
+   "advance": 600
+  },
+  {
+   "resolve": 2,
+   "event": {
+    "type": "xstate.async.reject",
+    "data": {
+     "message": "boom"
+    }
+   }
+  },
+  {
+   "advance": 1400
+  },
+  {
+   "resolve": 3,
+   "event": {
+    "type": "xstate.async.reject",
+    "data": {
+     "message": "boom"
+    }
+   }
+  },
+  {
+   "advance": 3000
+  },
+  {
+   "resolve": 4,
+   "event": {
+    "type": "xstate.async.reject",
+    "data": {
+     "message": "boom"
+    }
+   }
+  }
+ ]
 }

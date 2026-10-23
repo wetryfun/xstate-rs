@@ -15,8 +15,9 @@
 //!   that sends typed events to the running child, and
 //!   `child_<id>_output(event)`, which reads the child's typed output from
 //!   its `xstate.done.actor` event;
-//! - a trait, `<MachineId>Impl`, with one method per guard, action, delay
-//!   and actor the definition needs from Rust;
+//! - a trait, `<MachineId>Impl`, with one method per guard, action, delay,
+//!   actor and expression (`{"@code": name, "@lang": "rust"}`) the
+//!   definition needs from Rust;
 //! - `registry(impl)` and `machine(impl)`, which wire an implementation of
 //!   the trait into the runtime.
 //!
@@ -25,7 +26,9 @@
 //! in `schemas.guards` / `schemas.actions`, and every static value the
 //! definition contains (params, the initial context, `@xstate.assign` and
 //! transition `context` patches, raised and emitted events, output) must fit
-//! its schema. Handled, raised and emitted event types must be declared.
+//! its schema; where a value holds expressions, its static properties are
+//! checked one by one. Handled, raised and emitted event types must be
+//! declared.
 //!
 //! Use it from `build.rs`:
 //!
@@ -162,6 +165,56 @@ fn builtin_actions<'a>(value: &'a Value, path: &str, out: &mut Vec<(String, &'a 
     }
 }
 
+/// Whether a value is an expression (`{"@code": ...}` or `{"@expr": ...}`).
+fn is_code(value: &Value) -> bool {
+    value.as_object().is_some_and(|o| o.contains_key("@code") || o.contains_key("@expr"))
+}
+
+/// Whether a value is or holds an expression.
+fn has_code(value: &Value) -> bool {
+    match value {
+        Value::Object(o) => is_code(value) || o.values().any(has_code),
+        Value::Array(items) => items.iter().any(has_code),
+        _ => false,
+    }
+}
+
+/// Checks the static part of a value: all of it without expressions,
+/// nothing of an expression, else each property of an object on its own
+/// (computed ones are known only at run time, so `required` is not checked).
+fn check_static(value: &Value, schema: &Value, root: &Value, path: &str) -> Result<(), Error> {
+    if !has_code(value) {
+        return validate(value, schema, root, path).map_err(|m| match m.split_once(": ") {
+            Some((p, m)) => Error::new(p, m),
+            None => Error::new(path, m),
+        });
+    }
+    if is_code(value) {
+        return Ok(());
+    }
+    check_properties(value, schema, root, path)
+}
+
+/// Checks each property of an object against its schema, if it has one.
+fn check_properties(value: &Value, schema: &Value, root: &Value, path: &str) -> Result<(), Error> {
+    let (Some(object), Some(props)) = (value.as_object(), schema.get("properties").and_then(Value::as_object)) else {
+        return Ok(());
+    };
+    if is_code(value) {
+        return Ok(());
+    }
+    for (k, v) in object {
+        match props.get(k) {
+            Some(s) => check_static(v, s, root, &format!("{path}.{k}"))?,
+            None if schema.get("additionalProperties") == Some(&Value::Bool(false)) => {
+                return Err(Error::new(&format!("{path}.{k}"), format!("unknown property `{k}`")))
+            }
+            None => {}
+        }
+    }
+    Ok(())
+}
+
 struct Checker<'a> {
     schemas: &'a Map<String, Value>,
     declared_events: Option<HashSet<&'a str>>,
@@ -202,7 +255,7 @@ impl Checker<'_> {
             })?;
             let params = r.params.clone().unwrap_or(Value::Null);
             match def.get("params") {
-                Some(schema) => Self::check(&params, schema, &format!("{}.params", r.path))?,
+                Some(schema) => check_static(&params, schema, schema, &format!("{}.params", r.path))?,
                 None if !params.is_null() => {
                     return Err(Error::new(
                         &format!("{}.params", r.path),
@@ -223,15 +276,21 @@ impl Checker<'_> {
     fn definition(&self, machine: &Map<String, Value>) -> Result<(), Error> {
         let context_schema = self.schemas.get("context");
         let initial = machine.get("context").cloned();
+        // A computed initial context: patches are checked property by property.
+        let initial_computed = initial.as_ref().is_some_and(has_code);
         match (&initial, context_schema) {
-            (Some(ctx), Some(schema)) => Self::check(ctx, schema, "$.context")?,
+            (Some(ctx), Some(schema)) => check_static(ctx, schema, schema, "$.context")?,
             (Some(_), None) => {
                 return Err(Error::new("schemas.context", "the machine has context but no context schema"))
             }
             _ => {}
         }
         let patch = |path: &str, patch: &Value, initial: &Option<Value>| -> Result<(), Error> {
-            let (Some(schema), Some(patch)) = (context_schema, patch.as_object()) else { return Ok(()) };
+            let (Some(schema), Some(patch_object)) = (context_schema, patch.as_object()) else { return Ok(()) };
+            if initial_computed || has_code(patch) {
+                return check_properties(patch, schema, schema, path);
+            }
+            let patch = patch_object;
             let mut merged = initial.clone().and_then(|v| v.as_object().cloned()).unwrap_or_default();
             for (k, v) in patch {
                 merged.insert(k.clone(), v.clone());
@@ -277,22 +336,30 @@ impl Checker<'_> {
                 continue;
             }
             let Some(event) = action.get("event").and_then(Value::as_object) else { continue };
-            let event_type = event.get("type").and_then(Value::as_str).unwrap_or_default();
+            // A computed event or event type is known only at run time.
+            let Some(event_type) = event.get("type").and_then(Value::as_str) else { continue };
             let epath = format!("{path}.event");
+            let payload = |event: &Map<String, Value>, schema: &Value| {
+                if has_code(&Value::Object(event.clone())) {
+                    check_properties(&Value::Object(event.clone()), schema, schema, &epath)
+                } else {
+                    Self::payload(event, schema, &epath)
+                }
+            };
             match ty {
                 "@xstate.raise" if !event_type.starts_with("xstate.") => {
                     if let Some(declared) = &self.declared_events {
                         if !declared.contains(event_type) {
                             return Err(Error::new(&epath, format!("raised event `{event_type}` is not declared in schemas.events or schemas.internalEvents")));
                         }
-                        Self::payload(event, self.event_schema(event_type).unwrap(), &epath)?;
+                        payload(event, self.event_schema(event_type).unwrap())?;
                     }
                 }
                 "@xstate.emit" => {
                     let schema = self.schemas.get("emitted").and_then(|e| e.get(event_type)).ok_or_else(|| {
                         Error::new(&epath, format!("emitted event `{event_type}` is not declared in schemas.emitted"))
                     })?;
-                    Self::payload(event, schema, &epath)?;
+                    payload(event, schema)?;
                 }
                 _ => {}
             }
@@ -300,12 +367,12 @@ impl Checker<'_> {
 
         if let Some(schema) = self.schemas.get("output") {
             if let Some(output) = machine.get("output") {
-                Self::check(output, schema, "$.output")?;
+                check_static(output, schema, schema, "$.output")?;
             } else {
                 for (k, child) in obj(machine.get("states")).into_iter().flatten() {
                     if child.get("type").and_then(Value::as_str) == Some("final") {
                         if let Some(output) = child.get("output") {
-                            Self::check(output, schema, &format!("$.states.{k}.output"))?;
+                            check_static(output, schema, schema, &format!("$.states.{k}.output"))?;
                         }
                     }
                 }
@@ -613,6 +680,35 @@ pub fn generate(bundle: &Value, module: &str) -> Result<Generated, Error> {
         wiring.push(format!("    r.actor({}, imp.{m}());\n", string_lit(&r.name)));
     }
 
+    for r in distinct(&refs.exprs) {
+        let m = method(format!("expr_{}", snake(&r.name)), &r.path)?;
+        methods.push(format!(
+            "    /// Expression `{}` (first used at `{}`): the value of each `{{\"@code\": {}, \"@lang\": \"rust\"}}`.\n    fn {m}(&self, args: &__rt::ExprArgs<'_, Context, Event>) -> __rt::serde_json::Value;\n",
+            r.name,
+            r.path,
+            string_lit(&r.name)
+        ));
+        wiring.push(format!("    let i = imp.clone();\n    r.expr({}, move |a| i.{m}(a));\n", string_lit(&r.name)));
+    }
+    for r in distinct(&refs.contexts) {
+        let m = method(format!("context_{}", snake(&r.name)), &r.path)?;
+        // The whole root context is typed; a part of it is JSON.
+        let (ty, wrap) = if r.path == "$.context" {
+            ("Context", "__rt::serde_json::to_value(i.{m}(input)).expect(\"the context serializes\")")
+        } else {
+            ("__rt::serde_json::Value", "i.{m}(input)")
+        };
+        methods.push(format!(
+            "    /// The root context expression `{}` (at `{}`), computed from the actor's input when it starts.\n    fn {m}(&self, input: Option<&__rt::serde_json::Value>) -> {ty};\n",
+            r.name, r.path
+        ));
+        wiring.push(format!(
+            "    let i = imp.clone();\n    r.context({}, move |input| {});\n",
+            string_lit(&r.name),
+            wrap.replace("{m}", &m)
+        ));
+    }
+
     let mut code = String::new();
     code.push_str(&format!("// @generated by xstate-codegen from `{module}`. Do not edit.\n\n"));
     code.push_str("#[allow(unused_imports)]\nuse ::xstate_rt::__codegen as __rt;\n\n");
@@ -630,7 +726,7 @@ pub fn generate(bundle: &Value, module: &str) -> Result<Generated, Error> {
         code.push('\n');
     }
     code.push_str(&format!(
-        "/// The guards, actions, delays and actors `{module}` needs from Rust.\npub trait {trait_name}: Send + Sync + 'static {{\n{}}}\n\n",
+        "/// The guards, actions, delays, actors and expressions `{module}` needs from Rust.\npub trait {trait_name}: Send + Sync + 'static {{\n{}}}\n\n",
         methods.join("\n")
     ));
     code.push_str(&format!(

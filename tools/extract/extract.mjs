@@ -123,19 +123,30 @@ function convertSchemas(schemas = {}) {
   return out;
 }
 
-function rejectCode(value, path) {
-  if (Array.isArray(value)) return value.forEach((v, i) => rejectCode(v, `${path}[${i}]`));
+// Code nodes run in Rust only in the `rust` language, where the source is
+// the name of a Rust expression (`{ "@code": "addLine", "@lang": "rust" }`).
+function rejectCode(value, path, lang) {
+  if (Array.isArray(value)) return value.forEach((v, i) => rejectCode(v, `${path}[${i}]`, lang));
   if (!value || typeof value !== 'object') return;
   for (const key of ['@code', '@expr']) {
-    if (key in value) fail(`${path}: ${key} is not portable to Rust; reference a named guard or action instead`);
+    if (!(key in value)) continue;
+    const valueLang = value['@lang'] ?? lang;
+    if (valueLang !== 'rust') {
+      fail(
+        `${path}: ${key}${valueLang ? ` in '${valueLang}'` : ''} is not portable to Rust; ` +
+          `use { "${key}": "<name>", "@lang": "rust" } with a Rust expression, or reference a named guard or action`
+      );
+    }
+    return;
   }
-  for (const [k, v] of Object.entries(value)) rejectCode(v, `${path}.${k}`);
+  for (const [k, v] of Object.entries(value)) rejectCode(v, `${path}.${k}`, lang);
 }
 
 // machineFromJSON with stubs for every source it reports missing.
 function checkWithXState(machine) {
   const stubLogic = createAsyncLogic({ run: async () => undefined });
-  const sources = { guards: {}, actions: {}, actors: {}, delays: {} };
+  // Rust expressions cannot run here: they evaluate to nothing.
+  const sources = { guards: {}, actions: {}, actors: {}, delays: {}, evaluators: { rust: () => undefined } };
   const stub = { guard: ['guards', () => false], action: ['actions', () => {}], actor: ['actors', stubLogic], delay: ['delays', 1] };
   for (let i = 0; i < 10_000; i++) {
     try {
@@ -155,7 +166,7 @@ async function extract(modulePath) {
   if (!mod.machine) fail('the module must export `machine` (a MachineJSON definition)');
   let machine = typeof mod.machine.getInitialSnapshot === 'function' ? machineToJSON(mod.machine) : mod.machine;
   machine = JSON.parse(JSON.stringify(machine));
-  rejectCode(machine, '$');
+  rejectCode(machine, '$', machine['@exprLang']);
   const schemas = convertSchemas(mod.schemas);
   const internal = Object.keys(schemas.internalEvents ?? {});
   if (internal.length && machine.internalEvents === undefined) machine.internalEvents = internal;

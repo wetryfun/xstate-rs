@@ -176,3 +176,38 @@ fn children_are_declared_by_invoke_id() {
     let (path, _) = error(bundle(m, json!({ "children": { "worker": { "input": {} } } })));
     assert_eq!(path, "schemas.children.worker.input");
 }
+
+#[test]
+fn computed_values_are_checked_where_static_and_become_trait_methods() {
+    let code = |name: &str| json!({ "@code": name, "@lang": "rust" });
+    let context = json!({
+        "type": "object",
+        "properties": { "count": { "type": "integer" }, "label": { "type": "string" } },
+        "required": ["count", "label"],
+        "additionalProperties": false
+    });
+    let machine = |patch: Value| {
+        json!({
+            "id": "m", "initial": "a", "context": code("start"),
+            "states": { "a": {
+                "entry": [{ "type": "@xstate.assign", "context": patch }, code("bump")],
+                "on": { "go": { "guard": code("ready"), "context": { "count": code("next") } } }
+            } }
+        })
+    };
+    let schemas = json!({ "context": context, "events": { "go": obj() } });
+    // A computed patch is checked property by property: the static `label`
+    // must be a string, the computed `count` is not checked.
+    let ok = generate(&bundle(machine(json!({ "count": code("next"), "label": "x" })), schemas.clone()), "m").unwrap();
+    assert!(ok
+        .code
+        .contains("fn expr_next(&self, args: &__rt::ExprArgs<'_, Context, Event>) -> __rt::serde_json::Value;"));
+    assert!(ok.code.contains("fn expr_ready("), "{}", ok.code);
+    assert!(ok.code.contains("fn expr_bump("));
+    // The whole root context is typed.
+    assert!(ok.code.contains("fn context_start(&self, input: Option<&__rt::serde_json::Value>) -> Context;"));
+    let (path, _) = error(bundle(machine(json!({ "count": code("next"), "label": 1 })), schemas.clone()));
+    assert_eq!(path, "$.states.a.entry[0].context.label");
+    let (path, _) = error(bundle(machine(json!({ "count": code("next"), "other": 1 })), schemas));
+    assert_eq!(path, "$.states.a.entry[0].context.other");
+}

@@ -44,6 +44,34 @@ pub fn register(r: &mut Registry<Value, Value>) {
             "summary",
             |a| json!({ "count": a.context.get("count").cloned(), "total": a.context.get("total").cloned() }),
         )
+        // examples/pattern-retry-policy (fixtures/system/ex_retry_policy*).
+        .expr("canRetry", |a| Value::Bool(num(a.context.get("attempts")) + 1.0 < 5.0))
+        .expr("contextName", |a| a.context.get("name").cloned().unwrap_or(Value::Null))
+        .expr("errorMessage", |a| {
+            let error = a.event.field("error").unwrap_or(Value::Null);
+            Value::String(match error.get("message") {
+                Some(Value::String(m)) => m.clone(),
+                other => other.map_or("undefined".into(), Value::to_string),
+            })
+        })
+        .expr("outputRecordId", |a| a.event.field("output").and_then(|o| o.get("recordId").cloned()).unwrap_or(Value::Null))
+        .expr("retryMessage", |a| {
+            let attempts = num(a.context.get("attempts"));
+            let error = match a.context.get("error") {
+                Some(Value::String(e)) => e.clone(),
+                other => other.map_or("undefined".into(), Value::to_string),
+            };
+            Value::String(format!(
+                "attempt {} failed ({error}); retrying in {}ms",
+                js(attempts),
+                js(100.0 * 2f64.powf(attempts))
+            ))
+        })
+        .expr("storedOutput", |a| json!({ "ok": true, "recordId": a.context.get("recordId") }))
+        .expr("gaveUpOutput", |a| json!({ "ok": false, "attempts": a.context.get("attempts") }))
+        .context("retryContext", |input| {
+            json!({ "name": input.and_then(|i| i.get("name")).cloned(), "attempts": 0, "recordId": null, "error": null })
+        })
         .context("contextFromInput", |input| {
             let start = input.and_then(|i| i.get("start")).cloned().unwrap_or(json!(0));
             json!({ "count": start, "total": 0, "attempts": 0, "items": [] })

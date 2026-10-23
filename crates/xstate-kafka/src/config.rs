@@ -449,7 +449,13 @@ impl FileConfig {
         };
         let refs = Machine::<Value, Value>::references(&definition).map_err(|e| at(e.to_string()))?;
         let mut needed: Vec<String> = Vec::new();
-        for (kind, list) in [("guard", &refs.guards), ("action", &refs.actions), ("delay", &refs.delays)] {
+        for (kind, list) in [
+            ("guard", &refs.guards),
+            ("action", &refs.actions),
+            ("delay", &refs.delays),
+            ("expression", &refs.exprs),
+            ("context expression", &refs.contexts),
+        ] {
             for r in list {
                 needed.push(format!("{kind} \"{}\" at {}", r.name, r.path));
             }

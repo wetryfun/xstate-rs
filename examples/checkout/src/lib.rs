@@ -6,7 +6,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use xstate_rt::step::async_logic;
-use xstate_rt::{Ev, GuardArgs, Logic};
+use xstate_rt::{Ev, ExprArgs, GuardArgs, Logic};
 
 pub mod checkout {
     xstate_rt::include_machine!("checkout");
@@ -17,7 +17,8 @@ pub mod types {
     xstate_rt::include_machine!("types");
 }
 
-use checkout::{CheckoutImpl, Context, Event, NotifyParams, WithinLimitParams};
+use checkout::{CheckoutImpl, Context, ContextLinesItem, Event, NotifyParams, WithinLimitParams};
+use xstate_rt::__codegen::serde_json;
 
 /// The shop's side of the checkout: notifications, auditing and payment.
 pub struct Shop {
@@ -47,6 +48,15 @@ impl CheckoutImpl for Shop {
 
     fn action_audit(&self) {
         self.audited.fetch_add(1, Ordering::Relaxed);
+    }
+
+    fn expr_add_line(&self, args: &ExprArgs<'_, Context, Event>) -> serde_json::Value {
+        // The cart's lines with the added one (the transition's `context.lines`).
+        let mut lines = args.context.lines.clone();
+        if let Ev::User(Event::CartAdd { line }) = args.event {
+            lines.push(ContextLinesItem { sku: line.sku.clone(), quantity: line.quantity });
+        }
+        serde_json::to_value(lines).expect("lines serialize")
     }
 
     fn delay_backoff(&self, _context: &Context, _event: &Ev<Event>) -> u64 {

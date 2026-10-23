@@ -10,6 +10,12 @@
       "cart": {
         "on": {
           "cart.add": {
+            "context": {
+              "lines": {
+                "@code": "addLine",
+                "@lang": "rust"
+              }
+            },
             "actions": [
               {
                 "type": "audit"

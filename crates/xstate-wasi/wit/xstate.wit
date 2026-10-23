@@ -13,6 +13,18 @@ interface implementations {
 
   /// A named delay in milliseconds, computed when the timer is scheduled.
   delay: func(name: string, context: string, event: string) -> u64;
+
+  /// An expression (`{ "@code": name, "@lang": "rust" }`, XState's code node
+  /// in the `rust` language) wherever XState evaluates one: a context value
+  /// or patch, an event, params, a guard, a delay, an input or output, or an
+  /// action (`{ "context": patch }` is merged). `scope` is
+  /// `{ "context", "event", "params"? }`; the result is JSON (`null` if it
+  /// does not parse).
+  expr: func(name: string, scope: string) -> string;
+
+  /// An expression in the root `context`, computed from the actor's input
+  /// (absent without one) when it starts. The result is JSON.
+  context-expr: func(name: string, input: option<string>) -> string;
 }
 
 /// Machines as actors. The runtime never reads a clock: every call that can

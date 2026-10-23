@@ -2,7 +2,8 @@
 //! definitions with `xstate-rt`. See `wit/xstate.wit` for the interface.
 //!
 //! The component is generic: it loads any `MachineJSON` at run time. Custom
-//! guards, actions and named delays are imports the host implements; child
+//! guards, actions, named delays and expressions are imports the host
+//! implements; child
 //! machines for `invoke` come with the start options, and any other invoke
 //! source is async work the host completes through `resolve-effect`.
 //!
@@ -117,6 +118,23 @@ fn compile(definition: &Value, children: &Map<String, Value>, depth: usize) -> R
                 host::delay(&name, &context.to_string(), &event.to_json().to_string())
             });
         }
+    }
+    for r in &refs.exprs {
+        let name = r.name.clone();
+        registry.expr(r.name.clone(), move |args| {
+            let mut scope = json!({ "context": args.context, "event": args.event.to_json() });
+            if let Some(params) = args.params {
+                scope["params"] = params.clone();
+            }
+            serde_json::from_str(&host::expr(&name, &scope.to_string())).unwrap_or(Value::Null)
+        });
+    }
+    for r in &refs.contexts {
+        let name = r.name.clone();
+        registry.context(r.name.clone(), move |input| {
+            let input = input.map(Value::to_string);
+            serde_json::from_str(&host::context_expr(&name, input.as_deref())).unwrap_or(Value::Null)
+        });
     }
     for r in &refs.actors {
         if seen.insert(("actor", r.name.clone())) {
