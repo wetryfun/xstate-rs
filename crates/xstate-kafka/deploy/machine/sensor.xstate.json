@@ -1,0 +1,180 @@
+{
+  "machine": {
+    "id": "sensor",
+    "initial": "ok",
+    "states": {
+      "ok": {
+        "after": {
+          "30s": {
+            "target": "offline",
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "device.offline"
+                }
+              }
+            ]
+          }
+        },
+        "on": {
+          "reading.normal": {
+            "target": "ok",
+            "reenter": true
+          },
+          "reading.high": {
+            "target": "alarm",
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "alarm.raised"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "alarm": {
+        "after": {
+          "30s": {
+            "target": "offline",
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "device.offline"
+                }
+              }
+            ]
+          }
+        },
+        "on": {
+          "reading.high": {
+            "target": "alarm",
+            "reenter": true
+          },
+          "reading.normal": {
+            "target": "ok",
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "alarm.cleared"
+                }
+              }
+            ]
+          }
+        }
+      },
+      "offline": {
+        "on": {
+          "reading.normal": {
+            "target": "ok",
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "device.online"
+                }
+              }
+            ]
+          },
+          "reading.high": {
+            "target": "alarm",
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "device.online"
+                }
+              },
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "alarm.raised"
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "schemas": {
+    "events": {
+      "reading.normal": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number",
+            "description": "The measured value."
+          },
+          "seq": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Per-device event number (deduplication)."
+          },
+          "boot": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Raised whenever seq restarts (deduplication epoch)."
+          }
+        },
+        "required": [
+          "seq"
+        ],
+        "additionalProperties": false
+      },
+      "reading.high": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number",
+            "description": "The measured value."
+          },
+          "seq": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Per-device event number (deduplication)."
+          },
+          "boot": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "Raised whenever seq restarts (deduplication epoch)."
+          }
+        },
+        "required": [
+          "seq"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "emitted": {
+      "alarm.raised": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "alarm.cleared": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "device.offline": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "device.online": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      }
+    }
+  }
+}

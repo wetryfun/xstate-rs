@@ -1,0 +1,21 @@
+{
+  "machine": "machine/sensor.xstate.json",
+  "bootstrapServers": "redpanda:9092",
+  "groupId": "sensors",
+  "topics": {
+    "input": "sensor-events",
+    "output": "sensor-out",
+    "changelog": "sensor-changelog",
+    "deadLetter": "sensor-dead"
+  },
+  "workers": 2,
+  "transactionalId": "sensors",
+  "dedupe": {
+    "sequence": "seq",
+    "epoch": "boot"
+  },
+  "stateDir": "/var/lib/xstate",
+  "checkpointIntervalMs": 30000,
+  "metricsAddress": "0.0.0.0:9464",
+  "logIntervalMs": 30000
+}

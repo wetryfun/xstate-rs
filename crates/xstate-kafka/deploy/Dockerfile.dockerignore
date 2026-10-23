@@ -1,0 +1,5 @@
+# Used by BuildKit for Dockerfile (context: the repository root).
+.git
+target
+**/node_modules
+tools/xstate-suite/.xstate

@@ -1,0 +1,97 @@
+# A local stack: MQTT devices -> Mosquitto -> Redpanda Connect -> Redpanda
+# -> xstate-kafka. See README.md in this directory.
+name: xstate-sensors
+
+services:
+  redpanda:
+    image: redpandadata/redpanda:v26.2.6
+    command:
+      - redpanda
+      - start
+      - --mode=dev-container
+      - --smp=1
+      - --memory=1G
+      - --kafka-addr=internal://0.0.0.0:9092,external://0.0.0.0:19092
+      - --advertise-kafka-addr=internal://redpanda:9092,external://localhost:19092
+      - --rpc-addr=redpanda:33145
+      - --advertise-rpc-addr=redpanda:33145
+    ports:
+      - "19092:19092" # Kafka API for clients on the host
+      - "9644:9644" # admin API
+    volumes:
+      - redpanda:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -E 'Healthy:.+true' || exit 1"]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+
+  # Creates the topics once, all with the same partition count (the
+  # changelog must be partitioned like the input), then exits.
+  topics:
+    image: redpandadata/redpanda:v26.2.6
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        set -e
+        rpk() { command rpk "$$@" -X brokers=redpanda:9092; }
+        for t in sensor-events sensor-out sensor-dead; do
+          rpk topic create "$$t" -p 6 -r 1 || rpk topic describe "$$t" > /dev/null
+        done
+        rpk topic create sensor-changelog -p 6 -r 1 -c cleanup.policy=compact \
+          || rpk topic describe sensor-changelog > /dev/null
+    restart: "no"
+
+  mosquitto:
+    image: eclipse-mosquitto:2.0.22
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+
+  connect:
+    image: redpandadata/connect:4.115.0
+    command: ["run", "/connect.yaml"]
+    depends_on:
+      topics:
+        condition: service_completed_successfully
+      mosquitto:
+        condition: service_started
+    environment:
+      MQTT_URL: tcp://mosquitto:1883
+      MQTT_CLIENT_ID: xstate-bridge
+      KAFKA_BROKERS: redpanda:9092
+      INPUT_TOPIC: sensor-events
+      # What the devices publish: application/json, application/x-protobuf
+      # (the Event message of `xstate-kafka proto events`) or
+      # application/msgpack.
+      CONTENT_TYPE: ${CONTENT_TYPE:-application/json}
+    volumes:
+      - ../connect/mqtt.yaml:/connect.yaml:ro
+    ports:
+      - "4195:4195" # /ready and /metrics of the bridge
+
+  xstate:
+    build:
+      context: ../../..
+      dockerfile: crates/xstate-kafka/deploy/Dockerfile
+    image: xstate-kafka:dev
+    depends_on:
+      topics:
+        condition: service_completed_successfully
+    environment:
+      XSTATE_KAFKA_DEBUG: ${XSTATE_KAFKA_DEBUG:-0}
+    volumes:
+      - ./service.json:/etc/xstate/service.json:ro
+      - ./machine:/etc/xstate/machine:ro
+      - xstate:/var/lib/xstate
+    ports:
+      - "9464:9464" # Prometheus metrics
+    stop_grace_period: 30s
+
+volumes:
+  redpanda:
+  xstate:
