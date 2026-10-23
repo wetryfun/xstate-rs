@@ -89,7 +89,7 @@ pub(crate) struct TransitionData {
     pub session: Option<String>,
     /// For completion transitions of an invoke with a `timeout`: the timer
     /// key the transition cancels after its own operations.
-    pub cancel_timeout: Option<Value>,
+    pub cancel_timeout: Option<crate::system::TimerKey>,
 }
 
 impl TransitionData {
