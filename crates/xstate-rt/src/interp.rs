@@ -340,17 +340,12 @@ enum Op<E> {
         id: Option<String>,
         delay: u64,
         /// For a delayed `sendTo`: its target.
-        target: Option<ActorRef>,
+        target: Option<Box<ActorRef>>,
     },
     SendTo(ActorRef, Value),
     /// `enq.spawn`, applied (and, unless `committed`, allocated) in order.
-    SpawnChild {
-        src: String,
-        id: String,
-        committed: bool,
-        explicit: bool,
-        options: SpawnOptions,
-    },
+    /// Boxed, like the target above: rare, and large inline.
+    SpawnChild(Box<SpawnOp>),
     /// An event whose target is missing (`@xstate.deadLetter`).
     DeadLetter(Value),
     Cancel(TimerKey),
@@ -378,7 +373,8 @@ struct Outcome<E> {
     ops: Vec<Op<E>>,
     internal: Vec<Ev<E>>,
     /// A transition's `input` for the states it enters (when truthy).
-    input: Option<Value>,
+    /// Boxed: rare, and a `Value` is large inline.
+    input: Option<Box<Value>>,
 }
 
 impl<E> Outcome<E> {
@@ -466,6 +462,15 @@ impl<E> Default for SavedParts<E> {
     fn default() -> Self {
         Self { history: None, children: None, timers: None }
     }
+}
+
+/// An `enq.spawn` waiting to be applied.
+struct SpawnOp {
+    src: String,
+    id: String,
+    committed: bool,
+    explicit: bool,
+    options: SpawnOptions,
 }
 
 /// XState's spawn allocation for one macrostep: generated-id counters by
@@ -1217,7 +1222,7 @@ where
         let input = match &tr.input {
             Some(input) => {
                 let _scope = self.scoped(None);
-                Some(self.eval(input, &self.st.context, None)).filter(js_truthy)
+                Some(self.eval(input, &self.st.context, None)).filter(js_truthy).map(Box::new)
             }
             None => None,
         };
@@ -1328,7 +1333,7 @@ where
                                 event_type: Cow::Owned(String::new()),
                                 data: event.as_object().cloned().unwrap_or_default(),
                             });
-                            out.ops.push(Op::Raise { event, id, delay, target: Some(target) });
+                            out.ops.push(Op::Raise { event, id, delay, target: Some(Box::new(target)) });
                         }
                     }
                 }
@@ -1338,7 +1343,7 @@ where
                     }
                 }
                 EnqOp::Spawn { src, id, committed, explicit, options } => {
-                    out.ops.push(Op::SpawnChild { src, id, committed, explicit, options })
+                    out.ops.push(Op::SpawnChild(Box::new(SpawnOp { src, id, committed, explicit, options })))
                 }
                 EnqOp::Fail(message) => return Err(SystemError::Failed(message)),
             }
@@ -1441,7 +1446,7 @@ where
         if let Some(key) = &tr.cancel_timeout {
             outcome.ops.push(Op::Cancel(key.clone()));
         }
-        outcome.input = result.get("input").filter(|i| js_truthy(i)).cloned();
+        outcome.input = result.get("input").filter(|i| js_truthy(i)).cloned().map(Box::new);
         let reenter = result.get("reenter").is_some_and(js_truthy);
         Ok(Some(Selected { targets, reenter, outcome: Some(outcome) }))
     }
@@ -1459,8 +1464,7 @@ where
                     } else {
                         None
                     };
-                    let timer =
-                        LogicalTimer { id, seq, delay, event: TimerEv::new(event), target: target.map(Box::new) };
+                    let timer = LogicalTimer { id, seq, delay, event: TimerEv::new(event), target };
                     let key = timer.key();
                     let timers = self.timers_mut();
                     match timers.iter_mut().find(|t| t.matches(&key)) {
@@ -1546,7 +1550,8 @@ where
                     self.cloned = true;
                     self.effects.push(Effect::Stop(r));
                 }
-                Op::SpawnChild { src, id, committed, explicit, options } => {
+                Op::SpawnChild(spawn) => {
+                    let SpawnOp { src, id, committed, explicit, options } = *spawn;
                     // A predicted id is allocated now, as XState replays the
                     // transition's spawn into a creating `enq`.
                     let id = if committed {
@@ -1877,7 +1882,11 @@ where
         }
         // XState evaluates transition functions (and `machineFromJSON`'s
         // functions for transitions with `context` or `actions`) here and
-        // reuses the result when the transition is taken.
+        // reuses the result when the transition is taken. (The others give
+        // the same results whenever they are computed.)
+        if !tr.selects {
+            return Ok(true);
+        }
         // Spawns in transitions evaluated here only predict their ids.
         self.selecting.set(true);
         let selected = self.select(t);
@@ -1983,7 +1992,7 @@ where
             ops.extend(outcome.ops);
             internal.extend(outcome.internal);
             if let Some(input) = outcome.input {
-                self.pending_inputs.push((t, input));
+                self.pending_inputs.push((t, *input));
             }
         }
         self.queue.extend(internal);

@@ -134,6 +134,8 @@ pub(crate) struct TransitionData {
     pub function: Option<TransitionFn>,
     /// The `input` the transition gives the states it enters.
     pub input: Option<Template>,
+    /// [`TransitionData::evaluates`], computed once after loading.
+    pub selects: bool,
 }
 
 /// A transition computed when it is selected, as XState's `to` functions

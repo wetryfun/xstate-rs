@@ -370,6 +370,9 @@ where
             history_target: n.history_target.into(),
         });
     }
+    for t in &mut loader.transitions {
+        t.selects = t.evaluates();
+    }
     let tree_transitions =
         loader.transition_sources.iter().map(|&source| TreeTransition { source, domain: DomainHint::None }).collect();
 
@@ -1137,6 +1140,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                 cancel_timeout: Some(timeout_key.clone()),
                 function: None,
                 input: None,
+                selects: false,
             });
             this.transition_sources.push(node);
             this.transitions.len() as TransitionId - 1
@@ -1327,6 +1331,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             cancel_timeout: None,
             function: None,
             input,
+            selects: false,
         });
         self.transition_sources.push(source);
         Ok(id)
@@ -1406,6 +1411,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             cancel_timeout: None,
             function: Some(function),
             input: None,
+            selects: false,
         });
         self.transition_sources.push(source);
         self.transitions.len() as TransitionId - 1
