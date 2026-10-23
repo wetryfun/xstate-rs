@@ -896,7 +896,8 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             None => format!("{}:{index}", self.nodes[node as usize].id),
         };
         let registry_key = opt_str(obj, "registryKey", path)?.map(str::to_owned);
-        let timeout_key = json!({ "event": { "type": "xstate.timeout.actor", "actorId": id } });
+        let timeout_key =
+            crate::system::TimerKey::Event(Box::new(json!({ "type": "xstate.timeout.actor", "actorId": id })));
         let timeout = match (obj.get("timeout"), obj.get("onTimeout")) {
             (None, None) => None,
             (Some(timeout), Some(_)) => {

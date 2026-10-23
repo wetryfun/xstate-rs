@@ -213,25 +213,37 @@ fn deep_history_restores_atomic_descendants() {
 
 #[test]
 fn runaway_eventless_loop_is_an_error() {
-    let m = Arc::new(
-        Machine::<Value, Value>::from_json_with_options(
-            &json!({
-                "initial": "a",
-                "states": {
-                    "a": { "on": { "go": { "target": "b" } } },
-                    "b": { "always": { "target": "c" } },
-                    "c": { "always": { "target": "b" } }
-                }
-            }),
-            &Registry::new(),
-            MachineOptions { max_iterations: 50 },
-        )
-        .unwrap(),
-    );
-    let mut a = Actor::start(m, 0).unwrap();
-    let err = a.send(json!({ "type": "go" }), 0).unwrap_err();
-    assert!(matches!(err, SystemError::InfiniteLoop { max_iterations: 50, .. }), "{err}");
-    assert_eq!(a.status(), Status::Error);
+    // The error reports the last five configurations (fewer when the bound
+    // is lower), oldest first.
+    for (max, expected) in
+        [(50, json!(["c", "b", "c", "b", "c"])), (51, json!(["b", "c", "b", "c", "b"])), (3, json!(["b", "c", "b"]))]
+    {
+        let m = Arc::new(
+            Machine::<Value, Value>::from_json_with_options(
+                &json!({
+                    "initial": "a",
+                    "states": {
+                        "a": { "on": { "go": { "target": "b" } } },
+                        "b": { "always": { "target": "c" } },
+                        "c": { "always": { "target": "b" } }
+                    }
+                }),
+                &Registry::new(),
+                MachineOptions { max_iterations: max },
+            )
+            .unwrap(),
+        );
+        let mut a = Actor::start(m, 0).unwrap();
+        let err = a.send(json!({ "type": "go" }), 0).unwrap_err();
+        match &err {
+            SystemError::InfiniteLoop { max_iterations, states, .. } => {
+                assert_eq!(*max_iterations, max);
+                assert_eq!(Value::Array(states.clone()), expected, "max {max}");
+            }
+            other => panic!("{other}"),
+        }
+        assert_eq!(a.status(), Status::Error);
+    }
 }
 
 #[test]

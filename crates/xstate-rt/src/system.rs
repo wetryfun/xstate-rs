@@ -170,9 +170,9 @@ pub enum Effect {
     /// Stop a child.
     Stop(ActorRef),
     /// Cancel the logical timer with this key (`{id}`, `{seq}` or `{event}`).
-    Cancel(Value),
+    Cancel(TimerKey),
     /// Schedule the logical timer with this key.
-    DelayedRaise { key: Value, delay: u64 },
+    DelayedRaise { key: TimerKey, delay: u64 },
     /// Deliver an event to another actor.
     SendTo { target: ActorRef, event: Value },
     /// The actor reached `done` or `error`: notify its parent.
@@ -194,7 +194,7 @@ pub trait AnySnapshot: Send + 'static {
     fn error(&self) -> Option<Value>;
     /// Whether a logical timer with this key (`{id}`, `{seq}` or `{event}`)
     /// is pending in the snapshot.
-    fn timer_pending(&self, _key: &Value) -> bool {
+    fn timer_pending(&self, _key: &TimerKey) -> bool {
         false
     }
     fn as_any(&self) -> &dyn Any;
@@ -234,6 +234,17 @@ pub trait Logic: Send + Sync + 'static {
         event: Value,
         cx: &mut dyn Context,
     ) -> Result<Vec<Effect>, SystemError>;
+    /// [`Logic::transition`] for a fired machine timer, `{ type:
+    /// "xstate.timer", ...key }`; logic that keeps timers can take the key
+    /// without the event.
+    fn timer_transition(
+        &self,
+        snapshot: &mut Box<dyn AnySnapshot>,
+        key: TimerKey,
+        cx: &mut dyn Context,
+    ) -> Result<Vec<Effect>, SystemError> {
+        self.transition(snapshot, TimerEvent::Key(key).to_value(), cx)
+    }
     /// Rebuilds a snapshot from its data.
     fn restore(&self, data: &Value) -> Result<Box<dyn AnySnapshot>, SystemError>;
     /// Event types only the actor itself may send.
@@ -291,9 +302,35 @@ pub fn encode_address_segment(id: &str) -> String {
 pub struct Message {
     pub source: Option<ActorRef>,
     pub target: ActorRef,
-    pub event: Value,
+    pub event: QueuedEvent,
     pub sequence: u64,
     pub timer_occurrence: Option<u64>,
+}
+
+/// A queued message's event. A fired machine timer stays its key until the
+/// machine receives it ([`Logic::timer_transition`]).
+#[derive(Debug, Clone, PartialEq)]
+pub enum QueuedEvent {
+    Value(Value),
+    /// `{ type: "xstate.timer", ...key }`.
+    Timer(TimerKey),
+}
+
+impl QueuedEvent {
+    pub fn event_type(&self) -> &str {
+        match self {
+            Self::Value(v) => v.get("type").and_then(Value::as_str).unwrap_or(""),
+            Self::Timer(_) => TIMER,
+        }
+    }
+
+    /// The event as JSON.
+    pub fn to_value(&self) -> Value {
+        match self {
+            Self::Value(v) => v.clone(),
+            Self::Timer(key) => TimerEvent::Key(key.clone()).to_value(),
+        }
+    }
 }
 
 /// A pending deadline in virtual time.
@@ -307,107 +344,116 @@ pub struct SystemTimer {
     pub event: TimerEvent,
 }
 
-/// A system timer's event. A machine's timers (`{ type: "xstate.timer",
-/// ...key }`) keep their key in typed form for the common shapes and build
-/// the event only when it is delivered or persisted: a JSON object costs
-/// several allocations, and an idle actor typically has an `after` timer.
+/// An `xstate.after` event's `delay`: the number of milliseconds of a
+/// numeric `after` key, or the key itself (a named delay or a duration
+/// string). Compares and serializes as the JSON value would.
 #[derive(Debug, Clone, PartialEq)]
-pub enum TimerEvent {
-    /// `{ type: "xstate.timer", id }`.
-    Id(String),
-    /// `{ type: "xstate.timer", seq }`.
-    Seq(serde_json::Number),
-    /// `{ type: "xstate.timer", event: { type: "xstate.after", delay, stateId } }`.
-    After { delay: Value, state_id: String },
-    /// `{ type: "xstate.timer", event: { type: "xstate.timeout.state", stateId } }`.
-    StateTimeout { state_id: String },
-    /// Any other event, as it is.
-    Other(Value),
+pub enum AfterDelay {
+    Number(serde_json::Number),
+    Name(String),
 }
 
-const TIMER: &str = "xstate.timer";
-
-impl TimerEvent {
-    /// `{ type: "xstate.timer", ...key }` for a machine timer `key`.
-    fn for_key(key: Value) -> Self {
-        Self::typed(&key).unwrap_or_else(|| Self::Other(timer_event(&key)))
-    }
-
-    /// Reads a persisted event (any event, kept as it is unless it has one
-    /// of the typed shapes exactly).
-    pub fn from_value(event: Value) -> Self {
-        if let Value::Object(m) = &event {
-            let mut entries = m.iter();
-            if entries.next().is_some_and(|(k, v)| k == "type" && v.as_str() == Some(TIMER)) {
-                let key: Map<String, Value> = entries.map(|(k, v)| (k.clone(), v.clone())).collect();
-                if let Some(typed) = Self::typed(&Value::Object(key)) {
-                    return typed;
-                }
-            }
-        }
-        Self::Other(event)
-    }
-
-    fn typed(key: &Value) -> Option<Self> {
-        let key = key.as_object()?;
-        let only =
-            |m: &Map<String, Value>, names: &[&str]| m.len() == names.len() && m.keys().zip(names).all(|(k, n)| k == n);
-        if only(key, &["id"]) {
-            return key["id"].as_str().map(|id| Self::Id(id.to_owned()));
-        }
-        if only(key, &["seq"]) {
-            return key["seq"].as_number().map(|n| Self::Seq(n.clone()));
-        }
-        if !only(key, &["event"]) {
-            return None;
-        }
-        let event = key["event"].as_object()?;
-        match event.get("type")?.as_str()? {
-            "xstate.after" if only(event, &["type", "delay", "stateId"]) => {
-                Some(Self::After { delay: event["delay"].clone(), state_id: event["stateId"].as_str()?.to_owned() })
-            }
-            "xstate.timeout.state" if only(event, &["type", "stateId"]) => {
-                Some(Self::StateTimeout { state_id: event["stateId"].as_str()?.to_owned() })
-            }
+impl AfterDelay {
+    /// The delay of a JSON value, if it is a number or a string.
+    pub fn from_value(v: Value) -> Option<Self> {
+        match v {
+            Value::Number(n) => Some(Self::Number(n)),
+            Value::String(s) => Some(Self::Name(s)),
             _ => None,
         }
     }
 
-    /// The event as JSON.
     pub fn to_value(&self) -> Value {
         match self {
-            Self::Other(v) => v.clone(),
-            _ => serde_json::to_value(self).expect("timer events serialize"),
+            Self::Number(n) => Value::Number(n.clone()),
+            Self::Name(s) => Value::String(s.clone()),
         }
     }
 
-    /// The machine timer key (`{ id } | { seq } | { event }`) of an
-    /// `xstate.timer` event (XState's `readTimerKey`).
-    fn machine_key(&self) -> Option<Value> {
+    /// Whether `v` is this delay as JSON.
+    pub fn is(&self, v: &Value) -> bool {
+        match (self, v) {
+            (Self::Number(a), Value::Number(b)) => a == b,
+            (Self::Name(a), Value::String(b)) => a == b,
+            _ => false,
+        }
+    }
+
+    fn push(&self, out: &mut String) {
         match self {
-            Self::Id(id) => Some(json!({ "id": id })),
-            Self::Seq(n) => Some(json!({ "seq": n })),
-            Self::After { delay, state_id } => {
-                Some(json!({ "event": { "type": "xstate.after", "delay": delay, "stateId": state_id } }))
+            Self::Number(n) => {
+                use std::fmt::Write;
+                let _ = write!(out, "{n}");
             }
-            Self::StateTimeout { state_id } => {
-                Some(json!({ "event": { "type": "xstate.timeout.state", "stateId": state_id } }))
-            }
-            Self::Other(v) if v.get("type").and_then(Value::as_str) == Some(TIMER) => read_timer_key(v),
-            Self::Other(_) => None,
+            Self::Name(s) => push_json_str(out, s),
         }
     }
+}
 
-    fn is_machine_timer(&self) -> bool {
+impl Serialize for AfterDelay {
+    fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         match self {
-            Self::Other(v) => v.get("type").and_then(Value::as_str) == Some(TIMER),
-            _ => true,
+            Self::Number(n) => n.serialize(s),
+            Self::Name(name) => name.serialize(s),
+        }
+    }
+}
+
+/// A machine's logical timer key (XState's `getTimerKey`: `{ id }`, `{ seq }`
+/// or `{ event }` holding a lifecycle event's identity or another event),
+/// typed so that scheduling, cancelling and matching timers build no JSON.
+#[derive(Debug, Clone, PartialEq)]
+pub enum TimerKey {
+    /// `{ id }`.
+    Id(String),
+    /// `{ seq }`.
+    Seq(u64),
+    /// `{ event: { type: "xstate.after", delay, stateId } }`.
+    After { delay: AfterDelay, state_id: String },
+    /// `{ event: { type: "xstate.timeout.state", stateId } }`.
+    StateTimeout { state_id: String },
+    /// `{ event }`: any other object with a string `type` (boxed: rare).
+    Event(Box<Value>),
+}
+
+impl TimerKey {
+    /// XState's `readTimerKey` of an `xstate.timer` event. A `seq` that is
+    /// not a whole number matches no timer, so it reads as no key.
+    pub fn of_timer_event(event: &Value) -> Option<Self> {
+        if let Some(id) = event.get("id").and_then(Value::as_str) {
+            return Some(Self::Id(id.to_owned()));
+        }
+        if let Some(seq) = event.get("seq").filter(|v| v.is_number()) {
+            return seq.as_u64().map(Self::Seq);
+        }
+        match event.get("event") {
+            Some(e @ Value::Object(o)) if o.get("type").is_some_and(Value::is_string) => Some(Self::of_event(e)),
+            _ => None,
         }
     }
 
-    /// Appends the part of the system timer key the event decides (see
-    /// [`system_timer_key`]).
-    fn push_key(&self, out: &mut String) {
+    /// `{ event }`, typed when it is exactly a lifecycle identity (in any
+    /// key order: a key's event is a pattern).
+    fn of_event(event: &Value) -> Self {
+        let has = |names: &[&str]| {
+            event.as_object().is_some_and(|o| o.len() == names.len() && names.iter().all(|n| o.contains_key(*n)))
+        };
+        let state_id = event.get("stateId").and_then(Value::as_str);
+        let delay = || event.get("delay").cloned().and_then(AfterDelay::from_value);
+        match (event.get("type").and_then(Value::as_str), state_id) {
+            (Some("xstate.after"), Some(id)) if has(&["type", "delay", "stateId"]) && delay().is_some() => {
+                Self::After { delay: delay().expect("checked"), state_id: id.to_owned() }
+            }
+            (Some("xstate.timeout.state"), Some(id)) if has(&["type", "stateId"]) => {
+                Self::StateTimeout { state_id: id.to_owned() }
+            }
+            _ => Self::Event(Box::new(event.clone())),
+        }
+    }
+
+    /// XState's `serializeTimerKey`, appended to `out`: equal keys give
+    /// equal text and different keys different text (every part is JSON).
+    fn push(&self, out: &mut String) {
         match self {
             Self::Id(id) => {
                 out.push_str("id,");
@@ -415,11 +461,11 @@ impl TimerEvent {
             }
             Self::Seq(n) => {
                 out.push_str("seq,");
-                out.push_str(&n.to_string());
+                out.push_str(itoa(*n, &mut [0; 20]));
             }
             Self::After { delay, state_id } => {
                 out.push_str("event,{\"type\":\"xstate.after\",\"delay\":");
-                push_json(out, delay);
+                delay.push(out);
                 out.push_str(",\"stateId\":");
                 push_json_str(out, state_id);
                 out.push('}');
@@ -429,11 +475,111 @@ impl TimerEvent {
                 push_json_str(out, state_id);
                 out.push('}');
             }
+            Self::Event(event) => {
+                out.push_str("event,");
+                push_event_identity(out, event);
+            }
+        }
+    }
+}
+
+/// A system timer's event. A machine's timers (`{ type: "xstate.timer",
+/// ...key }`) keep only their key and build the event when it is delivered
+/// or persisted: a JSON object costs several allocations, and an idle actor
+/// typically has an `after` timer.
+#[derive(Debug, Clone, PartialEq)]
+pub enum TimerEvent {
+    /// `{ type: "xstate.timer", ...key }`.
+    Key(TimerKey),
+    /// Any other event, as it is (boxed: rare).
+    Other(Box<Value>),
+}
+
+const TIMER: &str = "xstate.timer";
+
+impl TimerEvent {
+    /// Reads a persisted event, typed only when [`TimerEvent::to_value`]
+    /// writes it back exactly as it is.
+    pub fn from_value(event: Value) -> Self {
+        match Self::typed(&event) {
+            Some(key) => Self::Key(key),
+            None => Self::Other(Box::new(event)),
+        }
+    }
+
+    fn typed(event: &Value) -> Option<TimerKey> {
+        let m = event.as_object()?;
+        if m.len() != 2 {
+            return None;
+        }
+        let mut entries = m.iter();
+        let (k, v) = entries.next()?;
+        if k != "type" || v.as_str() != Some(TIMER) {
+            return None;
+        }
+        let (k, v) = entries.next()?;
+        let in_order =
+            |o: &Map<String, Value>, names: &[&str]| o.len() == names.len() && o.keys().zip(names).all(|(k, n)| k == n);
+        match k.as_str() {
+            "id" => v.as_str().map(|id| TimerKey::Id(id.to_owned())),
+            "seq" => v.as_u64().filter(|_| v.is_u64()).map(TimerKey::Seq),
+            "event" => {
+                let o = v.as_object()?;
+                o.get("type")?.as_str()?;
+                match TimerKey::of_event(v) {
+                    // Typed identities write their fields in this order;
+                    // others stay as they are.
+                    TimerKey::After { .. } if !in_order(o, &["type", "delay", "stateId"]) => None,
+                    TimerKey::StateTimeout { .. } if !in_order(o, &["type", "stateId"]) => None,
+                    key => Some(key),
+                }
+            }
+            _ => None,
+        }
+    }
+
+    /// The event as JSON.
+    pub fn to_value(&self) -> Value {
+        match self {
+            Self::Other(v) => (**v).clone(),
+            Self::Key(_) => serde_json::to_value(self).expect("timer events serialize"),
+        }
+    }
+
+    /// The machine timer key of an `xstate.timer` event.
+    fn machine_key(&self) -> Option<TimerKey> {
+        match self {
+            Self::Key(key) => Some(key.clone()),
+            Self::Other(v) if v.get("type").and_then(Value::as_str) == Some(TIMER) => TimerKey::of_timer_event(v),
+            Self::Other(_) => None,
+        }
+    }
+
+    fn is_machine_timer(&self) -> bool {
+        match self {
+            Self::Other(v) => v.get("type").and_then(Value::as_str) == Some(TIMER),
+            Self::Key(_) => true,
+        }
+    }
+
+    /// Appends the part of the system timer key the event decides (see
+    /// [`system_timer_key`]).
+    fn push_key(&self, out: &mut String) {
+        match self {
+            Self::Key(key) => key.push(out),
             Self::Other(event) => {
                 let ty = event.get("type").and_then(Value::as_str);
-                if ty != Some(TIMER) || !push_timer_event_key(out, event) {
-                    push_json_str(out, ty.unwrap_or(""));
+                if ty == Some(TIMER) {
+                    if let Some(key) = TimerKey::of_timer_event(event) {
+                        return key.push(out);
+                    }
+                    if let Some(seq) = event.get("seq").filter(|v| v.is_number()) {
+                        // `{ seq }` that is not a whole number.
+                        out.push_str("seq,");
+                        return push_json(out, seq);
+                    }
                 }
+                push_json_str(out, ty.unwrap_or(""));
             }
         }
     }
@@ -441,8 +587,8 @@ impl TimerEvent {
 
 impl Serialize for TimerEvent {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
-        struct Inner<'a>(&'static str, Option<&'a Value>, &'a str);
-        impl Serialize for Inner<'_> {
+        struct Identity<'a>(&'static str, Option<&'a AfterDelay>, &'a str);
+        impl Serialize for Identity<'_> {
             fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
                 let mut m = s.serialize_map(Some(2 + usize::from(self.1.is_some())))?;
                 m.serialize_entry("type", self.0)?;
@@ -453,21 +599,22 @@ impl Serialize for TimerEvent {
                 m.end()
             }
         }
-        if let Self::Other(v) = self {
-            return v.serialize(s);
-        }
+        let key = match self {
+            Self::Other(v) => return v.serialize(s),
+            Self::Key(key) => key,
+        };
         let mut m = s.serialize_map(Some(2))?;
         m.serialize_entry("type", TIMER)?;
-        match self {
-            Self::Id(id) => m.serialize_entry("id", id)?,
-            Self::Seq(n) => m.serialize_entry("seq", n)?,
-            Self::After { delay, state_id } => {
-                m.serialize_entry("event", &Inner("xstate.after", Some(delay), state_id))?
+        match key {
+            TimerKey::Id(id) => m.serialize_entry("id", id)?,
+            TimerKey::Seq(n) => m.serialize_entry("seq", n)?,
+            TimerKey::After { delay, state_id } => {
+                m.serialize_entry("event", &Identity("xstate.after", Some(delay), state_id))?
             }
-            Self::StateTimeout { state_id } => {
-                m.serialize_entry("event", &Inner("xstate.timeout.state", None, state_id))?
+            TimerKey::StateTimeout { state_id } => {
+                m.serialize_entry("event", &Identity("xstate.timeout.state", None, state_id))?
             }
-            Self::Other(_) => unreachable!(),
+            TimerKey::Event(event) => m.serialize_entry("event", &**event)?,
         }
         m.end()
     }
@@ -554,12 +701,13 @@ struct ActorEntry {
     id: String,
     address: Arc<str>,
     incarnation: u64,
-    src: String,
+    /// Borrowed for the root's definition key, `root`.
+    src: std::borrow::Cow<'static, str>,
     /// The logic `src` names, resolved once (no lookup per event).
     logic: Arc<dyn Logic>,
-    logic_version: Option<String>,
+    logic_version: Option<Box<str>>,
     parent: Option<ActorRef>,
-    registry_key: Option<String>,
+    registry_key: Option<Box<str>>,
     sync_snapshot: Option<bool>,
     started: bool,
     /// Boxed: rarely set, and a `Value` is large inline.
@@ -637,82 +785,72 @@ fn definitions(logic: &SystemLogic) -> Vec<(String, Arc<dyn Logic>)> {
     out
 }
 
-/// XState's `readTimerKey`.
-pub(crate) fn read_timer_key(event: &Value) -> Option<Value> {
-    if let Some(id) = event.get("id").and_then(Value::as_str) {
-        return Some(json!({ "id": id }));
-    }
-    if let Some(seq) = event.get("seq").filter(|v| v.is_number()) {
-        return Some(json!({ "seq": seq }));
-    }
-    match event.get("event") {
-        Some(e @ Value::Object(o)) if o.get("type").is_some_and(Value::is_string) => Some(json!({ "event": e })),
-        _ => None,
-    }
-}
-
-/// XState's built-in timer identity for lifecycle timer events.
-pub(crate) fn builtin_timer_identity(event: &Value) -> Option<Value> {
-    let ty = event.get("type")?.as_str()?;
-    let field = |k: &str| event.get(k).cloned();
-    let mut m = Map::new();
-    m.insert("type".into(), Value::String(ty.into()));
-    match ty {
-        "xstate.after" => {
-            if let Some(v) = field("delay") {
-                m.insert("delay".into(), v);
-            }
-            if let Some(v) = field("stateId") {
-                m.insert("stateId".into(), v);
-            }
-        }
-        "xstate.timeout.state" => {
-            if let Some(v) = field("stateId") {
-                m.insert("stateId".into(), v);
-            }
-        }
-        "xstate.timeout.actor" => {
-            if let Some(v) = field("actorId") {
-                m.insert("actorId".into(), v);
-            }
-        }
-        _ => return None,
-    }
-    Some(Value::Object(m))
+/// Whether `event_type` has a built-in timer identity (XState's
+/// `builtinTimerIdentity`): such delayed raises are keyed by it, not by a
+/// sequence number.
+pub(crate) fn has_builtin_timer_identity(event_type: &str) -> bool {
+    matches!(event_type, "xstate.after" | "xstate.timeout.state" | "xstate.timeout.actor")
 }
 
 /// Appends `v` as JSON.
 fn push_json(out: &mut String, v: &Value) {
     use std::fmt::Write;
-    let _ = write!(out, "{v}");
+    match v {
+        Value::String(s) => push_json_str(out, s),
+        other => {
+            let _ = write!(out, "{other}");
+        }
+    }
 }
 
+/// Appends `s` as a JSON string, escaped as `serde_json` escapes it.
 fn push_json_str(out: &mut String, s: &str) {
-    push_json(out, &Value::String(s.to_owned()));
+    const HEX: &[u8; 16] = b"0123456789abcdef";
+    out.reserve(s.len() + 2);
+    out.push('"');
+    let mut start = 0;
+    for (i, b) in s.bytes().enumerate() {
+        let escape = match b {
+            b'"' => "\\\"",
+            b'\\' => "\\\\",
+            b'\n' => "\\n",
+            b'\r' => "\\r",
+            b'\t' => "\\t",
+            0x08 => "\\b",
+            0x0c => "\\f",
+            0..=0x1f => "",
+            _ => continue,
+        };
+        out.push_str(&s[start..i]);
+        if escape.is_empty() {
+            out.push_str("\\u00");
+            out.push(HEX[usize::from(b >> 4)] as char);
+            out.push(HEX[usize::from(b & 0xf)] as char);
+        } else {
+            out.push_str(escape);
+        }
+        start = i + 1;
+    }
+    out.push_str(&s[start..]);
+    out.push('"');
 }
 
-/// XState's `serializeTimerKey`, appended to `out`: equal keys give equal
-/// text and different keys different text (every part is JSON).
-fn push_timer_key(out: &mut String, key: &Value) {
-    if let Some(id) = key.get("id") {
-        out.push_str("id,");
-        push_json(out, id);
-        return;
+/// `n` in decimal, written into `buf`.
+fn itoa(mut n: u64, buf: &mut [u8; 20]) -> &str {
+    let mut i = buf.len();
+    loop {
+        i -= 1;
+        buf[i] = b'0' + (n % 10) as u8;
+        n /= 10;
+        if n == 0 {
+            break;
+        }
     }
-    if let Some(seq) = key.get("seq") {
-        out.push_str("seq,");
-        push_json(out, seq);
-        return;
-    }
-    out.push_str("event,");
-    match key.get("event") {
-        Some(event) => push_event_identity(out, event),
-        None => out.push_str("null"),
-    }
+    std::str::from_utf8(&buf[i..]).expect("digits")
 }
 
-/// [`builtin_timer_identity`] (or the whole event) as JSON, without
-/// building the identity object.
+/// The built-in timer identity of a lifecycle event (or the whole event)
+/// as JSON, without building the identity object.
 fn push_event_identity(out: &mut String, event: &Value) {
     let fields: &[&str] = match event.get("type").and_then(Value::as_str) {
         Some("xstate.after") => &["delay", "stateId"],
@@ -735,61 +873,26 @@ fn push_event_identity(out: &mut String, event: &Value) {
 
 /// XState's `systemTimerKey`: the source actor and the timer's key.
 fn system_timer_key(source: &ActorRef, event: &TimerEvent) -> String {
-    let mut out = String::with_capacity(64);
-    push_json_str(&mut out, &source.address);
-    out.push(',');
-    out.push_str(&source.incarnation.to_string());
-    out.push(',');
+    let mut out = system_key_prefix(source);
     event.push_key(&mut out);
     out.shrink_to_fit();
     out
 }
 
-/// The key of a `{ type: 'xstate.timer', ...key }` event, appended as
-/// [`push_timer_key`] would append [`read_timer_key`]'s result. Returns
-/// whether the event has a key.
-fn push_timer_event_key(out: &mut String, event: &Value) -> bool {
-    if let Some(id) = event.get("id").filter(|v| v.is_string()) {
-        out.push_str("id,");
-        push_json(out, id);
-        return true;
-    }
-    if let Some(seq) = event.get("seq").filter(|v| v.is_number()) {
-        out.push_str("seq,");
-        push_json(out, seq);
-        return true;
-    }
-    match event.get("event") {
-        Some(e @ Value::Object(o)) if o.get("type").is_some_and(Value::is_string) => {
-            out.push_str("event,");
-            push_event_identity(out, e);
-            true
-        }
-        _ => false,
-    }
-}
-
-/// The system timer key for a machine timer `key` (`{ id } | { seq } | { event }`).
-fn system_timer_key_for(source: &ActorRef, key: &Value) -> String {
-    let mut out = String::with_capacity(64);
-    push_json_str(&mut out, &source.address);
-    out.push(',');
-    out.push_str(&source.incarnation.to_string());
-    out.push(',');
-    push_timer_key(&mut out, key);
+/// The system timer key for a machine timer `key`.
+fn system_timer_key_for(source: &ActorRef, key: &TimerKey) -> String {
+    let mut out = system_key_prefix(source);
+    key.push(&mut out);
     out
 }
 
-/// `{ type: 'xstate.timer', ...key }`.
-fn timer_event(key: &Value) -> Value {
-    let mut m = Map::new();
-    m.insert("type".into(), Value::String("xstate.timer".into()));
-    if let Value::Object(k) = key {
-        for (a, b) in k {
-            m.insert(a.clone(), b.clone());
-        }
-    }
-    Value::Object(m)
+fn system_key_prefix(source: &ActorRef) -> String {
+    let mut out = String::with_capacity(64);
+    push_json_str(&mut out, &source.address);
+    out.push(',');
+    out.push_str(itoa(source.incarnation, &mut [0; 20]));
+    out.push(',');
+    out
 }
 
 /// Options for [`System::initialize`].
@@ -812,11 +915,60 @@ impl Default for InitOptions {
     }
 }
 
+fn definition_key(key: String) -> std::borrow::Cow<'static, str> {
+    if key == "root" {
+        std::borrow::Cow::Borrowed("root")
+    } else {
+        std::borrow::Cow::Owned(key)
+    }
+}
+
 fn execution_id(id: String) -> std::borrow::Cow<'static, str> {
     if id == "system" {
         std::borrow::Cow::Borrowed("system")
     } else {
         std::borrow::Cow::Owned(id)
+    }
+}
+
+/// A system's actors by address, in allocation order. A system holds one
+/// or a few (its root and the children it invokes; actors are never
+/// removed, a new one at an occupied address replaces the entry), so a
+/// list is smaller and faster than a hash map, and the entries' own
+/// addresses are the keys.
+#[derive(Default)]
+struct ActorMap(Vec<ActorEntry>);
+
+impl ActorMap {
+    fn get(&self, address: &str) -> Option<&ActorEntry> {
+        self.0.iter().find(|a| *a.address == *address)
+    }
+
+    fn get_mut(&mut self, address: &str) -> Option<&mut ActorEntry> {
+        self.0.iter_mut().find(|a| *a.address == *address)
+    }
+
+    fn get_key_value(&self, address: &str) -> Option<(&Arc<str>, &ActorEntry)> {
+        self.get(address).map(|a| (&a.address, a))
+    }
+
+    /// Adds `entry`, or replaces the entry at its address in place.
+    fn insert(&mut self, entry: ActorEntry) {
+        match self.0.iter().position(|a| a.address == entry.address) {
+            Some(i) => self.0[i] = entry,
+            None => {
+                self.0.reserve_exact(1);
+                self.0.push(entry);
+            }
+        }
+    }
+
+    fn len(&self) -> usize {
+        self.0.len()
+    }
+
+    fn iter(&self) -> impl Iterator<Item = (&Arc<str>, &ActorEntry)> {
+        self.0.iter().map(|a| (&a.address, a))
     }
 }
 
@@ -835,7 +987,7 @@ pub struct System {
     /// The root's address, shared with its actor entry.
     root: Arc<str>,
     now: u64,
-    actors: IndexMap<Arc<str>, ActorEntry, Fixed>,
+    actors: ActorMap,
     registry: IndexMap<String, ActorRef, Fixed>,
     messages: VecDeque<Message>,
     timers: IndexMap<String, SystemTimer, Fixed>,
@@ -871,7 +1023,7 @@ impl System {
             execution_id: execution_id(options.execution_id.clone()),
             root: Arc::from(""),
             now: options.time,
-            actors: IndexMap::default(),
+            actors: ActorMap::default(),
             registry: IndexMap::default(),
             messages: VecDeque::new(),
             timers: IndexMap::default(),
@@ -974,7 +1126,7 @@ impl System {
     }
 
     fn current(&self, r: &ActorRef) -> Option<&ActorEntry> {
-        self.actors.get(&*r.address).filter(|a| a.incarnation == r.incarnation)
+        self.actors.get(&r.address).filter(|a| a.incarnation == r.incarnation)
     }
 
     fn allocate(&mut self, logic: &Arc<dyn Logic>, options: AllocateOptions) -> Result<ActorRef, SystemError> {
@@ -1003,11 +1155,11 @@ impl System {
             id: options.id.clone(),
             address: address.clone(),
             incarnation,
-            src,
+            src: definition_key(src),
             logic: logic.clone(),
-            logic_version: logic.version().map(str::to_owned),
+            logic_version: logic.version().map(Box::from),
             parent: options.parent.clone(),
-            registry_key: options.registry_key.clone(),
+            registry_key: options.registry_key.as_deref().map(Box::from),
             sync_snapshot: options.sync_snapshot,
             started: false,
             input: options.input.clone().map(Box::new),
@@ -1015,10 +1167,7 @@ impl System {
             status: Status::Active,
         };
         // Most systems hold one actor: no spare capacity per system.
-        if self.actors.len() == self.actors.capacity() {
-            self.actors.reserve_exact(1);
-        }
-        self.actors.insert(address.clone(), entry);
+        self.actors.insert(entry);
         if let Some(key) = &options.registry_key {
             if self.registry.contains_key(key) {
                 return Err(SystemError::Failed(format!("Registry key '{key}' is already occupied.")));
@@ -1036,7 +1185,7 @@ impl System {
     }
 
     fn store(&mut self, r: &ActorRef, snapshot: Box<dyn AnySnapshot>) {
-        if let Some(entry) = self.actors.get_mut(&*r.address).filter(|a| a.incarnation == r.incarnation) {
+        if let Some(entry) = self.actors.get_mut(&r.address).filter(|a| a.incarnation == r.incarnation) {
             entry.status = snapshot.status();
             entry.snapshot = Some(snapshot);
         }
@@ -1090,12 +1239,22 @@ impl System {
     }
 
     fn enqueue(&mut self, source: Option<ActorRef>, target: ActorRef, event: Value, timer_occurrence: Option<u64>) {
+        self.enqueue_event(source, target, QueuedEvent::Value(event), timer_occurrence);
+    }
+
+    fn enqueue_event(
+        &mut self,
+        source: Option<ActorRef>,
+        target: ActorRef,
+        event: QueuedEvent,
+        timer_occurrence: Option<u64>,
+    ) {
         let sequence = self.counters.sequence;
         self.counters.sequence += 1;
         self.messages.push_back(Message { source, target, event, sequence, timer_occurrence });
     }
 
-    fn cancel(&mut self, r: &ActorRef, key: Option<&Value>) {
+    fn cancel(&mut self, r: &ActorRef, key: Option<&TimerKey>) {
         let cancelled = key.map(|k| system_timer_key_for(r, k));
         let mut removed = Vec::new();
         self.timers.retain(|timer_key, timer| {
@@ -1121,7 +1280,7 @@ impl System {
                     let pending =
                         self.current(r).and_then(|a| a.snapshot.as_ref()).is_some_and(|s| s.timer_pending(&key));
                     if pending {
-                        self.schedule(r, delay, TimerEvent::for_key(key))?;
+                        self.schedule(r, delay, TimerEvent::Key(key))?;
                     }
                 }
                 Effect::SendTo { target, event } => self.enqueue(Some(r.clone()), target, event, None),
@@ -1167,7 +1326,7 @@ impl System {
             return Ok(());
         }
         let logic = actor.logic.clone();
-        self.actors.get_mut(&*r.address).expect("current").started = true;
+        self.actors.get_mut(&r.address).expect("current").started = true;
         let effects = self.scratch.as_mut().and_then(|s| s.initial_effects.remove(r)).unwrap_or_default();
         self.effects_for(r, effects)?;
         let active = self.current(r).is_some_and(|a| a.status == Status::Active);
@@ -1179,7 +1338,11 @@ impl System {
                 };
                 let error =
                     json!({ "$error": "TimeoutError", "message": format!("Async logic timed out after {shown}.") });
-                self.schedule(r, delay, TimerEvent::Other(json!({ "type": "xstate.async.reject", "data": error })))?;
+                self.schedule(
+                    r,
+                    delay,
+                    TimerEvent::Other(Box::new(json!({ "type": "xstate.async.reject", "data": error }))),
+                )?;
             }
         }
         Ok(())
@@ -1194,7 +1357,7 @@ impl System {
         self.process(Message {
             source: Some(r.clone()),
             target: r.clone(),
-            event: json!({ "type": "xstate.stop" }),
+            event: QueuedEvent::Value(json!({ "type": "xstate.stop" })),
             sequence,
             timer_occurrence: None,
         })?;
@@ -1277,12 +1440,12 @@ impl System {
         if actor.status != Status::Active {
             return Ok(());
         }
-        let event_type = message.event.get("type").and_then(Value::as_str).unwrap_or("").to_owned();
+        let event_type = message.event.event_type();
         if event_type == "xstate.timer" && message.timer_occurrence.is_none() {
             return Err(SystemError::Failed("Only the system scheduler may deliver a timer occurrence.".into()));
         }
         let logic = actor.logic.clone();
-        if logic.is_internal_event_type(&event_type) && message.source.as_ref() != Some(&message.target) {
+        if logic.is_internal_event_type(event_type) && message.source.as_ref() != Some(&message.target) {
             return Err(SystemError::Failed(format!(
                 "Internal event '{event_type}' cannot be injected into a pure system."
             )));
@@ -1296,12 +1459,15 @@ impl System {
             return Err(SystemError::Failed("Select a pending timer instead of injecting its internal event.".into()));
         }
         let target = message.target.clone();
-        let entry = self.actors.get_mut(&*target.address).expect("current");
+        let entry = self.actors.get_mut(&target.address).expect("current");
         let previous_status = entry.status;
         let mut snapshot = entry.snapshot.take().expect("snapshot present outside its transition");
         let result = {
             let mut cx = Cx { sys: self, self_ref: target.clone() };
-            logic.transition(&mut snapshot, message.event, &mut cx)
+            match message.event {
+                QueuedEvent::Value(event) => logic.transition(&mut snapshot, event, &mut cx),
+                QueuedEvent::Timer(key) => logic.timer_transition(&mut snapshot, key, &mut cx),
+            }
         };
         let effects = match result {
             Ok(effects) => effects,
@@ -1392,10 +1558,10 @@ impl System {
                 }
             }
             let event = match timer.event {
-                TimerEvent::Other(event) => event,
-                typed => typed.to_value(),
+                TimerEvent::Other(event) => QueuedEvent::Value(*event),
+                TimerEvent::Key(key) => QueuedEvent::Timer(key),
             };
-            self.enqueue(Some(timer.source.clone()), timer.source.clone(), event, Some(timer.occurrence));
+            self.enqueue_event(Some(timer.source.clone()), timer.source.clone(), event, Some(timer.occurrence));
             self.settle()?;
             return Ok(true);
         }
@@ -1428,7 +1594,7 @@ impl System {
     /// `address` and completes all resulting work. Due timers fire first.
     pub fn send(&mut self, address: &str, event: Value) -> Result<Vec<ExternalEffect>, SystemError> {
         self.begin();
-        let ty = event.get("type").and_then(Value::as_str).unwrap_or("").to_owned();
+        let ty = event.get("type").and_then(Value::as_str).unwrap_or("");
         if ty == "xstate.timer" {
             let Some(actor) = self.actors.get(address) else {
                 return rejected(format!("Unknown actor address '{address}'."));
@@ -1511,20 +1677,20 @@ impl System {
     /// XState's `SystemSnapshot` as JSON.
     pub fn to_json(&self) -> Value {
         let mut actors = Map::new();
-        for (address, a) in &self.actors {
+        for (address, a) in self.actors.iter() {
             let mut m = Map::new();
             m.insert("id".into(), Value::String(a.id.clone()));
             m.insert("address".into(), Value::String(address.to_string()));
             m.insert("incarnation".into(), Value::String(a.incarnation.to_string()));
-            m.insert("src".into(), Value::String(a.src.clone()));
+            m.insert("src".into(), Value::String(a.src.to_string()));
             if let Some(v) = &a.logic_version {
-                m.insert("logicVersion".into(), Value::String(v.clone()));
+                m.insert("logicVersion".into(), Value::String(v.to_string()));
             }
             if let Some(p) = &a.parent {
                 m.insert("parent".into(), p.to_json());
             }
             if let Some(k) = &a.registry_key {
-                m.insert("registryKey".into(), Value::String(k.clone()));
+                m.insert("registryKey".into(), Value::String(k.to_string()));
             }
             if let Some(s) = a.sync_snapshot {
                 m.insert("syncSnapshot".into(), Value::Bool(s));
@@ -1561,7 +1727,7 @@ impl System {
                     o.insert("source".into(), s.to_json());
                 }
                 o.insert("target".into(), m.target.to_json());
-                o.insert("event".into(), m.event.clone());
+                o.insert("event".into(), m.event.to_value());
                 o.insert("sequence".into(), json!(m.sequence));
                 if let Some(t) = m.timer_occurrence {
                     o.insert("timerOccurrence".into(), json!(t));
@@ -1593,7 +1759,7 @@ impl System {
     pub fn from_json(logic: &SystemLogic, data: &Value, max_steps: usize) -> Result<Self, SystemError> {
         let bad = |what: &str| SystemError::Rejected(format!("invalid system snapshot: {what}"));
         let defs = definitions(logic);
-        let mut actors = IndexMap::default();
+        let mut actors = ActorMap::default();
         for (address, a) in data.get("actors").and_then(Value::as_object).ok_or_else(|| bad("actors"))? {
             let src = a.get("src").and_then(Value::as_str).ok_or_else(|| bad("src"))?.to_owned();
             let l = defs
@@ -1607,28 +1773,25 @@ impl System {
             }
             let snapshot = l.restore(a.get("snapshot").ok_or_else(|| bad("snapshot"))?)?;
             let address: Arc<str> = address.as_str().into();
-            actors.insert(
-                address.clone(),
-                ActorEntry {
-                    id: a.get("id").and_then(Value::as_str).ok_or_else(|| bad("id"))?.to_owned(),
-                    address,
-                    incarnation: a
-                        .get("incarnation")
-                        .and_then(Value::as_str)
-                        .and_then(|s| s.parse().ok())
-                        .ok_or_else(|| bad("incarnation"))?,
-                    src,
-                    logic: l,
-                    logic_version,
-                    parent: a.get("parent").and_then(ActorRef::from_json),
-                    registry_key: a.get("registryKey").and_then(Value::as_str).map(str::to_owned),
-                    sync_snapshot: a.get("syncSnapshot").and_then(Value::as_bool),
-                    started: a.get("started").and_then(Value::as_bool).unwrap_or(false),
-                    input: a.get("input").cloned().map(Box::new),
-                    status: snapshot.status(),
-                    snapshot: Some(snapshot),
-                },
-            );
+            actors.insert(ActorEntry {
+                id: a.get("id").and_then(Value::as_str).ok_or_else(|| bad("id"))?.to_owned(),
+                address,
+                incarnation: a
+                    .get("incarnation")
+                    .and_then(Value::as_str)
+                    .and_then(|s| s.parse().ok())
+                    .ok_or_else(|| bad("incarnation"))?,
+                src: definition_key(src),
+                logic: l,
+                logic_version: logic_version.map(Box::from),
+                parent: a.get("parent").and_then(ActorRef::from_json),
+                registry_key: a.get("registryKey").and_then(Value::as_str).map(Box::from),
+                sync_snapshot: a.get("syncSnapshot").and_then(Value::as_bool),
+                started: a.get("started").and_then(Value::as_bool).unwrap_or(false),
+                input: a.get("input").cloned().map(Box::new),
+                status: snapshot.status(),
+                snapshot: Some(snapshot),
+            });
         }
         let registry = data
             .get("registry")
@@ -1663,7 +1826,7 @@ impl System {
                 Some(Message {
                     source: m.get("source").and_then(ActorRef::from_json),
                     target: ActorRef::from_json(m.get("target")?)?,
-                    event: m.get("event")?.clone(),
+                    event: QueuedEvent::Value(m.get("event")?.clone()),
                     sequence: m.get("sequence")?.as_u64()?,
                     timer_occurrence: m.get("timerOccurrence").and_then(Value::as_u64),
                 })
@@ -1851,15 +2014,15 @@ impl Serialize for EntryView<'_> {
             m.serialize_entry("address", &*a.address)?;
         }
         m.serialize_entry("incarnation", &a.incarnation.to_string())?;
-        m.serialize_entry("src", &a.src)?;
+        m.serialize_entry("src", &*a.src)?;
         if let Some(v) = &a.logic_version {
-            m.serialize_entry("logicVersion", v)?;
+            m.serialize_entry("logicVersion", &**v)?;
         }
         if let Some(p) = &a.parent {
             m.serialize_entry("parent", &RefView(p))?;
         }
         if let Some(k) = &a.registry_key {
-            m.serialize_entry("registryKey", k)?;
+            m.serialize_entry("registryKey", &**k)?;
         }
         if let Some(v) = a.sync_snapshot {
             m.serialize_entry("syncSnapshot", &v)?;
@@ -1881,7 +2044,7 @@ struct ActorsView<'a>(&'a System, bool);
 impl Serialize for ActorsView<'_> {
     fn serialize<S: Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
         let mut m = s.serialize_map(Some(self.0.actors.len()))?;
-        for (address, a) in &self.0.actors {
+        for (address, a) in self.0.actors.iter() {
             m.serialize_entry(&**address, &EntryView(a, self.1))?;
         }
         m.end()
@@ -2023,31 +2186,53 @@ mod tests {
         let r = ActorRef { address: "a".into(), incarnation: 0 };
         let key = |event: Value| system_timer_key(&r, &TimerEvent::from_value(event));
         let seq = key(json!({"type":"xstate.timer","seq":0}));
-        assert_eq!(seq, system_timer_key_for(&r, &json!({"seq":0})));
+        assert_eq!(seq, system_timer_key_for(&r, &TimerKey::Seq(0)));
+        assert_eq!(seq, r#""a",0,seq,0"#);
         assert_ne!(seq, key(json!({"type":"xstate.timer","id":"0"})));
         let after = json!({"type":"xstate.after","delay":10,"stateId":"m.a","extra":1});
         let k = key(json!({"type":"xstate.timer","event":after}));
-        assert_eq!(k, system_timer_key_for(&r, &json!({"event":{"stateId":"m.a","type":"xstate.after","delay":10}})));
+        let pattern = json!({"event":{"stateId":"m.a","type":"xstate.after","delay":10}});
+        let ten = AfterDelay::Number(10.into());
+        assert_eq!(TimerKey::of_timer_event(&pattern), Some(TimerKey::After { delay: ten, state_id: "m.a".into() }));
+        assert_eq!(k, system_timer_key_for(&r, &TimerKey::of_timer_event(&pattern).unwrap()));
         assert_eq!(k, r#""a",0,event,{"type":"xstate.after","delay":10,"stateId":"m.a"}"#);
         // Typed shapes give the same keys and events as their JSON.
         let typed = json!({"type":"xstate.timer","event":{"type":"xstate.after","delay":"short","stateId":"m.a"}});
-        assert!(matches!(TimerEvent::from_value(typed.clone()), TimerEvent::After { .. }));
+        assert!(matches!(TimerEvent::from_value(typed.clone()), TimerEvent::Key(TimerKey::After { .. })));
         assert_eq!(key(typed.clone()), r#""a",0,event,{"type":"xstate.after","delay":"short","stateId":"m.a"}"#);
+        assert_eq!(
+            key(json!({"type":"xstate.timer","seq":1.5})),
+            r#""a",0,seq,1.5"#,
+            "a seq that is not a whole number keeps its own key"
+        );
+        assert_eq!(key(json!({"type":"xstate.async.reject"})), r#""a",0,"xstate.async.reject""#);
+        let escaped = ActorRef { address: "q\"\\\n\u{1}é".into(), incarnation: 12 };
+        assert_eq!(
+            system_timer_key_for(&escaped, &TimerKey::Id("i".into())),
+            format!("{},12,id,\"i\"", Value::String("q\"\\\n\u{1}é".into()))
+        );
         for event in [
             typed,
             json!({"type":"xstate.timer","id":"t"}),
             json!({"type":"xstate.timer","seq":3}),
+            json!({"type":"xstate.timer","seq":1.5}),
             json!({"type":"xstate.timer","event":{"type":"xstate.timeout.state","stateId":"m.b"}}),
+            json!({"type":"xstate.timer","event":{"stateId":"m.b","type":"xstate.timeout.state"}}),
             json!({"type":"xstate.timer","event":{"type":"xstate.timeout.actor","actorId":"c","sessionId":"1"}}),
+            json!({"type":"xstate.timer","event":{"type":"custom","x":1}}),
             json!({"type":"xstate.async.reject","data":{}}),
             json!({"seq":3,"type":"xstate.timer"}),
         ] {
             let parsed = TimerEvent::from_value(event.clone());
             assert_eq!(parsed.to_value().to_string(), event.to_string());
             assert_eq!(serde_json::to_string(&parsed).unwrap(), event.to_string());
-            assert_eq!(parsed.machine_key(), read_timer_key(&event).filter(|_| event["type"] == TIMER));
+            let expected = TimerKey::of_timer_event(&event).filter(|_| event["type"] == TIMER);
+            assert_eq!(parsed.machine_key(), expected);
+            assert_eq!(
+                system_timer_key(&r, &parsed),
+                system_timer_key(&r, &TimerEvent::Other(Box::new(event.clone())))
+            );
         }
-        assert_eq!(read_timer_key(&json!({"type":"xstate.timer","id":"t"})), Some(json!({"id":"t"})));
         assert_eq!(encode_address_segment("a/b%"), "a%2Fb%25");
     }
 }

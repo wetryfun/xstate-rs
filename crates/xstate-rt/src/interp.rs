@@ -29,8 +29,8 @@ use crate::event::{Ev, EventType, AFTER, DONE_STATE};
 use crate::machine::*;
 use crate::registry::GuardArgs;
 use crate::system::{
-    builtin_timer_identity, ActorRef, AllocateOptions, AnySnapshot, Context, Effect, EffectKind, EffectType,
-    ExternalSpec, Logic, Status, SystemError, Transition,
+    has_builtin_timer_identity, ActorRef, AfterDelay, AllocateOptions, AnySnapshot, Context, Effect, EffectKind,
+    EffectType, ExternalSpec, Logic, Status, SystemError, TimerKey, Transition,
 };
 
 /// A logical timer in a machine snapshot (XState's `snapshot.timers` entry).
@@ -47,22 +47,25 @@ pub(crate) struct LogicalTimer<E> {
 #[derive(Clone)]
 pub(crate) enum TimerEv<E> {
     /// `{ type: "xstate.after", delay, stateId }`.
-    After {
-        delay: Value,
-        state_id: String,
-    },
-    Ev(Ev<E>),
+    After { delay: AfterDelay, state_id: String },
+    /// Boxed: delayed raises are rarer than `after` timers, and an event is
+    /// large inline.
+    Ev(Box<Ev<E>>),
 }
 
 impl<E: EventType> TimerEv<E> {
     fn new(event: Ev<E>) -> Self {
         let after = |data: &Map<String, Value>| {
-            data.len() == 2 && data.keys().zip(["delay", "stateId"]).all(|(k, n)| k == n) && data["stateId"].is_string()
+            data.len() == 2
+                && data.keys().zip(["delay", "stateId"]).all(|(k, n)| k == n)
+                && data["stateId"].is_string()
+                && matches!(data["delay"], Value::Number(_) | Value::String(_))
         };
+        let delay = |v: Option<Value>| v.and_then(AfterDelay::from_value).expect("checked");
         match event {
             Ev::Internal { event_type, mut data } if event_type == AFTER && after(&data) => {
                 let Some(Value::String(state_id)) = data.swap_remove("stateId") else { unreachable!() };
-                TimerEv::After { delay: data.swap_remove("delay").expect("checked"), state_id }
+                TimerEv::After { delay: delay(data.swap_remove("delay")), state_id }
             }
             // A restored untyped event.
             Ev::User(e) if e.event_type() == AFTER => match e.to_json() {
@@ -70,14 +73,14 @@ impl<E: EventType> TimerEv<E> {
                     data.shift_remove("type");
                     if after(&data) {
                         let Some(Value::String(state_id)) = data.swap_remove("stateId") else { unreachable!() };
-                        TimerEv::After { delay: data.swap_remove("delay").expect("checked"), state_id }
+                        TimerEv::After { delay: delay(data.swap_remove("delay")), state_id }
                     } else {
-                        TimerEv::Ev(Ev::User(e))
+                        TimerEv::Ev(Box::new(Ev::User(e)))
                     }
                 }
-                _ => TimerEv::Ev(Ev::User(e)),
+                _ => TimerEv::Ev(Box::new(Ev::User(e))),
             },
-            other => TimerEv::Ev(other),
+            other => TimerEv::Ev(Box::new(other)),
         }
     }
 
@@ -90,7 +93,7 @@ impl<E: EventType> TimerEv<E> {
 
     fn field(&self, key: &str) -> Option<Value> {
         match (self, key) {
-            (TimerEv::After { delay, .. }, "delay") => Some(delay.clone()),
+            (TimerEv::After { delay, .. }, "delay") => Some(delay.to_value()),
             (TimerEv::After { state_id, .. }, "stateId") => Some(Value::String(state_id.clone())),
             (TimerEv::After { .. }, _) => None,
             (TimerEv::Ev(e), _) => e.field(key),
@@ -108,62 +111,83 @@ impl<E: EventType> TimerEv<E> {
         match self {
             TimerEv::After { delay, state_id } => {
                 let mut data = Map::with_capacity(2);
-                data.insert("delay".into(), delay);
+                data.insert("delay".into(), delay.to_value());
                 data.insert("stateId".into(), Value::String(state_id));
                 Ev::Internal { event_type: Cow::Borrowed(AFTER), data }
             }
-            TimerEv::Ev(e) => e,
+            TimerEv::Ev(e) => *e,
         }
     }
 }
 
 impl<E: EventType> LogicalTimer<E> {
     /// XState's `getTimerKey`.
-    fn key(&self) -> Value {
+    fn key(&self) -> TimerKey {
         if let Some(id) = &self.id {
-            return json!({ "id": id });
+            return TimerKey::Id(id.clone());
         }
         if let Some(seq) = self.seq {
-            return json!({ "seq": seq });
+            return TimerKey::Seq(seq);
         }
-        let ty = self.event.event_type();
+        let e = match &self.event {
+            TimerEv::After { delay, state_id } => {
+                return TimerKey::After { delay: delay.clone(), state_id: state_id.clone() }
+            }
+            TimerEv::Ev(e) => e,
+        };
+        let ty = e.event_type();
         let fields: &[&str] = match ty {
             "xstate.after" => &["delay", "stateId"],
             "xstate.timeout.state" => &["stateId"],
             "xstate.timeout.actor" => &["actorId"],
-            _ => return json!({ "event": self.event.to_json() }),
+            _ => return TimerKey::Event(Box::new(e.to_json())),
         };
         // `builtinTimerIdentity`, from the fields it keeps.
         let mut identity = Map::with_capacity(fields.len() + 1);
         identity.insert("type".into(), Value::String(ty.to_owned()));
         for f in fields {
-            if let Some(v) = self.event.field(f) {
+            if let Some(v) = e.field(f) {
                 identity.insert((*f).to_owned(), v);
             }
         }
-        json!({ "event": identity })
+        TimerKey::of_timer_event(&json!({ "event": identity })).expect("an event key")
     }
 
     /// XState's `matchesTimerKey`.
-    fn matches(&self, key: &Value) -> bool {
-        if let Some(id) = key.get("id") {
-            return self.id.as_deref().map(Value::from).as_ref() == Some(id);
+    fn matches(&self, key: &TimerKey) -> bool {
+        if let TimerKey::Id(id) = key {
+            return self.id.as_deref() == Some(id.as_str());
         }
         if self.id.is_some() {
             return false;
         }
-        if let Some(seq) = key.get("seq") {
-            return self.seq.is_some_and(|s| seq.as_u64() == Some(s));
+        if let TimerKey::Seq(seq) = key {
+            return self.seq == Some(*seq);
         }
         if self.seq.is_some() {
             return false;
         }
-        match key.get("event").and_then(Value::as_object) {
-            Some(pattern) => pattern.iter().all(|(k, v)| match k.as_str() {
-                "type" => v.as_str() == Some(self.event.event_type()),
-                _ => self.event.field(k).as_ref() == Some(v),
+        let field_is = |name: &str, v: &Value| self.event.field(name).as_ref() == Some(v);
+        let str_field_is = |name: &str, s: &str| self.event.field(name).as_ref().and_then(Value::as_str) == Some(s);
+        match key {
+            TimerKey::After { delay, state_id } => match &self.event {
+                TimerEv::After { delay: d, state_id: s } => d == delay && s == state_id,
+                TimerEv::Ev(e) => {
+                    e.event_type() == AFTER
+                        && e.field("delay").is_some_and(|v| delay.is(&v))
+                        && str_field_is("stateId", state_id)
+                }
+            },
+            TimerKey::StateTimeout { state_id } => {
+                self.event.event_type() == "xstate.timeout.state" && str_field_is("stateId", state_id)
+            }
+            TimerKey::Event(pattern) => pattern.as_object().is_some_and(|pattern| {
+                pattern.iter().all(|(k, v)| match k.as_str() {
+                    "type" => v.as_str() == Some(self.event.event_type()),
+                    _ => field_is(k, v),
+                })
             }),
-            None => false,
+            TimerKey::Id(_) | TimerKey::Seq(_) => unreachable!("handled above"),
         }
     }
 
@@ -272,7 +296,7 @@ where
         self.error.as_deref().cloned()
     }
 
-    fn timer_pending(&self, key: &Value) -> bool {
+    fn timer_pending(&self, key: &TimerKey) -> bool {
         self.timers.iter().any(|t| t.matches(key))
     }
 
@@ -296,7 +320,7 @@ fn js_eq(a: &Value, b: &Value) -> bool {
 /// What an action list asks for, before resolution.
 enum Op<E> {
     Raise { event: Ev<E>, id: Option<String>, delay: u64 },
-    Cancel(Value),
+    Cancel(TimerKey),
     Log(Vec<Value>),
     Emit(Value),
     Custom(u32),
@@ -448,7 +472,7 @@ impl<E: EventType> Serialize for EvView<'_, E> {
 }
 
 /// `{ type: "xstate.after", delay, stateId }`.
-struct AfterView<'a>(&'a Value, &'a str);
+struct AfterView<'a>(&'a AfterDelay, &'a str);
 
 impl Serialize for AfterView<'_> {
     fn serialize<S: serde::Serializer>(&self, s: S) -> Result<S::Ok, S::Error> {
@@ -599,9 +623,39 @@ where
 }
 
 /// Which macrostep is being run.
+/// An event type copied to the stack (types longer than its buffer go to
+/// the heap), so it can be read after its event has moved.
+struct TypeName {
+    buf: [u8; 64],
+    len: usize,
+    heap: Option<String>,
+}
+
+impl TypeName {
+    fn of(s: &str) -> Self {
+        let mut buf = [0; 64];
+        match buf.get_mut(..s.len()) {
+            Some(head) => {
+                head.copy_from_slice(s.as_bytes());
+                Self { buf, len: s.len(), heap: None }
+            }
+            None => Self { buf, len: 0, heap: Some(s.to_owned()) },
+        }
+    }
+
+    fn as_str(&self) -> &str {
+        match &self.heap {
+            Some(s) => s,
+            None => std::str::from_utf8(&self.buf[..self.len]).expect("copied from a str"),
+        }
+    }
+}
+
 pub(crate) enum MacroEvent {
     Init,
     Event(Value),
+    /// A fired timer, `{ type: "xstate.timer", ...key }`.
+    Timer(TimerKey),
 }
 
 struct NativeHost<'a, C, E> {
@@ -762,7 +816,7 @@ where
                         Some(delay) => out.ops.push(Op::Raise { event, id: id.clone(), delay: *delay }),
                     }
                 }
-                Action::Cancel(id) => out.ops.push(Op::Cancel(json!({ "id": id }))),
+                Action::Cancel(id) => out.ops.push(Op::Cancel(TimerKey::Id(id.clone()))),
                 Action::Log(args) => out.ops.push(Op::Log(args.clone())),
                 Action::Emit(event) => out.ops.push(Op::Emit(event.clone())),
                 Action::Assign(patch) => {
@@ -824,7 +878,7 @@ where
         for op in ops {
             match op {
                 Op::Raise { event, id, delay } => {
-                    let seq = if id.is_none() && builtin_timer_identity(&event.to_json()).is_none() {
+                    let seq = if id.is_none() && !has_builtin_timer_identity(event.event_type()) {
                         let seq = self.st.next_timer_id;
                         self.st.next_timer_id += 1;
                         Some(seq)
@@ -908,19 +962,24 @@ where
         let data = self.m.data(node);
         let base = self.action_base(&data.exit)?;
         let mut out = self.execute_actions(&data.exit, &base);
-        let mut ops: Vec<Op<E>> =
-            data.delayed.iter().rev().map(|d| Op::Cancel(json!({ "event": self.delayed_identity(node, d) }))).collect();
+        let mut ops: Vec<Op<E>> = data.delayed.iter().rev().map(|d| Op::Cancel(self.delayed_key(node, d))).collect();
         ops.append(&mut out.ops);
         out.ops = ops;
         Ok(out)
     }
 
-    fn delayed_identity(&self, node: Nid, d: &DelayedDef) -> Value {
+    /// The key of a state's delayed event (its built-in identity).
+    fn delayed_key(&self, node: Nid, d: &DelayedDef) -> TimerKey {
         let id = &self.m.data(node).id;
         match &d.kind {
-            DelayedKind::After { event_delay } => json!({ "type": AFTER, "delay": event_delay, "stateId": id }),
-            DelayedKind::StateTimeout => json!({ "type": "xstate.timeout.state", "stateId": id }),
-            DelayedKind::InvokeTimeout { invoke_id } => json!({ "type": "xstate.timeout.actor", "actorId": invoke_id }),
+            DelayedKind::After { event_delay } => match AfterDelay::from_value(event_delay.clone()) {
+                Some(delay) => TimerKey::After { delay, state_id: id.clone() },
+                None => TimerKey::Event(Box::new(json!({ "type": AFTER, "delay": event_delay, "stateId": id }))),
+            },
+            DelayedKind::StateTimeout => TimerKey::StateTimeout { state_id: id.clone() },
+            DelayedKind::InvokeTimeout { invoke_id } => {
+                TimerKey::Event(Box::new(json!({ "type": "xstate.timeout.actor", "actorId": invoke_id })))
+            }
         }
     }
 
@@ -1023,6 +1082,18 @@ where
 
     fn stop_children_ops(&self) -> Vec<Op<E>> {
         self.st.children.values().map(|c| Op::Stop(c.clone())).collect()
+    }
+
+    /// A fired timer: its event is queued as internal. False when no
+    /// pending timer has the key.
+    fn fire_timer(&mut self, key: Option<TimerKey>) -> bool {
+        let index = key.as_ref().and_then(|k| self.st.timers.iter().position(|t| t.matches(k)));
+        let Some(index) = index else { return false };
+        let timer = self.timers_mut().remove(index);
+        self.token += 1;
+        self.queue.push_back(timer.event.into_ev());
+        self.event = Ev::Internal { event_type: Cow::Borrowed("xstate.timer"), data: Map::new() };
+        true
     }
 
     fn cancel_timer_ops(&self) -> Vec<Op<E>> {
@@ -1305,6 +1376,11 @@ where
                 states: self.recent.iter().map(|c| self.m.state_value(c)).collect(),
             });
         }
+        // The error reports the configurations of the last five iterations
+        // before the bound, so only those are recorded.
+        if iteration + 5 <= self.m.options.max_iterations {
+            return Ok(());
+        }
         if self.recent.len() == 5 {
             let mut oldest = self.recent.pop_front().unwrap_or_default();
             oldest.clone_from(&self.st.nodes);
@@ -1435,12 +1511,20 @@ where
                 return core::run_to_completion(tree, h);
             }
             MacroEvent::Event(event) => event,
+            MacroEvent::Timer(key) => {
+                if h.st.status != Status::Active || !h.fire_timer(Some(key)) {
+                    return Ok(());
+                }
+                return core::run_to_completion(tree, h);
+            }
         };
         if h.st.status != Status::Active {
             return Ok(());
         }
-        let ty = event.get("type").and_then(Value::as_str).unwrap_or("").to_owned();
-        match ty.as_str() {
+        // The type outlives the event (moved into the host below).
+        let ty = TypeName::of(event.get("type").and_then(Value::as_str).unwrap_or(""));
+        let ty = ty.as_str();
+        match ty {
             "xstate.stop" => {
                 let stops = h.stop_children_ops();
                 h.resolve_ops(stops);
@@ -1450,18 +1534,14 @@ where
                 return Ok(());
             }
             "xstate.timer" => {
-                let key = crate::system::read_timer_key(&event);
-                let index = key.as_ref().and_then(|k| h.st.timers.iter().position(|t| t.matches(k)));
-                let Some(index) = index else { return Ok(()) };
-                let timer = h.timers_mut().remove(index);
-                h.token += 1;
-                h.queue.push_back(timer.event.into_ev());
-                h.event = Ev::Internal { event_type: Cow::Borrowed("xstate.timer"), data: Map::new() };
+                if !h.fire_timer(TimerKey::of_timer_event(&event)) {
+                    return Ok(());
+                }
             }
             _ => {
                 h.event = Ev::from_json(event)
                     .ok_or_else(|| SystemError::Rejected("an event must have a string \"type\"".into()))?;
-                let transitions = core::select_transitions(tree, h, &ty)?;
+                let transitions = core::select_transitions(tree, h, ty)?;
                 if ty.starts_with("xstate.error.") && transitions.is_empty() {
                     if ty == "xstate.error.actor" {
                         let actor_id = h.event.field("actorId").and_then(|v| v.as_str().map(str::to_owned));
@@ -1616,6 +1696,19 @@ where
             .downcast_mut::<State<C, E>>()
             .ok_or_else(|| SystemError::Failed("machine received a foreign snapshot".into()))?;
         self.run_macrostep(st, cx, MacroEvent::Event(event))
+    }
+
+    fn timer_transition(
+        &self,
+        snapshot: &mut Box<dyn AnySnapshot>,
+        key: TimerKey,
+        cx: &mut dyn Context,
+    ) -> Result<Vec<Effect>, SystemError> {
+        let st = snapshot
+            .as_any_mut()
+            .downcast_mut::<State<C, E>>()
+            .ok_or_else(|| SystemError::Failed("machine received a foreign snapshot".into()))?;
+        self.run_macrostep(st, cx, MacroEvent::Timer(key))
     }
 
     fn snapshot_data(&self, snapshot: &dyn AnySnapshot) -> Value {
