@@ -1,0 +1,37 @@
+{
+  "logic": [
+    {
+      "name": "step",
+      "machine": { "id": "step", "initial": "a", "states": { "a": { "on": { "go": { "target": "z" } } }, "z": { "type": "final", "output": 1 } } }
+    },
+    {
+      "name": "flow",
+      "actors": ["step"],
+      "machine": {
+        "id": "flow",
+        "initial": "outer",
+        "context": { "first": false },
+        "states": {
+          "outer": {
+            "initial": "inner",
+            "states": {
+              "inner": { "invoke": [{ "src": "step", "id": "s1" }, { "src": "step", "id": "s2" }] }
+            },
+            "on": {
+              "xstate.done.actor": [
+                { "matches": { "actorId": "s1" }, "context": { "first": true }, "actions": [{ "type": "@xstate.emit", "event": { "type": "s1done" } }] },
+                { "matches": { "actorId": "s2" }, "target": "after" }
+              ]
+            }
+          },
+          "after": {}
+        }
+      }
+    }
+  ],
+  "root": "flow",
+  "steps": [
+    { "send": "flow/s1", "event": { "type": "go" } },
+    { "send": "flow/s2", "event": { "type": "go" } }
+  ]
+}

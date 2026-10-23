@@ -1,0 +1,29 @@
+{
+  "logic": [
+    { "name": "conn", "async": {} },
+    {
+      "name": "app",
+      "actors": ["conn"],
+      "machine": {
+        "id": "app",
+        "invoke": { "src": "conn", "id": "connection", "onError": { "target": ".offline" } },
+        "initial": "idle",
+        "states": {
+          "idle": { "on": { "play": { "target": "playing" } } },
+          "playing": { "on": { "pause": { "target": "idle" } } },
+          "offline": {}
+        },
+        "on": { "reconnect": { "target": "#app", "reenter": true } }
+      }
+    }
+  ],
+  "root": "app",
+  "steps": [
+    { "send": "app", "event": { "type": "play" } },
+    { "send": "app", "event": { "type": "pause" } },
+    { "send": "app", "event": { "type": "reconnect" } },
+    { "resolve": 0, "event": { "type": "xstate.async.reject", "data": "lost" } },
+    { "resolve": 1, "event": { "type": "xstate.async.reject", "data": "lost again" } },
+    { "send": "app", "event": { "type": "reconnect" } }
+  ]
+}

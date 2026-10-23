@@ -1,0 +1,39 @@
+{
+  "logic": [
+    { "name": "slow", "async": {} },
+    { "name": "limited", "async": { "timeout": "1s" } },
+    {
+      "name": "parent",
+      "actors": ["slow", "limited"],
+      "machine": {
+        "id": "p",
+        "initial": "a",
+        "states": {
+          "a": {
+            "invoke": { "src": "slow", "id": "s", "timeout": 200, "onTimeout": { "target": "timedOut" }, "onDone": { "target": "b" } }
+          },
+          "timedOut": { "on": { "next": { "target": "b" } } },
+          "b": {
+            "invoke": { "src": "limited", "id": "l", "onError": { "target": "c", "actions": [{ "type": "@xstate.emit", "event": { "type": "limitedFailed" } }] } }
+          },
+          "c": {
+            "timeout": "short",
+            "onTimeout": { "target": "d" },
+            "invoke": { "src": "slow", "id": "s2", "timeout": "PT1S", "onTimeout": { "target": "e" } }
+          },
+          "d": {},
+          "e": {}
+        }
+      }
+    }
+  ],
+  "root": "parent",
+  "steps": [
+    { "advance": 199 },
+    { "advance": 200 },
+    { "send": "p", "event": { "type": "next" } },
+    { "advance": 1199 },
+    { "advance": 1200 },
+    { "advance": 1300 }
+  ]
+}

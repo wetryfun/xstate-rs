@@ -2,12 +2,14 @@
 //! shared with every host, plus the values the native host needs.
 
 use std::collections::HashMap;
+use std::sync::Arc;
 
 use serde_json::{Map, Value};
 
 use crate::core::{Nid, Tid, Tree};
 use crate::event::{matches_descriptor, Ev};
-use crate::registry::{ActionFn, DelayFn, GuardFn};
+use crate::registry::{DelayFn, GuardFn};
+use crate::system::{EffectExec, Logic};
 
 /// Index of a state node, in document order.
 pub type NodeId = Nid;
@@ -20,7 +22,10 @@ pub(crate) struct NodeData {
     pub id: String,
     pub entry: Vec<Action>,
     pub exit: Vec<Action>,
-    pub after: Vec<AfterDef>,
+    /// Delayed transitions' timers, in XState's order: `after` entries,
+    /// the state `timeout`, then invoke timeouts.
+    pub delayed: Vec<DelayedDef>,
+    pub invokes: Vec<InvokeDef>,
     pub output: Option<Value>,
     pub tags: Vec<String>,
     /// The static targets of a compound state's `initial`.
@@ -29,15 +34,39 @@ pub(crate) struct NodeData {
     pub history_target: Vec<Nid>,
 }
 
-/// One `after` entry. Its timer raises `xstate.after` with `delay` and
-/// `stateId`, and the entry's transitions match exactly that payload.
-pub(crate) struct AfterDef {
-    /// The key as written, for persistence.
-    pub key: String,
-    /// The `delay` field of the event: a number for numeric keys, the key
-    /// string otherwise.
-    pub event_delay: Value,
+/// A timer a state schedules on entry and cancels on exit; its event is
+/// caught by the state's delayed transitions.
+pub(crate) struct DelayedDef {
+    pub kind: DelayedKind,
     pub delay: DelaySpec,
+}
+
+pub(crate) enum DelayedKind {
+    /// `after`: raises `{ type: "xstate.after", delay, stateId }`, where
+    /// `delay` is a number for numeric keys and the key string otherwise.
+    After { event_delay: Value },
+    /// The state `timeout`: raises `{ type: "xstate.timeout.state", stateId }`.
+    StateTimeout,
+    /// An invoke `timeout`: raises `{ type: "xstate.timeout.actor", actorId, sessionId }`.
+    InvokeTimeout { invoke_id: String },
+}
+
+/// One `invoke` of a state.
+pub(crate) struct InvokeDef {
+    pub id: String,
+    pub logic: Arc<dyn Logic>,
+    pub input: Option<Value>,
+    pub registry_key: Option<String>,
+    /// Whether the invoke has `onSnapshot` (the child then reports snapshots).
+    pub sync_snapshot: bool,
+}
+
+/// A custom action reference: its name and params, and the bound Rust
+/// implementation (if the registry provides one).
+pub(crate) struct CustomAction {
+    pub name: String,
+    pub params: Option<Value>,
+    pub exec: EffectExec,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -55,13 +84,20 @@ pub(crate) struct TransitionData {
     pub context: Option<Map<String, Value>>,
     pub actions: Vec<Action>,
     pub reenter: bool,
+    /// For invoke completion transitions: the child's id, whose session must
+    /// match the event's `sessionId` (XState's `_eventMatcher`).
+    pub session: Option<String>,
+    /// For completion transitions of an invoke with a `timeout`: the timer
+    /// key the transition cancels after its own operations.
+    pub cancel_timeout: Option<Value>,
 }
 
 impl TransitionData {
     /// Whether XState compiles this transition to a transition function
-    /// (`machineFromJSON` does so for any `context` or `actions`).
+    /// (`machineFromJSON` does so for any `context` or `actions`; invoke
+    /// timeouts wrap completion transitions in one).
     pub fn is_dynamic(&self) -> bool {
-        self.context.is_some() || !self.actions.is_empty()
+        self.context.is_some() || !self.actions.is_empty() || self.cancel_timeout.is_some()
     }
 }
 
@@ -109,7 +145,8 @@ pub struct Machine<C, E> {
     pub(crate) nodes: Vec<NodeData>,
     pub(crate) transitions: Vec<TransitionData>,
     pub(crate) guards: Vec<GuardFn<C, E>>,
-    pub(crate) actions: Vec<ActionFn>,
+    pub(crate) actions: Vec<CustomAction>,
+    pub(crate) actors: Vec<(String, Arc<dyn Logic>)>,
     pub(crate) delays: Vec<DelayFn<C, E>>,
     pub(crate) raise_events: Vec<Ev<E>>,
     pub(crate) id_map: HashMap<String, Nid>,

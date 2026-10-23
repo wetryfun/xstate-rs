@@ -1,0 +1,38 @@
+{
+  "logic": [
+    { "name": "fetchUser", "async": {} },
+    {
+      "name": "parent",
+      "actors": ["fetchUser"],
+      "machine": {
+        "id": "loader",
+        "initial": "loading",
+        "context": { "attempt": 0 },
+        "states": {
+          "loading": {
+            "invoke": {
+              "src": "fetchUser",
+              "id": "fetch",
+              "input": { "userId": 7 },
+              "onDone": { "target": "ready", "actions": [{ "type": "@xstate.emit", "event": { "type": "loaded" } }] },
+              "onError": { "target": "failed" }
+            }
+          },
+          "ready": { "on": { "reload": { "target": "loading" } } },
+          "failed": { "on": { "retry": { "target": "loading", "context": { "attempt": 1 } } } }
+        }
+      }
+    }
+  ],
+  "root": "parent",
+  "steps": [
+    { "resolve": 0, "event": { "type": "xstate.async.resolve", "data": { "name": "Ada" } } },
+    { "resolve": 0 },
+    { "send": "loader", "event": { "type": "reload" } },
+    { "resolve": 0, "event": { "type": "xstate.async.reject", "data": { "message": "boom" } } },
+    { "send": "loader", "event": { "type": "retry" } },
+    { "resolve": 0, "event": { "type": "xstate.async.resolve", "data": "late" } },
+    { "send": "loader", "event": { "type": "reload" } },
+    { "send": "loader", "event": { "type": "reload" } }
+  ]
+}

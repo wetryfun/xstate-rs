@@ -1,0 +1,35 @@
+{
+  "logic": [
+    {
+      "name": "player",
+      "machine": {
+        "id": "player",
+        "initial": "on",
+        "states": {
+          "on": {
+            "initial": "a",
+            "states": {
+              "a": { "on": { "next": { "target": "b" } } },
+              "b": { "initial": "b1", "states": { "b1": { "on": { "next": { "target": "b2" } } }, "b2": {} } },
+              "hist": { "type": "history", "history": "deep", "target": "a" }
+            },
+            "on": { "off": { "target": "off" } }
+          },
+          "off": { "on": { "on": { "target": "on.hist" } } }
+        }
+      }
+    },
+    {
+      "name": "root",
+      "actors": ["player"],
+      "machine": { "id": "root", "initial": "a", "states": { "a": { "invoke": { "src": "player", "id": "p" } } } }
+    }
+  ],
+  "root": "root",
+  "steps": [
+    { "send": "root/p", "event": { "type": "next" } },
+    { "send": "root/p", "event": { "type": "next" } },
+    { "send": "root/p", "event": { "type": "off" } },
+    { "send": "root/p", "event": { "type": "on" } }
+  ]
+}

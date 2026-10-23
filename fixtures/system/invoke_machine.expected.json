@@ -1,0 +1,1064 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "parent",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "parent": {
+          "id": "parent",
+          "address": "parent",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "got": null
+            },
+            "value": "idle",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "parent",
+              "parent.idle"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 0,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "parent",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "parent": {
+          "id": "parent",
+          "address": "parent",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "got": null
+            },
+            "value": "running",
+            "children": {
+              "worker": {
+                "$actor": "parent/worker",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "parent",
+              "parent.running"
+            ]
+          }
+        },
+        "parent/worker": {
+          "id": "worker",
+          "address": "parent/worker",
+          "incarnation": "1",
+          "src": "root/actors/child",
+          "parent": {
+            "$actor": "parent",
+            "incarnation": "0"
+          },
+          "registryKey": "theWorker",
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "n": 1
+            },
+            "value": "working",
+            "children": {},
+            "timers": [
+              {
+                "delay": 500,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 500,
+                  "stateId": "child.working"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "child",
+              "child.working"
+            ]
+          }
+        }
+      },
+      "registry": {
+        "theWorker": {
+          "$actor": "parent/worker",
+          "incarnation": "1"
+        }
+      },
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "parent/worker",
+            "incarnation": "1"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 500,
+          "sequence": 1,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 500,
+              "stateId": "child.working"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "parent/worker",
+            "incarnation": "1"
+          },
+          "type": "childStarted",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "childStarted"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 2,
+        "effect": 1
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "parent/worker",
+          "incarnation": "1"
+        },
+        "type": "childStarted",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "childStarted"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "parent",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "parent": {
+          "id": "parent",
+          "address": "parent",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "got": null
+            },
+            "value": "running",
+            "children": {
+              "worker": {
+                "$actor": "parent/worker",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "parent",
+              "parent.running"
+            ]
+          }
+        },
+        "parent/worker": {
+          "id": "worker",
+          "address": "parent/worker",
+          "incarnation": "1",
+          "src": "root/actors/child",
+          "parent": {
+            "$actor": "parent",
+            "incarnation": "0"
+          },
+          "registryKey": "theWorker",
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "n": 1
+            },
+            "value": "working",
+            "children": {},
+            "timers": [
+              {
+                "delay": 500,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 500,
+                  "stateId": "child.working"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "child",
+              "child.working"
+            ]
+          }
+        }
+      },
+      "registry": {
+        "theWorker": {
+          "$actor": "parent/worker",
+          "incarnation": "1"
+        }
+      },
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "parent/worker",
+            "incarnation": "1"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 500,
+          "sequence": 1,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 500,
+              "stateId": "child.working"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "parent/worker",
+            "incarnation": "1"
+          },
+          "type": "childStarted",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "childStarted"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 3,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "parent",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "parent": {
+          "id": "parent",
+          "address": "parent",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "got": null
+            },
+            "value": "idle",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "parent",
+              "parent.idle"
+            ]
+          }
+        },
+        "parent/worker": {
+          "id": "worker",
+          "address": "parent/worker",
+          "incarnation": "1",
+          "src": "root/actors/child",
+          "parent": {
+            "$actor": "parent",
+            "incarnation": "0"
+          },
+          "registryKey": "theWorker",
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {
+              "n": 1
+            },
+            "value": "working",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "child",
+              "child.working"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "parent/worker",
+            "incarnation": "1"
+          },
+          "type": "childStarted",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "childStarted"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 5,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 3",
+    "snapshot": {
+      "root": "parent",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "parent": {
+          "id": "parent",
+          "address": "parent",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "got": null
+            },
+            "value": "running",
+            "children": {
+              "worker": {
+                "$actor": "parent/worker",
+                "incarnation": "2"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "parent",
+              "parent.running"
+            ]
+          }
+        },
+        "parent/worker": {
+          "id": "worker",
+          "address": "parent/worker",
+          "incarnation": "2",
+          "src": "root/actors/child",
+          "parent": {
+            "$actor": "parent",
+            "incarnation": "0"
+          },
+          "registryKey": "theWorker",
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "n": 1
+            },
+            "value": "working",
+            "children": {},
+            "timers": [
+              {
+                "delay": 500,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 500,
+                  "stateId": "child.working"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "child",
+              "child.working"
+            ]
+          }
+        }
+      },
+      "registry": {
+        "theWorker": {
+          "$actor": "parent/worker",
+          "incarnation": "2"
+        }
+      },
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "parent/worker",
+            "incarnation": "2"
+          },
+          "occurrence": 1,
+          "scheduledAt": 0,
+          "dueAt": 500,
+          "sequence": 6,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 500,
+              "stateId": "child.working"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "parent/worker",
+            "incarnation": "1"
+          },
+          "type": "childStarted",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "childStarted"
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "parent/worker",
+            "incarnation": "2"
+          },
+          "type": "childStarted",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "childStarted"
+          }
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 2,
+        "sequence": 7,
+        "effect": 2
+      }
+    },
+    "effects": [
+      {
+        "id": "system:1",
+        "source": {
+          "$actor": "parent/worker",
+          "incarnation": "2"
+        },
+        "type": "childStarted",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "childStarted"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "snapshot": {
+      "root": "parent",
+      "executionId": "system",
+      "now": 400,
+      "actors": {
+        "parent": {
+          "id": "parent",
+          "address": "parent",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "got": null
+            },
+            "value": "running",
+            "children": {
+              "worker": {
+                "$actor": "parent/worker",
+                "incarnation": "2"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "parent",
+              "parent.running"
+            ]
+          }
+        },
+        "parent/worker": {
+          "id": "worker",
+          "address": "parent/worker",
+          "incarnation": "2",
+          "src": "root/actors/child",
+          "parent": {
+            "$actor": "parent",
+            "incarnation": "0"
+          },
+          "registryKey": "theWorker",
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "n": 1
+            },
+            "value": "working",
+            "children": {},
+            "timers": [
+              {
+                "delay": 500,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 500,
+                  "stateId": "child.working"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "child",
+              "child.working"
+            ]
+          }
+        }
+      },
+      "registry": {
+        "theWorker": {
+          "$actor": "parent/worker",
+          "incarnation": "2"
+        }
+      },
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "parent/worker",
+            "incarnation": "2"
+          },
+          "occurrence": 1,
+          "scheduledAt": 0,
+          "dueAt": 500,
+          "sequence": 6,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 500,
+              "stateId": "child.working"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "parent/worker",
+            "incarnation": "1"
+          },
+          "type": "childStarted",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "childStarted"
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "parent/worker",
+            "incarnation": "2"
+          },
+          "type": "childStarted",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "childStarted"
+          }
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 2,
+        "sequence": 7,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 5",
+    "snapshot": {
+      "root": "parent",
+      "executionId": "system",
+      "now": 400,
+      "actors": {
+        "parent": {
+          "id": "parent",
+          "address": "parent",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "ok": true
+            },
+            "context": {
+              "got": null
+            },
+            "value": "done",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "parent.done",
+              "parent"
+            ]
+          }
+        },
+        "parent/worker": {
+          "id": "worker",
+          "address": "parent/worker",
+          "incarnation": "2",
+          "src": "root/actors/child",
+          "parent": {
+            "$actor": "parent",
+            "incarnation": "0"
+          },
+          "registryKey": "theWorker",
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "result": 42
+            },
+            "context": {
+              "n": 1
+            },
+            "value": "finished",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "child.finished",
+              "child"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "parent/worker",
+            "incarnation": "1"
+          },
+          "type": "childStarted",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "childStarted"
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "parent/worker",
+            "incarnation": "2"
+          },
+          "type": "childStarted",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "childStarted"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "parent",
+            "incarnation": "0"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:2"
+          }
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 2,
+        "sequence": 9,
+        "effect": 4
+      }
+    },
+    "effects": [
+      {
+        "id": "system:2",
+        "source": {
+          "$actor": "parent",
+          "incarnation": "0"
+        },
+        "type": "root/actions/track",
+        "kind": "action",
+        "params": {},
+        "args": [
+          {
+            "why": "childDone"
+          }
+        ]
+      },
+      {
+        "id": "system:3",
+        "source": {
+          "$actor": "parent",
+          "incarnation": "0"
+        },
+        "kind": "action",
+        "type": "@xstate.cancelEffect",
+        "params": {
+          "effectId": "system:2"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 6",
+    "snapshot": {
+      "root": "parent",
+      "executionId": "system",
+      "now": 400,
+      "actors": {
+        "parent": {
+          "id": "parent",
+          "address": "parent",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "ok": true
+            },
+            "context": {
+              "got": null
+            },
+            "value": "done",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "parent.done",
+              "parent"
+            ]
+          }
+        },
+        "parent/worker": {
+          "id": "worker",
+          "address": "parent/worker",
+          "incarnation": "2",
+          "src": "root/actors/child",
+          "parent": {
+            "$actor": "parent",
+            "incarnation": "0"
+          },
+          "registryKey": "theWorker",
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "result": 42
+            },
+            "context": {
+              "n": 1
+            },
+            "value": "finished",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "child.finished",
+              "child"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "parent/worker",
+            "incarnation": "2"
+          },
+          "type": "childStarted",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "childStarted"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "parent",
+            "incarnation": "0"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:2"
+          }
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 2,
+        "sequence": 9,
+        "effect": 4
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 7",
+    "snapshot": {
+      "root": "parent",
+      "executionId": "system",
+      "now": 400,
+      "actors": {
+        "parent": {
+          "id": "parent",
+          "address": "parent",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "ok": true
+            },
+            "context": {
+              "got": null
+            },
+            "value": "done",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "parent.done",
+              "parent"
+            ]
+          }
+        },
+        "parent/worker": {
+          "id": "worker",
+          "address": "parent/worker",
+          "incarnation": "2",
+          "src": "root/actors/child",
+          "parent": {
+            "$actor": "parent",
+            "incarnation": "0"
+          },
+          "registryKey": "theWorker",
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "result": 42
+            },
+            "context": {
+              "n": 1
+            },
+            "value": "finished",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "child.finished",
+              "child"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "parent/worker",
+            "incarnation": "2"
+          },
+          "type": "childStarted",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "childStarted"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "parent",
+            "incarnation": "0"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:2"
+          }
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 2,
+        "sequence": 10,
+        "effect": 4
+      }
+    },
+    "effects": []
+  }
+]

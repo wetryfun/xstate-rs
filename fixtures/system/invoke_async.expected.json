@@ -1,0 +1,852 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "loader",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "loader": {
+          "id": "loader",
+          "address": "loader",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0
+            },
+            "value": "loading",
+            "children": {
+              "fetch": {
+                "$actor": "loader/fetch",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "loader",
+              "loader.loading"
+            ]
+          }
+        },
+        "loader/fetch": {
+          "id": "fetch",
+          "address": "loader/fetch",
+          "incarnation": "1",
+          "src": "root/actors/fetchUser",
+          "parent": {
+            "$actor": "loader",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "userId": 7
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "userId": 7
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "loader/fetch",
+            "incarnation": "1"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 0,
+        "effect": 1
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "loader/fetch",
+          "incarnation": "1"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "loader",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "loader": {
+          "id": "loader",
+          "address": "loader",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0
+            },
+            "value": "ready",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "loader",
+              "loader.ready"
+            ]
+          }
+        },
+        "loader/fetch": {
+          "id": "fetch",
+          "address": "loader/fetch",
+          "incarnation": "1",
+          "src": "root/actors/fetchUser",
+          "parent": {
+            "$actor": "loader",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "userId": 7
+          },
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "name": "Ada"
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "name": "Ada"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "loader",
+            "incarnation": "0"
+          },
+          "type": "loaded",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "loaded"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 2,
+        "effect": 2
+      }
+    },
+    "effects": [
+      {
+        "id": "system:1",
+        "source": {
+          "$actor": "loader",
+          "incarnation": "0"
+        },
+        "type": "loaded",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "loaded"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "loader",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "loader": {
+          "id": "loader",
+          "address": "loader",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0
+            },
+            "value": "ready",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "loader",
+              "loader.ready"
+            ]
+          }
+        },
+        "loader/fetch": {
+          "id": "fetch",
+          "address": "loader/fetch",
+          "incarnation": "1",
+          "src": "root/actors/fetchUser",
+          "parent": {
+            "$actor": "loader",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "userId": 7
+          },
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "name": "Ada"
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "name": "Ada"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 2,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "loader",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "loader": {
+          "id": "loader",
+          "address": "loader",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0
+            },
+            "value": "loading",
+            "children": {
+              "fetch": {
+                "$actor": "loader/fetch",
+                "incarnation": "2"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "loader",
+              "loader.loading"
+            ]
+          }
+        },
+        "loader/fetch": {
+          "id": "fetch",
+          "address": "loader/fetch",
+          "incarnation": "2",
+          "src": "root/actors/fetchUser",
+          "parent": {
+            "$actor": "loader",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "userId": 7
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "userId": 7
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "loader/fetch",
+            "incarnation": "2"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 0,
+        "sequence": 3,
+        "effect": 3
+      }
+    },
+    "effects": [
+      {
+        "id": "system:2",
+        "source": {
+          "$actor": "loader/fetch",
+          "incarnation": "2"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "snapshot": {
+      "root": "loader",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "loader": {
+          "id": "loader",
+          "address": "loader",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 0
+            },
+            "value": "failed",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "loader",
+              "loader.failed"
+            ]
+          }
+        },
+        "loader/fetch": {
+          "id": "fetch",
+          "address": "loader/fetch",
+          "incarnation": "2",
+          "src": "root/actors/fetchUser",
+          "parent": {
+            "$actor": "loader",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "userId": 7
+          },
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "message": "boom"
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "message": "boom"
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 3,
+        "timer": 0,
+        "sequence": 5,
+        "effect": 3
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 4",
+    "snapshot": {
+      "root": "loader",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "loader": {
+          "id": "loader",
+          "address": "loader",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 1
+            },
+            "value": "loading",
+            "children": {
+              "fetch": {
+                "$actor": "loader/fetch",
+                "incarnation": "3"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "loader",
+              "loader.loading"
+            ]
+          }
+        },
+        "loader/fetch": {
+          "id": "fetch",
+          "address": "loader/fetch",
+          "incarnation": "3",
+          "src": "root/actors/fetchUser",
+          "parent": {
+            "$actor": "loader",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "userId": 7
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "userId": 7
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "loader/fetch",
+            "incarnation": "3"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 4,
+        "timer": 0,
+        "sequence": 6,
+        "effect": 4
+      }
+    },
+    "effects": [
+      {
+        "id": "system:3",
+        "source": {
+          "$actor": "loader/fetch",
+          "incarnation": "3"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 5",
+    "snapshot": {
+      "root": "loader",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "loader": {
+          "id": "loader",
+          "address": "loader",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 1
+            },
+            "value": "ready",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "loader",
+              "loader.ready"
+            ]
+          }
+        },
+        "loader/fetch": {
+          "id": "fetch",
+          "address": "loader/fetch",
+          "incarnation": "3",
+          "src": "root/actors/fetchUser",
+          "parent": {
+            "$actor": "loader",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "userId": 7
+          },
+          "snapshot": {
+            "status": "done",
+            "output": "late",
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": "late"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "loader",
+            "incarnation": "0"
+          },
+          "type": "loaded",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "loaded"
+          }
+        }
+      },
+      "counters": {
+        "actor": 4,
+        "timer": 0,
+        "sequence": 8,
+        "effect": 5
+      }
+    },
+    "effects": [
+      {
+        "id": "system:4",
+        "source": {
+          "$actor": "loader",
+          "incarnation": "0"
+        },
+        "type": "loaded",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "loaded"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 6",
+    "snapshot": {
+      "root": "loader",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "loader": {
+          "id": "loader",
+          "address": "loader",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 1
+            },
+            "value": "loading",
+            "children": {
+              "fetch": {
+                "$actor": "loader/fetch",
+                "incarnation": "4"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "loader",
+              "loader.loading"
+            ]
+          }
+        },
+        "loader/fetch": {
+          "id": "fetch",
+          "address": "loader/fetch",
+          "incarnation": "4",
+          "src": "root/actors/fetchUser",
+          "parent": {
+            "$actor": "loader",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "userId": 7
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "userId": 7
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "loader",
+            "incarnation": "0"
+          },
+          "type": "loaded",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "loaded"
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "loader/fetch",
+            "incarnation": "4"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 5,
+        "timer": 0,
+        "sequence": 9,
+        "effect": 6
+      }
+    },
+    "effects": [
+      {
+        "id": "system:5",
+        "source": {
+          "$actor": "loader/fetch",
+          "incarnation": "4"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 7",
+    "snapshot": {
+      "root": "loader",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "loader": {
+          "id": "loader",
+          "address": "loader",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "attempt": 1
+            },
+            "value": "loading",
+            "children": {
+              "fetch": {
+                "$actor": "loader/fetch",
+                "incarnation": "4"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "loader",
+              "loader.loading"
+            ]
+          }
+        },
+        "loader/fetch": {
+          "id": "fetch",
+          "address": "loader/fetch",
+          "incarnation": "4",
+          "src": "root/actors/fetchUser",
+          "parent": {
+            "$actor": "loader",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "userId": 7
+          },
+          "snapshot": {
+            "status": "active",
+            "input": {
+              "userId": 7
+            },
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "loader",
+            "incarnation": "0"
+          },
+          "type": "loaded",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "loaded"
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "loader/fetch",
+            "incarnation": "4"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 5,
+        "timer": 0,
+        "sequence": 10,
+        "effect": 6
+      }
+    },
+    "effects": []
+  }
+]

@@ -22,7 +22,7 @@ use crate::event::Ev;
 use crate::machine::Machine;
 
 pub(crate) type GuardFn<C, E> = Box<dyn Fn(&GuardArgs<'_, C, E>) -> bool + Send + Sync>;
-pub(crate) type ActionFn = Box<dyn Fn() + Send + Sync>;
+pub(crate) type ActionFn = crate::system::EffectExec;
 pub(crate) type DelayFn<C, E> = Box<dyn Fn(&C, &Ev<E>) -> u64 + Send + Sync>;
 
 type Factory<T> = Box<dyn Fn(&Value) -> Result<T, String> + Send + Sync>;
@@ -50,11 +50,12 @@ pub struct Registry<C, E> {
     pub(crate) guards: HashMap<String, Factory<GuardFn<C, E>>>,
     pub(crate) actions: HashMap<String, Factory<ActionFn>>,
     pub(crate) delays: HashMap<String, Factory<DelayFn<C, E>>>,
+    pub(crate) actors: Vec<(String, Arc<dyn crate::system::Logic>)>,
 }
 
 impl<C, E> Default for Registry<C, E> {
     fn default() -> Self {
-        Self { guards: HashMap::new(), actions: HashMap::new(), delays: HashMap::new() }
+        Self { guards: HashMap::new(), actions: HashMap::new(), delays: HashMap::new(), actors: Vec::new() }
     }
 }
 
@@ -114,7 +115,7 @@ impl<C: 'static, E: 'static> Registry<C, E> {
             name.into(),
             Box::new(move |_| {
                 let f = f.clone();
-                Ok(Box::new(move || f()) as ActionFn)
+                Ok(Arc::new(move || f()) as ActionFn)
             }),
         );
         self
@@ -132,9 +133,21 @@ impl<C: 'static, E: 'static> Registry<C, E> {
             Box::new(move |params| {
                 let p: P = parse_params(params)?;
                 let f = f.clone();
-                Ok(Box::new(move || f(&p)) as ActionFn)
+                Ok(Arc::new(move || f(&p)) as ActionFn)
             }),
         );
+        self
+    }
+
+    /// Registers actor logic that `invoke` can reference by `src`: another
+    /// machine (`Arc<Machine<..>>`), a [`crate::step::StepLogic`], or any
+    /// [`crate::system::Logic`].
+    pub fn actor(&mut self, name: impl Into<String>, logic: Arc<dyn crate::system::Logic>) -> &mut Self {
+        let name = name.into();
+        match self.actors.iter_mut().find(|(n, _)| *n == name) {
+            Some(entry) => entry.1 = logic,
+            None => self.actors.push((name, logic)),
+        }
         self
     }
 

@@ -1,0 +1,3191 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "root",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "root": {
+          "id": "root",
+          "address": "root",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "running",
+            "children": {
+              "m": {
+                "$actor": "root/m",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "root",
+              "root.running"
+            ]
+          }
+        },
+        "root/m": {
+          "id": "m",
+          "address": "root/m",
+          "incarnation": "1",
+          "src": "root/actors/mid",
+          "parent": {
+            "$actor": "root",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "on",
+            "children": {
+              "l1": {
+                "$actor": "root/m/l1",
+                "incarnation": "2"
+              },
+              "l2": {
+                "$actor": "root/m/l2",
+                "incarnation": "4"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mid",
+              "mid.on"
+            ]
+          }
+        },
+        "root/m/l1": {
+          "id": "l1",
+          "address": "root/m/l1",
+          "incarnation": "2",
+          "src": "root/actors/mid/actors/leaf",
+          "parent": {
+            "$actor": "root/m",
+            "incarnation": "1"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "busy",
+            "children": {
+              "job": {
+                "$actor": "root/m/l1/job",
+                "incarnation": "3"
+              }
+            },
+            "timers": [
+              {
+                "seq": 0,
+                "delay": 300,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "ping"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": "long",
+                  "stateId": "leaf.busy"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 1,
+            "nodeIds": [
+              "leaf",
+              "leaf.busy"
+            ]
+          }
+        },
+        "root/m/l1/job": {
+          "id": "job",
+          "address": "root/m/l1/job",
+          "incarnation": "3",
+          "src": "root/actors/mid/actors/leaf/actors/job",
+          "parent": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "root/m/l2": {
+          "id": "l2",
+          "address": "root/m/l2",
+          "incarnation": "4",
+          "src": "root/actors/mid/actors/leaf",
+          "parent": {
+            "$actor": "root/m",
+            "incarnation": "1"
+          },
+          "registryKey": "secondLeaf",
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "busy",
+            "children": {
+              "job": {
+                "$actor": "root/m/l2/job",
+                "incarnation": "5"
+              }
+            },
+            "timers": [
+              {
+                "seq": 0,
+                "delay": 300,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "ping"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": "long",
+                  "stateId": "leaf.busy"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 1,
+            "nodeIds": [
+              "leaf",
+              "leaf.busy"
+            ]
+          }
+        },
+        "root/m/l2/job": {
+          "id": "job",
+          "address": "root/m/l2/job",
+          "incarnation": "5",
+          "src": "root/actors/mid/actors/leaf/actors/job",
+          "parent": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {
+        "secondLeaf": {
+          "$actor": "root/m/l2",
+          "incarnation": "4"
+        }
+      },
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 300,
+          "sequence": 0,
+          "event": {
+            "type": "xstate.timer",
+            "seq": 0
+          }
+        },
+        {
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "occurrence": 1,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 1,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": "long",
+              "stateId": "leaf.busy"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "occurrence": 2,
+          "scheduledAt": 0,
+          "dueAt": 300,
+          "sequence": 2,
+          "event": {
+            "type": "xstate.timer",
+            "seq": 0
+          }
+        },
+        {
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "occurrence": 3,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 3,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": "long",
+              "stateId": "leaf.busy"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "type": "root/actors/mid/actors/leaf/actions/track",
+          "kind": "action",
+          "params": {},
+          "args": [
+            null
+          ]
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "root/m/l1/job",
+            "incarnation": "3"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "type": "root/actors/mid/actors/leaf/actions/track",
+          "kind": "action",
+          "params": {},
+          "args": [
+            null
+          ]
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "root/m/l2/job",
+            "incarnation": "5"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 6,
+        "timer": 4,
+        "sequence": 4,
+        "effect": 4
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "root/m/l1",
+          "incarnation": "2"
+        },
+        "type": "root/actors/mid/actors/leaf/actions/track",
+        "kind": "action",
+        "params": {},
+        "args": [
+          null
+        ]
+      },
+      {
+        "id": "system:1",
+        "source": {
+          "$actor": "root/m/l1/job",
+          "incarnation": "3"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      },
+      {
+        "id": "system:2",
+        "source": {
+          "$actor": "root/m/l2",
+          "incarnation": "4"
+        },
+        "type": "root/actors/mid/actors/leaf/actions/track",
+        "kind": "action",
+        "params": {},
+        "args": [
+          null
+        ]
+      },
+      {
+        "id": "system:3",
+        "source": {
+          "$actor": "root/m/l2/job",
+          "incarnation": "5"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "root",
+      "executionId": "system",
+      "now": 300,
+      "actors": {
+        "root": {
+          "id": "root",
+          "address": "root",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "running",
+            "children": {
+              "m": {
+                "$actor": "root/m",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "root",
+              "root.running"
+            ]
+          }
+        },
+        "root/m": {
+          "id": "m",
+          "address": "root/m",
+          "incarnation": "1",
+          "src": "root/actors/mid",
+          "parent": {
+            "$actor": "root",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "on",
+            "children": {
+              "l1": {
+                "$actor": "root/m/l1",
+                "incarnation": "2"
+              },
+              "l2": {
+                "$actor": "root/m/l2",
+                "incarnation": "4"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mid",
+              "mid.on"
+            ]
+          }
+        },
+        "root/m/l1": {
+          "id": "l1",
+          "address": "root/m/l1",
+          "incarnation": "2",
+          "src": "root/actors/mid/actors/leaf",
+          "parent": {
+            "$actor": "root/m",
+            "incarnation": "1"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "busy",
+            "children": {
+              "job": {
+                "$actor": "root/m/l1/job",
+                "incarnation": "3"
+              }
+            },
+            "timers": [
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": "long",
+                  "stateId": "leaf.busy"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 1,
+            "nodeIds": [
+              "leaf",
+              "leaf.busy"
+            ]
+          }
+        },
+        "root/m/l1/job": {
+          "id": "job",
+          "address": "root/m/l1/job",
+          "incarnation": "3",
+          "src": "root/actors/mid/actors/leaf/actors/job",
+          "parent": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "root/m/l2": {
+          "id": "l2",
+          "address": "root/m/l2",
+          "incarnation": "4",
+          "src": "root/actors/mid/actors/leaf",
+          "parent": {
+            "$actor": "root/m",
+            "incarnation": "1"
+          },
+          "registryKey": "secondLeaf",
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "busy",
+            "children": {
+              "job": {
+                "$actor": "root/m/l2/job",
+                "incarnation": "5"
+              }
+            },
+            "timers": [
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": "long",
+                  "stateId": "leaf.busy"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 1,
+            "nodeIds": [
+              "leaf",
+              "leaf.busy"
+            ]
+          }
+        },
+        "root/m/l2/job": {
+          "id": "job",
+          "address": "root/m/l2/job",
+          "incarnation": "5",
+          "src": "root/actors/mid/actors/leaf/actors/job",
+          "parent": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {
+        "secondLeaf": {
+          "$actor": "root/m/l2",
+          "incarnation": "4"
+        }
+      },
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "occurrence": 1,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 1,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": "long",
+              "stateId": "leaf.busy"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "occurrence": 3,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 3,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": "long",
+              "stateId": "leaf.busy"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "type": "root/actors/mid/actors/leaf/actions/track",
+          "kind": "action",
+          "params": {},
+          "args": [
+            null
+          ]
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "root/m/l1/job",
+            "incarnation": "3"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "type": "root/actors/mid/actors/leaf/actions/track",
+          "kind": "action",
+          "params": {},
+          "args": [
+            null
+          ]
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "root/m/l2/job",
+            "incarnation": "5"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "type": "pinged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "pinged"
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "type": "pinged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "pinged"
+          }
+        }
+      },
+      "counters": {
+        "actor": 6,
+        "timer": 4,
+        "sequence": 6,
+        "effect": 6
+      }
+    },
+    "effects": [
+      {
+        "id": "system:4",
+        "source": {
+          "$actor": "root/m/l1",
+          "incarnation": "2"
+        },
+        "type": "pinged",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "pinged"
+        }
+      },
+      {
+        "id": "system:5",
+        "source": {
+          "$actor": "root/m/l2",
+          "incarnation": "4"
+        },
+        "type": "pinged",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "pinged"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "root",
+      "executionId": "system",
+      "now": 300,
+      "actors": {
+        "root": {
+          "id": "root",
+          "address": "root",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "running",
+            "children": {
+              "m": {
+                "$actor": "root/m",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "root",
+              "root.running"
+            ]
+          }
+        },
+        "root/m": {
+          "id": "m",
+          "address": "root/m",
+          "incarnation": "1",
+          "src": "root/actors/mid",
+          "parent": {
+            "$actor": "root",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "on",
+            "children": {
+              "l1": {
+                "$actor": "root/m/l1",
+                "incarnation": "2"
+              },
+              "l2": {
+                "$actor": "root/m/l2",
+                "incarnation": "4"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mid",
+              "mid.on"
+            ]
+          }
+        },
+        "root/m/l1": {
+          "id": "l1",
+          "address": "root/m/l1",
+          "incarnation": "2",
+          "src": "root/actors/mid/actors/leaf",
+          "parent": {
+            "$actor": "root/m",
+            "incarnation": "1"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "busy",
+            "children": {
+              "job": {
+                "$actor": "root/m/l1/job",
+                "incarnation": "3"
+              }
+            },
+            "timers": [
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": "long",
+                  "stateId": "leaf.busy"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 1,
+            "nodeIds": [
+              "leaf",
+              "leaf.busy"
+            ]
+          }
+        },
+        "root/m/l1/job": {
+          "id": "job",
+          "address": "root/m/l1/job",
+          "incarnation": "3",
+          "src": "root/actors/mid/actors/leaf/actors/job",
+          "parent": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "root/m/l2": {
+          "id": "l2",
+          "address": "root/m/l2",
+          "incarnation": "4",
+          "src": "root/actors/mid/actors/leaf",
+          "parent": {
+            "$actor": "root/m",
+            "incarnation": "1"
+          },
+          "registryKey": "secondLeaf",
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "busy",
+            "children": {},
+            "timers": [
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": "long",
+                  "stateId": "leaf.busy"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 1,
+            "nodeIds": [
+              "leaf",
+              "leaf.busy"
+            ]
+          }
+        },
+        "root/m/l2/job": {
+          "id": "job",
+          "address": "root/m/l2/job",
+          "incarnation": "5",
+          "src": "root/actors/mid/actors/leaf/actors/job",
+          "parent": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": 5,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": 5
+              }
+            }
+          }
+        }
+      },
+      "registry": {
+        "secondLeaf": {
+          "$actor": "root/m/l2",
+          "incarnation": "4"
+        }
+      },
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "occurrence": 1,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 1,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": "long",
+              "stateId": "leaf.busy"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "occurrence": 3,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 3,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": "long",
+              "stateId": "leaf.busy"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "type": "root/actors/mid/actors/leaf/actions/track",
+          "kind": "action",
+          "params": {},
+          "args": [
+            null
+          ]
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "root/m/l1/job",
+            "incarnation": "3"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "type": "root/actors/mid/actors/leaf/actions/track",
+          "kind": "action",
+          "params": {},
+          "args": [
+            null
+          ]
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "type": "pinged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "pinged"
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "type": "pinged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "pinged"
+          }
+        }
+      },
+      "counters": {
+        "actor": 6,
+        "timer": 4,
+        "sequence": 8,
+        "effect": 6
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "root",
+      "executionId": "system",
+      "now": 300,
+      "actors": {
+        "root": {
+          "id": "root",
+          "address": "root",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "halted",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "root",
+              "root.halted"
+            ]
+          }
+        },
+        "root/m": {
+          "id": "m",
+          "address": "root/m",
+          "incarnation": "1",
+          "src": "root/actors/mid",
+          "parent": {
+            "$actor": "root",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mid",
+              "mid.on"
+            ]
+          }
+        },
+        "root/m/l1": {
+          "id": "l1",
+          "address": "root/m/l1",
+          "incarnation": "2",
+          "src": "root/actors/mid/actors/leaf",
+          "parent": {
+            "$actor": "root/m",
+            "incarnation": "1"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "busy",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 1,
+            "nodeIds": [
+              "leaf",
+              "leaf.busy"
+            ]
+          }
+        },
+        "root/m/l1/job": {
+          "id": "job",
+          "address": "root/m/l1/job",
+          "incarnation": "3",
+          "src": "root/actors/mid/actors/leaf/actors/job",
+          "parent": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "root/m/l2": {
+          "id": "l2",
+          "address": "root/m/l2",
+          "incarnation": "4",
+          "src": "root/actors/mid/actors/leaf",
+          "parent": {
+            "$actor": "root/m",
+            "incarnation": "1"
+          },
+          "registryKey": "secondLeaf",
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "busy",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 1,
+            "nodeIds": [
+              "leaf",
+              "leaf.busy"
+            ]
+          }
+        },
+        "root/m/l2/job": {
+          "id": "job",
+          "address": "root/m/l2/job",
+          "incarnation": "5",
+          "src": "root/actors/mid/actors/leaf/actors/job",
+          "parent": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": 5,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": 5
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "type": "pinged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "pinged"
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "type": "pinged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "pinged"
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "root/m/l1/job",
+            "incarnation": "3"
+          },
+          "type": "@xstate.cleanup",
+          "kind": "action",
+          "args": []
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "root/m/l1/job",
+            "incarnation": "3"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:1"
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:0"
+          }
+        },
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:2"
+          }
+        }
+      },
+      "counters": {
+        "actor": 6,
+        "timer": 4,
+        "sequence": 13,
+        "effect": 10
+      }
+    },
+    "effects": [
+      {
+        "id": "system:6",
+        "source": {
+          "$actor": "root/m/l1/job",
+          "incarnation": "3"
+        },
+        "type": "@xstate.cleanup",
+        "kind": "action",
+        "args": []
+      },
+      {
+        "id": "system:7",
+        "source": {
+          "$actor": "root/m/l1/job",
+          "incarnation": "3"
+        },
+        "kind": "action",
+        "type": "@xstate.cancelEffect",
+        "params": {
+          "effectId": "system:1"
+        }
+      },
+      {
+        "id": "system:8",
+        "source": {
+          "$actor": "root/m/l1",
+          "incarnation": "2"
+        },
+        "kind": "action",
+        "type": "@xstate.cancelEffect",
+        "params": {
+          "effectId": "system:0"
+        }
+      },
+      {
+        "id": "system:9",
+        "source": {
+          "$actor": "root/m/l2",
+          "incarnation": "4"
+        },
+        "kind": "action",
+        "type": "@xstate.cancelEffect",
+        "params": {
+          "effectId": "system:2"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "snapshot": {
+      "root": "root",
+      "executionId": "system",
+      "now": 2000,
+      "actors": {
+        "root": {
+          "id": "root",
+          "address": "root",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "halted",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "root",
+              "root.halted"
+            ]
+          }
+        },
+        "root/m": {
+          "id": "m",
+          "address": "root/m",
+          "incarnation": "1",
+          "src": "root/actors/mid",
+          "parent": {
+            "$actor": "root",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mid",
+              "mid.on"
+            ]
+          }
+        },
+        "root/m/l1": {
+          "id": "l1",
+          "address": "root/m/l1",
+          "incarnation": "2",
+          "src": "root/actors/mid/actors/leaf",
+          "parent": {
+            "$actor": "root/m",
+            "incarnation": "1"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "busy",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 1,
+            "nodeIds": [
+              "leaf",
+              "leaf.busy"
+            ]
+          }
+        },
+        "root/m/l1/job": {
+          "id": "job",
+          "address": "root/m/l1/job",
+          "incarnation": "3",
+          "src": "root/actors/mid/actors/leaf/actors/job",
+          "parent": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "root/m/l2": {
+          "id": "l2",
+          "address": "root/m/l2",
+          "incarnation": "4",
+          "src": "root/actors/mid/actors/leaf",
+          "parent": {
+            "$actor": "root/m",
+            "incarnation": "1"
+          },
+          "registryKey": "secondLeaf",
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "busy",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 1,
+            "nodeIds": [
+              "leaf",
+              "leaf.busy"
+            ]
+          }
+        },
+        "root/m/l2/job": {
+          "id": "job",
+          "address": "root/m/l2/job",
+          "incarnation": "5",
+          "src": "root/actors/mid/actors/leaf/actors/job",
+          "parent": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": 5,
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": 5
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "type": "pinged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "pinged"
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "type": "pinged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "pinged"
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "root/m/l1/job",
+            "incarnation": "3"
+          },
+          "type": "@xstate.cleanup",
+          "kind": "action",
+          "args": []
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "root/m/l1/job",
+            "incarnation": "3"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:1"
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:0"
+          }
+        },
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:2"
+          }
+        }
+      },
+      "counters": {
+        "actor": 6,
+        "timer": 4,
+        "sequence": 13,
+        "effect": 10
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 4",
+    "snapshot": {
+      "root": "root",
+      "executionId": "system",
+      "now": 2000,
+      "actors": {
+        "root": {
+          "id": "root",
+          "address": "root",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "running",
+            "children": {
+              "m": {
+                "$actor": "root/m",
+                "incarnation": "6"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "root",
+              "root.running"
+            ]
+          }
+        },
+        "root/m": {
+          "id": "m",
+          "address": "root/m",
+          "incarnation": "6",
+          "src": "root/actors/mid",
+          "parent": {
+            "$actor": "root",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "on",
+            "children": {
+              "l1": {
+                "$actor": "root/m/l1",
+                "incarnation": "7"
+              },
+              "l2": {
+                "$actor": "root/m/l2",
+                "incarnation": "9"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mid",
+              "mid.on"
+            ]
+          }
+        },
+        "root/m/l1": {
+          "id": "l1",
+          "address": "root/m/l1",
+          "incarnation": "7",
+          "src": "root/actors/mid/actors/leaf",
+          "parent": {
+            "$actor": "root/m",
+            "incarnation": "6"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "busy",
+            "children": {
+              "job": {
+                "$actor": "root/m/l1/job",
+                "incarnation": "8"
+              }
+            },
+            "timers": [
+              {
+                "seq": 0,
+                "delay": 300,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "ping"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": "long",
+                  "stateId": "leaf.busy"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 1,
+            "nodeIds": [
+              "leaf",
+              "leaf.busy"
+            ]
+          }
+        },
+        "root/m/l1/job": {
+          "id": "job",
+          "address": "root/m/l1/job",
+          "incarnation": "8",
+          "src": "root/actors/mid/actors/leaf/actors/job",
+          "parent": {
+            "$actor": "root/m/l1",
+            "incarnation": "7"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "root/m/l2": {
+          "id": "l2",
+          "address": "root/m/l2",
+          "incarnation": "9",
+          "src": "root/actors/mid/actors/leaf",
+          "parent": {
+            "$actor": "root/m",
+            "incarnation": "6"
+          },
+          "registryKey": "secondLeaf",
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "busy",
+            "children": {
+              "job": {
+                "$actor": "root/m/l2/job",
+                "incarnation": "10"
+              }
+            },
+            "timers": [
+              {
+                "seq": 0,
+                "delay": 300,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "ping"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": "long",
+                  "stateId": "leaf.busy"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 1,
+            "nodeIds": [
+              "leaf",
+              "leaf.busy"
+            ]
+          }
+        },
+        "root/m/l2/job": {
+          "id": "job",
+          "address": "root/m/l2/job",
+          "incarnation": "10",
+          "src": "root/actors/mid/actors/leaf/actors/job",
+          "parent": {
+            "$actor": "root/m/l2",
+            "incarnation": "9"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {
+        "secondLeaf": {
+          "$actor": "root/m/l2",
+          "incarnation": "9"
+        }
+      },
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "7"
+          },
+          "occurrence": 4,
+          "scheduledAt": 2000,
+          "dueAt": 2300,
+          "sequence": 14,
+          "event": {
+            "type": "xstate.timer",
+            "seq": 0
+          }
+        },
+        {
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "7"
+          },
+          "occurrence": 5,
+          "scheduledAt": 2000,
+          "dueAt": 3000,
+          "sequence": 15,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": "long",
+              "stateId": "leaf.busy"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "9"
+          },
+          "occurrence": 6,
+          "scheduledAt": 2000,
+          "dueAt": 2300,
+          "sequence": 16,
+          "event": {
+            "type": "xstate.timer",
+            "seq": 0
+          }
+        },
+        {
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "9"
+          },
+          "occurrence": 7,
+          "scheduledAt": 2000,
+          "dueAt": 3000,
+          "sequence": 17,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": "long",
+              "stateId": "leaf.busy"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "type": "pinged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "pinged"
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "type": "pinged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "pinged"
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "root/m/l1/job",
+            "incarnation": "3"
+          },
+          "type": "@xstate.cleanup",
+          "kind": "action",
+          "args": []
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "root/m/l1/job",
+            "incarnation": "3"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:1"
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:0"
+          }
+        },
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:2"
+          }
+        },
+        "system:10": {
+          "id": "system:10",
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "7"
+          },
+          "type": "root/actors/mid/actors/leaf/actions/track",
+          "kind": "action",
+          "params": {},
+          "args": [
+            null
+          ]
+        },
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "root/m/l1/job",
+            "incarnation": "8"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        },
+        "system:12": {
+          "id": "system:12",
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "9"
+          },
+          "type": "root/actors/mid/actors/leaf/actions/track",
+          "kind": "action",
+          "params": {},
+          "args": [
+            null
+          ]
+        },
+        "system:13": {
+          "id": "system:13",
+          "source": {
+            "$actor": "root/m/l2/job",
+            "incarnation": "10"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 11,
+        "timer": 8,
+        "sequence": 18,
+        "effect": 14
+      }
+    },
+    "effects": [
+      {
+        "id": "system:10",
+        "source": {
+          "$actor": "root/m/l1",
+          "incarnation": "7"
+        },
+        "type": "root/actors/mid/actors/leaf/actions/track",
+        "kind": "action",
+        "params": {},
+        "args": [
+          null
+        ]
+      },
+      {
+        "id": "system:11",
+        "source": {
+          "$actor": "root/m/l1/job",
+          "incarnation": "8"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      },
+      {
+        "id": "system:12",
+        "source": {
+          "$actor": "root/m/l2",
+          "incarnation": "9"
+        },
+        "type": "root/actors/mid/actors/leaf/actions/track",
+        "kind": "action",
+        "params": {},
+        "args": [
+          null
+        ]
+      },
+      {
+        "id": "system:13",
+        "source": {
+          "$actor": "root/m/l2/job",
+          "incarnation": "10"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 5",
+    "snapshot": {
+      "root": "root",
+      "executionId": "system",
+      "now": 2000,
+      "actors": {
+        "root": {
+          "id": "root",
+          "address": "root",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "running",
+            "children": {
+              "m": {
+                "$actor": "root/m",
+                "incarnation": "6"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "root",
+              "root.running"
+            ]
+          }
+        },
+        "root/m": {
+          "id": "m",
+          "address": "root/m",
+          "incarnation": "6",
+          "src": "root/actors/mid",
+          "parent": {
+            "$actor": "root",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "on",
+            "children": {
+              "l1": {
+                "$actor": "root/m/l1",
+                "incarnation": "7"
+              },
+              "l2": {
+                "$actor": "root/m/l2",
+                "incarnation": "9"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mid",
+              "mid.on"
+            ]
+          }
+        },
+        "root/m/l1": {
+          "id": "l1",
+          "address": "root/m/l1",
+          "incarnation": "7",
+          "src": "root/actors/mid/actors/leaf",
+          "parent": {
+            "$actor": "root/m",
+            "incarnation": "6"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "busy",
+            "children": {
+              "job": {
+                "$actor": "root/m/l1/job",
+                "incarnation": "8"
+              }
+            },
+            "timers": [
+              {
+                "seq": 0,
+                "delay": 300,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "ping"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": "long",
+                  "stateId": "leaf.busy"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 1,
+            "nodeIds": [
+              "leaf",
+              "leaf.busy"
+            ]
+          }
+        },
+        "root/m/l1/job": {
+          "id": "job",
+          "address": "root/m/l1/job",
+          "incarnation": "8",
+          "src": "root/actors/mid/actors/leaf/actors/job",
+          "parent": {
+            "$actor": "root/m/l1",
+            "incarnation": "7"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "root/m/l2": {
+          "id": "l2",
+          "address": "root/m/l2",
+          "incarnation": "9",
+          "src": "root/actors/mid/actors/leaf",
+          "parent": {
+            "$actor": "root/m",
+            "incarnation": "6"
+          },
+          "registryKey": "secondLeaf",
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "busy",
+            "children": {
+              "job": {
+                "$actor": "root/m/l2/job",
+                "incarnation": "10"
+              }
+            },
+            "timers": [
+              {
+                "seq": 0,
+                "delay": 300,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "ping"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": "long",
+                  "stateId": "leaf.busy"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 1,
+            "nodeIds": [
+              "leaf",
+              "leaf.busy"
+            ]
+          }
+        },
+        "root/m/l2/job": {
+          "id": "job",
+          "address": "root/m/l2/job",
+          "incarnation": "10",
+          "src": "root/actors/mid/actors/leaf/actors/job",
+          "parent": {
+            "$actor": "root/m/l2",
+            "incarnation": "9"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {
+        "secondLeaf": {
+          "$actor": "root/m/l2",
+          "incarnation": "9"
+        }
+      },
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "7"
+          },
+          "occurrence": 4,
+          "scheduledAt": 2000,
+          "dueAt": 2300,
+          "sequence": 14,
+          "event": {
+            "type": "xstate.timer",
+            "seq": 0
+          }
+        },
+        {
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "7"
+          },
+          "occurrence": 5,
+          "scheduledAt": 2000,
+          "dueAt": 3000,
+          "sequence": 15,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": "long",
+              "stateId": "leaf.busy"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "9"
+          },
+          "occurrence": 6,
+          "scheduledAt": 2000,
+          "dueAt": 2300,
+          "sequence": 16,
+          "event": {
+            "type": "xstate.timer",
+            "seq": 0
+          }
+        },
+        {
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "9"
+          },
+          "occurrence": 7,
+          "scheduledAt": 2000,
+          "dueAt": 3000,
+          "sequence": 17,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": "long",
+              "stateId": "leaf.busy"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "type": "pinged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "pinged"
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "type": "pinged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "pinged"
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "root/m/l1/job",
+            "incarnation": "3"
+          },
+          "type": "@xstate.cleanup",
+          "kind": "action",
+          "args": []
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "root/m/l1/job",
+            "incarnation": "3"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:1"
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:0"
+          }
+        },
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:2"
+          }
+        },
+        "system:10": {
+          "id": "system:10",
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "7"
+          },
+          "type": "root/actors/mid/actors/leaf/actions/track",
+          "kind": "action",
+          "params": {},
+          "args": [
+            null
+          ]
+        },
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "root/m/l1/job",
+            "incarnation": "8"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        },
+        "system:12": {
+          "id": "system:12",
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "9"
+          },
+          "type": "root/actors/mid/actors/leaf/actions/track",
+          "kind": "action",
+          "params": {},
+          "args": [
+            null
+          ]
+        },
+        "system:13": {
+          "id": "system:13",
+          "source": {
+            "$actor": "root/m/l2/job",
+            "incarnation": "10"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        },
+        "system:14": {
+          "id": "system:14",
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "7"
+          },
+          "type": "pinged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "pinged"
+          }
+        }
+      },
+      "counters": {
+        "actor": 11,
+        "timer": 8,
+        "sequence": 19,
+        "effect": 15
+      }
+    },
+    "effects": [
+      {
+        "id": "system:14",
+        "source": {
+          "$actor": "root/m/l1",
+          "incarnation": "7"
+        },
+        "type": "pinged",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "pinged"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 6",
+    "snapshot": {
+      "root": "root",
+      "executionId": "system",
+      "now": 2000,
+      "actors": {
+        "root": {
+          "id": "root",
+          "address": "root",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "running",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "root",
+              "root.running"
+            ]
+          }
+        },
+        "root/m": {
+          "id": "m",
+          "address": "root/m",
+          "incarnation": "6",
+          "src": "root/actors/mid",
+          "parent": {
+            "$actor": "root",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mid",
+              "mid.on"
+            ]
+          }
+        },
+        "root/m/l1": {
+          "id": "l1",
+          "address": "root/m/l1",
+          "incarnation": "7",
+          "src": "root/actors/mid/actors/leaf",
+          "parent": {
+            "$actor": "root/m",
+            "incarnation": "6"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "busy",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 1,
+            "nodeIds": [
+              "leaf",
+              "leaf.busy"
+            ]
+          }
+        },
+        "root/m/l1/job": {
+          "id": "job",
+          "address": "root/m/l1/job",
+          "incarnation": "8",
+          "src": "root/actors/mid/actors/leaf/actors/job",
+          "parent": {
+            "$actor": "root/m/l1",
+            "incarnation": "7"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "root/m/l2": {
+          "id": "l2",
+          "address": "root/m/l2",
+          "incarnation": "9",
+          "src": "root/actors/mid/actors/leaf",
+          "parent": {
+            "$actor": "root/m",
+            "incarnation": "6"
+          },
+          "registryKey": "secondLeaf",
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "busy",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 1,
+            "nodeIds": [
+              "leaf",
+              "leaf.busy"
+            ]
+          }
+        },
+        "root/m/l2/job": {
+          "id": "job",
+          "address": "root/m/l2/job",
+          "incarnation": "10",
+          "src": "root/actors/mid/actors/leaf/actors/job",
+          "parent": {
+            "$actor": "root/m/l2",
+            "incarnation": "9"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "type": "pinged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "pinged"
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "type": "pinged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "pinged"
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "root/m/l1/job",
+            "incarnation": "3"
+          },
+          "type": "@xstate.cleanup",
+          "kind": "action",
+          "args": []
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "root/m/l1/job",
+            "incarnation": "3"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:1"
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:0"
+          }
+        },
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:2"
+          }
+        },
+        "system:14": {
+          "id": "system:14",
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "7"
+          },
+          "type": "pinged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "pinged"
+          }
+        },
+        "system:15": {
+          "id": "system:15",
+          "source": {
+            "$actor": "root/m/l1/job",
+            "incarnation": "8"
+          },
+          "type": "@xstate.cleanup",
+          "kind": "action",
+          "args": []
+        },
+        "system:16": {
+          "id": "system:16",
+          "source": {
+            "$actor": "root/m/l1/job",
+            "incarnation": "8"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:11"
+          }
+        },
+        "system:17": {
+          "id": "system:17",
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "7"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:10"
+          }
+        },
+        "system:18": {
+          "id": "system:18",
+          "source": {
+            "$actor": "root/m/l2/job",
+            "incarnation": "10"
+          },
+          "type": "@xstate.cleanup",
+          "kind": "action",
+          "args": []
+        },
+        "system:19": {
+          "id": "system:19",
+          "source": {
+            "$actor": "root/m/l2/job",
+            "incarnation": "10"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:13"
+          }
+        },
+        "system:20": {
+          "id": "system:20",
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "9"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:12"
+          }
+        }
+      },
+      "counters": {
+        "actor": 11,
+        "timer": 8,
+        "sequence": 25,
+        "effect": 21
+      }
+    },
+    "effects": [
+      {
+        "id": "system:15",
+        "source": {
+          "$actor": "root/m/l1/job",
+          "incarnation": "8"
+        },
+        "type": "@xstate.cleanup",
+        "kind": "action",
+        "args": []
+      },
+      {
+        "id": "system:16",
+        "source": {
+          "$actor": "root/m/l1/job",
+          "incarnation": "8"
+        },
+        "kind": "action",
+        "type": "@xstate.cancelEffect",
+        "params": {
+          "effectId": "system:11"
+        }
+      },
+      {
+        "id": "system:17",
+        "source": {
+          "$actor": "root/m/l1",
+          "incarnation": "7"
+        },
+        "kind": "action",
+        "type": "@xstate.cancelEffect",
+        "params": {
+          "effectId": "system:10"
+        }
+      },
+      {
+        "id": "system:18",
+        "source": {
+          "$actor": "root/m/l2/job",
+          "incarnation": "10"
+        },
+        "type": "@xstate.cleanup",
+        "kind": "action",
+        "args": []
+      },
+      {
+        "id": "system:19",
+        "source": {
+          "$actor": "root/m/l2/job",
+          "incarnation": "10"
+        },
+        "kind": "action",
+        "type": "@xstate.cancelEffect",
+        "params": {
+          "effectId": "system:13"
+        }
+      },
+      {
+        "id": "system:20",
+        "source": {
+          "$actor": "root/m/l2",
+          "incarnation": "9"
+        },
+        "kind": "action",
+        "type": "@xstate.cancelEffect",
+        "params": {
+          "effectId": "system:12"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 7",
+    "snapshot": {
+      "root": "root",
+      "executionId": "system",
+      "now": 5000,
+      "actors": {
+        "root": {
+          "id": "root",
+          "address": "root",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "running",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "root",
+              "root.running"
+            ]
+          }
+        },
+        "root/m": {
+          "id": "m",
+          "address": "root/m",
+          "incarnation": "6",
+          "src": "root/actors/mid",
+          "parent": {
+            "$actor": "root",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "mid",
+              "mid.on"
+            ]
+          }
+        },
+        "root/m/l1": {
+          "id": "l1",
+          "address": "root/m/l1",
+          "incarnation": "7",
+          "src": "root/actors/mid/actors/leaf",
+          "parent": {
+            "$actor": "root/m",
+            "incarnation": "6"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "busy",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 1,
+            "nodeIds": [
+              "leaf",
+              "leaf.busy"
+            ]
+          }
+        },
+        "root/m/l1/job": {
+          "id": "job",
+          "address": "root/m/l1/job",
+          "incarnation": "8",
+          "src": "root/actors/mid/actors/leaf/actors/job",
+          "parent": {
+            "$actor": "root/m/l1",
+            "incarnation": "7"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "root/m/l2": {
+          "id": "l2",
+          "address": "root/m/l2",
+          "incarnation": "9",
+          "src": "root/actors/mid/actors/leaf",
+          "parent": {
+            "$actor": "root/m",
+            "incarnation": "6"
+          },
+          "registryKey": "secondLeaf",
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "busy",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 1,
+            "nodeIds": [
+              "leaf",
+              "leaf.busy"
+            ]
+          }
+        },
+        "root/m/l2/job": {
+          "id": "job",
+          "address": "root/m/l2/job",
+          "incarnation": "10",
+          "src": "root/actors/mid/actors/leaf/actors/job",
+          "parent": {
+            "$actor": "root/m/l2",
+            "incarnation": "9"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "type": "pinged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "pinged"
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "type": "pinged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "pinged"
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "root/m/l1/job",
+            "incarnation": "3"
+          },
+          "type": "@xstate.cleanup",
+          "kind": "action",
+          "args": []
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "root/m/l1/job",
+            "incarnation": "3"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:1"
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "2"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:0"
+          }
+        },
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "4"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:2"
+          }
+        },
+        "system:14": {
+          "id": "system:14",
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "7"
+          },
+          "type": "pinged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "pinged"
+          }
+        },
+        "system:15": {
+          "id": "system:15",
+          "source": {
+            "$actor": "root/m/l1/job",
+            "incarnation": "8"
+          },
+          "type": "@xstate.cleanup",
+          "kind": "action",
+          "args": []
+        },
+        "system:16": {
+          "id": "system:16",
+          "source": {
+            "$actor": "root/m/l1/job",
+            "incarnation": "8"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:11"
+          }
+        },
+        "system:17": {
+          "id": "system:17",
+          "source": {
+            "$actor": "root/m/l1",
+            "incarnation": "7"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:10"
+          }
+        },
+        "system:18": {
+          "id": "system:18",
+          "source": {
+            "$actor": "root/m/l2/job",
+            "incarnation": "10"
+          },
+          "type": "@xstate.cleanup",
+          "kind": "action",
+          "args": []
+        },
+        "system:19": {
+          "id": "system:19",
+          "source": {
+            "$actor": "root/m/l2/job",
+            "incarnation": "10"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:13"
+          }
+        },
+        "system:20": {
+          "id": "system:20",
+          "source": {
+            "$actor": "root/m/l2",
+            "incarnation": "9"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:12"
+          }
+        }
+      },
+      "counters": {
+        "actor": 11,
+        "timer": 8,
+        "sequence": 25,
+        "effect": 21
+      }
+    },
+    "effects": []
+  }
+]

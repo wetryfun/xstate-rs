@@ -1,0 +1,33 @@
+{
+  "logic": [
+    { "name": "job", "async": {} },
+    {
+      "name": "root",
+      "actors": ["job"],
+      "machine": {
+        "id": "r",
+        "initial": "a",
+        "internalEvents": ["secret"],
+        "states": {
+          "a": {
+            "invoke": { "src": "job", "id": "j", "registryKey": "job" },
+            "entry": [{ "type": "@xstate.raise", "event": { "type": "late" }, "delay": 100, "id": "late" }, { "type": "track" }],
+            "on": { "late": { "target": "b" }, "secret": { "target": "b" } }
+          },
+          "b": {}
+        }
+      }
+    }
+  ],
+  "root": "root",
+  "steps": [
+    { "send": "nope", "event": { "type": "x" } },
+    { "send": "r", "event": { "type": "secret" } },
+    { "send": "r", "event": { "type": "xstate.after", "delay": 100, "stateId": "r.a" } },
+    { "send": "r", "event": { "type": "xstate.async.resolve" } },
+    { "advance": 50 },
+    { "send": "r", "event": { "type": "xstate.stop" } },
+    { "resolve": 0, "event": { "type": "xstate.async.resolve", "data": 1 } },
+    { "advance": 500 }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "logic": [
+    {
+      "name": "ticker",
+      "machine": {
+        "id": "ticker",
+        "initial": "t",
+        "states": { "t": { "after": { "100": { "target": "t", "reenter": true, "actions": [{ "type": "@xstate.emit", "event": { "type": "tick" } }] } } } }
+      }
+    },
+    {
+      "name": "host",
+      "actors": ["ticker"],
+      "machine": {
+        "id": "host",
+        "initial": "on",
+        "exit": [{ "type": "track" }],
+        "states": {
+          "on": {
+            "invoke": [{ "src": "ticker", "id": "a" }, { "src": "ticker" }],
+            "on": {
+              "restart": { "target": "on", "reenter": true },
+              "stay": { "target": "on" },
+              "off": { "target": "off" },
+              "end": { "target": "fin" }
+            }
+          },
+          "off": { "on": { "on": { "target": "on" } } },
+          "fin": { "type": "final" }
+        }
+      }
+    }
+  ],
+  "root": "host",
+  "steps": [
+    { "advance": 250 },
+    { "send": "host", "event": { "type": "stay" } },
+    { "send": "host", "event": { "type": "restart" } },
+    { "advance": 300 },
+    { "send": "host", "event": { "type": "off" } },
+    { "advance": 1000 },
+    { "send": "host", "event": { "type": "on" } },
+    { "send": "host", "event": { "type": "end" } },
+    { "advance": 2000 }
+  ]
+}

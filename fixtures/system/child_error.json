@@ -1,0 +1,40 @@
+{
+  "logic": [
+    { "name": "job", "async": {} },
+    {
+      "name": "middle",
+      "actors": ["job"],
+      "machine": {
+        "id": "middle",
+        "initial": "run",
+        "states": {
+          "run": { "invoke": { "src": "job", "id": "job" } }
+        }
+      }
+    },
+    {
+      "name": "top",
+      "actors": ["middle"],
+      "machine": {
+        "id": "top",
+        "type": "parallel",
+        "states": {
+          "region": {
+            "initial": "waiting",
+            "states": {
+              "waiting": { "invoke": { "src": "middle", "id": "mid" } },
+              "recovered": {}
+            },
+            "onError": { "target": ".recovered" }
+          },
+          "other": { "initial": "x", "states": { "x": { "on": { "go": { "target": "y" } } }, "y": {} } }
+        }
+      }
+    }
+  ],
+  "root": "top",
+  "steps": [
+    { "resolve": 0, "event": { "type": "xstate.async.reject", "data": "kaput" } },
+    { "send": "top", "event": { "type": "go" } }
+  ]
+}

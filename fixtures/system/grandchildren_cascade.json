@@ -1,0 +1,55 @@
+{
+  "logic": [
+    { "name": "job", "async": {} },
+    {
+      "name": "leaf",
+      "actors": ["job"],
+      "machine": {
+        "id": "leaf",
+        "initial": "busy",
+        "exit": [{ "type": "@xstate.emit", "event": { "type": "leafExit" } }],
+        "states": {
+          "busy": {
+            "invoke": { "src": "job", "id": "job" },
+            "entry": [{ "type": "@xstate.raise", "event": { "type": "ping" }, "delay": 300 }, { "type": "track" }],
+            "after": { "long": { "target": "idle" } },
+            "on": { "ping": { "actions": [{ "type": "@xstate.emit", "event": { "type": "pinged" } }] } }
+          },
+          "idle": {}
+        }
+      }
+    },
+    {
+      "name": "mid",
+      "actors": ["leaf"],
+      "machine": {
+        "id": "mid",
+        "initial": "on",
+        "states": { "on": { "invoke": [{ "src": "leaf", "id": "l1" }, { "src": "leaf", "id": "l2", "registryKey": "secondLeaf" }] } }
+      }
+    },
+    {
+      "name": "root",
+      "actors": ["mid"],
+      "machine": {
+        "id": "root",
+        "initial": "running",
+        "states": {
+          "running": { "invoke": { "src": "mid", "id": "m" }, "on": { "halt": { "target": "halted" } } },
+          "halted": { "on": { "resume": { "target": "running" } } }
+        }
+      }
+    }
+  ],
+  "root": "root",
+  "steps": [
+    { "advance": 300 },
+    { "resolve": 3, "event": { "type": "xstate.async.resolve", "data": 5 } },
+    { "send": "root", "event": { "type": "halt" } },
+    { "advance": 2000 },
+    { "send": "root", "event": { "type": "resume" } },
+    { "send": "root/m/l1", "event": { "type": "ping" } },
+    { "send": "root", "event": { "type": "xstate.stop" } },
+    { "advance": 5000 }
+  ]
+}

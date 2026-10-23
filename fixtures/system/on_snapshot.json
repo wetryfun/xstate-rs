@@ -1,0 +1,44 @@
+{
+  "logic": [
+    {
+      "name": "counter",
+      "machine": {
+        "id": "counter",
+        "initial": "low",
+        "context": { "level": 0 },
+        "states": {
+          "low": { "on": { "up": { "target": "high", "context": { "level": 1 } } } },
+          "high": { "on": { "up": { "target": "max", "context": { "level": 2 } } } },
+          "max": { "type": "final" }
+        }
+      }
+    },
+    {
+      "name": "watcher",
+      "actors": ["counter"],
+      "machine": {
+        "id": "watcher",
+        "initial": "watching",
+        "context": { "seen": 0 },
+        "states": {
+          "watching": {
+            "invoke": {
+              "src": "counter",
+              "id": "c",
+              "onSnapshot": { "actions": [{ "type": "@xstate.assign", "context": { "seen": 1 } }, { "type": "@xstate.emit", "event": { "type": "snapshotSeen" } }] },
+              "onDone": { "target": "over" }
+            }
+          },
+          "over": {}
+        }
+      }
+    }
+  ],
+  "root": "watcher",
+  "steps": [
+    { "send": "watcher/c", "event": { "type": "up" } },
+    { "send": "watcher/c", "event": { "type": "noop" } },
+    { "send": "watcher/c", "event": { "type": "up" } },
+    { "send": "watcher/c", "event": { "type": "up" } }
+  ]
+}

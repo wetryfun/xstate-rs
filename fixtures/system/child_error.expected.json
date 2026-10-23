@@ -1,0 +1,322 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "top",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "top": {
+          "id": "top",
+          "address": "top",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": {
+              "region": "waiting",
+              "other": "x"
+            },
+            "children": {
+              "mid": {
+                "$actor": "top/mid",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "top",
+              "top.region",
+              "top.region.waiting",
+              "top.other",
+              "top.other.x"
+            ]
+          }
+        },
+        "top/mid": {
+          "id": "mid",
+          "address": "top/mid",
+          "incarnation": "1",
+          "src": "root/actors/middle",
+          "parent": {
+            "$actor": "top",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "run",
+            "children": {
+              "job": {
+                "$actor": "top/mid/job",
+                "incarnation": "2"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "middle",
+              "middle.run"
+            ]
+          }
+        },
+        "top/mid/job": {
+          "id": "job",
+          "address": "top/mid/job",
+          "incarnation": "2",
+          "src": "root/actors/middle/actors/job",
+          "parent": {
+            "$actor": "top/mid",
+            "incarnation": "1"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "top/mid/job",
+            "incarnation": "2"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 0,
+        "sequence": 0,
+        "effect": 1
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "top/mid/job",
+          "incarnation": "2"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "top",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "top": {
+          "id": "top",
+          "address": "top",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": {
+              "region": "recovered",
+              "other": "x"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "top",
+              "top.region",
+              "top.other",
+              "top.other.x",
+              "top.region.recovered"
+            ]
+          }
+        },
+        "top/mid": {
+          "id": "mid",
+          "address": "top/mid",
+          "incarnation": "1",
+          "src": "root/actors/middle",
+          "parent": {
+            "$actor": "top",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": "kaput",
+            "context": {},
+            "value": "run",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "middle",
+              "middle.run"
+            ]
+          }
+        },
+        "top/mid/job": {
+          "id": "job",
+          "address": "top/mid/job",
+          "incarnation": "2",
+          "src": "root/actors/middle/actors/job",
+          "parent": {
+            "$actor": "top/mid",
+            "incarnation": "1"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": "kaput",
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": "kaput"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 3,
+        "timer": 0,
+        "sequence": 3,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "top",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "top": {
+          "id": "top",
+          "address": "top",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": {
+              "region": "recovered",
+              "other": "y"
+            },
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "top",
+              "top.region",
+              "top.other",
+              "top.region.recovered",
+              "top.other.y"
+            ]
+          }
+        },
+        "top/mid": {
+          "id": "mid",
+          "address": "top/mid",
+          "incarnation": "1",
+          "src": "root/actors/middle",
+          "parent": {
+            "$actor": "top",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": "kaput",
+            "context": {},
+            "value": "run",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "middle",
+              "middle.run"
+            ]
+          }
+        },
+        "top/mid/job": {
+          "id": "job",
+          "address": "top/mid/job",
+          "incarnation": "2",
+          "src": "root/actors/middle/actors/job",
+          "parent": {
+            "$actor": "top/mid",
+            "incarnation": "1"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": "kaput",
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": "kaput"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 3,
+        "timer": 0,
+        "sequence": 4,
+        "effect": 1
+      }
+    },
+    "effects": []
+  }
+]

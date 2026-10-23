@@ -1,0 +1,53 @@
+{
+  "logic": [
+    {
+      "name": "child",
+      "machine": {
+        "id": "child",
+        "initial": "working",
+        "context": { "n": 1 },
+        "states": {
+          "working": {
+            "entry": [{ "type": "@xstate.emit", "event": { "type": "childStarted" } }],
+            "on": { "finish": { "target": "finished" } },
+            "after": { "500": { "target": "finished" } }
+          },
+          "finished": { "type": "final", "output": { "result": 42 } }
+        }
+      }
+    },
+    {
+      "name": "parent",
+      "actors": ["child"],
+      "machine": {
+        "id": "parent",
+        "initial": "idle",
+        "context": { "got": null },
+        "states": {
+          "idle": { "on": { "start": { "target": "running" } } },
+          "running": {
+            "invoke": {
+              "src": "child",
+              "id": "worker",
+              "registryKey": "theWorker",
+              "onDone": { "target": "done", "actions": [{ "type": "track", "params": { "why": "childDone" } }] }
+            },
+            "on": { "cancel": { "target": "idle" } }
+          },
+          "done": { "type": "final", "output": { "ok": true } }
+        }
+      }
+    }
+  ],
+  "root": "parent",
+  "steps": [
+    { "send": "parent", "event": { "type": "start" } },
+    { "send": "parent/worker", "event": { "type": "nothing" } },
+    { "send": "parent", "event": { "type": "cancel" } },
+    { "send": "parent", "event": { "type": "start" } },
+    { "advance": 400 },
+    { "send": "parent/worker", "event": { "type": "finish" } },
+    { "resolve": 0 },
+    { "send": "parent", "event": { "type": "start" } }
+  ]
+}

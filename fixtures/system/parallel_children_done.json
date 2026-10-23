@@ -1,0 +1,55 @@
+{
+  "logic": [
+    {
+      "name": "task",
+      "machine": {
+        "id": "task",
+        "initial": "todo",
+        "states": { "todo": { "on": { "do": { "target": "done" } } }, "done": { "type": "final", "output": { "finished": true } } }
+      }
+    },
+    {
+      "name": "board",
+      "actors": ["task"],
+      "machine": {
+        "id": "board",
+        "initial": "work",
+        "context": { "count": 0 },
+        "states": {
+          "work": {
+            "type": "parallel",
+            "states": {
+              "left": {
+                "initial": "busy",
+                "states": {
+                  "busy": { "invoke": { "src": "task", "id": "leftTask", "onDone": { "target": "ok" } } },
+                  "ok": { "type": "final", "output": "L" }
+                }
+              },
+              "right": {
+                "initial": "busy",
+                "states": {
+                  "busy": { "invoke": { "src": "task", "id": "rightTask", "onDone": { "target": "ok", "context": { "count": 1 } } } },
+                  "ok": { "type": "final" }
+                }
+              }
+            },
+            "on": { "xstate.done.state": { "matches": { "stateId": "board.work" }, "target": "complete" } }
+          },
+          "complete": {
+            "always": [{ "guard": { "type": "ctxEquals", "params": { "key": "count", "value": 1 } }, "target": "finished" }]
+          },
+          "finished": { "type": "final" }
+        },
+        "output": { "board": "done" }
+      }
+    }
+  ],
+  "root": "board",
+  "steps": [
+    { "send": "board/rightTask", "event": { "type": "do" } },
+    { "send": "board/rightTask", "event": { "type": "do" } },
+    { "send": "board/leftTask", "event": { "type": "do" } },
+    { "send": "board", "event": { "type": "anything" } }
+  ]
+}

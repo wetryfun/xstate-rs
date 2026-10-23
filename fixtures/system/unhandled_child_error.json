@@ -1,0 +1,31 @@
+{
+  "logic": [
+    { "name": "job", "async": {} },
+    {
+      "name": "child",
+      "actors": ["job"],
+      "machine": { "id": "child", "initial": "a", "states": { "a": { "invoke": { "src": "job", "id": "job" } } } }
+    },
+    {
+      "name": "root",
+      "actors": ["child"],
+      "machine": {
+        "id": "root",
+        "initial": "a",
+        "states": {
+          "a": {
+            "invoke": { "src": "child", "id": "kid" },
+            "entry": [{ "type": "@xstate.raise", "event": { "type": "tick" }, "delay": 100 }],
+            "exit": [{ "type": "@xstate.emit", "event": { "type": "rootExit" } }]
+          }
+        }
+      }
+    }
+  ],
+  "root": "root",
+  "steps": [
+    { "resolve": 0, "event": { "type": "xstate.async.reject", "data": { "code": 500 } } },
+    { "send": "root", "event": { "type": "anything" } },
+    { "advance": 500 }
+  ]
+}

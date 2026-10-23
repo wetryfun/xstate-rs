@@ -53,7 +53,7 @@ Other directories: `fixtures/` (shared differential fixtures), `tools/differenti
 
 ## Core runtime design (`xstate-rt`)
 
-Module map: `core.rs` (the shared structural algorithm), `load.rs` (validation and compilation), `machine.rs` (compiled tree and values), `interp.rs` (the native host: values, effects, timers, macrostep), `actor.rs` (public `Actor` API), `snapshot.rs` (persist/restore), `registry.rs` (Rust implementations), `event.rs`, `delay.rs`, `error.rs`.
+Module map: `core.rs` (the shared structural algorithm), `load.rs` (validation and compilation), `machine.rs` (compiled tree and values), `interp.rs` (the native host: values, effects, timers, macrostep), `system.rs` (the pure actor system: `Logic`, `System`, effects, timers, persistence), `step.rs` (step and async logic), `actor.rs` (the `Actor` convenience wrapper over a `System`), `registry.rs` (Rust implementations), `event.rs`, `delay.rs`, `error.rs`.
 
 **Decision: internals are XState-true.** `core.rs` is a port of the structural half of XState's `stateUtils.ts` (`transitionNode`, `selectEventlessTransitions`, `removeConflictingTransitions`, `getTransitionDomain`, `computeExitSet`, `microstep`, `initialMicrostep`, the `macrostep` loop). Everything value-level goes through `Host` hooks, called at exactly the points and in exactly the order XState does that work (including its separate transition-result resolvers). Any host gets XState's behavior for free; the native host and XState's own JS (through `xstate-wasm`) both run on it, and XState's test suite is the conformance check. Changing `core.rs` means running that suite.
 
@@ -61,14 +61,14 @@ Module map: `core.rs` (the shared structural algorithm), `load.rs` (validation a
 
 The interpreter never sees names on the hot path. At load time, the runtime does the following:
 
-- Reject any `@code` or `@expr` node anywhere in the definition, reporting the JSON path. Reject unknown keys like `machineFromJSON` does. Fail loudly on unsupported features (`invoke`, `onError` and non-empty `actors` until milestone 2; `timeout` / `onTimeout`, `choice`, `route`, state and transition `input`, non-root `context`) instead of silently ignoring them.
+- Reject any `@code` or `@expr` node anywhere in the definition, reporting the JSON path. Reject unknown keys like `machineFromJSON` does. Fail loudly on unsupported features (`choice`, `route`, state and transition `input`, non-root `context`; invoke `input` is static JSON) instead of silently ignoring them.
 - Build a flat arena of state nodes indexed in document (pre-order) order. Index order then equals document order, so entry order is ascending index and exit order is descending index. Each node stores `end` (one past its last descendant), so descendant checks are a range check.
 - Resolve every target to node indices. Support `sibling.path` (relative to the source's parent), `.child` (relative to the source), and `#id`. `\.` escapes a dot inside a key.
 - Resolve every guard, action, and named delay reference to an index. Registry entries are factories that take the reference's `params` and return a bound closure, so params are deserialized once at compile time. Missing implementations and bad params are load errors. Named JSON guards and actions are expanded inline (with cycle detection).
 - Intern every event descriptor. Dispatching an event costs one hash lookup of its type; per-state candidates are then found by binary search. Wildcard descriptors are kept separately, longest first.
 - Preserve object key order from JSON (`serde_json` with `preserve_order`). Transition priority depends on it.
 
-The registry exposes typed helpers: `guard_with::<P>(name, |args, p: &P| ...)`, `action_with::<P>`, `delay(name, |ctx, ev| ms)`, `delay_ms`.
+The registry exposes typed helpers: `guard_with::<P>(name, |args, p: &P| ...)`, `action_with::<P>`, `delay(name, |ctx, ev| ms)`, `delay_ms`, and `actor(name, Arc<dyn Logic>)` for invoke sources.
 
 ### Events
 
@@ -97,7 +97,7 @@ Event descriptor matching (verified): exact names, `prefix.*` (which also matche
 - Exit: record history (shallow means active children, deep means active atomic descendants), cancel the state's `after` timers, run exit actions, remove from the configuration. Delayed raises are not cancelled on exit.
 - Then transition content: the `context` patch, then `actions`.
 - Entry: compute the entry set (targets, initial descendants, all regions of parallel states, history defaults or recorded values, ancestors inside the domain), enter in document order, run entry actions, then schedule `after` timers. Entering a final state queues `xstate.done.state` for its compound parent with its `output`; completing parallel ancestors queue their own done events with an output object keyed by region. A final child of the root sets status `done` and the output (root `output` if declared, else the final state's `output`); then every active state's exit actions run and all timers are cleared. The configuration is kept so the final value remains visible.
-- Macrostep: microstep for the external event, then loop: select eventless transitions; if none, take the next internal event. Eventless transitions are re-selected only when the last eventless microstep produced a new snapshot object (XState's `nextSnapshot !== previousState`); the native host tracks that with a token bumped whenever XState would clone the snapshot (context written, timers changed, structure or status changed). More than `max_iterations` (default 1000) microsteps is `RuntimeError::InfiniteLoop` and the actor goes to `error`.
+- Macrostep: microstep for the external event, then loop: select eventless transitions; if none, take the next internal event. Eventless transitions are re-selected only when the last eventless microstep produced a new snapshot object (XState's `nextSnapshot !== previousState`); the native host tracks that with a token bumped whenever XState would clone the snapshot (context written, timers changed, structure or status changed). More than `max_iterations` (default 1000) microsteps is `SystemError::InfiniteLoop` and the actor goes to `error`.
 - **Effect model (decision: mirror v6 exactly).** A transition's result (its `context` patch, then its actions as `machineFromJSON`'s `executeActions`) is computed against the snapshot at the start of the microstep and merged after exits, as XState's transition functions are; an action list with `@xstate.assign` yields the full context at that point plus the patches, which can overwrite exit-action changes, as in XState. `@xstate.raise` without delay goes to the internal queue; delayed raises and cancels update the snapshot's logical timers during resolution; emits, logs and custom actions are effects executed after the macrostep, in order. Custom Rust actions receive only their params (`Registry::action_with`) and cannot touch context; context changes only via `@xstate.assign` and transition `context`. The earlier `&mut C` extension is gone.
 
 ### Time and scheduling
@@ -105,28 +105,28 @@ Event descriptor matching (verified): exact names, `prefix.*` (which also matche
 The runtime never reads a clock or sleeps. The host drives time:
 
 ```rust
-actor.send(event, now_ms);   // does not fire due timers; call advance first
+actor.send(event, now_ms);   // fires timers due by now_ms, then sends
 actor.next_deadline();       // Option<u64>
 actor.advance(now_ms);       // fires due timers in (due, seq) order
 ```
 
-Timers come from `after` (identified by state and `after` entry, cancelled on exit) and from delayed `@xstate.raise` (by `id`, or by a per-actor sequence number when there is no id). Scheduling a timer whose key is already pending replaces it. While firing a timer, the actor's clock is its due time, so nested delays are deterministic (verified against XState's `SimulatedClock`). A fired timer's event is processed as an internal event. Numeric `after` keys are milliseconds; fractional values round up.
+Timers live in the system, keyed like XState's `systemTimerKey`. They come from `after`, state `timeout` and invoke `timeout` (cancelled on exit, in reverse of their scheduling order) and from delayed `@xstate.raise` (by `id`, or by a per-actor sequence number when there is no id). Scheduling a timer whose key is already pending replaces it. While firing a timer, the actor's clock is its due time, so nested delays are deterministic (verified against XState's `SimulatedClock`). A fired timer's event is processed as an internal event. Numeric `after` keys are milliseconds; fractional values round up.
 
 This keeps the core deterministic and portable to WASI and Wasm (`xstate-rt` builds for `wasm32-unknown-unknown`). Never call `std::time::Instant::now()`.
 
 ### Snapshots and persistence
 
-`PersistedSnapshot<C>` (serde) holds the machine id and version, status, active configuration (state ids in document order), context, output, history values (by history state id), pending timers (key, due, order, delay, event as JSON), the timer counters, and the actor's clock. `value` holds XState's nested state value for display. Restoring maps ids back to indices, checks that the configuration is legal, rejects snapshots for another machine id or version, and runs no actions. Binary encodings (postcard, rkyv) need a non-self-describing replacement for the `serde_json::Value` fields; decide that in milestone 6.
+Persistence is XState's `SystemSnapshot` JSON (`System::to_json` / `System::from_json`, `Actor::persist` / `Actor::restore`): every actor by address with its incarnation, parent, logic, input, started flag and snapshot data, plus the registry, queued messages, timers, pending external effects, counters and the clock. A machine's snapshot data is XState's (`status`, `context`, `value`, `children` as `{ $actor, incarnation }`, `timers`, `historyValue` as `{ $stateNode }`, `nodeIds`, `_nextTimerId`). XState's own snapshot data restores into an equal Rust system (checked on every system fixture record). Restoring runs no actions. Binary encodings (postcard, rkyv) need a non-self-describing replacement for the `serde_json::Value` fields; decide that in milestone 6.
 
-### Actor runtime (milestone 2)
+### Actor system (milestone 2)
 
-The design is single-threaded per shard, with no locks:
+**Decision: port XState's pure system API** (`initialSystemTransition`, `systemTransition`, `advanceSystemTime` in `systemTransition.ts`) rather than a live actor runtime. `System` is a value: one call takes an event (or a time, or an effect result) and returns the external effects it produced, with no executor, threads or clock. Single-threaded per shard, no locks.
 
-- `ActorLogic`-style trait: initial snapshot, transition, start, persist and restore.
-- Mailbox (FIFO, one event at a time), system registry by `systemId`, parent and child links, `stop` cascading to children.
-- Done and error propagation to the parent as `xstate.done.actor` and `xstate.error.actor` events (with `actorId` / `sessionId` payload, selected via `matches`, like the state events above). State-level `onError` catches `xstate.error.*`.
-- Heterogeneous children stored as `Box<dyn AnyActor>`, with events crossing actor boundaries as `serde_json::Value` and converted at the receiver's mailbox. `schemas.children` drives typed `ActorRef<Child>` handles in generated code.
-- Async invoked actors run on a local executor. Their results return as events.
+- `Logic` is XState's actor logic: `initial_transition`, `transition` (returns `Effect`s: spawn, start, stop, cancel, delayed raise, send-to, terminate, external), `snapshot_data` / `restore`. `Machine<C, E>` and `StepLogic` (`step.rs`, including `async_logic`) implement it. Snapshots are `Box<dyn AnySnapshot>`; events cross actors as `serde_json::Value` and become `E` at the receiving machine.
+- Actors are addressed by path (`root/child`), with incarnation counters so stale references and effect results are rejected. Messages are FIFO; starts are deferred to the end of the sending macrostep, as in XState. `systemId` registry with conflict errors; stopping cascades to children and unregisters.
+- Invoke: default id `<stateId>:<index>`; `onDone` / `onError` / `onSnapshot` are transitions on `xstate.done.actor` / `xstate.error.actor` / `xstate.snapshot.actor` with `matches { actorId }` plus the current session. Invoke `timeout` raises `xstate.timeout.actor`; completion transitions cancel it. State-level `onError` catches `xstate.error.*`; an unhandled child error puts the parent in `error`.
+- External effects (emits, logs, custom actions, `@xstate.effect` async work, cancellations, cleanup) get ids `system:N` and stay pending until acknowledged or resolved (`xstate.system.effect.result`). `Actor` runs custom actions and collects the root's emits and logs automatically; async work waits for `Actor::resolve_effect`.
+- Known XState bug (alpha.70): `onSnapshot` on an invoked machine with recorded history throws in `SystemReduction.decode` (decoded without its machine). We do not reproduce the crash; no fixture covers that combination.
 
 ## Codegen (milestone 3)
 
@@ -158,6 +158,8 @@ Native differential testing:
 - `crates/xstate-rt/tests/differential.rs` replays the same fixtures with equivalent Rust stubs and diffs every record. Commit the expected files; they are the record of XState's behavior.
 - `@xstate.emit` in entry/exit/transition actions is the way to observe action order in fixtures.
 
+System-level differential testing: `fixtures/system/<name>.json` lists logic (machines with their actors, or `async` logic), the root, init options, and steps (`send` to an address, `advance` to a time, `resolve` the n-th pending effect in id order). `tools/differential/generate-system.mjs` runs them through XState's pure system API and records the full system snapshot and effects (or the error) per step; `crates/xstate-rt/tests/system_differential.rs` replays them, compares (object key order ignored except in state values), restores XState's snapshot into Rust and compares again, and checks that a failing call leaves the snapshot unchanged. Regenerate with `node generate-system.mjs [name]` (`STACK=1` prints XState's stack for error records).
+
 `crates/xstate-rt/tests/runtime.rs` covers what the JS side cannot: typed context and events, Rust actions with params, registry delays, load errors with paths, runaway loops, persist/restore round-trips including pending timers and history, `onDone`, `internalEvents`, and `stop`.
 
 When v6 behavior is uncertain, add a fixture before choosing semantics.
@@ -165,9 +167,9 @@ When v6 behavior is uncertain, add a fixture before choosing semantics.
 ## Milestones
 
 1. ~~`xstate-rt` core: parsing, validation, compilation, interpreter, built-in actions, registry, host-driven timers, persist and restore, unit tests.~~ Done, with the differential harness (originally milestone 4) started early. ~~XState-true core shared with XState's JS runtime; XState's core test suite passes on it.~~
-2. Actor runtime: invoke, spawn, system, done and error propagation.
+2. ~~Actor runtime: invoke, system, done and error propagation, timeouts.~~ Done as a port of XState's pure system API, with system differential fixtures. Still open: `spawn` / `sendTo` from JSON actions (no JSON-portable form in alpha.70), listeners and subscriptions.
 3. Codegen pipeline and the TS extract script.
-4. Differential test harness: extend fixtures to actors; add generated random event sequences.
+4. Differential test harness: ~~extend fixtures to actors~~; add generated random event sequences.
 5. WASI component adapter.
 6. Redpanda co-located service with benchmarks.
 

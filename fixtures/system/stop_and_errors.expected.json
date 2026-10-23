@@ -1,0 +1,521 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "r",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "r": {
+          "id": "r",
+          "address": "r",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "a",
+            "children": {
+              "j": {
+                "$actor": "r/j",
+                "incarnation": "1"
+              }
+            },
+            "timers": [
+              {
+                "id": "late",
+                "delay": 100,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "late"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "r",
+              "r.a"
+            ]
+          }
+        },
+        "r/j": {
+          "id": "j",
+          "address": "r/j",
+          "incarnation": "1",
+          "src": "root/actors/job",
+          "parent": {
+            "$actor": "r",
+            "incarnation": "0"
+          },
+          "registryKey": "job",
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {
+        "job": {
+          "$actor": "r/j",
+          "incarnation": "1"
+        }
+      },
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "r",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 100,
+          "sequence": 0,
+          "event": {
+            "type": "xstate.timer",
+            "id": "late"
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "r",
+            "incarnation": "0"
+          },
+          "type": "root/actions/track",
+          "kind": "action",
+          "params": {},
+          "args": [
+            null
+          ]
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "r/j",
+            "incarnation": "1"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 1,
+        "effect": 2
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "r",
+          "incarnation": "0"
+        },
+        "type": "root/actions/track",
+        "kind": "action",
+        "params": {},
+        "args": [
+          null
+        ]
+      },
+      {
+        "id": "system:1",
+        "source": {
+          "$actor": "r/j",
+          "incarnation": "1"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "error": "Unknown actor address 'nope'."
+  },
+  {
+    "label": "step 1",
+    "error": "Internal event 'secret' cannot be injected into a pure system."
+  },
+  {
+    "label": "step 2",
+    "error": "Select a pending timer instead of injecting its internal event."
+  },
+  {
+    "label": "step 3",
+    "error": "Deliver external work results with xstate.system.effect.result."
+  },
+  {
+    "label": "step 4",
+    "snapshot": {
+      "root": "r",
+      "executionId": "system",
+      "now": 50,
+      "actors": {
+        "r": {
+          "id": "r",
+          "address": "r",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "a",
+            "children": {
+              "j": {
+                "$actor": "r/j",
+                "incarnation": "1"
+              }
+            },
+            "timers": [
+              {
+                "id": "late",
+                "delay": 100,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "late"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "r",
+              "r.a"
+            ]
+          }
+        },
+        "r/j": {
+          "id": "j",
+          "address": "r/j",
+          "incarnation": "1",
+          "src": "root/actors/job",
+          "parent": {
+            "$actor": "r",
+            "incarnation": "0"
+          },
+          "registryKey": "job",
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {
+        "job": {
+          "$actor": "r/j",
+          "incarnation": "1"
+        }
+      },
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "r",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 100,
+          "sequence": 0,
+          "event": {
+            "type": "xstate.timer",
+            "id": "late"
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "r",
+            "incarnation": "0"
+          },
+          "type": "root/actions/track",
+          "kind": "action",
+          "params": {},
+          "args": [
+            null
+          ]
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "r/j",
+            "incarnation": "1"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 1,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 5",
+    "snapshot": {
+      "root": "r",
+      "executionId": "system",
+      "now": 50,
+      "actors": {
+        "r": {
+          "id": "r",
+          "address": "r",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "r",
+              "r.a"
+            ]
+          }
+        },
+        "r/j": {
+          "id": "j",
+          "address": "r/j",
+          "incarnation": "1",
+          "src": "root/actors/job",
+          "parent": {
+            "$actor": "r",
+            "incarnation": "0"
+          },
+          "registryKey": "job",
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "r/j",
+            "incarnation": "1"
+          },
+          "type": "@xstate.cleanup",
+          "kind": "action",
+          "args": []
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "r/j",
+            "incarnation": "1"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:1"
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "r",
+            "incarnation": "0"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:0"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 3,
+        "effect": 5
+      }
+    },
+    "effects": [
+      {
+        "id": "system:2",
+        "source": {
+          "$actor": "r/j",
+          "incarnation": "1"
+        },
+        "type": "@xstate.cleanup",
+        "kind": "action",
+        "args": []
+      },
+      {
+        "id": "system:3",
+        "source": {
+          "$actor": "r/j",
+          "incarnation": "1"
+        },
+        "kind": "action",
+        "type": "@xstate.cancelEffect",
+        "params": {
+          "effectId": "system:1"
+        }
+      },
+      {
+        "id": "system:4",
+        "source": {
+          "$actor": "r",
+          "incarnation": "0"
+        },
+        "kind": "action",
+        "type": "@xstate.cancelEffect",
+        "params": {
+          "effectId": "system:0"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 6",
+    "error": "External effect result does not match its owner or is stale."
+  },
+  {
+    "label": "step 7",
+    "snapshot": {
+      "root": "r",
+      "executionId": "system",
+      "now": 500,
+      "actors": {
+        "r": {
+          "id": "r",
+          "address": "r",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "r",
+              "r.a"
+            ]
+          }
+        },
+        "r/j": {
+          "id": "j",
+          "address": "r/j",
+          "incarnation": "1",
+          "src": "root/actors/job",
+          "parent": {
+            "$actor": "r",
+            "incarnation": "0"
+          },
+          "registryKey": "job",
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "r/j",
+            "incarnation": "1"
+          },
+          "type": "@xstate.cleanup",
+          "kind": "action",
+          "args": []
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "r/j",
+            "incarnation": "1"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:1"
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "r",
+            "incarnation": "0"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:0"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 3,
+        "effect": 5
+      }
+    },
+    "effects": []
+  }
+]

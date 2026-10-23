@@ -82,16 +82,17 @@ fn typed_context_guards_with_params_and_effects() {
     let mut actor = Actor::start(counter_machine(notes.clone()), 0).unwrap();
     assert_eq!(*notes.lock().unwrap(), vec!["counting"]);
 
-    assert!(actor.send(Event::Inc { by: 1 }, 0).unwrap());
+    actor.send(Event::Inc { by: 1 }, 0).unwrap();
     assert_eq!(actor.context(), &Ctx { count: 3, mode: "slow".into() });
-    assert!(actor.send(Event::Inc { by: 1 }, 0).unwrap());
+    actor.send(Event::Inc { by: 1 }, 0).unwrap();
     assert_eq!(actor.context(), &Ctx { count: 3, mode: "fast".into() });
     assert_eq!(*notes.lock().unwrap(), vec!["counting", "fast"]);
 
     actor.send(Event::Inc { by: 10 }, 0).unwrap();
     assert_eq!(actor.value(), json!("full"));
     assert!(actor.has_tag("full"));
-    assert!(!actor.send(Event::Finish, 0).unwrap(), "finish is not handled in full");
+    actor.send(Event::Finish, 0).unwrap();
+    assert_eq!(actor.value(), json!("full"), "finish is not handled in full");
 
     actor.send(Event::Reset, 0).unwrap();
     assert_eq!(actor.context().count, 0);
@@ -104,13 +105,15 @@ fn named_delay_from_registry_reads_context() {
     actor.send(Event::Inc { by: 1 }, 0).unwrap();
     actor.send(Event::Finish, 50).unwrap();
     assert_eq!(actor.next_deadline(), Some(350));
-    assert_eq!(actor.advance(349).unwrap(), 0);
-    assert_eq!(actor.advance(350).unwrap(), 1);
+    actor.advance(349).unwrap();
+    assert_eq!(actor.status(), Status::Active);
+    actor.advance(350).unwrap();
     assert_eq!(actor.status(), Status::Done);
     assert_eq!(actor.output(), Some(&json!({ "ok": true })));
     assert_eq!(actor.next_deadline(), None);
     // A done actor handles nothing.
-    assert!(!actor.send(Event::Reset, 400).unwrap());
+    actor.send(Event::Reset, 400).unwrap();
+    assert_eq!(actor.value(), json!("done"));
 }
 
 // ---- untyped helpers ----------------------------------------------------------------
@@ -119,8 +122,9 @@ fn machine(def: Value) -> Arc<Machine<Value, Value>> {
     Arc::new(Machine::from_json(&def, &Registry::new()).unwrap())
 }
 
-fn send(actor: &mut Actor<Value, Value>, ty: &str) -> bool {
-    actor.send(json!({ "type": ty }), actor.now()).unwrap()
+fn send(actor: &mut Actor<Value, Value>, ty: &str) {
+    let now = actor.now();
+    actor.send(json!({ "type": ty }), now).unwrap()
 }
 
 #[test]
@@ -136,7 +140,7 @@ fn traffic_light() {
     }));
     let mut a = Actor::start(m, 0).unwrap();
     for expected in ["yellow", "red", "green", "yellow"] {
-        assert!(send(&mut a, "timer"));
+        send(&mut a, "timer");
         assert_eq!(a.value(), json!(expected));
     }
     assert!(a.matches("yellow"));
@@ -196,13 +200,13 @@ fn deep_history_restores_atomic_descendants() {
     send(&mut a, "next");
     send(&mut a, "leave");
     assert_eq!(a.value(), json!("away"));
-    let saved = serde_json::to_value(a.persist()).unwrap();
+    let saved = a.persist();
     send(&mut a, "back");
     assert_eq!(a.value(), json!({ "app": { "a": "a2" } }));
 
     // The recorded history survives a persist/restore round trip.
-    let restored = serde_json::from_value(saved).unwrap();
-    let mut b = Actor::restore(m, restored).unwrap();
+    let restored: Value = serde_json::from_str(&saved.to_string()).unwrap();
+    let mut b = Actor::restore(m, &restored).unwrap();
     send(&mut b, "back");
     assert_eq!(b.value(), json!({ "app": { "a": "a2" } }));
 }
@@ -226,7 +230,7 @@ fn runaway_eventless_loop_is_an_error() {
     );
     let mut a = Actor::start(m, 0).unwrap();
     let err = a.send(json!({ "type": "go" }), 0).unwrap_err();
-    assert!(matches!(err, RuntimeError::InfiniteLoop { max_iterations: 50, .. }), "{err}");
+    assert!(matches!(err, SystemError::InfiniteLoop { max_iterations: 50, .. }), "{err}");
     assert_eq!(a.status(), Status::Error);
 }
 
@@ -239,7 +243,7 @@ fn raised_event_loop_is_an_error() {
         }
     }));
     let mut a = Actor::start(m, 0).unwrap();
-    assert!(matches!(a.send(json!({ "type": "ping" }), 0), Err(RuntimeError::InfiniteLoop { .. })));
+    assert!(matches!(a.send(json!({ "type": "ping" }), 0), Err(SystemError::InfiniteLoop { .. })));
 }
 
 #[test]
@@ -278,12 +282,11 @@ fn persist_and_restore_pending_timers() {
     });
     let m = machine(def);
     let a = Actor::start(m.clone(), 1000).unwrap();
-    let json = serde_json::to_string(&a.persist()).unwrap();
-    let snapshot: PersistedSnapshot<Value> = serde_json::from_str(&json).unwrap();
-    assert_eq!(snapshot.timers.len(), 3);
-    assert_eq!(snapshot.configuration, vec!["t".to_string(), "t.a".to_string()]);
+    let snapshot: Value = serde_json::from_str(&a.persist().to_string()).unwrap();
+    assert_eq!(snapshot["timers"].as_array().unwrap().len(), 3);
+    assert_eq!(snapshot["actors"]["t"]["snapshot"]["nodeIds"], json!(["t", "t.a"]));
 
-    let mut b = Actor::restore(m, snapshot).unwrap();
+    let mut b = Actor::restore(m, &snapshot).unwrap();
     assert_eq!(b.now(), 1000);
     assert_eq!(b.next_deadline(), Some(1200));
     b.advance(1300).unwrap();
@@ -298,16 +301,18 @@ fn persist_and_restore_pending_timers() {
 fn restore_rejects_unknown_states_and_illegal_configurations() {
     let m = machine(json!({ "id": "x", "initial": "a", "states": { "a": {}, "b": {} } }));
     let a = Actor::start(m.clone(), 0).unwrap();
-    let mut snap = a.persist();
-    snap.configuration = vec!["x".into(), "x.gone".into()];
-    assert!(Actor::restore(m.clone(), snap).unwrap_err().0.contains("x.gone"));
-
-    let mut snap = a.persist();
-    snap.configuration = vec!["x".into(), "x.a".into(), "x.b".into()];
-    assert!(Actor::restore(m.clone(), snap).unwrap_err().0.contains("exactly one active child"));
+    let with_nodes = |nodes: Value| {
+        let mut snap = a.persist();
+        snap["actors"]["x"]["snapshot"]["nodeIds"] = nodes;
+        snap
+    };
+    let err = Actor::restore(m.clone(), &with_nodes(json!(["x", "x.gone"]))).unwrap_err();
+    assert!(err.to_string().contains("x.gone"), "{err}");
+    let err = Actor::restore(m.clone(), &with_nodes(json!(["x", "x.a", "x.b"]))).unwrap_err();
+    assert!(err.to_string().contains("exactly one active child"), "{err}");
 
     let other = machine(json!({ "id": "y", "initial": "a", "states": { "a": {} } }));
-    assert!(Actor::restore(other, a.persist()).is_err());
+    assert!(Actor::restore(other, &a.persist()).is_err());
 }
 
 #[test]
@@ -328,8 +333,9 @@ fn delayed_raise_with_same_id_replaces_the_pending_timer() {
     a.send(json!({ "type": "arm" }), 0).unwrap();
     a.send(json!({ "type": "arm" }), 50).unwrap();
     assert_eq!(a.next_deadline(), Some(150));
-    assert_eq!(a.advance(149).unwrap(), 0);
-    assert_eq!(a.advance(150).unwrap(), 1);
+    a.advance(149).unwrap();
+    assert_eq!(a.value(), json!("a"));
+    a.advance(150).unwrap();
     assert_eq!(a.value(), json!("b"));
 }
 
@@ -341,7 +347,8 @@ fn internal_events_cannot_be_sent_from_outside() {
         "states": { "a": { "on": { "secret.open": { "target": "b" } } }, "b": {} }
     }));
     let mut a = Actor::start(m, 0).unwrap();
-    assert!(matches!(a.send(json!({ "type": "secret.open" }), 0), Err(RuntimeError::InternalEvent { .. })));
+    let err = a.send(json!({ "type": "secret.open" }), 0).unwrap_err();
+    assert!(err.to_string().contains("Internal event"), "{err}");
     assert_eq!(a.value(), json!("a"));
 }
 
@@ -358,11 +365,12 @@ fn stop_cancels_timers_without_exit_actions() {
         }
     }));
     let mut a = Actor::start(m, 0).unwrap();
-    a.stop();
+    a.stop().unwrap();
     assert_eq!(a.status(), Status::Stopped);
     assert_eq!(a.next_deadline(), None);
     assert!(a.take_emitted().is_empty());
-    assert!(!send(&mut a, "anything"));
+    send(&mut a, "anything");
+    assert_eq!(a.status(), Status::Stopped);
 }
 
 #[test]
@@ -409,9 +417,10 @@ fn guard_args_expose_the_configuration() {
         }
     });
     let mut a = Actor::start(Arc::new(Machine::from_json(&def, &r).unwrap()), 0).unwrap();
-    assert!(!send(&mut a, "go"));
+    send(&mut a, "go");
+    assert_eq!(a.value(), json!({ "r1": "x", "r2": "a" }));
     send(&mut a, "flip");
-    assert!(send(&mut a, "go"));
+    send(&mut a, "go");
     assert_eq!(a.value(), json!({ "r1": "y", "r2": "b" }));
 }
 
@@ -437,13 +446,13 @@ fn rejects_code_with_its_path() {
 #[test]
 fn rejects_unsupported_features() {
     let e = load_err(json!({ "initial": "a", "states": { "a": { "invoke": { "src": "worker" } } } }));
-    assert_eq!((e.kind, e.path.as_str()), (LoadErrorKind::Unsupported, "$.states.a.invoke"));
+    assert_eq!((e.kind, e.path.as_str()), (LoadErrorKind::MissingImplementation, "$.states.a.invoke.src"));
 
     let e = load_err(json!({ "initial": "a", "states": { "a": { "type": "choice", "choice": [] } } }));
     assert_eq!(e.kind, LoadErrorKind::Unsupported);
 
-    let e = load_err(json!({ "initial": "a", "states": { "a": { "timeout": 100, "onTimeout": { "target": "a" } } } }));
-    assert_eq!(e.kind, LoadErrorKind::Unsupported);
+    let e = load_err(json!({ "initial": "a", "states": { "a": { "timeout": 100 } } }));
+    assert!(e.message.contains("onTimeout"), "{e}");
 
     let e = load_err(json!({ "initial": "a", "states": { "a": { "on": { "go": { "target": "a", "input": {} } } } } }));
     assert_eq!((e.kind, e.path.as_str()), (LoadErrorKind::Unsupported, "$.states.a.on.go.input"));

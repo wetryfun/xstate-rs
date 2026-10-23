@@ -33,18 +33,20 @@ mod interp;
 mod load;
 mod machine;
 mod registry;
-mod snapshot;
+pub mod step;
+pub mod system;
 
 use serde::de::DeserializeOwned;
 use serde_json::Value;
 
 pub use actor::Actor;
-pub use error::{LoadError, LoadErrorKind, RestoreError, RuntimeError};
+pub use error::{LoadError, LoadErrorKind};
 pub use event::{Ev, EventType};
-pub use interp::Status;
 pub use machine::{Machine, MachineOptions, NodeId};
 pub use registry::{GuardArgs, Registry};
-pub use snapshot::{PersistedSnapshot, PersistedTimer, PersistedTimerKey};
+pub use system::{
+    ActorRef, Effect, EffectKind, ExternalEffect, InitOptions, Logic, Status, System, SystemError, SystemLogic,
+};
 
 impl<C, E> Machine<C, E>
 where

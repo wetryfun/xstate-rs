@@ -1,0 +1,23 @@
+{
+  "logic": [
+    { "name": "job", "async": {} },
+    {
+      "name": "root",
+      "actors": ["job"],
+      "machine": {
+        "id": "root",
+        "initial": "a",
+        "states": {
+          "a": { "invoke": { "src": "job", "id": "one", "registryKey": "shared" }, "on": { "both": { "target": "b" }, "swap": { "target": "c" } } },
+          "b": { "type": "parallel", "states": { "x": { "invoke": { "src": "job", "id": "two", "registryKey": "shared" } }, "y": {} } },
+          "c": { "invoke": { "src": "job", "id": "three", "registryKey": "shared" } }
+        }
+      }
+    }
+  ],
+  "root": "root",
+  "steps": [
+    { "send": "root", "event": { "type": "swap" } },
+    { "send": "root", "event": { "type": "both" } }
+  ]
+}

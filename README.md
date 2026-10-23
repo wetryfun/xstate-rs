@@ -6,9 +6,11 @@ This is an independent project, not an official Stately package. It targets `xst
 
 ## Status
 
-The statechart algorithm is a port of XState's own (`crates/xstate-rt/src/core.rs`), shared by the native interpreter and by XState's JavaScript runtime through WebAssembly: XState's core test suite runs on it (`tools/xstate-suite/run.sh`). Milestone 1 (`xstate-rt` core) is in place: loading and validating `MachineJSON`, compound, parallel, final and history states, guards (including `@xstate.not` and `@xstate.stateIn`), built-in and custom actions, `always`, `after`, delayed `@xstate.raise` and `@xstate.cancel`, `@xstate.emit`, host-driven timers, and persist/restore. Behavior is checked against XState itself with shared fixtures.
+The statechart algorithm is a port of XState's own (`crates/xstate-rt/src/core.rs`), shared by the native interpreter and by XState's JavaScript runtime through WebAssembly: XState's core test suite runs on it (`tools/xstate-suite/run.sh`). Milestone 1 (`xstate-rt` core) is in place: loading and validating `MachineJSON`, compound, parallel, final and history states, guards (including `@xstate.not` and `@xstate.stateIn`), built-in and custom actions, `always`, `after`, delayed `@xstate.raise` and `@xstate.cancel`, `@xstate.emit`, host-driven timers, and persist/restore.
 
-Not yet supported (rejected at load time with the JSON path): `invoke` and actors, `onError`, `timeout`/`onTimeout`, choice and route states, state input, and any `@code` / `@expr`.
+Milestone 2 (actors) is a port of XState's pure system API: `invoke` of machines and async logic, `onDone` / `onError` / `onSnapshot`, state and invoke `timeout` / `onTimeout`, the `systemId` registry, stop cascades, and whole-system snapshots in XState's format. Behavior is checked against XState itself with shared fixtures, at machine and at system level.
+
+Not yet supported (rejected at load time with the JSON path): choice and route states, state and transition `input`, and any `@code` / `@expr`.
 
 ## Example
 
@@ -61,6 +63,7 @@ cargo test                       # unit, runtime and differential tests
 tools/xstate-suite/run.sh        # XState's own test suite on the Rust core (needs pnpm)
 cargo clippy --all-targets
 cd tools/differential && npm install && npm run generate   # regenerate expected traces from XState
+node tools/differential/generate-system.mjs                 # regenerate system-level traces
 ```
 
 See [CLAUDE.md](CLAUDE.md) for the design, the verified v6 semantics, and the roadmap.

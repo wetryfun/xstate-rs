@@ -1,0 +1,477 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "root",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "root": {
+          "id": "root",
+          "address": "root",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "a",
+            "children": {
+              "kid": {
+                "$actor": "root/kid",
+                "incarnation": "1"
+              }
+            },
+            "timers": [
+              {
+                "seq": 0,
+                "delay": 100,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "tick"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 1,
+            "nodeIds": [
+              "root",
+              "root.a"
+            ]
+          }
+        },
+        "root/kid": {
+          "id": "kid",
+          "address": "root/kid",
+          "incarnation": "1",
+          "src": "root/actors/child",
+          "parent": {
+            "$actor": "root",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "a",
+            "children": {
+              "job": {
+                "$actor": "root/kid/job",
+                "incarnation": "2"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "child",
+              "child.a"
+            ]
+          }
+        },
+        "root/kid/job": {
+          "id": "job",
+          "address": "root/kid/job",
+          "incarnation": "2",
+          "src": "root/actors/child/actors/job",
+          "parent": {
+            "$actor": "root/kid",
+            "incarnation": "1"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "root",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 100,
+          "sequence": 0,
+          "event": {
+            "type": "xstate.timer",
+            "seq": 0
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "root/kid/job",
+            "incarnation": "2"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 1,
+        "sequence": 1,
+        "effect": 1
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "root/kid/job",
+          "incarnation": "2"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "root",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "root": {
+          "id": "root",
+          "address": "root",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "code": 500
+            },
+            "context": {},
+            "value": "a",
+            "children": {},
+            "timers": [
+              {
+                "seq": 0,
+                "delay": 100,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "tick"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 1,
+            "nodeIds": [
+              "root",
+              "root.a"
+            ]
+          }
+        },
+        "root/kid": {
+          "id": "kid",
+          "address": "root/kid",
+          "incarnation": "1",
+          "src": "root/actors/child",
+          "parent": {
+            "$actor": "root",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "code": 500
+            },
+            "context": {},
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "child",
+              "child.a"
+            ]
+          }
+        },
+        "root/kid/job": {
+          "id": "job",
+          "address": "root/kid/job",
+          "incarnation": "2",
+          "src": "root/actors/child/actors/job",
+          "parent": {
+            "$actor": "root/kid",
+            "incarnation": "1"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "code": 500
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "code": 500
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 3,
+        "timer": 1,
+        "sequence": 4,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "root",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "root": {
+          "id": "root",
+          "address": "root",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "code": 500
+            },
+            "context": {},
+            "value": "a",
+            "children": {},
+            "timers": [
+              {
+                "seq": 0,
+                "delay": 100,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "tick"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 1,
+            "nodeIds": [
+              "root",
+              "root.a"
+            ]
+          }
+        },
+        "root/kid": {
+          "id": "kid",
+          "address": "root/kid",
+          "incarnation": "1",
+          "src": "root/actors/child",
+          "parent": {
+            "$actor": "root",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "code": 500
+            },
+            "context": {},
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "child",
+              "child.a"
+            ]
+          }
+        },
+        "root/kid/job": {
+          "id": "job",
+          "address": "root/kid/job",
+          "incarnation": "2",
+          "src": "root/actors/child/actors/job",
+          "parent": {
+            "$actor": "root/kid",
+            "incarnation": "1"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "code": 500
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "code": 500
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 3,
+        "timer": 1,
+        "sequence": 5,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "root",
+      "executionId": "system",
+      "now": 500,
+      "actors": {
+        "root": {
+          "id": "root",
+          "address": "root",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "code": 500
+            },
+            "context": {},
+            "value": "a",
+            "children": {},
+            "timers": [
+              {
+                "seq": 0,
+                "delay": 100,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "tick"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 1,
+            "nodeIds": [
+              "root",
+              "root.a"
+            ]
+          }
+        },
+        "root/kid": {
+          "id": "kid",
+          "address": "root/kid",
+          "incarnation": "1",
+          "src": "root/actors/child",
+          "parent": {
+            "$actor": "root",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "code": 500
+            },
+            "context": {},
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "child",
+              "child.a"
+            ]
+          }
+        },
+        "root/kid/job": {
+          "id": "job",
+          "address": "root/kid/job",
+          "incarnation": "2",
+          "src": "root/actors/child/actors/job",
+          "parent": {
+            "$actor": "root/kid",
+            "incarnation": "1"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "error",
+            "error": {
+              "code": 500
+            },
+            "effects": {
+              "async": {
+                "status": "error",
+                "error": {
+                  "code": 500
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 3,
+        "timer": 1,
+        "sequence": 5,
+        "effect": 1
+      }
+    },
+    "effects": []
+  }
+]

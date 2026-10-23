@@ -1,0 +1,1970 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "host",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "host": {
+          "id": "host",
+          "address": "host",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "on",
+            "children": {
+              "a": {
+                "$actor": "host/a",
+                "incarnation": "1"
+              },
+              "host.on:1": {
+                "$actor": "host/host.on:1",
+                "incarnation": "2"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "host",
+              "host.on"
+            ]
+          }
+        },
+        "host/a": {
+          "id": "a",
+          "address": "host/a",
+          "incarnation": "1",
+          "src": "root/actors/ticker",
+          "parent": {
+            "$actor": "host",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "t",
+            "children": {},
+            "timers": [
+              {
+                "delay": 100,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 100,
+                  "stateId": "ticker.t"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "ticker",
+              "ticker.t"
+            ]
+          }
+        },
+        "host/host.on:1": {
+          "id": "host.on:1",
+          "address": "host/host.on:1",
+          "incarnation": "2",
+          "src": "root/actors/ticker",
+          "parent": {
+            "$actor": "host",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "t",
+            "children": {},
+            "timers": [
+              {
+                "delay": 100,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 100,
+                  "stateId": "ticker.t"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "ticker",
+              "ticker.t"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "host/a",
+            "incarnation": "1"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 100,
+          "sequence": 0,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 100,
+              "stateId": "ticker.t"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "host/host.on:1",
+            "incarnation": "2"
+          },
+          "occurrence": 1,
+          "scheduledAt": 0,
+          "dueAt": 100,
+          "sequence": 1,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 100,
+              "stateId": "ticker.t"
+            }
+          }
+        }
+      ],
+      "externalEffects": {},
+      "counters": {
+        "actor": 3,
+        "timer": 2,
+        "sequence": 2,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "host",
+      "executionId": "system",
+      "now": 250,
+      "actors": {
+        "host": {
+          "id": "host",
+          "address": "host",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "on",
+            "children": {
+              "a": {
+                "$actor": "host/a",
+                "incarnation": "1"
+              },
+              "host.on:1": {
+                "$actor": "host/host.on:1",
+                "incarnation": "2"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "host",
+              "host.on"
+            ]
+          }
+        },
+        "host/a": {
+          "id": "a",
+          "address": "host/a",
+          "incarnation": "1",
+          "src": "root/actors/ticker",
+          "parent": {
+            "$actor": "host",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "t",
+            "children": {},
+            "timers": [
+              {
+                "delay": 100,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 100,
+                  "stateId": "ticker.t"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "ticker",
+              "ticker.t"
+            ]
+          }
+        },
+        "host/host.on:1": {
+          "id": "host.on:1",
+          "address": "host/host.on:1",
+          "incarnation": "2",
+          "src": "root/actors/ticker",
+          "parent": {
+            "$actor": "host",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "t",
+            "children": {},
+            "timers": [
+              {
+                "delay": 100,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 100,
+                  "stateId": "ticker.t"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "ticker",
+              "ticker.t"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "host/a",
+            "incarnation": "1"
+          },
+          "occurrence": 4,
+          "scheduledAt": 200,
+          "dueAt": 300,
+          "sequence": 7,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 100,
+              "stateId": "ticker.t"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "host/host.on:1",
+            "incarnation": "2"
+          },
+          "occurrence": 5,
+          "scheduledAt": 200,
+          "dueAt": 300,
+          "sequence": 9,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 100,
+              "stateId": "ticker.t"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "host/a",
+            "incarnation": "1"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "host/host.on:1",
+            "incarnation": "2"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "host/a",
+            "incarnation": "1"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "host/host.on:1",
+            "incarnation": "2"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 6,
+        "sequence": 10,
+        "effect": 4
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "host/a",
+          "incarnation": "1"
+        },
+        "type": "tick",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "tick"
+        }
+      },
+      {
+        "id": "system:1",
+        "source": {
+          "$actor": "host/host.on:1",
+          "incarnation": "2"
+        },
+        "type": "tick",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "tick"
+        }
+      },
+      {
+        "id": "system:2",
+        "source": {
+          "$actor": "host/a",
+          "incarnation": "1"
+        },
+        "type": "tick",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "tick"
+        }
+      },
+      {
+        "id": "system:3",
+        "source": {
+          "$actor": "host/host.on:1",
+          "incarnation": "2"
+        },
+        "type": "tick",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "tick"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "host",
+      "executionId": "system",
+      "now": 250,
+      "actors": {
+        "host": {
+          "id": "host",
+          "address": "host",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "on",
+            "children": {
+              "a": {
+                "$actor": "host/a",
+                "incarnation": "1"
+              },
+              "host.on:1": {
+                "$actor": "host/host.on:1",
+                "incarnation": "2"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "host",
+              "host.on"
+            ]
+          }
+        },
+        "host/a": {
+          "id": "a",
+          "address": "host/a",
+          "incarnation": "1",
+          "src": "root/actors/ticker",
+          "parent": {
+            "$actor": "host",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "t",
+            "children": {},
+            "timers": [
+              {
+                "delay": 100,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 100,
+                  "stateId": "ticker.t"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "ticker",
+              "ticker.t"
+            ]
+          }
+        },
+        "host/host.on:1": {
+          "id": "host.on:1",
+          "address": "host/host.on:1",
+          "incarnation": "2",
+          "src": "root/actors/ticker",
+          "parent": {
+            "$actor": "host",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "t",
+            "children": {},
+            "timers": [
+              {
+                "delay": 100,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 100,
+                  "stateId": "ticker.t"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "ticker",
+              "ticker.t"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "host/a",
+            "incarnation": "1"
+          },
+          "occurrence": 4,
+          "scheduledAt": 200,
+          "dueAt": 300,
+          "sequence": 7,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 100,
+              "stateId": "ticker.t"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "host/host.on:1",
+            "incarnation": "2"
+          },
+          "occurrence": 5,
+          "scheduledAt": 200,
+          "dueAt": 300,
+          "sequence": 9,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 100,
+              "stateId": "ticker.t"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "host/a",
+            "incarnation": "1"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "host/host.on:1",
+            "incarnation": "2"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "host/a",
+            "incarnation": "1"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "host/host.on:1",
+            "incarnation": "2"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 6,
+        "sequence": 11,
+        "effect": 4
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "host",
+      "executionId": "system",
+      "now": 250,
+      "actors": {
+        "host": {
+          "id": "host",
+          "address": "host",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "on",
+            "children": {
+              "a": {
+                "$actor": "host/a",
+                "incarnation": "3"
+              },
+              "host.on:1": {
+                "$actor": "host/host.on:1",
+                "incarnation": "4"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "host",
+              "host.on"
+            ]
+          }
+        },
+        "host/a": {
+          "id": "a",
+          "address": "host/a",
+          "incarnation": "3",
+          "src": "root/actors/ticker",
+          "parent": {
+            "$actor": "host",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "t",
+            "children": {},
+            "timers": [
+              {
+                "delay": 100,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 100,
+                  "stateId": "ticker.t"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "ticker",
+              "ticker.t"
+            ]
+          }
+        },
+        "host/host.on:1": {
+          "id": "host.on:1",
+          "address": "host/host.on:1",
+          "incarnation": "4",
+          "src": "root/actors/ticker",
+          "parent": {
+            "$actor": "host",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "t",
+            "children": {},
+            "timers": [
+              {
+                "delay": 100,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 100,
+                  "stateId": "ticker.t"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "ticker",
+              "ticker.t"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "host/a",
+            "incarnation": "3"
+          },
+          "occurrence": 6,
+          "scheduledAt": 250,
+          "dueAt": 350,
+          "sequence": 14,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 100,
+              "stateId": "ticker.t"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "host/host.on:1",
+            "incarnation": "4"
+          },
+          "occurrence": 7,
+          "scheduledAt": 250,
+          "dueAt": 350,
+          "sequence": 15,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 100,
+              "stateId": "ticker.t"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "host/a",
+            "incarnation": "1"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "host/host.on:1",
+            "incarnation": "2"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "host/a",
+            "incarnation": "1"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "host/host.on:1",
+            "incarnation": "2"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        }
+      },
+      "counters": {
+        "actor": 5,
+        "timer": 8,
+        "sequence": 16,
+        "effect": 4
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 3",
+    "snapshot": {
+      "root": "host",
+      "executionId": "system",
+      "now": 300,
+      "actors": {
+        "host": {
+          "id": "host",
+          "address": "host",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "on",
+            "children": {
+              "a": {
+                "$actor": "host/a",
+                "incarnation": "3"
+              },
+              "host.on:1": {
+                "$actor": "host/host.on:1",
+                "incarnation": "4"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "host",
+              "host.on"
+            ]
+          }
+        },
+        "host/a": {
+          "id": "a",
+          "address": "host/a",
+          "incarnation": "3",
+          "src": "root/actors/ticker",
+          "parent": {
+            "$actor": "host",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "t",
+            "children": {},
+            "timers": [
+              {
+                "delay": 100,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 100,
+                  "stateId": "ticker.t"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "ticker",
+              "ticker.t"
+            ]
+          }
+        },
+        "host/host.on:1": {
+          "id": "host.on:1",
+          "address": "host/host.on:1",
+          "incarnation": "4",
+          "src": "root/actors/ticker",
+          "parent": {
+            "$actor": "host",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "t",
+            "children": {},
+            "timers": [
+              {
+                "delay": 100,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 100,
+                  "stateId": "ticker.t"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "ticker",
+              "ticker.t"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "host/a",
+            "incarnation": "3"
+          },
+          "occurrence": 6,
+          "scheduledAt": 250,
+          "dueAt": 350,
+          "sequence": 14,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 100,
+              "stateId": "ticker.t"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "host/host.on:1",
+            "incarnation": "4"
+          },
+          "occurrence": 7,
+          "scheduledAt": 250,
+          "dueAt": 350,
+          "sequence": 15,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 100,
+              "stateId": "ticker.t"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "host/a",
+            "incarnation": "1"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "host/host.on:1",
+            "incarnation": "2"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "host/a",
+            "incarnation": "1"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "host/host.on:1",
+            "incarnation": "2"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        }
+      },
+      "counters": {
+        "actor": 5,
+        "timer": 8,
+        "sequence": 16,
+        "effect": 4
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 4",
+    "snapshot": {
+      "root": "host",
+      "executionId": "system",
+      "now": 300,
+      "actors": {
+        "host": {
+          "id": "host",
+          "address": "host",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "off",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "host",
+              "host.off"
+            ]
+          }
+        },
+        "host/a": {
+          "id": "a",
+          "address": "host/a",
+          "incarnation": "3",
+          "src": "root/actors/ticker",
+          "parent": {
+            "$actor": "host",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "t",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "ticker",
+              "ticker.t"
+            ]
+          }
+        },
+        "host/host.on:1": {
+          "id": "host.on:1",
+          "address": "host/host.on:1",
+          "incarnation": "4",
+          "src": "root/actors/ticker",
+          "parent": {
+            "$actor": "host",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "t",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "ticker",
+              "ticker.t"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "host/a",
+            "incarnation": "1"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "host/host.on:1",
+            "incarnation": "2"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "host/a",
+            "incarnation": "1"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "host/host.on:1",
+            "incarnation": "2"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        }
+      },
+      "counters": {
+        "actor": 5,
+        "timer": 8,
+        "sequence": 19,
+        "effect": 4
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 5",
+    "snapshot": {
+      "root": "host",
+      "executionId": "system",
+      "now": 1000,
+      "actors": {
+        "host": {
+          "id": "host",
+          "address": "host",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "off",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "host",
+              "host.off"
+            ]
+          }
+        },
+        "host/a": {
+          "id": "a",
+          "address": "host/a",
+          "incarnation": "3",
+          "src": "root/actors/ticker",
+          "parent": {
+            "$actor": "host",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "t",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "ticker",
+              "ticker.t"
+            ]
+          }
+        },
+        "host/host.on:1": {
+          "id": "host.on:1",
+          "address": "host/host.on:1",
+          "incarnation": "4",
+          "src": "root/actors/ticker",
+          "parent": {
+            "$actor": "host",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "t",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "ticker",
+              "ticker.t"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "host/a",
+            "incarnation": "1"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "host/host.on:1",
+            "incarnation": "2"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "host/a",
+            "incarnation": "1"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "host/host.on:1",
+            "incarnation": "2"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        }
+      },
+      "counters": {
+        "actor": 5,
+        "timer": 8,
+        "sequence": 19,
+        "effect": 4
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 6",
+    "snapshot": {
+      "root": "host",
+      "executionId": "system",
+      "now": 1000,
+      "actors": {
+        "host": {
+          "id": "host",
+          "address": "host",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "on",
+            "children": {
+              "a": {
+                "$actor": "host/a",
+                "incarnation": "5"
+              },
+              "host.on:1": {
+                "$actor": "host/host.on:1",
+                "incarnation": "6"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "host",
+              "host.on"
+            ]
+          }
+        },
+        "host/a": {
+          "id": "a",
+          "address": "host/a",
+          "incarnation": "5",
+          "src": "root/actors/ticker",
+          "parent": {
+            "$actor": "host",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "t",
+            "children": {},
+            "timers": [
+              {
+                "delay": 100,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 100,
+                  "stateId": "ticker.t"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "ticker",
+              "ticker.t"
+            ]
+          }
+        },
+        "host/host.on:1": {
+          "id": "host.on:1",
+          "address": "host/host.on:1",
+          "incarnation": "6",
+          "src": "root/actors/ticker",
+          "parent": {
+            "$actor": "host",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "t",
+            "children": {},
+            "timers": [
+              {
+                "delay": 100,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": 100,
+                  "stateId": "ticker.t"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "ticker",
+              "ticker.t"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "host/a",
+            "incarnation": "5"
+          },
+          "occurrence": 8,
+          "scheduledAt": 1000,
+          "dueAt": 1100,
+          "sequence": 20,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 100,
+              "stateId": "ticker.t"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "host/host.on:1",
+            "incarnation": "6"
+          },
+          "occurrence": 9,
+          "scheduledAt": 1000,
+          "dueAt": 1100,
+          "sequence": 21,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": 100,
+              "stateId": "ticker.t"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "host/a",
+            "incarnation": "1"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "host/host.on:1",
+            "incarnation": "2"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "host/a",
+            "incarnation": "1"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "host/host.on:1",
+            "incarnation": "2"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        }
+      },
+      "counters": {
+        "actor": 7,
+        "timer": 10,
+        "sequence": 22,
+        "effect": 4
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 7",
+    "snapshot": {
+      "root": "host",
+      "executionId": "system",
+      "now": 1000,
+      "actors": {
+        "host": {
+          "id": "host",
+          "address": "host",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "context": {},
+            "value": "fin",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "host.fin",
+              "host"
+            ]
+          }
+        },
+        "host/a": {
+          "id": "a",
+          "address": "host/a",
+          "incarnation": "5",
+          "src": "root/actors/ticker",
+          "parent": {
+            "$actor": "host",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "t",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "ticker",
+              "ticker.t"
+            ]
+          }
+        },
+        "host/host.on:1": {
+          "id": "host.on:1",
+          "address": "host/host.on:1",
+          "incarnation": "6",
+          "src": "root/actors/ticker",
+          "parent": {
+            "$actor": "host",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "t",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "ticker",
+              "ticker.t"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "host/a",
+            "incarnation": "1"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "host/host.on:1",
+            "incarnation": "2"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "host/a",
+            "incarnation": "1"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "host/host.on:1",
+            "incarnation": "2"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "host",
+            "incarnation": "0"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:4"
+          }
+        }
+      },
+      "counters": {
+        "actor": 7,
+        "timer": 10,
+        "sequence": 25,
+        "effect": 6
+      }
+    },
+    "effects": [
+      {
+        "id": "system:4",
+        "source": {
+          "$actor": "host",
+          "incarnation": "0"
+        },
+        "type": "root/actions/track",
+        "kind": "action",
+        "params": {},
+        "args": [
+          null
+        ]
+      },
+      {
+        "id": "system:5",
+        "source": {
+          "$actor": "host",
+          "incarnation": "0"
+        },
+        "kind": "action",
+        "type": "@xstate.cancelEffect",
+        "params": {
+          "effectId": "system:4"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 8",
+    "snapshot": {
+      "root": "host",
+      "executionId": "system",
+      "now": 2000,
+      "actors": {
+        "host": {
+          "id": "host",
+          "address": "host",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "context": {},
+            "value": "fin",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "host.fin",
+              "host"
+            ]
+          }
+        },
+        "host/a": {
+          "id": "a",
+          "address": "host/a",
+          "incarnation": "5",
+          "src": "root/actors/ticker",
+          "parent": {
+            "$actor": "host",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "t",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "ticker",
+              "ticker.t"
+            ]
+          }
+        },
+        "host/host.on:1": {
+          "id": "host.on:1",
+          "address": "host/host.on:1",
+          "incarnation": "6",
+          "src": "root/actors/ticker",
+          "parent": {
+            "$actor": "host",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "t",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "ticker",
+              "ticker.t"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "host/a",
+            "incarnation": "1"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "host/host.on:1",
+            "incarnation": "2"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "host/a",
+            "incarnation": "1"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "host/host.on:1",
+            "incarnation": "2"
+          },
+          "type": "tick",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "tick"
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "host",
+            "incarnation": "0"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:4"
+          }
+        }
+      },
+      "counters": {
+        "actor": 7,
+        "timer": 10,
+        "sequence": 25,
+        "effect": 6
+      }
+    },
+    "effects": []
+  }
+]

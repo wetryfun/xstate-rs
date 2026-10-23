@@ -4,7 +4,7 @@
 use std::collections::HashMap;
 
 use serde::de::DeserializeOwned;
-use serde_json::{Map, Value};
+use serde_json::{json, Map, Value};
 
 use crate::core::{DomainHint, Kind as NodeKind, Nid, Tid, Tree, TreeNode, TreeTransition};
 use crate::delay::{ms_to_u64, parse_duration_ms};
@@ -30,7 +30,8 @@ struct Node {
     exit: Vec<Action>,
     on: Vec<(String, Vec<Tid>)>,
     always: Vec<Tid>,
-    after: Vec<AfterDef>,
+    delayed: Vec<DelayedDef>,
+    invokes: Vec<InvokeDef>,
     output: Option<Value>,
     tags: Vec<String>,
 }
@@ -72,15 +73,8 @@ const TRANSITION_KEYS: &[&str] =
     &["target", "matches", "context", "actions", "guard", "description", "reenter", "meta", "input"];
 
 /// State-node keys that name v6 features this runtime does not run yet.
-const UNSUPPORTED_STATE_KEYS: &[(&str, &str)] = &[
-    ("invoke", "invoke (planned for milestone 2)"),
-    ("onError", "onError (planned for milestone 2)"),
-    ("timeout", "state timeout"),
-    ("onTimeout", "onTimeout"),
-    ("choice", "choice states"),
-    ("route", "route states"),
-    ("input", "state input"),
-];
+const UNSUPPORTED_STATE_KEYS: &[(&str, &str)] =
+    &[("choice", "choice states"), ("route", "route states"), ("input", "state input")];
 
 fn err(kind: K, path: &str, message: impl Into<String>) -> LoadError {
     LoadError::new(kind, path, message)
@@ -176,7 +170,7 @@ struct Loader<'j, 'r, C, E> {
     transitions: Vec<TransitionData>,
     transition_sources: Vec<Nid>,
     guards: Vec<crate::registry::GuardFn<C, E>>,
-    actions: Vec<crate::registry::ActionFn>,
+    actions: Vec<CustomAction>,
     delays: Vec<crate::registry::DelayFn<C, E>>,
     named_delays: HashMap<String, DelaySpec>,
     raise_events: Vec<Ev<E>>,
@@ -250,7 +244,8 @@ where
             id: n.id,
             entry: n.entry,
             exit: n.exit,
-            after: n.after,
+            delayed: n.delayed,
+            invokes: n.invokes,
             output: n.output,
             tags: n.tags,
             initial: n.initial.into_iter().collect(),
@@ -268,6 +263,7 @@ where
         transitions: loader.transitions,
         guards: loader.guards,
         actions: loader.actions,
+        actors: registry.actors.clone(),
         delays: loader.delays,
         raise_events: loader.raise_events,
         id_map: loader.id_map,
@@ -308,11 +304,6 @@ fn check_reserved(kind: &str, name: &str, path: &str) -> Result<()> {
 
 impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
     fn check_machine_keys(&self) -> Result<()> {
-        if let Some(actors) = self.root_json.get("actors") {
-            if actors.as_object().is_some_and(|m| !m.is_empty()) {
-                return Err(err(K::Unsupported, "$.actors", "actors are not supported yet (planned for milestone 2)"));
-            }
-        }
         for kind in ["actions", "guards", "delays"] {
             if let Some(map) = opt_object(self.root_json, kind, "$")? {
                 for name in map.keys() {
@@ -457,7 +448,8 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             exit: Vec::new(),
             on: Vec::new(),
             always: Vec::new(),
-            after: Vec::new(),
+            delayed: Vec::new(),
+            invokes: Vec::new(),
             output: None,
             tags: Vec::new(),
         });
@@ -622,8 +614,10 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
         let entry = self.compile_action_list(json.get("entry"), &child_path(&path, "entry"), true)?;
         let exit = self.compile_action_list(json.get("exit"), &child_path(&path, "exit"), true)?;
 
-        // Event transitions, in the order XState builds its transition map:
-        // `on` keys, then `onDone` (appended to `xstate.done.state`), then `after`.
+        // Event transitions, in the order XState's `formatTransitions` builds
+        // its transition map: `on` keys; `onDone` (appended to
+        // `xstate.done.state`); `onError` (replacing `xstate.error.*`); each
+        // invoke's completion transitions; then the delayed transitions.
         let mut by_descriptor: Vec<(String, Vec<TransitionId>)> = Vec::new();
         let add = |list: &mut Vec<(String, Vec<TransitionId>)>, d: &str, ts: Vec<TransitionId>| match list
             .iter_mut()
@@ -647,17 +641,70 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             let ts = self.compile_transitions(node, value, &child_path(&path, "onDone"), &[("stateId".into(), id)])?;
             add(&mut by_descriptor, DONE_STATE, ts);
         }
-        let mut after_defs = Vec::new();
+        if let Some(value) = json.get("onError") {
+            let ts = self.compile_transitions(node, value, &child_path(&path, "onError"), &[])?;
+            match by_descriptor.iter_mut().find(|(k, _)| k == "xstate.error.*") {
+                Some((_, existing)) => *existing = ts,
+                None => by_descriptor.push(("xstate.error.*".into(), ts)),
+            }
+        }
+        let state_id = Value::String(self.nodes[node as usize].id.clone());
+        let mut invokes = Vec::new();
+        let mut invoke_timeouts = Vec::new();
+        if let Some(value) = json.get("invoke") {
+            let (items, many) = match value {
+                Value::Array(items) => (items.iter().collect::<Vec<_>>(), true),
+                single => (vec![single], false),
+            };
+            for (index, item) in items.into_iter().enumerate() {
+                let ipath = if many { format!("{path}.invoke[{index}]") } else { child_path(&path, "invoke") };
+                let (def, timeout) = self.compile_invoke(node, item, index, &ipath, &mut by_descriptor)?;
+                if let Some(timeout) = timeout {
+                    invoke_timeouts.push((def.id.clone(), timeout));
+                }
+                invokes.push(def);
+            }
+        }
+        let mut delayed = Vec::new();
+        let mut delayed_transitions: Vec<(&str, Vec<TransitionId>)> = Vec::new();
         if let Some(after) = opt_object(json, "after", &path)? {
             for (key, value) in after {
                 let apath = format!("{path}.after.{key}");
                 let (event_delay, delay) = self.after_delay(key, &apath)?;
-                let state_id = Value::String(self.nodes[node as usize].id.clone());
-                let extra = [("delay".to_owned(), event_delay.clone()), ("stateId".to_owned(), state_id)];
+                let extra = [("delay".to_owned(), event_delay.clone()), ("stateId".to_owned(), state_id.clone())];
                 let ts = self.compile_transitions(node, value, &apath, &extra)?;
-                add(&mut by_descriptor, AFTER, ts);
-                after_defs.push(AfterDef { key: key.clone(), event_delay, delay });
+                delayed_transitions.push((AFTER, ts));
+                delayed.push(DelayedDef { kind: DelayedKind::After { event_delay }, delay });
             }
+        }
+        match (json.get("timeout"), json.get("onTimeout")) {
+            (None, None) => {}
+            (Some(timeout), Some(on_timeout)) => {
+                let tpath = child_path(&path, "timeout");
+                let delay = match timeout {
+                    Value::Number(n) => n.as_f64().and_then(ms_to_u64).map(DelaySpec::Fixed),
+                    Value::String(s) => {
+                        self.named_delay(s).or_else(|| parse_duration_ms(s).and_then(ms_to_u64).map(DelaySpec::Fixed))
+                    }
+                    _ => None,
+                }
+                .ok_or_else(|| {
+                    invalid(&tpath, "invalid timeout: expected milliseconds, a named delay or a duration string")
+                })?;
+                let extra = [("stateId".to_owned(), state_id.clone())];
+                let ts = self.compile_transitions(node, on_timeout, &child_path(&path, "onTimeout"), &extra)?;
+                delayed_transitions.push(("xstate.timeout.state", ts));
+                delayed.push(DelayedDef { kind: DelayedKind::StateTimeout, delay });
+            }
+            (Some(_), None) => return Err(invalid(&path, "a state with `timeout` must declare `onTimeout`")),
+            (None, Some(_)) => return Err(invalid(&path, "a state with `onTimeout` must declare `timeout`")),
+        }
+        for (invoke_id, (delay, ts)) in invoke_timeouts {
+            delayed_transitions.push(("xstate.timeout.actor", ts));
+            delayed.push(DelayedDef { kind: DelayedKind::InvokeTimeout { invoke_id }, delay });
+        }
+        for (descriptor, ts) in delayed_transitions {
+            add(&mut by_descriptor, descriptor, ts);
         }
         let always = match json.get("always") {
             Some(value) => self.compile_transitions(node, value, &child_path(&path, "always"), &[])?,
@@ -683,7 +730,8 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
         n.exit = exit;
         n.on = by_descriptor;
         n.always = always;
-        n.after = after_defs;
+        n.delayed = delayed;
+        n.invokes = invokes;
         n.tags = tags;
         n.output = output;
         Ok(())
@@ -715,6 +763,129 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
         self.delays.push(f);
         self.named_delays.insert(name.to_owned(), spec);
         Some(spec)
+    }
+
+    /// One `invoke`: its definition, and its timeout (delay and `onTimeout`
+    /// transitions) if it has one. Completion transitions are added to
+    /// `by_descriptor` as XState's `formatTransitions` adds them.
+    #[allow(clippy::type_complexity)]
+    fn compile_invoke(
+        &mut self,
+        node: NodeId,
+        value: &Value,
+        index: usize,
+        path: &str,
+        by_descriptor: &mut Vec<(String, Vec<TransitionId>)>,
+    ) -> Result<(InvokeDef, Option<(DelaySpec, Vec<TransitionId>)>)> {
+        const INVOKE_KEYS: &[&str] =
+            &["id", "registryKey", "src", "input", "onDone", "onError", "onSnapshot", "timeout", "onTimeout"];
+        let obj = value.as_object().ok_or_else(|| invalid(path, "an invoke must be an object"))?;
+        for k in obj.keys() {
+            if !INVOKE_KEYS.contains(&k.as_str()) {
+                return Err(err(K::UnknownKey, path, format!("unknown key \"{k}\"")));
+            }
+        }
+        let src = opt_str(obj, "src", path)?
+            .ok_or_else(|| invalid(&child_path(path, "src"), "an invoke needs a string `src`"))?;
+        let logic =
+            self.registry.actors.iter().find(|(name, _)| name == src).map(|(_, l)| l.clone()).ok_or_else(|| {
+                err(K::MissingImplementation, &child_path(path, "src"), format!("missing actor source \"{src}\""))
+            })?;
+        let id = match opt_str(obj, "id", path)? {
+            Some(id) => id.to_owned(),
+            None => format!("{}:{index}", self.nodes[node as usize].id),
+        };
+        let registry_key = opt_str(obj, "registryKey", path)?.map(str::to_owned);
+        let timeout_key = json!({ "event": { "type": "xstate.timeout.actor", "actorId": id } });
+        let timeout = match (obj.get("timeout"), obj.get("onTimeout")) {
+            (None, None) => None,
+            (Some(timeout), Some(_)) => {
+                let delay = match timeout {
+                    Value::Number(n) => n.as_f64().and_then(ms_to_u64),
+                    Value::String(s) => parse_duration_ms(s).and_then(ms_to_u64),
+                    _ => None,
+                }
+                .map(DelaySpec::Fixed)
+                .ok_or_else(|| {
+                    invalid(&child_path(path, "timeout"), "invalid timeout: expected milliseconds or a duration string")
+                })?;
+                Some(delay)
+            }
+            (Some(_), None) => return Err(invalid(path, "an invoke with `timeout` must declare `onTimeout`")),
+            (None, Some(_)) => return Err(invalid(path, "an invoke with `onTimeout` must declare `timeout`")),
+        };
+        let actor_match = [("actorId".to_owned(), Value::String(id.clone()))];
+        let add = |list: &mut Vec<(String, Vec<TransitionId>)>, d: &str, ts: Vec<TransitionId>| match list
+            .iter_mut()
+            .find(|(k, _)| k == d)
+        {
+            Some((_, existing)) => existing.extend(ts),
+            None => list.push((d.to_owned(), ts)),
+        };
+        let completion = |this: &mut Self, value: &Value, p: String| -> Result<Vec<TransitionId>> {
+            let ts = this.compile_transitions(node, value, &p, &actor_match)?;
+            for &t in &ts {
+                let tr = &mut this.transitions[t as usize];
+                tr.session = Some(id.clone());
+                if timeout.is_some() {
+                    tr.cancel_timeout = Some(timeout_key.clone());
+                }
+            }
+            Ok(ts)
+        };
+        let cancel_only = |this: &mut Self| -> TransitionId {
+            this.transitions.push(TransitionData {
+                targets: None,
+                matches: vec![("actorId".to_owned(), Value::String(id.clone()))],
+                guard: None,
+                context: None,
+                actions: Vec::new(),
+                reenter: false,
+                session: Some(id.clone()),
+                cancel_timeout: Some(timeout_key.clone()),
+            });
+            this.transition_sources.push(node);
+            this.transitions.len() as TransitionId - 1
+        };
+        if let Some(value) = obj.get("onDone") {
+            let mut ts = completion(self, value, child_path(path, "onDone"))?;
+            if timeout.is_some() {
+                ts.push(cancel_only(self));
+            }
+            add(by_descriptor, "xstate.done.actor", ts);
+        } else if timeout.is_some() {
+            let t = cancel_only(self);
+            add(by_descriptor, "xstate.done.actor", vec![t]);
+        }
+        if let Some(value) = obj.get("onError") {
+            let ts = completion(self, value, child_path(path, "onError"))?;
+            add(by_descriptor, "xstate.error.actor", ts);
+        }
+        if let Some(value) = obj.get("onSnapshot") {
+            let ts = self.compile_transitions(node, value, &child_path(path, "onSnapshot"), &actor_match)?;
+            for &t in &ts {
+                self.transitions[t as usize].session = Some(id.clone());
+            }
+            add(by_descriptor, "xstate.snapshot.actor", ts);
+        }
+        let timeout = match (timeout, obj.get("onTimeout")) {
+            (Some(delay), Some(on_timeout)) => {
+                let ts = self.compile_transitions(node, on_timeout, &child_path(path, "onTimeout"), &actor_match)?;
+                for &t in &ts {
+                    self.transitions[t as usize].session = Some(id.clone());
+                }
+                Some((delay, ts))
+            }
+            _ => None,
+        };
+        let def = InvokeDef {
+            id,
+            logic,
+            input: obj.get("input").cloned(),
+            registry_key,
+            sync_snapshot: obj.contains_key("onSnapshot"),
+        };
+        Ok((def, timeout))
     }
 
     fn compile_transitions(
@@ -792,7 +963,16 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             Some(_) => return Err(invalid(&child_path(path, "reenter"), "expected a boolean")),
         };
         let id = self.transitions.len() as TransitionId;
-        self.transitions.push(TransitionData { targets, matches, guard, context, actions, reenter });
+        self.transitions.push(TransitionData {
+            targets,
+            matches,
+            guard,
+            context,
+            actions,
+            reenter,
+            session: None,
+            cancel_timeout: None,
+        });
         self.transition_sources.push(source);
         Ok(id)
     }
@@ -950,7 +1130,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                 let f = factory(params).map_err(|m| {
                     err(K::InvalidParams, &child_path(path, "params"), format!("invalid params for action '{ty}': {m}"))
                 })?;
-                self.actions.push(f);
+                self.actions.push(CustomAction { name: ty.to_owned(), params: obj.get("params").cloned(), exec: f });
                 out.push(Action::Custom(self.actions.len() as u32 - 1));
             }
         }
