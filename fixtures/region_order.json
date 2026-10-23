@@ -1,0 +1,30 @@
+{
+  "machine": {
+    "id": "ro",
+    "type": "parallel",
+    "states": {
+      "a": {
+        "initial": "a1",
+        "states": {
+          "a1": { "on": { "go": { "target": "a2" }, "ev": { "actions": [{ "type": "@xstate.emit", "event": { "type": "a1" } }] } } },
+          "a2": { "on": { "ev": { "actions": [{ "type": "@xstate.emit", "event": { "type": "a2" } }] } } }
+        },
+        "on": { "reset": { "target": "a", "reenter": true } }
+      },
+      "b": {
+        "initial": "b1",
+        "states": {
+          "b1": { "on": { "ev": { "actions": [{ "type": "@xstate.emit", "event": { "type": "b1" } }] } } }
+        }
+      }
+    }
+  },
+  "steps": [
+    { "at": 0, "send": { "type": "ev" } },
+    { "at": 0, "send": { "type": "reset" } },
+    { "at": 0, "send": { "type": "ev" } },
+    { "at": 0, "send": { "type": "go" } },
+    { "at": 0, "send": { "type": "reset" } },
+    { "at": 0, "send": { "type": "ev" } }
+  ]
+}

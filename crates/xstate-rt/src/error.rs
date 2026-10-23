@@ -52,7 +52,7 @@ pub enum RuntimeError {
     /// One macrostep took more microsteps than the configured bound, usually
     /// because eventless transitions or raised events form a cycle. The actor
     /// is left in the `error` status.
-    InfiniteLoop { event_type: String, max_iterations: usize, state: serde_json::Value },
+    InfiniteLoop { event_type: String, max_iterations: usize, states: Vec<serde_json::Value> },
     /// The event type is declared in `internalEvents` and cannot be sent from outside.
     InternalEvent { event_type: String },
     /// `@xstate.assign` produced a context that does not deserialize into the
@@ -63,10 +63,14 @@ pub enum RuntimeError {
 impl fmt::Display for RuntimeError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            RuntimeError::InfiniteLoop { event_type, max_iterations, state } => write!(
-                f,
-                "event \"{event_type}\" exceeded {max_iterations} microsteps without settling (last state {state})"
-            ),
+            RuntimeError::InfiniteLoop { event_type, max_iterations, states } => {
+                let states: Vec<String> = states.iter().map(|v| v.to_string()).collect();
+                write!(
+                    f,
+                    "infinite loop processing event \"{event_type}\": more than {max_iterations} microsteps without reaching a stable state. Last states: {}",
+                    states.join(" -> ")
+                )
+            }
             RuntimeError::InternalEvent { event_type } => {
                 write!(f, "event \"{event_type}\" is internal and cannot be sent from outside the machine")
             }

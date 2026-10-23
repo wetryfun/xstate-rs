@@ -26,7 +26,7 @@ fn stubs() -> Registry<Value, Value> {
             matches!((as_f64(args.context.get(&p.key)), p.value.as_f64()), (Some(a), Some(b)) if a >= b)
         })
         .guard_with("eventEquals", |args, p: &KeyValue| args.event.field(&p.key).as_ref() == Some(&p.value))
-        .action("noop", |_| {})
+        .action("noop", || {})
         .delay_ms("short", 100)
         .delay_ms("long", 1000);
     r
@@ -83,7 +83,9 @@ fn run_fixture(path: &PathBuf) -> Result<(), String> {
             exp["context"] = Value::Null;
             act["context"] = Value::Null;
         }
-        if exp != act {
+        // Compare serialized forms: key order is part of XState's behavior
+        // (state values follow the configuration order).
+        if serde_json::to_string(&exp).unwrap() != serde_json::to_string(&act).unwrap() {
             return Err(format!(
                 "mismatch at {}\n  expected: {}\n  actual:   {}",
                 exp["label"],

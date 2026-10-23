@@ -25,6 +25,7 @@
 //! ```
 
 mod actor;
+pub mod core;
 mod delay;
 mod error;
 mod event;
@@ -42,7 +43,7 @@ pub use error::{LoadError, LoadErrorKind, RestoreError, RuntimeError};
 pub use event::{Ev, EventType};
 pub use interp::Status;
 pub use machine::{Machine, MachineOptions, NodeId};
-pub use registry::{ActionArgs, GuardArgs, Registry};
+pub use registry::{GuardArgs, Registry};
 pub use snapshot::{PersistedSnapshot, PersistedTimer, PersistedTimerKey};
 
 impl<C, E> Machine<C, E>

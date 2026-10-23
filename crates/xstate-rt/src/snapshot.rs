@@ -1,16 +1,15 @@
 //! Persisted snapshots. States are recorded by their stable ids, never by
 //! arena index, so a snapshot survives recompiling the same definition.
 
-use std::collections::BTreeMap;
-
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Map, Value};
 
+use crate::core::{Kind, Nid};
 use crate::error::RestoreError;
 use crate::event::{Ev, EventType};
 use crate::interp::{State, Status, Timer, TimerKey};
-use crate::machine::{Machine, NodeId, NodeKind, ROOT};
+use crate::machine::{Machine, ROOT};
 
 /// Everything needed to resume an actor.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -24,16 +23,20 @@ pub struct PersistedSnapshot<C> {
     /// XState's nested state value, for display. Restoring reads
     /// `configuration`, not this.
     pub value: Value,
-    /// Ids of all active states, in document order.
+    /// Ids of all active states, in XState's configuration order (which
+    /// state values and selection order follow).
     pub configuration: Vec<String>,
     pub context: C,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub output: Option<Value>,
-    /// Recorded history, by history state id.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub error: Option<Value>,
+    /// Recorded history: history state id to state ids, in key order.
     #[serde(default)]
-    pub history_value: BTreeMap<String, Vec<String>>,
+    pub history_value: Map<String, Value>,
     #[serde(default)]
     pub timers: Vec<PersistedTimer>,
+    /// XState's `_nextTimerId`.
     #[serde(default)]
     pub next_timer_id: u64,
     #[serde(default)]
@@ -47,10 +50,10 @@ pub struct PersistedSnapshot<C> {
 #[serde(rename_all = "camelCase")]
 pub struct PersistedTimer {
     pub key: PersistedTimerKey,
-    pub due: u64,
-    pub order: u64,
     pub delay: u64,
     pub event: Value,
+    pub due: u64,
+    pub order: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -74,15 +77,16 @@ where
     C: Serialize + DeserializeOwned + Clone,
     E: EventType,
 {
+    fn ids(&self, nodes: &[Nid]) -> Vec<String> {
+        nodes.iter().map(|&n| self.data(n).id.clone()).collect()
+    }
+
     pub(crate) fn persist(&self, st: &State<C, E>) -> PersistedSnapshot<C> {
-        let configuration = (0..self.nodes.len()).filter(|&i| st.active[i]).map(|i| self.nodes[i].id.clone()).collect();
         let history_value = st
             .history
             .iter()
-            .enumerate()
-            .filter_map(|(h, recorded)| {
-                let recorded = recorded.as_ref()?;
-                Some((self.nodes[h].id.clone(), recorded.iter().map(|&n| self.node(n).id.clone()).collect()))
+            .map(|(h, nodes)| {
+                (self.data(*h).id.clone(), Value::Array(self.ids(nodes).into_iter().map(Value::String).collect()))
             })
             .collect();
         let timers = st
@@ -93,24 +97,25 @@ where
                     TimerKey::Id(id) => PersistedTimerKey::Id { id: id.clone() },
                     TimerKey::Seq(seq) => PersistedTimerKey::Seq { seq: *seq },
                     TimerKey::After { node, index } => PersistedTimerKey::After {
-                        state_id: self.node(*node).id.clone(),
-                        delay: self.node(*node).after[*index as usize].key.clone(),
+                        state_id: self.data(*node).id.clone(),
+                        delay: self.data(*node).after[*index as usize].key.clone(),
                     },
                 },
-                due: t.due,
-                order: t.order,
                 delay: t.delay,
                 event: t.event.to_json(),
+                due: t.due,
+                order: t.order,
             })
             .collect();
         PersistedSnapshot {
             machine_id: self.id.clone(),
             version: self.version.clone(),
             status: st.status,
-            value: self.state_value(&st.active),
-            configuration,
+            value: self.state_value(&st.nodes),
+            configuration: self.ids(&st.nodes),
             context: st.context.clone(),
             output: st.output.clone(),
+            error: st.error.clone(),
             history_value,
             timers,
             next_timer_id: st.next_timer_id,
@@ -119,7 +124,7 @@ where
         }
     }
 
-    fn lookup(&self, id: &str, what: &str) -> Result<NodeId, RestoreError> {
+    fn lookup(&self, id: &str, what: &str) -> Result<Nid, RestoreError> {
         match self.node_by_id(id) {
             Some(n) => Ok(n),
             None => fail(format!("{what} \"{id}\" does not exist in this machine definition")),
@@ -133,23 +138,28 @@ where
         if snapshot.version.is_some() && self.version.is_some() && snapshot.version != self.version {
             return fail(format!("snapshot is for version {:?}, not {:?}", snapshot.version, self.version));
         }
-        let mut st = State::new(self.nodes.len(), snapshot.context, snapshot.now);
+        let mut st = State::new(snapshot.context, snapshot.now);
         st.status = snapshot.status;
         st.output = snapshot.output;
+        st.error = snapshot.error;
         st.next_timer_id = snapshot.next_timer_id;
         st.timer_order = snapshot.timer_order;
-        for id in &snapshot.configuration {
-            let n = self.lookup(id, "state")?;
-            st.active[n as usize] = true;
-        }
-        self.check_configuration(&st.active)?;
+        st.nodes = snapshot.configuration.iter().map(|id| self.lookup(id, "state")).collect::<Result<_, _>>()?;
+        self.check_configuration(&st.nodes)?;
         for (id, recorded) in snapshot.history_value {
             let h = self.lookup(&id, "history state")?;
-            if !matches!(self.node(h).kind, NodeKind::History { .. }) {
+            if !matches!(self.tree.kind(h), Kind::History { .. }) {
                 return fail(format!("\"{id}\" is not a history state"));
             }
-            let nodes = recorded.iter().map(|r| self.lookup(r, "state")).collect::<Result<Vec<_>, _>>()?;
-            st.history[h as usize] = Some(nodes);
+            let Value::Array(items) = recorded else { return fail(format!("history of \"{id}\" is not an array")) };
+            let nodes = items
+                .iter()
+                .map(|v| match v.as_str() {
+                    Some(s) => self.lookup(s, "state"),
+                    None => fail("history entries must be state ids"),
+                })
+                .collect::<Result<Vec<_>, _>>()?;
+            st.history.push((h, nodes));
         }
         for t in snapshot.timers {
             let key = match t.key {
@@ -157,7 +167,7 @@ where
                 PersistedTimerKey::Seq { seq } => TimerKey::Seq(seq),
                 PersistedTimerKey::After { state_id, delay } => {
                     let node = self.lookup(&state_id, "state")?;
-                    let index = match self.node(node).after.iter().position(|a| a.key == delay) {
+                    let index = match self.data(node).after.iter().position(|a| a.key == delay) {
                         Some(i) => i as u32,
                         None => return fail(format!("state \"{state_id}\" has no `after` entry \"{delay}\"")),
                     };
@@ -168,34 +178,40 @@ where
                 Some(e) => e,
                 None => return fail("a timer event has no string \"type\""),
             };
-            st.timers.push(Timer { key, due: t.due, order: t.order, delay: t.delay, event });
+            st.timers.push(Timer { key, delay: t.delay, event, due: t.due, order: t.order });
         }
         Ok(st)
     }
 
     /// Checks that the active set is a legal configuration.
-    fn check_configuration(&self, active: &[bool]) -> Result<(), RestoreError> {
+    fn check_configuration(&self, nodes: &[Nid]) -> Result<(), RestoreError> {
+        let mut active = vec![false; self.nodes.len()];
+        for &n in nodes {
+            if active[n as usize] {
+                return fail(format!("state \"{}\" appears twice", self.data(n).id));
+            }
+            active[n as usize] = true;
+        }
         if !active[ROOT as usize] {
             return fail("the root state is not active");
         }
-        for (i, node) in self.nodes.iter().enumerate() {
-            if !active[i] {
-                continue;
-            }
+        for &n in nodes {
+            let node = self.tree.node(n);
+            let id = &self.data(n).id;
             if let Some(p) = node.parent {
                 if !active[p as usize] {
-                    return fail(format!("state \"{}\" is active but its parent is not", node.id));
+                    return fail(format!("state \"{id}\" is active but its parent is not"));
                 }
             }
             let active_children = node.children.iter().filter(|&&c| active[c as usize]).count();
             match node.kind {
-                NodeKind::Compound if active_children != 1 => {
-                    return fail(format!("compound state \"{}\" must have exactly one active child", node.id))
+                Kind::Compound if active_children != 1 => {
+                    return fail(format!("compound state \"{id}\" must have exactly one active child"))
                 }
-                NodeKind::Parallel if active_children != node.children.len() => {
-                    return fail(format!("parallel state \"{}\" must have all regions active", node.id))
+                Kind::Parallel if active_children != node.children.len() => {
+                    return fail(format!("parallel state \"{id}\" must have all regions active"))
                 }
-                NodeKind::History { .. } => return fail(format!("history state \"{}\" cannot be active", node.id)),
+                Kind::History { .. } => return fail(format!("history state \"{id}\" cannot be active")),
                 _ => {}
             }
         }

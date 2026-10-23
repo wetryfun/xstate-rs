@@ -6,11 +6,34 @@ use std::collections::HashMap;
 use serde::de::DeserializeOwned;
 use serde_json::{Map, Value};
 
+use crate::core::{DomainHint, Kind as NodeKind, Nid, Tid, Tree, TreeNode, TreeTransition};
 use crate::delay::{ms_to_u64, parse_duration_ms};
 use crate::error::{LoadError, LoadErrorKind as K};
 use crate::event::{Ev, EventType, AFTER, DONE_STATE};
 use crate::machine::*;
 use crate::registry::Registry;
+
+type TransitionId = Tid;
+
+/// A node while loading; split into the shared [`Tree`] and [`NodeData`] at the end.
+struct Node {
+    key: String,
+    id: String,
+    parent: Option<NodeId>,
+    end: NodeId,
+    kind: NodeKind,
+    children: Vec<NodeId>,
+    history_children: Vec<NodeId>,
+    initial: Option<NodeId>,
+    history_target: Vec<NodeId>,
+    entry: Vec<Action>,
+    exit: Vec<Action>,
+    on: Vec<(String, Vec<Tid>)>,
+    always: Vec<Tid>,
+    after: Vec<AfterDef>,
+    output: Option<Value>,
+    tags: Vec<String>,
+}
 
 type Result<T> = std::result::Result<T, LoadError>;
 
@@ -150,13 +173,13 @@ struct Loader<'j, 'r, C, E> {
     nodes: Vec<Node>,
     raw: Vec<RawNode<'j>>,
     id_map: HashMap<String, NodeId>,
-    transitions: Vec<Transition>,
+    transitions: Vec<TransitionData>,
+    transition_sources: Vec<Nid>,
     guards: Vec<crate::registry::GuardFn<C, E>>,
-    actions: Vec<crate::registry::ActionFn<C, E>>,
+    actions: Vec<crate::registry::ActionFn>,
     delays: Vec<crate::registry::DelayFn<C, E>>,
     named_delays: HashMap<String, DelaySpec>,
     raise_events: Vec<Ev<E>>,
-    event_keys: HashMap<String, u32>,
 }
 
 /// Compiles a machine definition against a registry of implementations.
@@ -178,12 +201,12 @@ where
         raw: Vec::new(),
         id_map: HashMap::new(),
         transitions: Vec::new(),
+        transition_sources: Vec::new(),
         guards: Vec::new(),
         actions: Vec::new(),
         delays: Vec::new(),
         named_delays: HashMap::new(),
         raise_events: Vec::new(),
-        event_keys: HashMap::new(),
     };
     loader.check_machine_keys()?;
     loader.load_named_delays()?;
@@ -213,17 +236,41 @@ where
         Some(_) => return Err(invalid("$.internalEvents", "expected an array of event descriptors")),
     };
 
+    let mut tree_nodes = Vec::with_capacity(loader.nodes.len());
+    let mut nodes = Vec::with_capacity(loader.nodes.len());
+    for n in loader.nodes {
+        let mut t = TreeNode::new(n.parent, n.kind);
+        t.children = n.children;
+        t.history_children = n.history_children;
+        t.on = n.on;
+        t.always = n.always;
+        tree_nodes.push(t);
+        nodes.push(NodeData {
+            key: n.key,
+            id: n.id,
+            entry: n.entry,
+            exit: n.exit,
+            after: n.after,
+            output: n.output,
+            tags: n.tags,
+            initial: n.initial.into_iter().collect(),
+            history_target: n.history_target,
+        });
+    }
+    let tree_transitions =
+        loader.transition_sources.iter().map(|&source| TreeTransition { source, domain: DomainHint::None }).collect();
+
     Ok(Machine {
         id: loader.machine_id,
         version,
-        nodes: loader.nodes,
+        tree: Tree::new(tree_nodes, tree_transitions),
+        nodes,
         transitions: loader.transitions,
         guards: loader.guards,
         actions: loader.actions,
         delays: loader.delays,
         raise_events: loader.raise_events,
         id_map: loader.id_map,
-        event_keys: loader.event_keys,
         internal_events,
         initial_context,
         output: root_json.get("output").cloned(),
@@ -408,8 +455,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             history_target: Vec::new(),
             entry: Vec::new(),
             exit: Vec::new(),
-            on_exact: Vec::new(),
-            on_wildcard: Vec::new(),
+            on: Vec::new(),
             always: Vec::new(),
             after: Vec::new(),
             output: None,
@@ -536,11 +582,6 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
         None
     }
 
-    fn event_key(&mut self, descriptor: &str) -> u32 {
-        let next = self.event_keys.len() as u32;
-        *self.event_keys.entry(descriptor.to_owned()).or_insert(next)
-    }
-
     fn resolve_node(&mut self, node: NodeId) -> Result<()> {
         let json: &'j Map<String, Value> = self.raw[node as usize].json;
         let path = self.raw[node as usize].path.clone();
@@ -623,17 +664,6 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             None => Vec::new(),
         };
 
-        let mut on_exact = Vec::with_capacity(by_descriptor.len());
-        let mut on_wildcard = Vec::new();
-        for (descriptor, ts) in by_descriptor {
-            on_exact.push((self.event_key(&descriptor), ts.clone()));
-            if descriptor == "*" || descriptor.ends_with(".*") {
-                on_wildcard.push((descriptor, ts));
-            }
-        }
-        on_exact.sort_by_key(|(k, _)| *k);
-        on_wildcard.sort_by_key(|(d, _)| std::cmp::Reverse(d.len()));
-
         let tags = match json.get("tags") {
             None => Vec::new(),
             Some(Value::Array(items)) => items
@@ -651,8 +681,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
         let n = &mut self.nodes[node as usize];
         n.entry = entry;
         n.exit = exit;
-        n.on_exact = on_exact;
-        n.on_wildcard = on_wildcard;
+        n.on = by_descriptor;
         n.always = always;
         n.after = after_defs;
         n.tags = tags;
@@ -737,7 +766,10 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                 "transition input (state input) is not supported yet",
             ));
         }
-        let targets = self.resolve_targets(source, obj.get("target"), &child_path(path, "target"), false)?;
+        let targets = match obj.get("target") {
+            Some(t) => Some(self.resolve_targets(source, Some(t), &child_path(path, "target"), false)?),
+            None => None,
+        };
         let mut matches: Vec<(String, Value)> = match opt_object(obj, "matches", path)? {
             Some(m) => m.iter().map(|(k, v)| (k.clone(), v.clone())).collect(),
             None => Vec::new(),
@@ -760,7 +792,8 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             Some(_) => return Err(invalid(&child_path(path, "reenter"), "expected a boolean")),
         };
         let id = self.transitions.len() as TransitionId;
-        self.transitions.push(Transition { source, targets, matches, guard, context, actions, reenter });
+        self.transitions.push(TransitionData { targets, matches, guard, context, actions, reenter });
+        self.transition_sources.push(source);
         Ok(id)
     }
 

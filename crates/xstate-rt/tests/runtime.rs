@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -10,7 +10,7 @@ use xstate_rt::*;
 struct Ctx {
     count: i64,
     #[serde(default)]
-    log: Vec<String>,
+    mode: String,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -39,36 +39,28 @@ struct Limit {
     max: i64,
 }
 
-fn counter_registry() -> Registry<Ctx, Event> {
+fn counter_registry(notes: Arc<Mutex<Vec<String>>>) -> Registry<Ctx, Event> {
     let mut r: Registry<Ctx, Event> = Registry::new();
     r.guard_with("below", |args, p: &Limit| args.context.count < p.max)
-        .action("add", |args| {
-            let by = match &args.event {
-                Ev::User(Event::Inc { by }) => *by,
-                _ => 0,
-            };
-            args.context_mut().count += by;
-        })
-        .action_with("note", |args, text: &String| {
-            args.context_mut().log.push(text.clone());
-            args.emit(json!({ "type": "noted", "text": text }));
-        })
+        .guard_with("byAtLeast", |args, p: &Limit| matches!(args.event, Ev::User(Event::Inc { by }) if *by >= p.max))
+        .action_with("note", move |text: &String| notes.lock().unwrap().push(text.clone()))
         .delay("backoff", |ctx, _| (ctx.count as u64) * 100);
     r
 }
 
-fn counter_machine() -> Arc<Machine<Ctx, Event>> {
+fn counter_machine(notes: Arc<Mutex<Vec<String>>>) -> Arc<Machine<Ctx, Event>> {
     let def = json!({
         "id": "counter",
         "initial": "counting",
-        "context": { "count": 0 },
+        "context": { "count": 0, "mode": "slow" },
         "states": {
             "counting": {
                 "entry": [{ "type": "note", "params": "counting" }],
                 "on": {
                     "inc": [
-                        { "guard": { "type": "below", "params": { "max": 10 } }, "actions": [{ "type": "add" }] },
-                        { "target": "full" }
+                        { "guard": { "type": "byAtLeast", "params": { "max": 10 } }, "target": "full" },
+                        { "guard": { "type": "below", "params": { "max": 3 } }, "context": { "count": 3 } },
+                        { "context": { "mode": "fast" }, "actions": [{ "type": "note", "params": "fast" }] }
                     ],
                     "finish": { "target": "cooldown" }
                 }
@@ -81,35 +73,35 @@ fn counter_machine() -> Arc<Machine<Ctx, Event>> {
             "done": { "type": "final", "output": { "ok": true } }
         }
     });
-    Arc::new(Machine::from_json(&def, &counter_registry()).unwrap())
+    Arc::new(Machine::from_json(&def, &counter_registry(notes)).unwrap())
 }
 
 #[test]
-fn typed_context_rust_actions_and_params() {
-    let mut actor = Actor::start(counter_machine(), 0).unwrap();
-    assert_eq!(actor.context().log, vec!["counting"]);
-    assert_eq!(actor.take_emitted(), vec![json!({ "type": "noted", "text": "counting" })]);
+fn typed_context_guards_with_params_and_effects() {
+    let notes = Arc::new(Mutex::new(Vec::new()));
+    let mut actor = Actor::start(counter_machine(notes.clone()), 0).unwrap();
+    assert_eq!(*notes.lock().unwrap(), vec!["counting"]);
 
-    assert!(actor.send(Event::Inc { by: 4 }, 0).unwrap());
-    assert!(actor.send(Event::Inc { by: 4 }, 0).unwrap());
-    assert_eq!(actor.context().count, 8);
-    assert!(actor.send(Event::Inc { by: 4 }, 0).unwrap());
-    assert_eq!(actor.context().count, 12);
-    // 12 is not below 10: the second transition wins.
-    actor.send(Event::Inc { by: 1 }, 0).unwrap();
+    assert!(actor.send(Event::Inc { by: 1 }, 0).unwrap());
+    assert_eq!(actor.context(), &Ctx { count: 3, mode: "slow".into() });
+    assert!(actor.send(Event::Inc { by: 1 }, 0).unwrap());
+    assert_eq!(actor.context(), &Ctx { count: 3, mode: "fast".into() });
+    assert_eq!(*notes.lock().unwrap(), vec!["counting", "fast"]);
+
+    actor.send(Event::Inc { by: 10 }, 0).unwrap();
     assert_eq!(actor.value(), json!("full"));
     assert!(actor.has_tag("full"));
     assert!(!actor.send(Event::Finish, 0).unwrap(), "finish is not handled in full");
 
     actor.send(Event::Reset, 0).unwrap();
     assert_eq!(actor.context().count, 0);
-    assert_eq!(actor.context().log, vec!["counting", "counting"]);
+    assert_eq!(*notes.lock().unwrap(), vec!["counting", "fast", "counting"]);
 }
 
 #[test]
 fn named_delay_from_registry_reads_context() {
-    let mut actor = Actor::start(counter_machine(), 0).unwrap();
-    actor.send(Event::Inc { by: 3 }, 0).unwrap();
+    let mut actor = Actor::start(counter_machine(Default::default()), 0).unwrap();
+    actor.send(Event::Inc { by: 1 }, 0).unwrap();
     actor.send(Event::Finish, 50).unwrap();
     assert_eq!(actor.next_deadline(), Some(350));
     assert_eq!(actor.advance(349).unwrap(), 0);

@@ -1,70 +1,41 @@
-//! The compiled form of a machine definition: a flat arena of state nodes in
-//! document (pre-order) order, with every name resolved to an index.
+//! The compiled form of a JSON machine definition: the structural [`Tree`]
+//! shared with every host, plus the values the native host needs.
 
 use std::collections::HashMap;
 
 use serde_json::{Map, Value};
 
+use crate::core::{Nid, Tid, Tree};
 use crate::event::{matches_descriptor, Ev};
 use crate::registry::{ActionFn, DelayFn, GuardFn};
 
-/// Index of a state node. Index order is document order, so ancestors come
-/// before descendants and entry order is ascending.
-pub type NodeId = u32;
-pub(crate) type TransitionId = u32;
+/// Index of a state node, in document order.
+pub type NodeId = Nid;
 
-pub(crate) const ROOT: NodeId = 0;
+pub(crate) const ROOT: Nid = 0;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum NodeKind {
-    Atomic,
-    Compound,
-    Parallel,
-    Final,
-    History { deep: bool },
-}
-
-pub(crate) struct Node {
+/// Per-node values.
+pub(crate) struct NodeData {
     pub key: String,
     pub id: String,
-    pub parent: Option<NodeId>,
-    /// One past the last descendant: descendants are `id + 1 .. end`.
-    pub end: NodeId,
-    pub kind: NodeKind,
-    /// Child states, excluding history states, in document order.
-    pub children: Vec<NodeId>,
-    /// History pseudo-states declared directly in this node.
-    pub history_children: Vec<NodeId>,
-    /// The resolved `initial` of a compound state.
-    pub initial: Option<NodeId>,
-    /// The default targets of a history state.
-    pub history_target: Vec<NodeId>,
     pub entry: Vec<Action>,
     pub exit: Vec<Action>,
-    /// Transitions by exact event descriptor (including wildcard descriptors,
-    /// which also match literally), sorted by event key.
-    pub on_exact: Vec<(u32, Vec<TransitionId>)>,
-    /// Wildcard descriptors (`*`, `prefix.*`), longest first.
-    pub on_wildcard: Vec<(String, Vec<TransitionId>)>,
-    pub always: Vec<TransitionId>,
     pub after: Vec<AfterDef>,
     pub output: Option<Value>,
     pub tags: Vec<String>,
+    /// The static targets of a compound state's `initial`.
+    pub initial: Vec<Nid>,
+    /// The default targets of a history state.
+    pub history_target: Vec<Nid>,
 }
 
-impl Node {
-    pub fn is_atomic_like(&self) -> bool {
-        matches!(self.kind, NodeKind::Atomic | NodeKind::Final)
-    }
-}
-
-/// One `after` entry. The timer raises `xstate.after` with `delay` and
+/// One `after` entry. Its timer raises `xstate.after` with `delay` and
 /// `stateId`, and the entry's transitions match exactly that payload.
 pub(crate) struct AfterDef {
     /// The key as written, for persistence.
     pub key: String,
     /// The `delay` field of the event: a number for numeric keys, the key
-    /// string for named delays and duration strings.
+    /// string otherwise.
     pub event_delay: Value,
     pub delay: DelaySpec,
 }
@@ -75,22 +46,30 @@ pub(crate) enum DelaySpec {
     Named(u32),
 }
 
-pub(crate) struct Transition {
-    pub source: NodeId,
-    pub targets: Vec<NodeId>,
+pub(crate) struct TransitionData {
+    /// `None` for a targetless transition.
+    pub targets: Option<Vec<Nid>>,
     pub matches: Vec<(String, Value)>,
     pub guard: Option<Guard>,
-    /// The transition's `context` patch, merged before its actions run.
+    /// The transition's `context` patch.
     pub context: Option<Map<String, Value>>,
     pub actions: Vec<Action>,
     pub reenter: bool,
+}
+
+impl TransitionData {
+    /// Whether XState compiles this transition to a transition function
+    /// (`machineFromJSON` does so for any `context` or `actions`).
+    pub fn is_dynamic(&self) -> bool {
+        self.context.is_some() || !self.actions.is_empty()
+    }
 }
 
 #[derive(Debug, Clone)]
 pub(crate) enum Guard {
     Custom(u32),
     Not(Box<Guard>),
-    StateIn(NodeId),
+    StateIn(Nid),
 }
 
 #[derive(Debug, Clone)]
@@ -111,7 +90,7 @@ pub(crate) enum Action {
 /// Options for compiling a machine.
 #[derive(Debug, Clone)]
 pub struct MachineOptions {
-    /// The microstep bound for one macrostep (XState's `maxIterations`).
+    /// The microstep bound for one macrostep (XState's `options.maxIterations`).
     pub max_iterations: usize,
 }
 
@@ -126,14 +105,14 @@ impl Default for MachineOptions {
 pub struct Machine<C, E> {
     pub(crate) id: Option<String>,
     pub(crate) version: Option<String>,
-    pub(crate) nodes: Vec<Node>,
-    pub(crate) transitions: Vec<Transition>,
+    pub(crate) tree: Tree,
+    pub(crate) nodes: Vec<NodeData>,
+    pub(crate) transitions: Vec<TransitionData>,
     pub(crate) guards: Vec<GuardFn<C, E>>,
-    pub(crate) actions: Vec<ActionFn<C, E>>,
+    pub(crate) actions: Vec<ActionFn>,
     pub(crate) delays: Vec<DelayFn<C, E>>,
     pub(crate) raise_events: Vec<Ev<E>>,
-    pub(crate) id_map: HashMap<String, NodeId>,
-    pub(crate) event_keys: HashMap<String, u32>,
+    pub(crate) id_map: HashMap<String, Nid>,
     pub(crate) internal_events: Vec<String>,
     pub(crate) initial_context: C,
     pub(crate) output: Option<Value>,
@@ -156,68 +135,44 @@ impl<C, E> Machine<C, E> {
         self.nodes.iter().map(|n| n.id.as_str())
     }
 
-    pub(crate) fn node_by_id(&self, id: &str) -> Option<NodeId> {
+    pub(crate) fn node_by_id(&self, id: &str) -> Option<Nid> {
         self.id_map.get(id).copied()
     }
 
     #[inline]
-    pub(crate) fn node(&self, id: NodeId) -> &Node {
-        &self.nodes[id as usize]
+    pub(crate) fn data(&self, n: Nid) -> &NodeData {
+        &self.nodes[n as usize]
     }
 
-    /// Strict descendant check; `None` stands for "above the root", which
-    /// contains every node.
-    #[inline]
-    pub(crate) fn is_descendant(&self, node: NodeId, ancestor: Option<NodeId>) -> bool {
-        match ancestor {
-            None => true,
-            Some(a) => node > a && node < self.node(a).end,
-        }
-    }
-
-    /// Ancestors of `node` from its parent upwards, stopping before `to`
-    /// (`None` walks up to and including the root).
-    pub(crate) fn proper_ancestors(&self, node: NodeId, to: Option<NodeId>) -> Vec<NodeId> {
-        let mut out = Vec::new();
-        if Some(node) == to {
-            return out;
-        }
-        let mut m = self.node(node).parent;
-        while let Some(a) = m {
-            if Some(a) == to {
-                break;
-            }
-            out.push(a);
-            m = self.node(a).parent;
-        }
-        out
+    pub(crate) fn transition(&self, t: Tid) -> &TransitionData {
+        &self.transitions[t as usize]
     }
 
     pub(crate) fn is_internal_event(&self, event_type: &str) -> bool {
         self.internal_events.iter().any(|d| matches_descriptor(event_type, d))
     }
 
-    /// Candidate transitions of a node for an event, in priority order: exact
-    /// descriptor matches first, then wildcards, longest descriptor first.
-    pub(crate) fn candidates<'a>(
-        &'a self,
-        node: NodeId,
-        event_key: Option<u32>,
-        event_type: &'a str,
-    ) -> impl Iterator<Item = TransitionId> + 'a {
-        let n = self.node(node);
-        let exact: &[TransitionId] = match event_key {
-            Some(k) => match n.on_exact.binary_search_by_key(&k, |(key, _)| *key) {
-                Ok(i) => &n.on_exact[i].1,
-                Err(_) => &[],
-            },
-            None => &[],
-        };
-        let wildcards = n
-            .on_wildcard
-            .iter()
-            .filter(move |(d, _)| d != event_type && matches_descriptor(event_type, d))
-            .flat_map(|(_, ts)| ts.iter().copied());
-        exact.iter().copied().chain(wildcards)
+    /// XState's state value for a configuration.
+    pub(crate) fn state_value(&self, config: &[Nid]) -> Value {
+        let adj = self.tree.active_children(config);
+        self.node_value(ROOT, &adj)
+    }
+
+    fn node_value(&self, node: Nid, adj: &[Vec<Nid>]) -> Value {
+        let children = &adj[node as usize];
+        if children.is_empty() {
+            return Value::Object(Map::new());
+        }
+        if self.tree.kind(node) == crate::core::Kind::Compound {
+            let child = children[0];
+            if self.tree.kind(child).is_atomic() {
+                return Value::String(self.data(child).key.clone());
+            }
+        }
+        let mut map = Map::new();
+        for &c in children {
+            map.insert(self.data(c).key.clone(), self.node_value(c, adj));
+        }
+        Value::Object(map)
     }
 }

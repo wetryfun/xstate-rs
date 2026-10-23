@@ -4,10 +4,11 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::Value;
 
+use crate::core::Kind;
 use crate::error::{RestoreError, RuntimeError};
 use crate::event::{Ev, EventType};
-use crate::interp::{State, Status};
-use crate::machine::{Machine, NodeKind, ROOT};
+use crate::interp::{MacroEvent, State, Status};
+use crate::machine::{Machine, ROOT};
 use crate::snapshot::PersistedSnapshot;
 
 /// A running instance of a [`Machine`].
@@ -26,7 +27,7 @@ impl<C: std::fmt::Debug, E> std::fmt::Debug for Actor<C, E> {
         f.debug_struct("Actor")
             .field("machine", &self.machine.id)
             .field("status", &self.st.status)
-            .field("value", &self.machine.state_value(&self.st.active))
+            .field("value", &self.machine.state_value(&self.st.nodes))
             .field("context", &self.st.context)
             .finish_non_exhaustive()
     }
@@ -46,8 +47,8 @@ where
 
     /// Starts an actor with a caller-supplied initial context.
     pub fn start_with_context(machine: Arc<Machine<C, E>>, context: C, now_ms: u64) -> Result<Self, RuntimeError> {
-        let mut st = State::new(machine.nodes.len(), context, now_ms);
-        let result = machine.start(&mut st);
+        let mut st = State::new(context, now_ms);
+        let result = machine.macrostep(&mut st, MacroEvent::Init);
         let actor = Self { machine, st };
         result.map(|_| actor)
     }
@@ -81,7 +82,7 @@ where
             return Err(RuntimeError::InternalEvent { event_type: ev.event_type().to_owned() });
         }
         self.st.now = self.st.now.max(now_ms);
-        self.machine.process_external(&mut self.st, ev)
+        self.machine.macrostep(&mut self.st, MacroEvent::External(ev))
     }
 
     /// When the next timer is due, if any.
@@ -106,7 +107,7 @@ where
             let timer = self.st.timers.remove(i);
             self.st.now = self.st.now.max(timer.due);
             fired += 1;
-            self.machine.process_timer(&mut self.st, timer.event)?;
+            self.machine.macrostep(&mut self.st, MacroEvent::Timer(timer.event))?;
         }
         self.st.now = self.st.now.max(now_ms);
         Ok(fired)
@@ -142,20 +143,25 @@ where
 
     /// XState's nested state value, such as `{"b": "b1"}`.
     pub fn value(&self) -> Value {
-        self.machine.state_value(&self.st.active)
+        self.machine.state_value(&self.st.nodes)
+    }
+
+    /// The error of an actor in the `error` status.
+    pub fn error(&self) -> Option<&Value> {
+        self.st.error.as_ref()
     }
 
     /// Whether a state is active: `#id` by state id, or a `.`-separated path
     /// of state keys from the root, such as `"checkout.payment"`.
     pub fn matches(&self, state: &str) -> bool {
         if let Some(id) = state.strip_prefix('#') {
-            return self.machine.node_by_id(id).is_some_and(|n| self.st.active[n as usize]);
+            return self.machine.node_by_id(id).is_some_and(|n| self.st.nodes.contains(&n));
         }
         let mut current = ROOT;
         for key in state.split('.') {
-            let node = self.machine.node(current);
-            match node.children.iter().copied().find(|&c| self.machine.node(c).key == key) {
-                Some(c) if self.st.active[c as usize] => current = c,
+            let node = self.machine.tree.node(current);
+            match node.children.iter().copied().find(|&c| self.machine.data(c).key == key) {
+                Some(c) if self.st.nodes.contains(&c) => current = c,
                 _ => return false,
             }
         }
@@ -164,22 +170,25 @@ where
 
     /// Whether any active state has this tag.
     pub fn has_tag(&self, tag: &str) -> bool {
-        self.machine.nodes.iter().enumerate().any(|(i, n)| self.st.active[i] && n.tags.iter().any(|t| t == tag))
+        self.st.nodes.iter().any(|&n| self.machine.data(n).tags.iter().any(|t| t == tag))
     }
 
-    /// Ids of the active atomic and final states, in document order.
+    /// Ids of the active states, in configuration order.
+    pub fn configuration(&self) -> Vec<&str> {
+        self.st.nodes.iter().map(|&n| self.machine.data(n).id.as_str()).collect()
+    }
+
+    /// Ids of the active atomic and final states, in configuration order.
     pub fn active_leaf_ids(&self) -> Vec<&str> {
-        self.machine
+        self.st
             .nodes
             .iter()
-            .enumerate()
-            .filter(|(i, n)| self.st.active[*i] && matches!(n.kind, NodeKind::Atomic | NodeKind::Final))
-            .map(|(_, n)| n.id.as_str())
+            .filter(|&&n| matches!(self.machine.tree.kind(n), Kind::Atomic | Kind::Final))
+            .map(|&n| self.machine.data(n).id.as_str())
             .collect()
     }
 
-    /// Takes the events emitted with `@xstate.emit` (or by Rust actions)
-    /// since the last call.
+    /// Takes the events emitted with `@xstate.emit` since the last call.
     pub fn take_emitted(&mut self) -> Vec<Value> {
         std::mem::take(&mut self.st.emitted)
     }
