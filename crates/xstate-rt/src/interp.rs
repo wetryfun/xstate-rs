@@ -27,7 +27,7 @@ use serde_json::{json, Map, Value};
 use crate::core::{self, Host, MicrostepResult, Nid, RegionOutput, Resolved, Resolver, TRef, Tid};
 use crate::event::{Ev, EventType, AFTER, DONE_STATE};
 use crate::machine::*;
-use crate::registry::{ActionFn, ExprArgs, GuardArgs};
+use crate::registry::{ActionFn, Enq, EnqOp, ExprArgs, GuardArgs};
 use crate::system::{
     has_builtin_timer_identity, ActorRef, AfterDelay, AllocateOptions, AnySnapshot, Context, Effect, EffectKind,
     EffectType, ExternalSpec, Logic, Status, SystemError, TimerKey, Transition,
@@ -354,6 +354,15 @@ impl<E> Outcome<E> {
     fn empty() -> Self {
         Self { context: None, static_patch: None, ops: Vec::new(), internal: Vec::new() }
     }
+}
+
+/// A transition evaluated when it was selected (a transition function, or
+/// one whose content runs expressions), reused when it is taken.
+struct Selected<E> {
+    targets: Option<Arc<[Nid]>>,
+    reenter: bool,
+    /// Taken by the microstep's `Current` resolver.
+    outcome: Option<Outcome<E>>,
 }
 
 /// The parts of a snapshot a failed macrostep restores. The context, the
@@ -713,6 +722,8 @@ struct NativeHost<'a, C, E> {
     cloned: bool,
     /// Transition results computed this microstep (`getCurrentTransitionResult`).
     outcomes: Vec<(Tid, Outcome<E>)>,
+    /// Transitions evaluated by the last selection (XState's selection results).
+    selected: Vec<(Tid, Selected<E>)>,
     /// The last configurations, for the infinite-loop error.
     recent: VecDeque<Vec<Nid>>,
     /// Children stopped in this macrostep (XState's `stoppedIds`).
@@ -869,7 +880,7 @@ where
             return v.clone();
         }
         let m = self.m;
-        let args = ExprArgs { context, event, params, machine: m, config: &self.st.nodes };
+        let args = ExprArgs { context, event, params, machine: m, config: &self.st.nodes, enq: None };
         t.eval(&mut |i| (m.exprs[i as usize])(&args))
     }
 
@@ -944,9 +955,19 @@ where
                 }
                 Action::Expr(i) => {
                     let m = self.m;
-                    let args = ExprArgs { context, event: &self.event, params: p, machine: m, config: &self.st.nodes };
+                    let enq = Enq::default();
+                    let args = ExprArgs {
+                        context,
+                        event: &self.event,
+                        params: p,
+                        machine: m,
+                        config: &self.st.nodes,
+                        enq: Some(&enq),
+                    };
+                    let mut result = (m.exprs[*i as usize])(&args);
+                    self.push_enq_ops(enq.take(), &mut out)?;
                     // XState merges a truthy `context` of the result.
-                    if let Some(patch) = (m.exprs[*i as usize])(&args).get_mut("context").map(Value::take) {
+                    if let Some(patch) = result.get_mut("context").map(Value::take) {
                         if js_truthy(&patch) {
                             let patch = computed_patch(patch, "an action's context")?;
                             assigned.get_or_insert_with(Map::new).extend(patch.into_iter().flatten());
@@ -980,6 +1001,9 @@ where
         let tr = self.m.transition(t);
         if !tr.is_dynamic() {
             return Ok(Outcome::empty());
+        }
+        if tr.function.is_some() {
+            return Ok(self.eval_function(t)?.and_then(|s| s.outcome).unwrap_or_else(Outcome::empty));
         }
         let mut out = if tr.context.is_some() || tr.context_expr.is_some() || !tr.actions.is_empty() {
             let computed = match &tr.context_expr {
@@ -1015,6 +1039,96 @@ where
             out.ops.push(Op::Cancel(key.clone()));
         }
         Ok(out)
+    }
+
+    /// What an `enq` recorded, appended to an outcome in order.
+    fn push_enq_ops(&self, ops: Vec<EnqOp>, out: &mut Outcome<E>) -> Result<(), SystemError> {
+        for op in ops {
+            match op {
+                EnqOp::Raise { event, delay, id } => {
+                    let Some(event) = computed_event(event, "a raised event")? else { continue };
+                    let event = Ev::from_json(event).expect("an object with a string type");
+                    match delay {
+                        None => out.internal.push(event),
+                        Some(delay) => out.ops.push(Op::Raise { event, id, delay }),
+                    }
+                }
+                EnqOp::Emit(event) => {
+                    if let Some(event) = computed_event(event, "an emitted event")? {
+                        out.ops.push(Op::Emit(event));
+                    }
+                }
+                EnqOp::Cancel(id) => out.ops.push(Op::Cancel(TimerKey::Id(id))),
+                EnqOp::Log(args) => out.ops.push(Op::Log(args)),
+                EnqOp::Action { name, params } => {
+                    let factory = self.m.action_factories.get(&name).ok_or_else(|| {
+                        SystemError::Failed(format!("enq.action: no custom action \"{name}\" is registered"))
+                    })?;
+                    let exec = factory(&params)
+                        .map_err(|m| SystemError::Failed(format!("invalid params for action '{name}': {m}")))?;
+                    out.ops.push(Op::CustomDyn { name, params, exec });
+                }
+            }
+        }
+        Ok(())
+    }
+
+    /// Evaluates a transition function (XState's `evaluateTransitionFunction`
+    /// and `getTransitionResult`): `None` when it is not enabled (it
+    /// returned nothing and enqueued nothing; for a route, a falsy result).
+    fn eval_function(&self, t: Tid) -> Result<Option<Selected<E>>, SystemError> {
+        let m = self.m;
+        let tr = m.transition(t);
+        let f = tr.function.as_ref().expect("a transition function");
+        let enq = Enq::default();
+        let args = ExprArgs {
+            context: &self.st.context,
+            event: &self.event,
+            params: None,
+            machine: m,
+            config: &self.st.nodes,
+            // A route function's scope has no `enq`.
+            enq: f.route.is_none().then_some(&enq),
+        };
+        let result = (m.exprs[f.expr as usize])(&args);
+        let ops = enq.take();
+        let source = m.tree.transitions[t as usize].source;
+        let (result, targets) = match &f.route {
+            Some(_) if !js_truthy(&result) => return Ok(None),
+            Some(route) => {
+                (if result == Value::Bool(true) { Value::Object(Map::new()) } else { result }, Some(route.clone()))
+            }
+            None if result.is_null() && ops.is_empty() => return Ok(None),
+            None => {
+                let targets = match result.get("target") {
+                    Some(Value::String(s)) if !s.is_empty() => Some(vec![s.as_str()]),
+                    Some(Value::Array(items)) => Some(items.iter().filter_map(Value::as_str).collect()),
+                    _ => None,
+                };
+                let targets = match targets {
+                    Some(list) => Some(
+                        list.into_iter()
+                            .map(|s| m.resolve_target(source, s))
+                            .collect::<Result<Vec<Nid>, String>>()
+                            .map_err(SystemError::Failed)?
+                            .into(),
+                    ),
+                    None => None,
+                };
+                (result, targets)
+            }
+        };
+        let mut outcome = Outcome::empty();
+        outcome.context = match result.get("context") {
+            Some(patch) if js_truthy(patch) => computed_patch(patch.clone(), "a transition's context")?,
+            _ => None,
+        };
+        self.push_enq_ops(ops, &mut outcome)?;
+        if let Some(key) = &tr.cancel_timeout {
+            outcome.ops.push(Op::Cancel(key.clone()));
+        }
+        let reenter = result.get("reenter").is_some_and(js_truthy);
+        Ok(Some(Selected { targets, reenter, outcome: Some(outcome) }))
     }
 
     /// `resolveActionsWithContext`: logical timers update the snapshot now;
@@ -1298,6 +1412,7 @@ where
     }
 
     fn begin_selection(&mut self) -> Result<(), SystemError> {
+        self.selected.clear();
         Ok(())
     }
 
@@ -1314,16 +1429,57 @@ where
                 return Ok(false);
             }
         }
-        Ok(match &tr.guard {
-            Some(g) => self.eval_guard(g, None)?,
-            None => true,
-        })
+        if let Some(g) = &tr.guard {
+            if !self.eval_guard(g, None)? {
+                return Ok(false);
+            }
+        }
+        // XState evaluates transition functions (and `machineFromJSON`'s
+        // functions for transitions with `context` or `actions`) here and
+        // reuses the result when the transition is taken.
+        let selected = if tr.function.is_some() {
+            match self.eval_function(t)? {
+                Some(selected) => selected,
+                None => return Ok(false),
+            }
+        } else if tr.evaluates() {
+            let outcome = self.transition_outcome(t)?;
+            Selected { targets: tr.targets.clone(), reenter: tr.reenter, outcome: Some(outcome) }
+        } else {
+            return Ok(true);
+        };
+        match self.selected.iter_mut().find(|(x, _)| *x == t) {
+            Some(entry) => entry.1 = selected,
+            None => self.selected.push((t, selected)),
+        }
+        Ok(true)
     }
 
     fn resolve(&mut self, resolver: Resolver, t: TRef) -> Result<Resolved, SystemError> {
         match t {
             TRef::T(t) => {
+                if let Some((_, selected)) = self.selected.iter_mut().find(|(x, _)| *x == t) {
+                    let resolved = Resolved { targets: selected.targets.clone(), reenter: selected.reenter };
+                    if resolver == Resolver::Current && !self.outcomes.iter().any(|(x, _)| *x == t) {
+                        if let Some(outcome) = selected.outcome.take() {
+                            self.outcomes.push((t, outcome));
+                        }
+                    }
+                    return Ok(resolved);
+                }
                 let tr = self.m.transition(t);
+                if tr.function.is_some() {
+                    // Not selected in this microstep: evaluated again.
+                    let selected = self.eval_function(t)?;
+                    let resolved = selected.as_ref().map_or_else(Resolved::default, |s| Resolved {
+                        targets: s.targets.clone(),
+                        reenter: s.reenter,
+                    });
+                    if resolver == Resolver::Current && !self.outcomes.iter().any(|(x, _)| *x == t) {
+                        self.outcomes.push((t, selected.and_then(|s| s.outcome).unwrap_or_else(Outcome::empty)));
+                    }
+                    return Ok(resolved);
+                }
                 if resolver == Resolver::Current && tr.is_dynamic() && !self.outcomes.iter().any(|(x, _)| *x == t) {
                     let outcome = self.transition_outcome(t)?;
                     self.outcomes.push((t, outcome));
@@ -1629,6 +1785,7 @@ where
             token: 0,
             cloned: false,
             outcomes: Vec::new(),
+            selected: Vec::new(),
             recent: VecDeque::new(),
             stopped_ids: Vec::new(),
             microstep_token_value: 0,

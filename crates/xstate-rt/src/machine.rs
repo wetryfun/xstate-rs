@@ -126,6 +126,19 @@ pub(crate) struct TransitionData {
     /// For completion transitions of an invoke with a `timeout`: the timer
     /// key the transition cancels after its own operations.
     pub cancel_timeout: Option<crate::system::TimerKey>,
+    /// A transition function (an expression in the `transition` slot):
+    /// its result gives the targets, context and `reenter`.
+    pub function: Option<TransitionFn>,
+}
+
+/// An expression that is a whole transition, as XState's `to` functions.
+#[derive(Debug, Clone)]
+pub(crate) struct TransitionFn {
+    /// Index into `Machine::exprs`.
+    pub expr: u32,
+    /// For a route function: its state, the target of every route result
+    /// (a falsy result blocks the route, `true` takes it as it is).
+    pub route: Option<Arc<[Nid]>>,
 }
 
 impl TransitionData {
@@ -137,6 +150,13 @@ impl TransitionData {
             || self.context_expr.is_some()
             || !self.actions.is_empty()
             || self.cancel_timeout.is_some()
+            || self.function.is_some()
+    }
+
+    /// Whether the transition runs expressions, so its result is computed
+    /// when it is selected, as XState evaluates transition functions.
+    pub fn evaluates(&self) -> bool {
+        self.function.is_some() || self.context_expr.is_some() || self.actions.iter().any(Action::evaluates)
     }
 }
 
@@ -246,6 +266,8 @@ pub struct Machine<C, E> {
     pub(crate) context_exprs: Vec<ContextFn>,
     pub(crate) dynamic_actions: Vec<Dynamic<ActionFn>>,
     pub(crate) dynamic_guards: Vec<Dynamic<GuardFn<C, E>>>,
+    /// The registry's custom actions, for `enq.action` in expressions.
+    pub(crate) action_factories: HashMap<String, Factory<ActionFn>>,
     pub(crate) id_map: HashMap<String, Nid>,
     pub(crate) internal_events: Vec<String>,
     /// The initial context: a value, or, when the root `context` has
@@ -279,6 +301,36 @@ impl<C, E> Machine<C, E> {
 
     pub(crate) fn node_by_id(&self, id: &str) -> Option<Nid> {
         self.id_map.get(id).copied()
+    }
+
+    /// XState's `resolveTarget` for one target of a transition from
+    /// `source`: `#id`, `.child.path` below the source, or a path below the
+    /// source's parent.
+    pub(crate) fn resolve_target(&self, source: Nid, target: &str) -> Result<Nid, String> {
+        if let Some(id) = target.strip_prefix('#') {
+            return self.node_by_id(id).ok_or_else(|| format!("no state has id \"{id}\""));
+        }
+        let (mut current, path) = match target.strip_prefix('.') {
+            Some(rest) => (source, rest),
+            None => match self.tree.node(source).parent {
+                Some(parent) => (parent, target),
+                None => return Err(format!("invalid target \"{target}\" on the root; use \".child\" or \"#id\"")),
+            },
+        };
+        for segment in crate::load::to_state_path(path) {
+            if segment.is_empty() {
+                break;
+            }
+            let node = self.tree.node(current);
+            current = node
+                .children
+                .iter()
+                .chain(&node.history_children)
+                .copied()
+                .find(|&c| self.data(c).key == segment)
+                .ok_or_else(|| format!("child state '{segment}' does not exist on '{}'", self.data(current).id))?;
+        }
+        Ok(current)
     }
 
     #[inline]

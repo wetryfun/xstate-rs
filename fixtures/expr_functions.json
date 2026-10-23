@@ -1,0 +1,338 @@
+{
+  "notes": "Rust transition functions (dynamic targets, context and reenter; not enabled when they return nothing and enqueue nothing), enq in transition functions and action expressions (raise, delayed raise, cancel, emit), and route functions.",
+  "machine": {
+    "id": "fn",
+    "context": {
+      "count": 0
+    },
+    "initial": "a",
+    "states": {
+      "a": {
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "enter.a"
+            }
+          }
+        ],
+        "on": {
+          "PICK": [
+            {
+              "@code": "pickTarget",
+              "@lang": "rust"
+            },
+            {
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "fallback"
+                  }
+                }
+              ]
+            }
+          ],
+          "ENQ": {
+            "@code": "enqueueOnly",
+            "@lang": "rust"
+          },
+          "LATER_SOON": {
+            "@code": "raiseLater",
+            "@lang": "rust"
+          },
+          "NOW": {
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "now"
+                }
+              }
+            ]
+          },
+          "LATER": {
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "later",
+                  "value": {
+                    "@code": "eventValue",
+                    "@lang": "rust"
+                  }
+                }
+              }
+            ]
+          },
+          "CANCEL": {
+            "@code": "cancelLater",
+            "@lang": "rust"
+          },
+          "TWICE": {
+            "actions": [
+              {
+                "@code": "emitTwice",
+                "@lang": "rust"
+              },
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "after",
+                  "count": {
+                    "@code": "countPlusOne",
+                    "@lang": "rust"
+                  }
+                }
+              }
+            ]
+          },
+          "NEST": {
+            "target": "nest"
+          }
+        }
+      },
+      "positive": {
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "enter.positive"
+            }
+          }
+        ],
+        "on": {
+          "BACK": {
+            "target": "a"
+          }
+        }
+      },
+      "negative": {
+        "id": "fn.negative",
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "enter.negative"
+            }
+          }
+        ],
+        "on": {
+          "BACK": {
+            "target": "a"
+          }
+        }
+      },
+      "nest": {
+        "initial": "inner",
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "enter.nest"
+            }
+          }
+        ],
+        "exit": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "exit.nest"
+            }
+          }
+        ],
+        "states": {
+          "inner": {
+            "entry": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "enter.inner"
+                }
+              }
+            ],
+            "exit": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "exit.inner"
+                }
+              }
+            ]
+          }
+        },
+        "on": {
+          "AGAIN": {
+            "@code": "pickReenter",
+            "@lang": "rust"
+          },
+          "BACK": {
+            "target": "a"
+          }
+        }
+      },
+      "routed": {
+        "id": "routed",
+        "route": {
+          "@code": "routeIfEven",
+          "@lang": "rust"
+        },
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "enter.routed"
+            }
+          }
+        ],
+        "on": {
+          "BACK": {
+            "target": "a"
+          }
+        }
+      },
+      "free": {
+        "id": "free",
+        "route": {
+          "@code": "routeAlways",
+          "@lang": "rust"
+        },
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "enter.free"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "steps": [
+    {
+      "at": 0,
+      "send": {
+        "type": "PICK"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "PICK",
+        "value": 3
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "BACK"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "PICK",
+        "value": -1
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "BACK"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "ENQ"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "LATER_SOON"
+      }
+    },
+    {
+      "at": 10,
+      "send": {
+        "type": "CANCEL"
+      }
+    },
+    {
+      "at": 100
+    },
+    {
+      "at": 100,
+      "send": {
+        "type": "LATER_SOON"
+      }
+    },
+    {
+      "at": 200
+    },
+    {
+      "at": 200,
+      "send": {
+        "type": "TWICE"
+      }
+    },
+    {
+      "at": 200,
+      "send": {
+        "type": "NEST"
+      }
+    },
+    {
+      "at": 200,
+      "send": {
+        "type": "AGAIN"
+      }
+    },
+    {
+      "at": 200,
+      "send": {
+        "type": "BACK"
+      }
+    },
+    {
+      "at": 200,
+      "send": {
+        "type": "xstate.route",
+        "to": "#routed"
+      }
+    },
+    {
+      "at": 200,
+      "send": {
+        "type": "TWICE"
+      }
+    },
+    {
+      "at": 200,
+      "send": {
+        "type": "BACK"
+      }
+    },
+    {
+      "at": 200,
+      "send": {
+        "type": "TWICE"
+      }
+    },
+    {
+      "at": 200,
+      "send": {
+        "type": "xstate.route",
+        "to": "#routed"
+      }
+    },
+    {
+      "at": 200,
+      "send": {
+        "type": "xstate.route",
+        "to": "#free"
+      }
+    }
+  ]
+}

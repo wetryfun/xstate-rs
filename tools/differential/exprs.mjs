@@ -15,6 +15,37 @@ export const exprs = {
   eventOutput: ({ event }) => event.output,
   totalFromOutput: ({ context, event }) => context.total + event.output.total,
   summary: ({ context }) => ({ count: context.count, total: context.total }),
+  // Transition functions (`undefined`: not enabled) and `enq`.
+  pickTarget: ({ context, event }) =>
+    event.value === undefined
+      ? undefined
+      : { target: event.value > 0 ? 'positive' : '#fn.negative', context: { count: context.count + 1 } },
+  pickReenter: ({ context }) => ({ target: '.inner', reenter: context.count > 1 }),
+  enqueueOnly: ({ context, enq }) => {
+    enq.emit({ type: 'enqueued', count: context.count });
+  },
+  raiseLater: ({ context, enq }) => {
+    enq.raise({ type: 'LATER', value: context.count }, { delay: 50, id: 'later' });
+    enq.raise({ type: 'NOW' });
+    return { context: { count: context.count + 100 } };
+  },
+  cancelLater: ({ enq }) => {
+    enq.cancel('later');
+    return {};
+  },
+  logAndCall: ({ context, enq, actions }) => {
+    enq.log('count', context.count);
+    enq(actions.noop, { value: context.count });
+  },
+  emitTwice: ({ context, enq }) => {
+    enq.emit({ type: 'one' });
+    enq.emit({ type: 'two', count: context.count });
+    return { context: { count: context.count + 10 } };
+  },
+  routeIfEven: ({ context }) => (context.count % 2 === 0 ? { context: { routed: context.count } } : false),
+  routeAlways: () => true,
+  pickEvenAlways: ({ context }) => (context.count % 2 === 0 ? { target: 'even' } : undefined),
+  doneToEven: ({ event }) => ({ target: 'even', context: { result: event.output } }),
   // examples/pattern-retry-policy (fixtures/system/ex_retry_policy*).
   canRetry: ({ context }) => context.attempts + 1 < 5,
   contextName: ({ context }) => context.name,

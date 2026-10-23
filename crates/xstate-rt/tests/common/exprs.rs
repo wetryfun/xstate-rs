@@ -44,6 +44,58 @@ pub fn register(r: &mut Registry<Value, Value>) {
             "summary",
             |a| json!({ "count": a.context.get("count").cloned(), "total": a.context.get("total").cloned() }),
         )
+        // Transition functions (`null`: not enabled) and `enq`.
+        .expr("pickTarget", |a| match a.event.field("value") {
+            None => Value::Null,
+            Some(v) => {
+                let target = if num(Some(&v)) > 0.0 { "positive" } else { "#fn.negative" };
+                json!({ "target": target, "context": { "count": js(num(a.context.get("count")) + 1.0) } })
+            }
+        })
+        .expr("pickReenter", |a| json!({ "target": ".inner", "reenter": num(a.context.get("count")) > 1.0 }))
+        .expr("enqueueOnly", |a| {
+            a.enq().unwrap().emit(json!({ "type": "enqueued", "count": a.context.get("count") }));
+            Value::Null
+        })
+        .expr("raiseLater", |a| {
+            let enq = a.enq().unwrap();
+            enq.raise_delayed(json!({ "type": "LATER", "value": a.context.get("count") }), 50, Some("later"));
+            enq.raise(json!({ "type": "NOW" }));
+            json!({ "context": { "count": js(num(a.context.get("count")) + 100.0) } })
+        })
+        .expr("cancelLater", |a| {
+            a.enq().unwrap().cancel("later");
+            json!({})
+        })
+        .expr("logAndCall", |a| {
+            let enq = a.enq().unwrap();
+            enq.log(vec![json!("count"), a.context.get("count").cloned().unwrap_or(Value::Null)]);
+            enq.action("noop", json!({ "value": a.context.get("count") }));
+            Value::Null
+        })
+        .expr("emitTwice", |a| {
+            let enq = a.enq().unwrap();
+            enq.emit(json!({ "type": "one" }));
+            enq.emit(json!({ "type": "two", "count": a.context.get("count") }));
+            json!({ "context": { "count": js(num(a.context.get("count")) + 10.0) } })
+        })
+        .expr("routeIfEven", |a| {
+            let count = num(a.context.get("count"));
+            if count % 2.0 == 0.0 {
+                json!({ "context": { "routed": js(count) } })
+            } else {
+                json!(false)
+            }
+        })
+        .expr("routeAlways", |_| json!(true))
+        .expr("pickEvenAlways", |a| {
+            if num(a.context.get("count")) % 2.0 == 0.0 {
+                json!({ "target": "even" })
+            } else {
+                Value::Null
+            }
+        })
+        .expr("doneToEven", |a| json!({ "target": "even", "context": { "result": a.event.field("output") } }))
         // examples/pattern-retry-policy (fixtures/system/ex_retry_policy*).
         .expr("canRetry", |a| Value::Bool(num(a.context.get("attempts")) + 1.0 < 5.0))
         .expr("contextName", |a| a.context.get("name").cloned().unwrap_or(Value::Null))

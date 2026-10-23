@@ -193,7 +193,7 @@ fn has_unescaped_dot(key: &str) -> bool {
 
 /// Splits a state path on unescaped dots. `\.` stays in the segment (state
 /// keys keep their escapes); other escapes drop the backslash.
-fn to_state_path(path: &str) -> Vec<String> {
+pub(crate) fn to_state_path(path: &str) -> Vec<String> {
     let mut out = Vec::new();
     let mut segment = String::new();
     let mut chars = path.chars();
@@ -408,6 +408,7 @@ where
         context_exprs: loader.context_exprs,
         dynamic_actions: loader.dynamic_actions,
         dynamic_guards: loader.dynamic_guards,
+        action_factories: registry.actions.clone(),
         id_map: loader.id_map,
         internal_events,
         initial_context,
@@ -1138,6 +1139,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                 reenter: false,
                 session: Some(id.clone()),
                 cancel_timeout: Some(timeout_key.clone()),
+                function: None,
             });
             this.transition_sources.push(node);
             this.transitions.len() as TransitionId - 1
@@ -1192,8 +1194,15 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             let Some(route) = json.get("route") else { continue };
             let Some(Value::String(id)) = json.get("id") else { continue };
             let path = child_path(&self.raw[n].path, "route");
-            if code_source(route).is_some() {
-                return Err(err(K::Unsupported, &path, "computed routes (a route expression) are not supported"));
+            if let Some(name) = code_source(route) {
+                // A route function: the route's guard and resolver.
+                self.expr_refs += 1;
+                let expr = self.expr(name, &path, Slot::Scope)?;
+                let target: Arc<[NodeId]> = Arc::from([n as NodeId]);
+                let t = self.push_function(0, expr, Some(target), &[]);
+                self.transitions[t as usize].guard = Some(Guard::RouteTo(format!("#{id}")));
+                out.push(t);
+                continue;
             }
             let mut config = match route {
                 Value::Null | Value::Bool(false) => continue,
@@ -1257,13 +1266,11 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
         path: &str,
         extra_matches: &[(String, Value)],
     ) -> Result<TransitionId> {
-        if code_source(value).is_some() {
-            return Err(err(
-                K::Unsupported,
-                path,
-                "transition functions (a transition expression) are not supported; compute values in the \
-                 transition's `context`, `actions` or `guard` instead",
-            ));
+        if let Some(name) = code_source(value) {
+            // A transition function: its result is the transition.
+            self.expr_refs += 1;
+            let expr = self.expr(name, path, Slot::Scope)?;
+            return Ok(self.push_function(source, expr, None, extra_matches));
         }
         let obj = match value {
             Value::Object(o) => o,
@@ -1334,9 +1341,34 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             reenter,
             session: None,
             cancel_timeout: None,
+            function: None,
         });
         self.transition_sources.push(source);
         Ok(id)
+    }
+
+    /// A transition whose result an expression computes.
+    fn push_function(
+        &mut self,
+        source: NodeId,
+        expr: u32,
+        route: Option<Arc<[NodeId]>>,
+        matches: &[(String, Value)],
+    ) -> TransitionId {
+        self.transitions.push(TransitionData {
+            targets: None,
+            matches: matches.to_vec(),
+            guard: None,
+            context: None,
+            context_expr: None,
+            actions: Vec::new(),
+            reenter: false,
+            session: None,
+            cancel_timeout: None,
+            function: Some(TransitionFn { expr, route }),
+        });
+        self.transition_sources.push(source);
+        self.transitions.len() as TransitionId - 1
     }
 
     fn compile_guard(&mut self, value: &Value, path: &str, stack: &mut Vec<String>) -> Result<Guard> {

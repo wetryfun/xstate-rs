@@ -1,0 +1,770 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "p",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "p": {
+          "id": "p",
+          "address": "p",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 1
+            },
+            "value": "idle",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "p",
+              "p.idle"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 0,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "p",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "p": {
+          "id": "p",
+          "address": "p",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 1
+            },
+            "value": "idle",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "p",
+              "p.idle"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "p",
+            "incarnation": "0"
+          },
+          "type": "@xstate.log",
+          "kind": "action",
+          "params": {},
+          "args": [
+            "count",
+            1
+          ]
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "p",
+            "incarnation": "0"
+          },
+          "type": "root/actions/noop",
+          "kind": "action",
+          "params": {},
+          "args": [
+            {
+              "value": 1
+            }
+          ]
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 1,
+        "effect": 2
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "p",
+          "incarnation": "0"
+        },
+        "type": "@xstate.log",
+        "kind": "action",
+        "params": {},
+        "args": [
+          "count",
+          1
+        ]
+      },
+      {
+        "id": "system:1",
+        "source": {
+          "$actor": "p",
+          "incarnation": "0"
+        },
+        "type": "root/actions/noop",
+        "kind": "action",
+        "params": {},
+        "args": [
+          {
+            "value": 1
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "p",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "p": {
+          "id": "p",
+          "address": "p",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2
+            },
+            "value": "even",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "p",
+              "p.even"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "p",
+            "incarnation": "0"
+          },
+          "type": "@xstate.log",
+          "kind": "action",
+          "params": {},
+          "args": [
+            "count",
+            1
+          ]
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "p",
+            "incarnation": "0"
+          },
+          "type": "root/actions/noop",
+          "kind": "action",
+          "params": {},
+          "args": [
+            {
+              "value": 1
+            }
+          ]
+        }
+      },
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 2,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "p",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "p": {
+          "id": "p",
+          "address": "p",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2
+            },
+            "value": "working",
+            "children": {
+              "job": {
+                "$actor": "p/job",
+                "incarnation": "1"
+              }
+            },
+            "timers": [
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.timeout.actor",
+                  "actorId": "job",
+                  "sessionId": "1"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "p",
+              "p.working"
+            ]
+          }
+        },
+        "p/job": {
+          "id": "job",
+          "address": "p/job",
+          "incarnation": "1",
+          "src": "root/actors/job",
+          "parent": {
+            "$actor": "p",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "p",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 3,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.timeout.actor",
+              "actorId": "job"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "p",
+            "incarnation": "0"
+          },
+          "type": "@xstate.log",
+          "kind": "action",
+          "params": {},
+          "args": [
+            "count",
+            1
+          ]
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "p",
+            "incarnation": "0"
+          },
+          "type": "root/actions/noop",
+          "kind": "action",
+          "params": {},
+          "args": [
+            {
+              "value": 1
+            }
+          ]
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "p/job",
+            "incarnation": "1"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 4,
+        "effect": 3
+      }
+    },
+    "effects": [
+      {
+        "id": "system:2",
+        "source": {
+          "$actor": "p/job",
+          "incarnation": "1"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "snapshot": {
+      "root": "p",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "p": {
+          "id": "p",
+          "address": "p",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2,
+              "result": {
+                "ok": true
+              }
+            },
+            "value": "even",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "p",
+              "p.even"
+            ]
+          }
+        },
+        "p/job": {
+          "id": "job",
+          "address": "p/job",
+          "incarnation": "1",
+          "src": "root/actors/job",
+          "parent": {
+            "$actor": "p",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "ok": true
+            },
+            "effects": {
+              "async": {
+                "status": "done",
+                "output": {
+                  "ok": true
+                }
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "p",
+            "incarnation": "0"
+          },
+          "type": "@xstate.log",
+          "kind": "action",
+          "params": {},
+          "args": [
+            "count",
+            1
+          ]
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "p",
+            "incarnation": "0"
+          },
+          "type": "root/actions/noop",
+          "kind": "action",
+          "params": {},
+          "args": [
+            {
+              "value": 1
+            }
+          ]
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 6,
+        "effect": 3
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 4",
+    "snapshot": {
+      "root": "p",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "p": {
+          "id": "p",
+          "address": "p",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2,
+              "result": {
+                "ok": true
+              }
+            },
+            "value": "working",
+            "children": {
+              "job": {
+                "$actor": "p/job",
+                "incarnation": "2"
+              }
+            },
+            "timers": [
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.timeout.actor",
+                  "actorId": "job",
+                  "sessionId": "2"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "p",
+              "p.working"
+            ]
+          }
+        },
+        "p/job": {
+          "id": "job",
+          "address": "p/job",
+          "incarnation": "2",
+          "src": "root/actors/job",
+          "parent": {
+            "$actor": "p",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "p",
+            "incarnation": "0"
+          },
+          "occurrence": 1,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 7,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.timeout.actor",
+              "actorId": "job"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "p",
+            "incarnation": "0"
+          },
+          "type": "@xstate.log",
+          "kind": "action",
+          "params": {},
+          "args": [
+            "count",
+            1
+          ]
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "p",
+            "incarnation": "0"
+          },
+          "type": "root/actions/noop",
+          "kind": "action",
+          "params": {},
+          "args": [
+            {
+              "value": 1
+            }
+          ]
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "p/job",
+            "incarnation": "2"
+          },
+          "type": "@xstate.effect",
+          "kind": "action",
+          "args": []
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 2,
+        "sequence": 8,
+        "effect": 4
+      }
+    },
+    "effects": [
+      {
+        "id": "system:3",
+        "source": {
+          "$actor": "p/job",
+          "incarnation": "2"
+        },
+        "type": "@xstate.effect",
+        "kind": "action",
+        "args": []
+      }
+    ]
+  },
+  {
+    "label": "step 5",
+    "snapshot": {
+      "root": "p",
+      "executionId": "system",
+      "now": 2000,
+      "actors": {
+        "p": {
+          "id": "p",
+          "address": "p",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2,
+              "result": {
+                "ok": true
+              }
+            },
+            "value": "even",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "p",
+              "p.even"
+            ]
+          }
+        },
+        "p/job": {
+          "id": "job",
+          "address": "p/job",
+          "incarnation": "2",
+          "src": "root/actors/job",
+          "parent": {
+            "$actor": "p",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "effects": {
+              "async": {
+                "status": "active"
+              }
+            }
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "p",
+            "incarnation": "0"
+          },
+          "type": "@xstate.log",
+          "kind": "action",
+          "params": {},
+          "args": [
+            "count",
+            1
+          ]
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "p",
+            "incarnation": "0"
+          },
+          "type": "root/actions/noop",
+          "kind": "action",
+          "params": {},
+          "args": [
+            {
+              "value": 1
+            }
+          ]
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "p/job",
+            "incarnation": "2"
+          },
+          "type": "@xstate.cleanup",
+          "kind": "action",
+          "args": []
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "p/job",
+            "incarnation": "2"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:3"
+          }
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 2,
+        "sequence": 10,
+        "effect": 6
+      }
+    },
+    "effects": [
+      {
+        "id": "system:4",
+        "source": {
+          "$actor": "p/job",
+          "incarnation": "2"
+        },
+        "type": "@xstate.cleanup",
+        "kind": "action",
+        "args": []
+      },
+      {
+        "id": "system:5",
+        "source": {
+          "$actor": "p/job",
+          "incarnation": "2"
+        },
+        "kind": "action",
+        "type": "@xstate.cancelEffect",
+        "params": {
+          "effectId": "system:3"
+        }
+      }
+    ]
+  }
+]

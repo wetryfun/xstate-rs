@@ -1,0 +1,115 @@
+{
+  "notes": "enq.log and enq(actions.x) effects from an action expression, an eventless transition function, and a transition function as an invoke completion (its timeout is still cancelled).",
+  "logic": [
+    {
+      "name": "job",
+      "async": {}
+    },
+    {
+      "name": "p",
+      "machine": {
+        "id": "p",
+        "context": {
+          "count": 1
+        },
+        "initial": "idle",
+        "states": {
+          "idle": {
+            "on": {
+              "LOG": {
+                "actions": [
+                  {
+                    "@code": "logAndCall",
+                    "@lang": "rust"
+                  }
+                ]
+              },
+              "WORK": {
+                "target": "working"
+              },
+              "BUMP": {
+                "context": {
+                  "count": {
+                    "@code": "countPlusOne",
+                    "@lang": "rust"
+                  }
+                }
+              }
+            },
+            "always": {
+              "@code": "pickEvenAlways",
+              "@lang": "rust"
+            }
+          },
+          "even": {
+            "on": {
+              "BACK": {
+                "target": "idle"
+              },
+              "WORK": {
+                "target": "working"
+              }
+            }
+          },
+          "working": {
+            "invoke": {
+              "id": "job",
+              "src": "job",
+              "timeout": 1000,
+              "onTimeout": {
+                "target": "idle"
+              },
+              "onDone": {
+                "@code": "doneToEven",
+                "@lang": "rust"
+              }
+            }
+          }
+        }
+      },
+      "actors": [
+        "job"
+      ]
+    }
+  ],
+  "root": "p",
+  "init": {},
+  "steps": [
+    {
+      "send": "p",
+      "event": {
+        "type": "LOG"
+      }
+    },
+    {
+      "send": "p",
+      "event": {
+        "type": "BUMP"
+      }
+    },
+    {
+      "send": "p",
+      "event": {
+        "type": "WORK"
+      }
+    },
+    {
+      "resolve": 2,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "send": "p",
+      "event": {
+        "type": "WORK"
+      }
+    },
+    {
+      "advance": 2000
+    }
+  ]
+}

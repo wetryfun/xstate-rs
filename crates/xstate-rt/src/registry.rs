@@ -20,6 +20,7 @@
 //! guard params, an inline guard, a delay, an invoke's input, an output, or
 //! an action whose result's `context` is merged.
 
+use std::cell::RefCell;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -66,6 +67,7 @@ pub struct ExprArgs<'a, C, E> {
     pub params: Option<&'a Value>,
     pub(crate) machine: &'a Machine<C, E>,
     pub(crate) config: &'a [Nid],
+    pub(crate) enq: Option<&'a Enq>,
 }
 
 impl<C, E> ExprArgs<'_, C, E> {
@@ -74,6 +76,65 @@ impl<C, E> ExprArgs<'_, C, E> {
     pub fn in_state(&self, id: &str) -> bool {
         let id = id.strip_prefix('#').unwrap_or(id);
         self.machine.node_by_id(id).is_some_and(|n| self.config.contains(&n))
+    }
+
+    /// XState's `enq`, for expressions that are actions or transitions (in
+    /// other places XState's scope has none).
+    pub fn enq(&self) -> Option<&Enq> {
+        self.enq
+    }
+}
+
+/// XState's `enq` for Rust expressions: what an action or a transition
+/// function enqueues, run in order with the actions around it.
+#[derive(Debug, Default)]
+pub struct Enq {
+    pub(crate) ops: RefCell<Vec<EnqOp>>,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) enum EnqOp {
+    Raise { event: Value, delay: Option<u64>, id: Option<String> },
+    Emit(Value),
+    Cancel(String),
+    Log(Vec<Value>),
+    Action { name: String, params: Value },
+}
+
+impl Enq {
+    /// `enq.raise(event)`: the event goes to the internal queue.
+    pub fn raise(&self, event: Value) {
+        self.ops.borrow_mut().push(EnqOp::Raise { event, delay: None, id: None });
+    }
+
+    /// `enq.raise(event, { delay, id })`: a delayed raise, cancellable by `id`.
+    pub fn raise_delayed(&self, event: Value, delay_ms: u64, id: Option<&str>) {
+        self.ops.borrow_mut().push(EnqOp::Raise { event, delay: Some(delay_ms), id: id.map(str::to_owned) });
+    }
+
+    /// `enq.emit(event)`.
+    pub fn emit(&self, event: Value) {
+        self.ops.borrow_mut().push(EnqOp::Emit(event));
+    }
+
+    /// `enq.cancel(id)`: cancels a delayed raise.
+    pub fn cancel(&self, id: &str) {
+        self.ops.borrow_mut().push(EnqOp::Cancel(id.to_owned()));
+    }
+
+    /// `enq.log(...args)`.
+    pub fn log(&self, args: Vec<Value>) {
+        self.ops.borrow_mut().push(EnqOp::Log(args));
+    }
+
+    /// `enq(actions.name, params)`: the registered custom action `name`
+    /// with these params (an effect, as for a `{ type, params }` action).
+    pub fn action(&self, name: &str, params: Value) {
+        self.ops.borrow_mut().push(EnqOp::Action { name: name.to_owned(), params });
+    }
+
+    pub(crate) fn take(&self) -> Vec<EnqOp> {
+        std::mem::take(&mut self.ops.borrow_mut())
     }
 }
 

@@ -635,9 +635,10 @@ fn expression_load_errors_and_references() {
     assert_eq!(e.kind, LoadErrorKind::Code);
     let e = load_err(json!({ "@exprLang": "rust", "context": { "n": { "@code": "one" } } }));
     assert_eq!((e.kind, e.path.as_str()), (LoadErrorKind::MissingImplementation, "$.context.n"));
-    // A transition function and a `matches` pattern are not evaluated.
+    // A transition function needs its expression; a `matches` pattern is
+    // not evaluated.
     let e = load_err(json!({ "initial": "a", "states": { "a": { "on": { "go": code("pick") } } } }));
-    assert_eq!((e.kind, e.path.as_str()), (LoadErrorKind::Unsupported, "$.states.a.on.go"));
+    assert_eq!((e.kind, e.path.as_str()), (LoadErrorKind::MissingImplementation, "$.states.a.on.go"));
     let e =
         load_err(json!({ "initial": "a", "states": { "a": { "on": { "go": { "matches": { "n": code("n") } } } } } }));
     assert_eq!((e.kind, e.path.as_str()), (LoadErrorKind::Unsupported, "$.states.a.on.go.matches.n"));
@@ -661,4 +662,47 @@ fn expression_load_errors_and_references() {
         names(&refs.exprs),
         vec![("ok".into(), "$.states.a.on.go.guard".into()), ("next".into(), "$.states.a.on.go.context.n".into())]
     );
+}
+
+#[test]
+fn transition_functions_run_typed_with_enq() {
+    let mut r: Registry<Ctx, Event> = Registry::new();
+    let seen = Arc::new(Mutex::new(Vec::new()));
+    let notes = seen.clone();
+    r.action_with("note", move |text: &String| notes.lock().unwrap().push(text.clone()))
+        .expr("step", |a| match a.event {
+            Ev::User(Event::Inc { by }) if *by > 0 => {
+                let enq = a.enq().expect("a transition function has enq");
+                enq.emit(json!({ "type": "stepped", "by": by }));
+                enq.action("note", json!(format!("by {by}")));
+                json!({ "target": if a.context.count + by >= 10 { "big" } else { "small" }, "context": { "count": a.context.count + by } })
+            }
+            _ => Value::Null,
+        });
+    let def = json!({
+        "id": "fn",
+        "context": { "count": 0, "mode": "" },
+        "initial": "small",
+        "states": {
+            "small": { "on": { "inc": [{ "@code": "step", "@lang": "rust" }, { "target": "zero" }] } },
+            "big": {},
+            "zero": {}
+        }
+    });
+    let machine = Arc::new(Machine::from_json(&def, &r).unwrap());
+    let mut actor = Actor::start(machine.clone(), 0).unwrap();
+    actor.send(Event::Inc { by: 4 }, 0).unwrap();
+    assert!(actor.matches("small"));
+    actor.send(Event::Inc { by: 7 }, 0).unwrap();
+    assert!(actor.matches("big"));
+    assert_eq!(actor.context().count, 11);
+    assert_eq!(
+        actor.take_emitted(),
+        vec![json!({ "type": "stepped", "by": 4 }), json!({ "type": "stepped", "by": 7 })]
+    );
+    assert_eq!(*seen.lock().unwrap(), ["by 4", "by 7"]);
+    // Returning nothing (and enqueueing nothing) leaves the next candidate.
+    let mut actor = Actor::start(machine, 0).unwrap();
+    actor.send(Event::Inc { by: 0 }, 0).unwrap();
+    assert!(actor.matches("zero"));
 }
