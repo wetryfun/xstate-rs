@@ -2,14 +2,14 @@
 //! (JSON parsing, the step, emitted events, and the changelog snapshots of
 //! one flush per batch).
 //!
-//!   cargo bench -p xstate-redpanda --bench engine
+//!   cargo bench -p xstate-kafka --bench engine
 
 use std::hint::black_box;
 use std::sync::Arc;
 
 use criterion::{criterion_group, criterion_main, BatchSize, Criterion, Throughput};
 use serde_json::{json, Value};
-use xstate_redpanda::{Codec, EngineConfig, Partition};
+use xstate_kafka::{Codec, EngineConfig, Partition};
 use xstate_rt::{Actor, Machine, Registry};
 
 fn machine() -> Arc<Machine<Value, Value>> {

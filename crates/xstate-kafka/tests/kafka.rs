@@ -14,7 +14,7 @@ use rdkafka::mocking::MockCluster;
 use rdkafka::producer::{BaseProducer, BaseRecord, Producer};
 use rdkafka::{Offset, TopicPartitionList};
 use serde_json::{json, Value};
-use xstate_redpanda::kafka::{Service, ServiceConfig};
+use xstate_kafka::service::{Service, ServiceConfig};
 use xstate_rt::{Machine, Registry};
 
 const PARTITIONS: i32 = 4;
@@ -194,7 +194,7 @@ fn exactly_once_actors_with_restore() {
     let last_a = changelog.iter().rev().find(|r| r.0.as_deref() == Some("a")).unwrap();
     assert!(last_a.1.is_none(), "tombstone for a");
     let last_c = changelog.iter().rev().find(|r| r.0.as_deref() == Some("c")).unwrap();
-    let snapshot = xstate_redpanda::Codec::decode(last_c.1.as_deref().unwrap()).unwrap();
+    let snapshot = xstate_kafka::Codec::decode(last_c.1.as_deref().unwrap()).unwrap();
     assert_eq!(snapshot["actors"]["steps"]["snapshot"]["value"], json!("s2"));
 }
 

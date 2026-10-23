@@ -3,14 +3,14 @@
 //! per batch: output, changelog, offsets), and read back committed from the
 //! output topic.
 //!
-//!   cargo run --release -p xstate-redpanda --features kafka --example mock_throughput -- \
+//!   cargo run --release -p xstate-kafka --features kafka --example mock_throughput -- \
 //!       [events=200000] [keys=10000] [partitions=8] [workers=4] [max_batch=10000]
 //!
 //! The mock cluster has no network or disk, so this measures the client
 //! side: the actors, encoding, and librdkafka's produce/consume/transaction
 //! path. The single reader thread that counts committed output shares the
 //! cores with the workers and is usually the bottleneck; run with
-//! `XSTATE_REDPANDA_DEBUG=1` to see each worker's batch and commit times.
+//! `XSTATE_KAFKA_DEBUG=1` to see each worker's batch and commit times.
 
 use std::sync::Arc;
 use std::time::{Duration, Instant};
@@ -21,7 +21,7 @@ use rdkafka::mocking::MockCluster;
 use rdkafka::producer::{BaseProducer, BaseRecord, Producer};
 use rdkafka::{Offset, TopicPartitionList};
 use serde_json::{json, Value};
-use xstate_redpanda::kafka::{Service, ServiceConfig};
+use xstate_kafka::service::{Service, ServiceConfig};
 use xstate_rt::{Machine, Registry};
 
 fn arg(i: usize, default: usize) -> usize {

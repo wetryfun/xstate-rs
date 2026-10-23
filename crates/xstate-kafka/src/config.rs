@@ -1,5 +1,5 @@
 //! The service's configuration file (JSON) and machine loading for the
-//! `xstate-redpanda` binary.
+//! `xstate-kafka` binary.
 //!
 //! ```json
 //! {
@@ -25,7 +25,7 @@
 //! a relative `stateDir` is relative to the configuration file too. Every
 //! actor the machine invokes (`invoke.src`) runs as async work published to
 //! `topics.effects` (required then), completed by results on the input
-//! topic (see `xstate_redpanda::engine`).
+//! topic (see `xstate_kafka::engine`).
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -38,7 +38,7 @@ use xstate_rt::{Machine, Registry};
 
 use crate::codec::Codec;
 use crate::engine::EngineConfig;
-use crate::kafka::ServiceConfig;
+use crate::service::ServiceConfig;
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -173,7 +173,7 @@ impl FileConfig {
         }
         if !needed.is_empty() {
             return Err(at(format!(
-                "the machine needs Rust implementations ({}); run it with xstate_redpanda::kafka::Service::start in a binary of your own",
+                "the machine needs Rust implementations ({}); run it with xstate_kafka::service::Service::start in a binary of your own",
                 needed.join(", ")
             )));
         }

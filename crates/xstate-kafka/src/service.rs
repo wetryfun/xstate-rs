@@ -458,7 +458,7 @@ where
                         format!("checkpointed partition {p} at offset {next_offset} ({} actors)", c.records.len())
                     });
                 }
-                Err(e) => eprintln!("xstate-redpanda: writing {} failed: {e}", path.display()),
+                Err(e) => eprintln!("xstate-kafka: writing {} failed: {e}", path.display()),
             }
         }
     }
@@ -556,9 +556,9 @@ where
     Ok(())
 }
 
-/// `XSTATE_REDPANDA_DEBUG=1` traces worker activity on stderr.
+/// `XSTATE_KAFKA_DEBUG=1` traces worker activity on stderr.
 fn debug(message: impl FnOnce() -> String) {
-    if std::env::var_os("XSTATE_REDPANDA_DEBUG").is_some() {
+    if std::env::var_os("XSTATE_KAFKA_DEBUG").is_some() {
         eprintln!("[{} {}] {}", clock_ms(), std::thread::current().name().unwrap_or("?"), message());
     }
 }
@@ -683,7 +683,7 @@ where
 {
     let dir = config.state_dir.as_ref()?;
     let path = checkpoint::path(dir, &config.changelog_topic, p);
-    let warn = |what: String| eprintln!("xstate-redpanda: ignoring checkpoint {}: {what}", path.display());
+    let warn = |what: String| eprintln!("xstate-kafka: ignoring checkpoint {}: {what}", path.display());
     let c = match checkpoint::read(&path) {
         Ok(c) => c?,
         Err(e) => {

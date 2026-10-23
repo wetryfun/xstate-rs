@@ -4,7 +4,7 @@
 use std::sync::Arc;
 
 use serde_json::{json, Value};
-use xstate_redpanda::{Codec, EngineConfig, Partition};
+use xstate_kafka::{Codec, EngineConfig, Partition};
 use xstate_rt::{Machine, Registry, Status};
 
 fn order_machine() -> Arc<Machine<Value, Value>> {
@@ -168,7 +168,7 @@ fn external_work_is_published_once_and_resolved_by_records() {
     let mut restored = Partition::new(lookup_machine(), config);
     restored.restore("u1", Some(&snapshot)).unwrap();
     for p in [&mut p, &mut restored] {
-        let result = json!({ "type": xstate_redpanda::EFFECT_RESULT, "effectId": id,
+        let result = json!({ "type": xstate_kafka::EFFECT_RESULT, "effectId": id,
                              "event": { "type": "xstate.async.resolve", "data": { "name": "Ada" } } });
         p.handle(Some("u1"), result.to_string().as_bytes(), 20);
         let out = p.flush();
@@ -195,7 +195,7 @@ fn external_work_is_published_once_and_resolved_by_records() {
     let out = p.flush();
     assert_eq!(out.effects.len(), 1);
     assert_ne!(out.effects[0].effect["id"].as_str().unwrap(), first);
-    let stale = json!({ "type": xstate_redpanda::EFFECT_RESULT, "effectId": first,
+    let stale = json!({ "type": xstate_kafka::EFFECT_RESULT, "effectId": first,
                         "event": { "type": "xstate.async.resolve" } });
     p.handle(Some("u2"), stale.to_string().as_bytes(), 13);
     let out = p.flush();

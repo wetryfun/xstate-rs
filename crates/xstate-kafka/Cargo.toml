@@ -1,7 +1,7 @@
 [package]
-name = "xstate-redpanda"
+name = "xstate-kafka"
 version = "0.1.0"
-description = "Runs XState machines as partition-sharded actors next to a Redpanda (Kafka API) broker, with exactly-once state"
+description = "Runs XState machines as partition-sharded actors next to a Kafka-API broker, with exactly-once state"
 edition.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -29,7 +29,7 @@ name = "engine"
 harness = false
 
 [[bin]]
-name = "xstate-redpanda"
+name = "xstate-kafka"
 required-features = ["kafka"]
 
 [[example]]

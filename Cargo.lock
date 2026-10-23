@@ -2617,7 +2617,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "xstate-redpanda"
+name = "xstate-kafka"
 version = "0.1.0"
 dependencies = [
  "criterion",

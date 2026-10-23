@@ -1,4 +1,4 @@
-//! The `xstate-redpanda` binary against a mock cluster in this process:
+//! The `xstate-kafka` binary against a mock cluster in this process:
 //! configuration, processing, the metrics endpoint, and a graceful stop on
 //! SIGTERM.
 #![cfg(feature = "kafka")]
@@ -57,7 +57,7 @@ fn runs_from_a_config_file_and_stops_on_sigterm() {
     )
     .unwrap();
 
-    let binary = PathBuf::from(env!("CARGO_BIN_EXE_xstate-redpanda"));
+    let binary = PathBuf::from(env!("CARGO_BIN_EXE_xstate-kafka"));
     let check = Command::new(&binary).arg("--check").arg(&config).output().unwrap();
     assert!(check.status.success(), "{}", String::from_utf8_lossy(&check.stderr));
 
@@ -97,7 +97,9 @@ fn runs_from_a_config_file_and_stops_on_sigterm() {
     let mut body = String::new();
     while Instant::now() < deadline {
         body = http_get(&metrics, "/metrics").expect("metrics endpoint");
-        if body.contains("xstate_emitted_total 10\n") {
+        // Toggles that emit nothing can commit in a later transaction than
+        // the last `lit`: wait for both counters.
+        if body.contains("xstate_emitted_total 10\n") && body.contains("xstate_records_total 20\n") {
             break;
         }
         std::thread::sleep(Duration::from_millis(50));
@@ -153,7 +155,7 @@ fn invoked_actors_run_as_external_work() {
         .unwrap();
         path
     };
-    let binary = PathBuf::from(env!("CARGO_BIN_EXE_xstate-redpanda"));
+    let binary = PathBuf::from(env!("CARGO_BIN_EXE_xstate-kafka"));
     let check = Command::new(&binary).arg("--check").arg(config(false)).output().unwrap();
     assert!(!check.status.success());
     assert!(String::from_utf8_lossy(&check.stderr).contains("set topics.effects"));

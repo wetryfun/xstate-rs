@@ -14,7 +14,7 @@ Milestone 3 (codegen) turns a machine authored in TypeScript with Zod schemas in
 
 Milestone 5 (WASI) is a WASI 0.2 component, `crates/xstate-wasi` (WIT in `crates/xstate-wasi/wit/xstate.wit`), that loads any definition at run time and calls the host for guards, actions and delays. Hosts in any language with a component runtime can run machines with it.
 
-Milestone 6 (Redpanda) is `crates/xstate-redpanda`: actors sharded by input partition, one worker thread per core, each batch committing emitted events, changelog snapshots (MessagePack, compacted topic) and input offsets in one Kafka transaction. With `stateDir` set, workers keep local checkpoints so a restart reads only the changelog tail. Invoked async actors become requests on an effects topic, completed by `xstate.system.effect.result` records on the input topic. It is tested against librdkafka's in-process mock cluster. The `xstate-redpanda` binary runs a machine from a JSON config file with Prometheus metrics: `cargo run --release -p xstate-redpanda --features kafka -- service.json`.
+Milestone 6 (Kafka) is `crates/xstate-kafka`, a service for any Kafka-API broker (Apache Kafka, Redpanda, ...): actors sharded by input partition, one worker thread per core, each batch committing emitted events, changelog snapshots (MessagePack, compacted topic) and input offsets in one Kafka transaction. With `stateDir` set, workers keep local checkpoints so a restart reads only the changelog tail. Invoked async actors become requests on an effects topic, completed by `xstate.system.effect.result` records on the input topic. It is tested against librdkafka's in-process mock cluster. The `xstate-kafka` binary runs a machine from a JSON config file with Prometheus metrics: `cargo run --release -p xstate-kafka --features kafka -- service.json`.
 
 Not yet supported (rejected at load time with the JSON path): choice states, state and transition `input`, and any `@code` / `@expr` (including function `route`s).
 
@@ -87,7 +87,7 @@ cargo test                       # unit, runtime and differential tests
 tools/xstate-suite/run.sh        # XState's own test suite on the Rust core (needs pnpm)
 cargo clippy --all-targets --workspace
 cargo test -p xstate-wasi-host      # the WASI component, run in Wasmtime
-cargo test -p xstate-redpanda --features kafka   # the service, on librdkafka's mock cluster
+cargo test -p xstate-kafka --features kafka   # the service, on librdkafka's mock cluster
 cargo bench -p xstate-rt --bench interpreter     # interpreter hot path
 cd tools/differential && npm install && npm run generate   # regenerate expected traces from XState
 node tools/differential/generate-system.mjs                 # regenerate system-level traces
