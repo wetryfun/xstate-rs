@@ -1,0 +1,105 @@
+{
+  "machine": {
+    "id": "light",
+    "initial": "green",
+    "context": {
+      "cycles": 0
+    },
+    "states": {
+      "green": {
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "enter.green"
+            }
+          }
+        ],
+        "after": {
+          "1000": {
+            "target": "yellow"
+          }
+        },
+        "on": {
+          "emergency": {
+            "target": "red"
+          }
+        }
+      },
+      "yellow": {
+        "after": {
+          "short": {
+            "target": "red"
+          }
+        }
+      },
+      "red": {
+        "initial": "walk",
+        "states": {
+          "walk": {
+            "after": {
+              "500ms": {
+                "target": "wait"
+              }
+            }
+          },
+          "wait": {
+            "after": {
+              "PT0.5S": {
+                "target": "stop"
+              }
+            }
+          },
+          "stop": {
+            "type": "final"
+          }
+        },
+        "on": {
+          "xstate.done.state": {
+            "matches": {
+              "stateId": "light.red"
+            },
+            "target": "green",
+            "actions": [
+              {
+                "type": "@xstate.assign",
+                "context": {
+                  "cycles": 1
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "steps": [
+    {
+      "at": 500
+    },
+    {
+      "at": 1000
+    },
+    {
+      "at": 1099
+    },
+    {
+      "at": 1100
+    },
+    {
+      "at": 1600
+    },
+    {
+      "at": 2100
+    },
+    {
+      "at": 2200,
+      "send": {
+        "type": "emergency"
+      }
+    },
+    {
+      "at": 3200
+    }
+  ]
+}

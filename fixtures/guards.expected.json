@@ -1,0 +1,112 @@
+[
+  {
+    "label": "start",
+    "value": "idle",
+    "context": {
+      "role": "user",
+      "level": 2
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 0",
+    "value": "standard",
+    "context": {
+      "role": "user",
+      "level": 2
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 1",
+    "value": "idle",
+    "context": {
+      "role": "user",
+      "level": 2
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 2",
+    "value": "idle",
+    "context": {
+      "role": "user",
+      "level": 9
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 3",
+    "value": "senior",
+    "context": {
+      "role": "user",
+      "level": 9
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 4",
+    "value": "idle",
+    "context": {
+      "role": "user",
+      "level": 9
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 5",
+    "value": "idle",
+    "context": {
+      "role": "admin",
+      "level": 9
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 6",
+    "value": "admin",
+    "context": {
+      "role": "admin",
+      "level": 9
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 7",
+    "value": "idle",
+    "context": {
+      "role": "admin",
+      "level": 9
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 8",
+    "value": "idle",
+    "context": {
+      "role": "admin",
+      "level": 9
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 9",
+    "value": "senior",
+    "context": {
+      "role": "admin",
+      "level": 9
+    },
+    "status": "active",
+    "emitted": []
+  }
+]

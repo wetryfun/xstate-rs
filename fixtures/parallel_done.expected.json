@@ -1,0 +1,69 @@
+[
+  {
+    "label": "start",
+    "value": {
+      "working": {
+        "file": "pending",
+        "meta": "pending",
+        "flag": {}
+      }
+    },
+    "context": {},
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 0",
+    "value": {
+      "working": {
+        "file": "pending",
+        "meta": "ok",
+        "flag": {}
+      }
+    },
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "regionDone"
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "value": {
+      "working": {
+        "file": "pending",
+        "meta": "ok",
+        "flag": {}
+      }
+    },
+    "context": {},
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 2",
+    "value": "complete",
+    "context": {},
+    "status": "done",
+    "emitted": [
+      {
+        "type": "regionDone"
+      }
+    ],
+    "output": {
+      "status": "complete"
+    }
+  },
+  {
+    "label": "step 3",
+    "value": "complete",
+    "context": {},
+    "status": "done",
+    "emitted": [],
+    "output": {
+      "status": "complete"
+    }
+  }
+]

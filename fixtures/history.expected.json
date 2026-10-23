@@ -1,0 +1,125 @@
+[
+  {
+    "label": "start",
+    "value": {
+      "on": {
+        "playing": "normal"
+      }
+    },
+    "context": {},
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 0",
+    "value": "off",
+    "context": {},
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 1",
+    "value": {
+      "on": {
+        "playing": "normal"
+      }
+    },
+    "context": {},
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 2",
+    "value": {
+      "on": {
+        "playing": "normal"
+      }
+    },
+    "context": {},
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 3",
+    "value": {
+      "on": {
+        "playing": "fast"
+      }
+    },
+    "context": {},
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 4",
+    "value": "off",
+    "context": {},
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 5",
+    "value": {
+      "on": {
+        "playing": "normal"
+      }
+    },
+    "context": {},
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 6",
+    "value": {
+      "on": {
+        "playing": "fast"
+      }
+    },
+    "context": {},
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 7",
+    "value": "off",
+    "context": {},
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 8",
+    "value": {
+      "on": {
+        "playing": "fast"
+      }
+    },
+    "context": {},
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 9",
+    "value": {
+      "on": "paused"
+    },
+    "context": {},
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 10",
+    "value": "off",
+    "context": {},
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 11",
+    "value": {
+      "on": "paused"
+    },
+    "context": {},
+    "status": "active",
+    "emitted": []
+  }
+]

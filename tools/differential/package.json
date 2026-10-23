@@ -1,0 +1,12 @@
+{
+  "name": "xstate-rs-differential",
+  "private": true,
+  "type": "module",
+  "description": "Generates expected traces for fixtures/ with the pinned XState v6 alpha",
+  "scripts": {
+    "generate": "node generate.mjs"
+  },
+  "dependencies": {
+    "xstate": "6.0.0-alpha.70"
+  }
+}

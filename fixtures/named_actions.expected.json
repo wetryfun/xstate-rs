@@ -1,0 +1,53 @@
+[
+  {
+    "label": "start",
+    "value": "a",
+    "context": {
+      "count": 0,
+      "tag": "x"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "announced"
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "value": "b",
+    "context": {
+      "count": 5,
+      "tag": "patched"
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "announced"
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "value": "c",
+    "context": {
+      "count": 1,
+      "tag": "patched"
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 2",
+    "value": "d",
+    "context": {
+      "count": 1,
+      "tag": "patched"
+    },
+    "status": "done",
+    "emitted": [],
+    "output": {
+      "finished": true
+    }
+  }
+]

@@ -1,0 +1,41 @@
+{
+  "machine": {
+    "id": "na",
+    "initial": "a",
+    "context": { "count": 0, "tag": "x" },
+    "actions": {
+      "announce": [
+        { "type": "@xstate.emit", "event": { "type": "announced" } },
+        { "type": "noop" }
+      ],
+      "bump": { "type": "@xstate.assign", "context": { "count": 1 } },
+      "both": [{ "type": "announce" }, { "type": "bump" }]
+    },
+    "states": {
+      "a": {
+        "entry": { "type": "announce" },
+        "on": {
+          "go": {
+            "target": "b",
+            "context": { "tag": "patched" },
+            "actions": [{ "type": "both" }, { "type": "@xstate.assign", "context": { "count": 5 } }]
+          }
+        }
+      },
+      "b": {
+        "after": { "long": { "target": "c" } },
+        "exit": [{ "type": "bump" }]
+      },
+      "c": {
+        "on": { "check": { "guard": { "type": "ctxEquals", "params": { "key": "count", "value": 1 } }, "target": "d" } }
+      },
+      "d": { "type": "final" }
+    },
+    "output": { "finished": true }
+  },
+  "steps": [
+    { "at": 10, "send": { "type": "go" } },
+    { "at": 1010 },
+    { "at": 1010, "send": { "type": "check" } }
+  ]
+}

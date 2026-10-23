@@ -1,0 +1,12 @@
+[package]
+name = "xstate-rt"
+version = "0.1.0"
+description = "Rust runtime for XState v6 machine definitions (JSON), with Rust guards and actions"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde.workspace = true
+serde_json.workspace = true

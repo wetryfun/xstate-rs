@@ -1,0 +1,37 @@
+[
+  {
+    "label": "start",
+    "value": "a",
+    "context": {},
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 0",
+    "value": "a",
+    "context": {},
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 1",
+    "value": "x",
+    "context": {},
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 2",
+    "value": "a",
+    "context": {},
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 3",
+    "value": "y",
+    "context": {},
+    "status": "active",
+    "emitted": []
+  }
+]

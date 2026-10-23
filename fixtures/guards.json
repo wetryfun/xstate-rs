@@ -1,0 +1,43 @@
+{
+  "machine": {
+    "id": "g",
+    "initial": "idle",
+    "context": { "role": "user", "level": 2 },
+    "guards": {
+      "isAdmin": { "when": { "type": "ctxEquals", "params": { "key": "role", "value": "admin" } } },
+      "notAdmin": { "when": { "type": "@xstate.not", "params": { "guard": { "type": "isAdmin" } } } }
+    },
+    "states": {
+      "idle": {
+        "on": {
+          "submit": [
+            { "target": "admin", "guard": { "type": "isAdmin" } },
+            { "target": "senior", "guard": { "type": "ctxAtLeast", "params": { "key": "level", "value": 5 } } },
+            { "target": "standard", "guard": { "type": "notAdmin" } }
+          ],
+          "promote": { "context": { "role": "admin" } },
+          "levelUp": { "actions": [{ "type": "@xstate.assign", "context": { "level": 9 } }] },
+          "pick": [
+            { "target": "admin", "guard": { "type": "eventEquals", "params": { "key": "choice", "value": "a" } } },
+            { "target": "senior", "guard": { "type": "eventEquals", "params": { "key": "choice", "value": "s" } } }
+          ]
+        }
+      },
+      "admin": { "on": { "back": { "target": "idle" } } },
+      "senior": { "on": { "back": { "target": "idle" } } },
+      "standard": { "on": { "back": { "target": "idle" } } }
+    }
+  },
+  "steps": [
+    { "at": 0, "send": { "type": "submit" } },
+    { "at": 0, "send": { "type": "back" } },
+    { "at": 0, "send": { "type": "levelUp" } },
+    { "at": 0, "send": { "type": "submit" } },
+    { "at": 0, "send": { "type": "back" } },
+    { "at": 0, "send": { "type": "promote" } },
+    { "at": 0, "send": { "type": "submit" } },
+    { "at": 0, "send": { "type": "back" } },
+    { "at": 0, "send": { "type": "pick", "choice": "x" } },
+    { "at": 0, "send": { "type": "pick", "choice": "s" } }
+  ]
+}

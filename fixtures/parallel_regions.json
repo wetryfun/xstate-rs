@@ -1,0 +1,46 @@
+{
+  "machine": {
+    "id": "pr",
+    "type": "parallel",
+    "states": {
+      "a": {
+        "initial": "a1",
+        "states": {
+          "a1": {
+            "entry": [{ "type": "@xstate.emit", "event": { "type": "enter.a1" } }],
+            "exit": [{ "type": "@xstate.emit", "event": { "type": "exit.a1" } }],
+            "on": { "both": { "target": "a2" }, "crossToB2": { "target": "#pr.b.b2" } }
+          },
+          "a2": {
+            "entry": [{ "type": "@xstate.emit", "event": { "type": "enter.a2" } }],
+            "on": { "both": { "target": "a1" }, "inA": { "guard": { "type": "@xstate.stateIn", "params": { "stateId": "#pr.b.b2" } }, "target": "a1" } }
+          }
+        }
+      },
+      "b": {
+        "initial": "b1",
+        "states": {
+          "b1": {
+            "entry": [{ "type": "@xstate.emit", "event": { "type": "enter.b1" } }],
+            "exit": [{ "type": "@xstate.emit", "event": { "type": "exit.b1" } }],
+            "on": { "both": { "target": "b2" } }
+          },
+          "b2": {
+            "entry": [{ "type": "@xstate.emit", "event": { "type": "enter.b2" } }],
+            "exit": [{ "type": "@xstate.emit", "event": { "type": "exit.b2" } }],
+            "on": { "reset": { "target": "#pr", "reenter": true } }
+          }
+        }
+      }
+    },
+    "on": { "both": { "actions": [{ "type": "@xstate.emit", "event": { "type": "root.both" } }] } }
+  },
+  "steps": [
+    { "at": 0, "send": { "type": "both" } },
+    { "at": 0, "send": { "type": "inA" } },
+    { "at": 0, "send": { "type": "both" } },
+    { "at": 0, "send": { "type": "inA" } },
+    { "at": 0, "send": { "type": "crossToB2" } },
+    { "at": 0, "send": { "type": "reset" } }
+  ]
+}

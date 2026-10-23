@@ -1,0 +1,80 @@
+[
+  {
+    "label": "start",
+    "value": "waiting",
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "gotNow"
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "value": "waiting",
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "gotTick"
+      },
+      {
+        "type": "gotTick"
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "value": "waiting",
+    "context": {},
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 2",
+    "value": "waiting",
+    "context": {},
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 3",
+    "value": "timedOut",
+    "context": {},
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 4",
+    "value": "waiting",
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "gotNow"
+      }
+    ]
+  },
+  {
+    "label": "step 5",
+    "value": "waiting",
+    "context": {},
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 6",
+    "value": "waiting",
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "gotTick"
+      },
+      {
+        "type": "gotTick"
+      }
+    ]
+  }
+]

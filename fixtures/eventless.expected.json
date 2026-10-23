@@ -1,0 +1,49 @@
+[
+  {
+    "label": "start",
+    "value": "a",
+    "context": {
+      "ready": false,
+      "step": 0
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 0",
+    "value": "a",
+    "context": {
+      "ready": false,
+      "step": 0
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 1",
+    "value": "c",
+    "context": {
+      "ready": true,
+      "step": 2
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "kicked"
+      },
+      {
+        "type": "once"
+      }
+    ]
+  },
+  {
+    "label": "step 2",
+    "value": "done",
+    "context": {
+      "ready": true,
+      "step": 2
+    },
+    "status": "done",
+    "emitted": []
+  }
+]

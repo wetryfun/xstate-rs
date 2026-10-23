@@ -1,0 +1,45 @@
+{
+  "machine": {
+    "id": "player",
+    "initial": "on",
+    "states": {
+      "on": {
+        "initial": "playing",
+        "states": {
+          "playing": {
+            "initial": "normal",
+            "states": {
+              "normal": { "on": { "fast": { "target": "fast" } } },
+              "fast": {}
+            },
+            "on": { "pause": { "target": "paused" } }
+          },
+          "paused": { "on": { "play": { "target": "playing" } } },
+          "shallow": { "type": "history", "history": "shallow", "target": "paused" },
+          "deep": { "type": "history", "history": "deep", "target": "paused" }
+        },
+        "on": { "off": { "target": "off" } }
+      },
+      "off": {
+        "on": {
+          "resumeShallow": { "target": "on.shallow" },
+          "resumeDeep": { "target": "on.deep" }
+        }
+      }
+    }
+  },
+  "steps": [
+    { "at": 0, "send": { "type": "off" } },
+    { "at": 0, "send": { "type": "resumeShallow" } },
+    { "at": 0, "send": { "type": "play" } },
+    { "at": 0, "send": { "type": "fast" } },
+    { "at": 0, "send": { "type": "off" } },
+    { "at": 0, "send": { "type": "resumeShallow" } },
+    { "at": 0, "send": { "type": "fast" } },
+    { "at": 0, "send": { "type": "off" } },
+    { "at": 0, "send": { "type": "resumeDeep" } },
+    { "at": 0, "send": { "type": "pause" } },
+    { "at": 0, "send": { "type": "off" } },
+    { "at": 0, "send": { "type": "resumeDeep" } }
+  ]
+}

@@ -1,0 +1,27 @@
+[
+  {
+    "label": "start",
+    "value": "a",
+    "context": {},
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 0",
+    "value": "d",
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "pingInD"
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "value": "d",
+    "context": {},
+    "status": "active",
+    "emitted": []
+  }
+]

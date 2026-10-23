@@ -1,0 +1,101 @@
+[
+  {
+    "label": "start",
+    "value": "green",
+    "context": {
+      "cycles": 0
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.green"
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "value": "green",
+    "context": {
+      "cycles": 0
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 1",
+    "value": "yellow",
+    "context": {
+      "cycles": 0
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 2",
+    "value": "yellow",
+    "context": {
+      "cycles": 0
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 3",
+    "value": {
+      "red": "walk"
+    },
+    "context": {
+      "cycles": 0
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 4",
+    "value": {
+      "red": "wait"
+    },
+    "context": {
+      "cycles": 0
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 5",
+    "value": "green",
+    "context": {
+      "cycles": 1
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.green"
+      }
+    ]
+  },
+  {
+    "label": "step 6",
+    "value": {
+      "red": "walk"
+    },
+    "context": {
+      "cycles": 1
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 7",
+    "value": "green",
+    "context": {
+      "cycles": 1
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.green"
+      }
+    ]
+  }
+]

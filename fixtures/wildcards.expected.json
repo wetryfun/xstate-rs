@@ -1,0 +1,102 @@
+[
+  {
+    "label": "start",
+    "value": {
+      "s": "inner"
+    },
+    "context": {},
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 0",
+    "value": {
+      "s": "inner"
+    },
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "inner.mouse.down"
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "value": {
+      "s": "inner"
+    },
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "inner.mouse.*"
+      }
+    ]
+  },
+  {
+    "label": "step 2",
+    "value": {
+      "s": "inner"
+    },
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "inner.mouse.*"
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "value": {
+      "s": "inner"
+    },
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "s.key.up.*"
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "value": {
+      "s": "inner"
+    },
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "s.key.up.*"
+      }
+    ]
+  },
+  {
+    "label": "step 5",
+    "value": {
+      "s": "inner"
+    },
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "s.key.*"
+      }
+    ]
+  },
+  {
+    "label": "step 6",
+    "value": {
+      "s": "inner"
+    },
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "s.*"
+      }
+    ]
+  }
+]

@@ -1,0 +1,41 @@
+{
+  "machine": {
+    "id": "upload",
+    "initial": "working",
+    "states": {
+      "working": {
+        "type": "parallel",
+        "states": {
+          "file": {
+            "initial": "pending",
+            "states": {
+              "pending": { "on": { "fileDone": { "target": "ok" } } },
+              "ok": { "type": "final", "output": { "file": true } }
+            }
+          },
+          "meta": {
+            "initial": "pending",
+            "states": {
+              "pending": { "on": { "metaDone": { "target": "ok" } } },
+              "ok": { "type": "final" }
+            }
+          },
+          "flag": { "type": "final", "output": 7 }
+        },
+        "on": {
+          "xstate.done.state": [
+            { "matches": { "stateId": "upload.working" }, "target": "complete" },
+            { "actions": [{ "type": "@xstate.emit", "event": { "type": "regionDone" } }] }
+          ]
+        }
+      },
+      "complete": { "type": "final", "output": { "status": "complete" } }
+    }
+  },
+  "steps": [
+    { "at": 0, "send": { "type": "metaDone" } },
+    { "at": 0, "send": { "type": "metaDone" } },
+    { "at": 0, "send": { "type": "fileDone" } },
+    { "at": 0, "send": { "type": "fileDone" } }
+  ]
+}

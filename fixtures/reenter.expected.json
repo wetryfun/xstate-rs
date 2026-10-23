@@ -1,0 +1,202 @@
+[
+  {
+    "label": "start",
+    "value": {
+      "p": "c1"
+    },
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.p"
+      },
+      {
+        "type": "enter.c1"
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "value": {
+      "p": "c1"
+    },
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "exit.c1"
+      },
+      {
+        "type": "t.self"
+      },
+      {
+        "type": "enter.c1"
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "value": {
+      "p": "c2"
+    },
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "exit.c1"
+      },
+      {
+        "type": "enter.c2"
+      }
+    ]
+  },
+  {
+    "label": "step 2",
+    "value": {
+      "p": "c1"
+    },
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "exit.c2"
+      },
+      {
+        "type": "t.self"
+      },
+      {
+        "type": "enter.c1"
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "value": {
+      "p": "c1"
+    },
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "exit.c1"
+      },
+      {
+        "type": "exit.p"
+      },
+      {
+        "type": "t.reenter"
+      },
+      {
+        "type": "enter.p"
+      },
+      {
+        "type": "enter.c1"
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "value": {
+      "p": "c2"
+    },
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "exit.c1"
+      },
+      {
+        "type": "enter.c2"
+      }
+    ]
+  },
+  {
+    "label": "step 5",
+    "value": {
+      "p": "c1"
+    },
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "exit.c2"
+      },
+      {
+        "type": "t.child"
+      },
+      {
+        "type": "enter.c1"
+      }
+    ]
+  },
+  {
+    "label": "step 6",
+    "value": {
+      "p": "c1"
+    },
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "exit.c1"
+      },
+      {
+        "type": "t.child"
+      },
+      {
+        "type": "enter.c1"
+      }
+    ]
+  },
+  {
+    "label": "step 7",
+    "value": {
+      "p": "c1"
+    },
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "exit.c1"
+      },
+      {
+        "type": "exit.p"
+      },
+      {
+        "type": "enter.p"
+      },
+      {
+        "type": "enter.c1"
+      }
+    ]
+  },
+  {
+    "label": "step 8",
+    "value": {
+      "p": "c2"
+    },
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "exit.c1"
+      },
+      {
+        "type": "enter.c2"
+      }
+    ]
+  },
+  {
+    "label": "step 9",
+    "value": {
+      "p": "c2"
+    },
+    "context": {},
+    "status": "active",
+    "emitted": [
+      {
+        "type": "t.targetless"
+      }
+    ]
+  }
+]

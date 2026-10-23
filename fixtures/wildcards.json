@@ -1,0 +1,34 @@
+{
+  "machine": {
+    "id": "w",
+    "initial": "s",
+    "states": {
+      "s": {
+        "initial": "inner",
+        "states": {
+          "inner": {
+            "on": {
+              "mouse.*": { "actions": [{ "type": "@xstate.emit", "event": { "type": "inner.mouse.*" } }] },
+              "mouse.down": { "actions": [{ "type": "@xstate.emit", "event": { "type": "inner.mouse.down" } }] }
+            }
+          }
+        },
+        "on": {
+          "*": { "actions": [{ "type": "@xstate.emit", "event": { "type": "s.*" } }] },
+          "key.*": { "actions": [{ "type": "@xstate.emit", "event": { "type": "s.key.*" } }] },
+          "key.up.*": { "actions": [{ "type": "@xstate.emit", "event": { "type": "s.key.up.*" } }] },
+          "key.up": { "guard": { "type": "no" }, "actions": [{ "type": "@xstate.emit", "event": { "type": "s.key.up" } }] }
+        }
+      }
+    }
+  },
+  "steps": [
+    { "at": 0, "send": { "type": "mouse.down" } },
+    { "at": 0, "send": { "type": "mouse.up" } },
+    { "at": 0, "send": { "type": "mouse" } },
+    { "at": 0, "send": { "type": "key.up" } },
+    { "at": 0, "send": { "type": "key.up.left" } },
+    { "at": 0, "send": { "type": "key.down" } },
+    { "at": 0, "send": { "type": "other" } }
+  ]
+}

@@ -1,0 +1,64 @@
+# xstate-rs
+
+A Rust runtime for [XState v6](https://stately.ai/docs/xstate/v6/) machine definitions. Author machines in TypeScript, export them as JSON with `machineToJSON`, and run them in Rust with guards, actions and delays implemented in Rust.
+
+This is an independent project, not an official Stately package. It targets `xstate@6.0.0-alpha.70`.
+
+## Status
+
+Milestone 1 (`xstate-rt` core) is in place: loading and validating `MachineJSON`, compound, parallel, final and history states, guards (including `@xstate.not` and `@xstate.stateIn`), built-in and custom actions, `always`, `after`, delayed `@xstate.raise` and `@xstate.cancel`, `@xstate.emit`, host-driven timers, and persist/restore. Behavior is checked against XState itself with shared fixtures.
+
+Not yet supported (rejected at load time with the JSON path): `invoke` and actors, `onError`, `timeout`/`onTimeout`, choice and route states, state input, and any `@code` / `@expr`.
+
+## Example
+
+```rust
+use std::sync::Arc;
+use serde_json::{json, Value};
+use xstate_rt::{Actor, Machine, Registry};
+
+let definition = json!({
+    "id": "light",
+    "initial": "green",
+    "context": { "cars": 0 },
+    "states": {
+        "green": {
+            "after": { "1000": { "target": "yellow" } },
+            "on": { "car": { "actions": [{ "type": "countCar" }] } }
+        },
+        "yellow": { "on": { "next": { "target": "red", "guard": { "type": "busy", "params": { "min": 1 } } } } },
+        "red": { "type": "final" }
+    }
+});
+
+#[derive(serde::Deserialize)]
+struct Busy { min: u64 }
+
+let mut registry: Registry<Value, Value> = Registry::new();
+registry
+    .action("countCar", |args| {
+        let cars = args.context()["cars"].as_u64().unwrap_or(0);
+        args.context_mut()["cars"] = json!(cars + 1);
+    })
+    .guard_with("busy", |args, p: &Busy| args.context["cars"].as_u64().unwrap_or(0) >= p.min);
+
+let machine = Arc::new(Machine::from_json(&definition, &registry)?);
+let mut actor = Actor::start(machine, 0)?;
+actor.send(json!({ "type": "car" }), 10)?;
+assert_eq!(actor.next_deadline(), Some(1000));
+actor.advance(1000)?;                                // the host drives time
+actor.send(json!({ "type": "next" }), 1200)?;
+assert_eq!(actor.value(), json!("red"));
+```
+
+Typed contexts and events work the same way: any `C: Serialize + DeserializeOwned + Clone` and any serde event enum implementing `EventType`.
+
+## Development
+
+```sh
+cargo test                       # unit, runtime and differential tests
+cargo clippy --all-targets
+cd tools/differential && npm install && npm run generate   # regenerate expected traces from XState
+```
+
+See [CLAUDE.md](CLAUDE.md) for the design, the verified v6 semantics, and the roadmap.

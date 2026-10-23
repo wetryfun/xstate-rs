@@ -1,0 +1,36 @@
+{
+  "machine": {
+    "id": "rc",
+    "initial": "waiting",
+    "states": {
+      "waiting": {
+        "entry": [
+          { "type": "@xstate.raise", "event": { "type": "timeout" }, "delay": 1000, "id": "t1" },
+          { "type": "@xstate.raise", "event": { "type": "tick", "n": 1 }, "delay": 200 },
+          { "type": "@xstate.raise", "event": { "type": "tick", "n": 2 }, "delay": 200 },
+          { "type": "@xstate.raise", "event": { "type": "now" } }
+        ],
+        "on": {
+          "now": { "actions": [{ "type": "@xstate.emit", "event": { "type": "gotNow" } }] },
+          "tick": { "actions": [{ "type": "@xstate.emit", "event": { "type": "gotTick" } }] },
+          "cancel": { "actions": [{ "type": "@xstate.cancel", "id": "t1" }] },
+          "restart": { "actions": [{ "type": "@xstate.raise", "event": { "type": "timeout" }, "delay": 300, "id": "t1" }] },
+          "timeout": { "target": "timedOut" }
+        }
+      },
+      "timedOut": {
+        "entry": [{ "type": "@xstate.log", "args": ["timed out"] }],
+        "on": { "again": { "target": "waiting" } }
+      }
+    }
+  },
+  "steps": [
+    { "at": 200 },
+    { "at": 500, "send": { "type": "restart" } },
+    { "at": 799 },
+    { "at": 800 },
+    { "at": 900, "send": { "type": "again" } },
+    { "at": 950, "send": { "type": "cancel" } },
+    { "at": 5000 }
+  ]
+}

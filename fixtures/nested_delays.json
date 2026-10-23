@@ -1,0 +1,25 @@
+{
+  "machine": {
+    "id": "nd",
+    "initial": "a",
+    "states": {
+      "a": { "after": { "100": { "target": "b" } } },
+      "b": {
+        "entry": [{ "type": "@xstate.raise", "event": { "type": "ping" }, "delay": 250 }],
+        "after": { "100": { "target": "c" } },
+        "on": { "ping": { "actions": [{ "type": "@xstate.emit", "event": { "type": "pingInB" } }] } }
+      },
+      "c": {
+        "after": { "100": { "target": "d" } },
+        "on": { "ping": { "actions": [{ "type": "@xstate.emit", "event": { "type": "pingInC" } }] } }
+      },
+      "d": {
+        "on": { "ping": { "actions": [{ "type": "@xstate.emit", "event": { "type": "pingInD" } }] } }
+      }
+    }
+  },
+  "steps": [
+    { "at": 1000 },
+    { "at": 1000, "send": { "type": "x" } }
+  ]
+}

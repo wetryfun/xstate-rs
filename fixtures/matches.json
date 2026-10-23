@@ -1,0 +1,24 @@
+{
+  "machine": {
+    "id": "m",
+    "initial": "a",
+    "states": {
+      "a": {
+        "on": {
+          "pick": [
+            { "matches": { "kind": "x", "n": 1 }, "target": "x" },
+            { "matches": { "kind": "y" }, "target": "y" }
+          ]
+        }
+      },
+      "x": { "on": { "back": { "target": "a" } } },
+      "y": { "on": { "back": { "target": "a" } } }
+    }
+  },
+  "steps": [
+    { "at": 0, "send": { "type": "pick", "kind": "x", "n": 2 } },
+    { "at": 0, "send": { "type": "pick", "kind": "x", "n": 1 } },
+    { "at": 0, "send": { "type": "back" } },
+    { "at": 0, "send": { "type": "pick", "kind": "y" } }
+  ]
+}
