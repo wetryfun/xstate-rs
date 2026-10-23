@@ -10,6 +10,15 @@
 //! effects that run after the snapshot is computed and receive only their
 //! params. Context changes go through `@xstate.assign` or transition
 //! `context`.
+//!
+//! Values the JSON computes are XState's code nodes in the `rust` language,
+//! `{ "@code": "<name>", "@lang": "rust" }` (or `@expr`, or no `@lang` with
+//! a root `"@exprLang": "rust"`), which `machineFromJSON` hands to the
+//! evaluator registered for the language. Here the source is the name of an
+//! [`Registry::expr`] (or, in the root `context`, a [`Registry::context`]):
+//! a context value, an assigned patch, a raised or emitted event, action or
+//! guard params, an inline guard, a delay, an invoke's input, an output, or
+//! an action whose result's `context` is merged.
 
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -24,8 +33,10 @@ use crate::machine::Machine;
 pub(crate) type GuardFn<C, E> = Box<dyn Fn(&GuardArgs<'_, C, E>) -> bool + Send + Sync>;
 pub(crate) type ActionFn = crate::system::EffectExec;
 pub(crate) type DelayFn<C, E> = Box<dyn Fn(&C, &Ev<E>) -> u64 + Send + Sync>;
+pub(crate) type ExprFn<C, E> = Arc<dyn Fn(&ExprArgs<'_, C, E>) -> Value + Send + Sync>;
+pub(crate) type ContextFn = Arc<dyn Fn(Option<&Value>) -> Value + Send + Sync>;
 
-type Factory<T> = Box<dyn Fn(&Value) -> Result<T, String> + Send + Sync>;
+pub(crate) type Factory<T> = Arc<dyn Fn(&Value) -> Result<T, String> + Send + Sync>;
 
 /// What a guard sees: the context, the event, and the active configuration.
 pub struct GuardArgs<'a, C, E> {
@@ -44,6 +55,28 @@ impl<C, E> GuardArgs<'_, C, E> {
     }
 }
 
+/// What an expression sees (XState's evaluator scope): the context as the
+/// actions before it left it, the event, the params of the named JSON
+/// action or guard it is part of, and the active configuration.
+pub struct ExprArgs<'a, C, E> {
+    pub context: &'a C,
+    pub event: &'a Ev<E>,
+    /// The resolved `params` of the enclosing named action or guard defined
+    /// in the JSON (`actions` / `guards` at the root), if any.
+    pub params: Option<&'a Value>,
+    pub(crate) machine: &'a Machine<C, E>,
+    pub(crate) config: &'a [Nid],
+}
+
+impl<C, E> ExprArgs<'_, C, E> {
+    /// Whether the state with this id (with or without a leading `#`) is
+    /// active, like `snapshot.matches('#id')`.
+    pub fn in_state(&self, id: &str) -> bool {
+        let id = id.strip_prefix('#').unwrap_or(id);
+        self.machine.node_by_id(id).is_some_and(|n| self.config.contains(&n))
+    }
+}
+
 /// Named guard, action and delay implementations for a context type `C` and
 /// event type `E`.
 pub struct Registry<C, E> {
@@ -51,11 +84,20 @@ pub struct Registry<C, E> {
     pub(crate) actions: HashMap<String, Factory<ActionFn>>,
     pub(crate) delays: HashMap<String, Factory<DelayFn<C, E>>>,
     pub(crate) actors: Vec<(String, Arc<dyn crate::system::Logic>)>,
+    pub(crate) exprs: HashMap<String, ExprFn<C, E>>,
+    pub(crate) contexts: HashMap<String, ContextFn>,
 }
 
 impl<C, E> Default for Registry<C, E> {
     fn default() -> Self {
-        Self { guards: HashMap::new(), actions: HashMap::new(), delays: HashMap::new(), actors: Vec::new() }
+        Self {
+            guards: HashMap::new(),
+            actions: HashMap::new(),
+            delays: HashMap::new(),
+            actors: Vec::new(),
+            exprs: HashMap::new(),
+            contexts: HashMap::new(),
+        }
     }
 }
 
@@ -77,7 +119,7 @@ impl<C: 'static, E: 'static> Registry<C, E> {
         let f = Arc::new(f);
         self.guards.insert(
             name.into(),
-            Box::new(move |_| {
+            Arc::new(move |_| {
                 let f = f.clone();
                 Ok(Box::new(move |args: &GuardArgs<'_, C, E>| f(args)) as GuardFn<C, E>)
             }),
@@ -98,7 +140,7 @@ impl<C: 'static, E: 'static> Registry<C, E> {
         let f = Arc::new(f);
         self.guards.insert(
             name.into(),
-            Box::new(move |params| {
+            Arc::new(move |params| {
                 let p: P = parse_params(params)?;
                 let f = f.clone();
                 Ok(Box::new(move |args: &GuardArgs<'_, C, E>| f(args, &p)) as GuardFn<C, E>)
@@ -113,7 +155,7 @@ impl<C: 'static, E: 'static> Registry<C, E> {
         let f = Arc::new(f);
         self.actions.insert(
             name.into(),
-            Box::new(move |_| {
+            Arc::new(move |_| {
                 let f = f.clone();
                 Ok(Arc::new(move || f()) as ActionFn)
             }),
@@ -130,7 +172,7 @@ impl<C: 'static, E: 'static> Registry<C, E> {
         let f = Arc::new(f);
         self.actions.insert(
             name.into(),
-            Box::new(move |params| {
+            Arc::new(move |params| {
                 let p: P = parse_params(params)?;
                 let f = f.clone();
                 Ok(Arc::new(move || f(&p)) as ActionFn)
@@ -161,7 +203,7 @@ impl<C: 'static, E: 'static> Registry<C, E> {
         let f = Arc::new(f);
         self.delays.insert(
             name.into(),
-            Box::new(move |_| {
+            Arc::new(move |_| {
                 let f = f.clone();
                 Ok(Box::new(move |c: &C, e: &Ev<E>| f(c, e)) as DelayFn<C, E>)
             }),
@@ -172,5 +214,31 @@ impl<C: 'static, E: 'static> Registry<C, E> {
     /// Registers a named delay with a fixed number of milliseconds.
     pub fn delay_ms(&mut self, name: impl Into<String>, ms: u64) -> &mut Self {
         self.delay(name, move |_, _| ms)
+    }
+
+    /// Registers an expression: the value of every `{ "@code": name,
+    /// "@lang": "rust" }` node outside the root `context`, computed when
+    /// XState would evaluate it. What the value means depends on where the
+    /// node is: a context value or patch, an event, params, a guard (truthy
+    /// as in JavaScript), a delay (milliseconds or a duration string), an
+    /// input or output, or, as an action, `{ "context": patch }` to merge.
+    pub fn expr(
+        &mut self,
+        name: impl Into<String>,
+        f: impl Fn(&ExprArgs<'_, C, E>) -> Value + Send + Sync + 'static,
+    ) -> &mut Self {
+        self.exprs.insert(name.into(), Arc::new(f));
+        self
+    }
+
+    /// Registers an expression for the root `context` (XState's context
+    /// factory), computed from the actor's input when the actor starts.
+    pub fn context(
+        &mut self,
+        name: impl Into<String>,
+        f: impl Fn(Option<&Value>) -> Value + Send + Sync + 'static,
+    ) -> &mut Self {
+        self.contexts.insert(name.into(), Arc::new(f));
+        self
     }
 }

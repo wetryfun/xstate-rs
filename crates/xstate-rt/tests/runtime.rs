@@ -559,3 +559,106 @@ fn rejects_bad_params_at_load_time() {
     let e = Machine::from_json(&def, &r).err().unwrap();
     assert_eq!((e.kind, e.path.as_str()), (LoadErrorKind::InvalidParams, "$.states.a.on.go.guard.params"));
 }
+
+// ---- Rust expressions ------------------------------------------------------------
+
+#[test]
+fn expressions_compute_typed_context_events_guards_and_delays() {
+    let mut r: Registry<Ctx, Event> = Registry::new();
+    r.expr("countPlusBy", |a| match a.event {
+        Ev::User(Event::Inc { by }) => json!(a.context.count + by),
+        _ => json!(a.context.count),
+    })
+    .expr("double", |a| json!({ "context": { "count": a.context.count * 2 } }))
+    .expr("report", |a| json!({ "type": "count", "count": a.context.count, "mode": a.context.mode }))
+    .expr("large", |a| json!(a.context.count >= 10))
+    .expr("wait", |a| json!(format!("{}ms", a.context.count * 10)))
+    .context(
+        "fromInput",
+        |input| json!({ "count": input.and_then(|i| i["count"].as_i64()).unwrap_or(1), "mode": "input" }),
+    );
+    let code = |name: &str| json!({ "@code": name, "@lang": "rust" });
+    let def = json!({
+        "id": "typed",
+        "context": code("fromInput"),
+        "initial": "counting",
+        "states": {
+            "counting": {
+                "on": {
+                    "inc": [
+                        { "guard": code("large"), "target": "big" },
+                        { "context": { "count": code("countPlusBy") }, "actions": [code("double"), { "type": "@xstate.emit", "event": code("report") }] }
+                    ]
+                }
+            },
+            "big": { "after": { "pause": { "target": "counting", "context": { "mode": "rested" } } } }
+        },
+        "delays": { "pause": { "duration": code("wait") } }
+    });
+    let machine = Arc::new(Machine::from_json(&def, &r).unwrap());
+    let mut actor =
+        Actor::start_with(machine, InitOptions { input: Some(json!({ "count": 2 })), ..Default::default() }).unwrap();
+    assert_eq!(actor.context(), &Ctx { count: 2, mode: "input".into() });
+    // The patch (2 + 3), then the action doubling it; the emit sees both.
+    actor.send(Event::Inc { by: 3 }, 0).unwrap();
+    assert_eq!(actor.context().count, 10);
+    assert_eq!(actor.take_emitted(), vec![json!({ "type": "count", "count": 10, "mode": "input" })]);
+    actor.send(Event::Inc { by: 1 }, 0).unwrap();
+    assert!(actor.matches("big"));
+    assert_eq!(actor.next_deadline(), Some(100));
+    actor.advance(100).unwrap();
+    assert_eq!(actor.context(), &Ctx { count: 10, mode: "rested".into() });
+}
+
+#[test]
+fn expressions_with_strings_for_patches_fail_the_step() {
+    let mut r: Registry<Value, Value> = Registry::new();
+    r.expr("text", |_| json!("ab"));
+    let def = json!({
+        "context": { "count": 1 }, "initial": "a",
+        "states": { "a": { "on": { "bad": { "actions": [{ "type": "@xstate.assign", "context": { "@code": "text", "@lang": "rust" } }] } } } }
+    });
+    let mut actor = Actor::start(Arc::new(Machine::from_json(&def, &r).unwrap()), 0).unwrap();
+    assert!(actor.send(json!({ "type": "bad" }), 0).is_err());
+    assert_eq!(actor.status(), Status::Error);
+    assert_eq!(actor.context(), &json!({ "count": 1 }));
+}
+
+#[test]
+fn expression_load_errors_and_references() {
+    let code = |name: &str| json!({ "@code": name, "@lang": "rust" });
+    // Another language.
+    let e = load_err(json!({ "context": { "n": { "@expr": "1 + 1", "@lang": "js" } } }));
+    assert_eq!((e.kind, e.path.as_str()), (LoadErrorKind::Code, "$.context.n"));
+    // No language, then the root's.
+    let e = load_err(json!({ "context": { "n": { "@code": "one" } } }));
+    assert_eq!(e.kind, LoadErrorKind::Code);
+    let e = load_err(json!({ "@exprLang": "rust", "context": { "n": { "@code": "one" } } }));
+    assert_eq!((e.kind, e.path.as_str()), (LoadErrorKind::MissingImplementation, "$.context.n"));
+    // A transition function and a `matches` pattern are not evaluated.
+    let e = load_err(json!({ "initial": "a", "states": { "a": { "on": { "go": code("pick") } } } }));
+    assert_eq!((e.kind, e.path.as_str()), (LoadErrorKind::Unsupported, "$.states.a.on.go"));
+    let e =
+        load_err(json!({ "initial": "a", "states": { "a": { "on": { "go": { "matches": { "n": code("n") } } } } } }));
+    assert_eq!((e.kind, e.path.as_str()), (LoadErrorKind::Unsupported, "$.states.a.on.go.matches.n"));
+    // A context expression registered for the scope, and the other way round.
+    let mut r: Registry<Value, Value> = Registry::new();
+    r.expr("one", |_| json!(1)).context("start", |_| json!({}));
+    let e = Machine::from_json(&json!({ "context": code("one") }), &r).err().unwrap();
+    assert!(e.message.contains("Registry::context"), "{e}");
+    let def = json!({ "initial": "a", "states": { "a": { "entry": [code("start")] } } });
+    assert!(Machine::from_json(&def, &r).err().unwrap().message.contains("only the root `context`"));
+
+    let refs = Machine::<Value, Value>::references(&json!({
+        "context": { "n": code("init") },
+        "initial": "a",
+        "states": { "a": { "on": { "go": { "guard": code("ok"), "context": { "n": code("next") }, "actions": [code("next")] } } } }
+    }))
+    .unwrap();
+    let names = |r: &[Reference]| r.iter().map(|r| (r.name.clone(), r.path.clone())).collect::<Vec<_>>();
+    assert_eq!(names(&refs.contexts), vec![("init".into(), "$.context.n".into())]);
+    assert_eq!(
+        names(&refs.exprs),
+        vec![("ok".into(), "$.states.a.on.go.guard".into()), ("next".into(), "$.states.a.on.go.context.n".into())]
+    );
+}

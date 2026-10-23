@@ -1,0 +1,107 @@
+{
+  "notes": "Computed values XState's spread or enqueue ignores (numbers): a transition context, an assign, an action result, an emitted and a raised event.",
+  "machine": {
+    "id": "scalars",
+    "context": {
+      "count": 1
+    },
+    "initial": "a",
+    "states": {
+      "a": {
+        "on": {
+          "OK": {
+            "context": {
+              "count": {
+                "@code": "countPlusOne",
+                "@lang": "rust"
+              }
+            }
+          },
+          "CTX": {
+            "context": {
+              "@code": "countPlusOne",
+              "@lang": "rust"
+            },
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "ctx",
+                  "count": {
+                    "@code": "countPlusOne",
+                    "@lang": "rust"
+                  }
+                }
+              }
+            ]
+          },
+          "ASSIGN": {
+            "actions": [
+              {
+                "type": "@xstate.assign",
+                "context": {
+                  "@code": "countPlusOne",
+                  "@lang": "rust"
+                }
+              },
+              {
+                "@code": "countPlusOne",
+                "@lang": "rust"
+              }
+            ]
+          },
+          "EVENTS": {
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "@code": "countPlusOne",
+                  "@lang": "rust"
+                }
+              },
+              {
+                "type": "@xstate.raise",
+                "event": {
+                  "@code": "countPlusOne",
+                  "@lang": "rust"
+                }
+              },
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "after"
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "steps": [
+    {
+      "at": 0,
+      "send": {
+        "type": "OK"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "CTX"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "ASSIGN"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "EVENTS"
+      }
+    }
+  ]
+}

@@ -1,0 +1,234 @@
+{
+  "notes": "Inline guard expressions (also under @xstate.not and in named guards), computed guard params, named guards whose params their expressions read, and computed delays and timeouts.",
+  "machine": {
+    "id": "retry",
+    "@exprLang": "rust",
+    "context": {
+      "count": 0,
+      "attempts": 0
+    },
+    "guards": {
+      "even": {
+        "when": {
+          "@code": "countIsEven"
+        }
+      },
+      "atParam": {
+        "when": {
+          "type": "ctxEquals",
+          "params": {
+            "key": "count",
+            "value": {
+              "@code": "paramsValue"
+            }
+          }
+        }
+      }
+    },
+    "delays": {
+      "retry": {
+        "duration": {
+          "@code": "backoff"
+        }
+      }
+    },
+    "initial": "idle",
+    "states": {
+      "idle": {
+        "on": {
+          "TICK": [
+            {
+              "guard": {
+                "type": "even"
+              },
+              "context": {
+                "count": {
+                  "@code": "countPlusOne"
+                }
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "even"
+                  }
+                }
+              ]
+            },
+            {
+              "guard": {
+                "type": "@xstate.not",
+                "params": {
+                  "guard": {
+                    "@code": "countIsEven"
+                  }
+                }
+              },
+              "context": {
+                "count": {
+                  "@code": "countPlusOne"
+                }
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "odd"
+                  }
+                }
+              ]
+            }
+          ],
+          "CHECK": [
+            {
+              "guard": {
+                "type": "atParam",
+                "params": {
+                  "value": {
+                    "@code": "eventValue"
+                  }
+                }
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "matched"
+                  }
+                }
+              ]
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "count",
+                  "value": {
+                    "@code": "eventValue"
+                  }
+                }
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "never"
+                  }
+                }
+              ]
+            },
+            {
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "unmatched"
+                  }
+                }
+              ]
+            }
+          ],
+          "START": {
+            "target": "waiting"
+          }
+        }
+      },
+      "waiting": {
+        "after": {
+          "retry": {
+            "target": "waiting",
+            "reenter": true,
+            "context": {
+              "attempts": {
+                "@code": "attemptsPlusOne"
+              }
+            },
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "retried",
+                  "attempts": {
+                    "@code": "attemptsPlusOne"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "timeout": {
+          "@code": "backoff"
+        },
+        "onTimeout": {
+          "target": "idle"
+        },
+        "on": {
+          "STOP": {
+            "target": "idle"
+          }
+        }
+      }
+    }
+  },
+  "steps": [
+    {
+      "at": 0,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "CHECK",
+        "value": 3
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "CHECK",
+        "value": 2
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "START"
+      }
+    },
+    {
+      "at": 100
+    },
+    {
+      "at": 299
+    },
+    {
+      "at": 300
+    },
+    {
+      "at": 700
+    },
+    {
+      "at": 1500
+    },
+    {
+      "at": 1500,
+      "send": {
+        "type": "STOP"
+      }
+    }
+  ]
+}

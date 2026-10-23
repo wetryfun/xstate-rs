@@ -1,0 +1,130 @@
+{
+  "notes": "Named JSON actions whose expressions read the reference's params (resolved where the reference runs), nested, plus a root output computed from the done event.",
+  "machine": {
+    "id": "named",
+    "context": {
+      "count": 1,
+      "total": 0
+    },
+    "actions": {
+      "report": [
+        {
+          "type": "@xstate.emit",
+          "event": {
+            "type": "report",
+            "value": {
+              "@code": "paramsValue",
+              "@lang": "rust"
+            },
+            "count": {
+              "@code": "countPlusOne",
+              "@lang": "rust"
+            }
+          }
+        }
+      ],
+      "bumpThenReport": [
+        {
+          "@code": "incrementCount",
+          "@lang": "rust"
+        },
+        {
+          "type": "report",
+          "params": {
+            "value": {
+              "@code": "paramsValue",
+              "@lang": "rust"
+            }
+          }
+        },
+        {
+          "type": "@xstate.emit",
+          "event": {
+            "type": "outer",
+            "value": {
+              "@code": "paramsValue",
+              "@lang": "rust"
+            }
+          }
+        }
+      ],
+      "plain": [
+        {
+          "type": "@xstate.emit",
+          "event": {
+            "type": "plain"
+          }
+        }
+      ]
+    },
+    "initial": "a",
+    "states": {
+      "a": {
+        "on": {
+          "GO": {
+            "actions": [
+              {
+                "type": "report",
+                "params": {
+                  "value": {
+                    "@code": "eventValue",
+                    "@lang": "rust"
+                  }
+                }
+              },
+              {
+                "type": "bumpThenReport",
+                "params": {
+                  "value": {
+                    "@code": "countPlusOne",
+                    "@lang": "rust"
+                  }
+                }
+              },
+              {
+                "type": "plain",
+                "params": {
+                  "value": {
+                    "@code": "eventValue",
+                    "@lang": "rust"
+                  }
+                }
+              }
+            ]
+          },
+          "END": {
+            "target": "b"
+          }
+        }
+      },
+      "b": {
+        "type": "final"
+      }
+    },
+    "output": {
+      "kind": {
+        "@code": "eventType",
+        "@lang": "rust"
+      },
+      "summary": {
+        "@code": "summary",
+        "@lang": "rust"
+      }
+    }
+  },
+  "steps": [
+    {
+      "at": 0,
+      "send": {
+        "type": "GO",
+        "value": "x"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "END"
+      }
+    }
+  ]
+}

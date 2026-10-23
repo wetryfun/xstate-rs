@@ -11,6 +11,9 @@ use xstate_rt::step::async_logic;
 use xstate_rt::{InitOptions, Logic, Machine, Registry, System, SystemLogic};
 
 /// Rust equivalents of the stubs in `generate-system.mjs`.
+#[path = "common/exprs.rs"]
+mod exprs;
+
 fn registry(actors: &[(String, Arc<dyn Logic>)]) -> Registry<Value, Value> {
     #[derive(serde::Deserialize)]
     struct KeyValue {
@@ -26,6 +29,7 @@ fn registry(actors: &[(String, Arc<dyn Logic>)]) -> Registry<Value, Value> {
         .action("track", || {})
         .delay_ms("short", 100)
         .delay_ms("long", 1000);
+    exprs::register(&mut r);
     for (name, logic) in actors {
         r.actor(name.clone(), logic.clone());
     }

@@ -1,0 +1,56 @@
+[
+  {
+    "label": "start",
+    "value": "a",
+    "context": {
+      "count": 1
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 0",
+    "value": "a",
+    "context": {
+      "count": 2
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 1",
+    "value": "a",
+    "context": {
+      "count": 2
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "ctx",
+        "count": 3
+      }
+    ]
+  },
+  {
+    "label": "step 2",
+    "value": "a",
+    "context": {
+      "count": 2
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 3",
+    "value": "a",
+    "context": {
+      "count": 2
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "after"
+      }
+    ]
+  }
+]

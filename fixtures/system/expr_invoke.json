@@ -1,0 +1,187 @@
+{
+  "notes": "Computed invoke input (and a child context from it), child output, completion transitions reading the output, and a computed invoke timeout.",
+  "logic": [
+    {
+      "name": "worker",
+      "machine": {
+        "id": "worker",
+        "context": {
+          "@code": "contextFromInput",
+          "@lang": "rust"
+        },
+        "initial": "working",
+        "states": {
+          "working": {
+            "on": {
+              "WORK": {
+                "context": {
+                  "count": {
+                    "@code": "countPlusOne",
+                    "@lang": "rust"
+                  },
+                  "total": {
+                    "@code": "totalPlusAmount",
+                    "@lang": "rust"
+                  }
+                }
+              },
+              "FINISH": {
+                "target": "done"
+              }
+            }
+          },
+          "done": {
+            "type": "final",
+            "output": {
+              "@code": "summary",
+              "@lang": "rust"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "fetch",
+      "async": {}
+    },
+    {
+      "name": "parent",
+      "machine": {
+        "id": "parent",
+        "context": {
+          "count": 4,
+          "total": 10,
+          "attempts": 1,
+          "items": []
+        },
+        "initial": "idle",
+        "states": {
+          "idle": {
+            "on": {
+              "RUN": {
+                "target": "running"
+              },
+              "FETCH": {
+                "target": "fetching"
+              }
+            }
+          },
+          "running": {
+            "invoke": {
+              "id": "w",
+              "src": "worker",
+              "input": {
+                "start": {
+                  "@code": "countPlusOne",
+                  "@lang": "rust"
+                },
+                "note": "static"
+              },
+              "onDone": {
+                "target": "idle",
+                "context": {
+                  "total": {
+                    "@code": "totalFromOutput",
+                    "@lang": "rust"
+                  }
+                },
+                "actions": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "finished",
+                      "output": {
+                        "@code": "eventOutput",
+                        "@lang": "rust"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "fetching": {
+            "invoke": {
+              "id": "f",
+              "src": "fetch",
+              "input": {
+                "attempt": {
+                  "@code": "attemptsPlusOne",
+                  "@lang": "rust"
+                }
+              },
+              "timeout": {
+                "@code": "backoff",
+                "@lang": "rust"
+              },
+              "onTimeout": {
+                "target": "idle",
+                "context": {
+                  "attempts": {
+                    "@code": "attemptsPlusOne",
+                    "@lang": "rust"
+                  }
+                }
+              },
+              "onDone": {
+                "target": "idle"
+              }
+            }
+          }
+        }
+      },
+      "actors": [
+        "worker",
+        "fetch"
+      ]
+    }
+  ],
+  "root": "parent",
+  "init": {},
+  "steps": [
+    {
+      "send": "parent",
+      "event": {
+        "type": "RUN"
+      }
+    },
+    {
+      "send": "parent/w",
+      "event": {
+        "type": "WORK",
+        "amount": 3
+      }
+    },
+    {
+      "send": "parent/w",
+      "event": {
+        "type": "FINISH"
+      }
+    },
+    {
+      "send": "parent",
+      "event": {
+        "type": "FETCH"
+      }
+    },
+    {
+      "advance": 199
+    },
+    {
+      "advance": 200
+    },
+    {
+      "send": "parent",
+      "event": {
+        "type": "FETCH"
+      }
+    },
+    {
+      "resolve": 3,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": 1
+      }
+    }
+  ]
+}

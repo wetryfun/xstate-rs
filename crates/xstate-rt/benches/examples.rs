@@ -17,6 +17,9 @@ use serde_json::Value;
 use xstate_rt::step::async_logic;
 use xstate_rt::{Actor, InitOptions, Logic, Machine, Registry, System, SystemLogic};
 
+#[path = "../tests/common/exprs.rs"]
+mod exprs;
+
 /// The stubs of `tools/differential` (machine and system runners).
 fn stubs(actors: &[(String, Arc<dyn Logic>)]) -> Registry<Value, Value> {
     #[derive(serde::Deserialize)]
@@ -36,6 +39,7 @@ fn stubs(actors: &[(String, Arc<dyn Logic>)]) -> Registry<Value, Value> {
         .action("track", || {})
         .delay_ms("short", 100)
         .delay_ms("long", 1000);
+    exprs::register(&mut r);
     for (name, logic) in actors {
         r.actor(name.clone(), logic.clone());
     }
@@ -94,7 +98,10 @@ fn bench(c: &mut Criterion) {
         g.throughput(Throughput::Elements(steps.len() as u64));
         g.bench_function(&name, |b| {
             b.iter_batched(
-                || Actor::start(machine.clone(), 0).unwrap(),
+                || {
+                    let options = InitOptions { input: fixture.get("input").cloned(), ..Default::default() };
+                    Actor::start_with(machine.clone(), options).unwrap()
+                },
                 |mut actor| {
                     let mut now = 0;
                     for (at, event) in &steps {

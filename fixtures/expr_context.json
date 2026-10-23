@@ -1,0 +1,242 @@
+{
+  "notes": "Rust expressions in context, assign, raise, emit, custom params, an action, and an output; the scope sees each earlier write.",
+  "input": {
+    "start": 3
+  },
+  "machine": {
+    "id": "counter",
+    "context": {
+      "@code": "contextFromInput",
+      "@lang": "rust"
+    },
+    "initial": "idle",
+    "states": {
+      "idle": {
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "entered",
+              "count": {
+                "@code": "countPlusOne",
+                "@lang": "rust"
+              }
+            }
+          }
+        ],
+        "on": {
+          "INC": {
+            "context": {
+              "count": {
+                "@code": "countPlusOne",
+                "@lang": "rust"
+              }
+            },
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "seen",
+                  "count": {
+                    "@expr": "countPlusOne",
+                    "@lang": "rust"
+                  }
+                }
+              },
+              {
+                "@code": "incrementCount",
+                "@lang": "rust"
+              },
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "after",
+                  "count": {
+                    "@code": "countPlusOne",
+                    "@lang": "rust"
+                  },
+                  "kind": {
+                    "@code": "eventType",
+                    "@lang": "rust"
+                  }
+                }
+              }
+            ]
+          },
+          "BUMP": {
+            "context": {
+              "count": {
+                "@code": "countPlusOne",
+                "@lang": "rust"
+              }
+            }
+          },
+          "ADD": {
+            "actions": [
+              {
+                "type": "@xstate.assign",
+                "context": {
+                  "total": {
+                    "@code": "totalPlusAmount",
+                    "@lang": "rust"
+                  },
+                  "items": {
+                    "@code": "appendItem",
+                    "@lang": "rust"
+                  }
+                }
+              },
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "total",
+                  "count": {
+                    "@code": "countPlusOne",
+                    "@lang": "rust"
+                  }
+                }
+              }
+            ]
+          },
+          "ECHO": {
+            "actions": [
+              {
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "ECHOED",
+                  "value": {
+                    "@code": "eventValue",
+                    "@lang": "rust"
+                  }
+                }
+              },
+              {
+                "type": "noop",
+                "params": {
+                  "value": {
+                    "@code": "eventValue",
+                    "@lang": "rust"
+                  }
+                }
+              }
+            ]
+          },
+          "ECHOED": {
+            "actions": [
+              {
+                "type": "@xstate.assign",
+                "context": {
+                  "@code": "summary",
+                  "@lang": "rust"
+                }
+              },
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "echoed",
+                  "value": {
+                    "@code": "eventValue",
+                    "@lang": "rust"
+                  }
+                }
+              }
+            ]
+          },
+          "DELAYED": {
+            "actions": [
+              {
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "LATER",
+                  "value": {
+                    "@code": "countPlusOne",
+                    "@lang": "rust"
+                  }
+                },
+                "delay": 50,
+                "id": "later"
+              }
+            ]
+          },
+          "LATER": {
+            "actions": [
+              {
+                "type": "@xstate.assign",
+                "context": {
+                  "last": {
+                    "@code": "eventValue",
+                    "@lang": "rust"
+                  }
+                }
+              }
+            ]
+          },
+          "DONE": {
+            "target": "done"
+          }
+        }
+      },
+      "done": {
+        "type": "final",
+        "output": {
+          "@code": "summary",
+          "@lang": "rust"
+        }
+      }
+    }
+  },
+  "steps": [
+    {
+      "at": 0,
+      "send": {
+        "type": "INC"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "BUMP"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "ADD",
+        "amount": 5,
+        "item": "a"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "ADD",
+        "amount": 2.5,
+        "item": {
+          "n": 1
+        }
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "ECHO",
+        "value": 42
+      }
+    },
+    {
+      "at": 10,
+      "send": {
+        "type": "DELAYED"
+      }
+    },
+    {
+      "at": 100
+    },
+    {
+      "at": 100,
+      "send": {
+        "type": "DONE"
+      }
+    }
+  ]
+}

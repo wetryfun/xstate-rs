@@ -33,7 +33,7 @@ struct Node {
     always: Vec<Tid>,
     delayed: Vec<DelayedDef>,
     invokes: Vec<InvokeDef>,
-    output: Option<Value>,
+    output: Option<Template>,
     tags: Vec<String>,
 }
 
@@ -88,36 +88,93 @@ fn child_path(path: &str, key: &str) -> String {
     format!("{path}.{key}")
 }
 
-/// Rejects every `@code` / `@expr` node, reporting its JSON path.
-fn reject_code(value: &Value, path: &str) -> Result<()> {
+/// The language of the code nodes this runtime evaluates: the source is the
+/// name of a Rust implementation ([`Registry::expr`]).
+pub const RUST_LANG: &str = "rust";
+
+/// The source of a code node (`{"@code": ...}` or `{"@expr": ...}`).
+fn code_source(value: &Value) -> Option<&str> {
+    let map = value.as_object()?;
+    map.get("@code").or_else(|| map.get("@expr")).and_then(Value::as_str)
+}
+
+/// Checks every code node's language: only `rust` runs here (the node's
+/// `@lang`, else the root `@exprLang`).
+fn check_code(value: &Value, path: &str, default_lang: Option<&str>) -> Result<()> {
     match value {
         Value::Object(map) => {
-            if map.contains_key("@code") {
-                return Err(err(
-                    K::Code,
-                    path,
-                    "code expressions (@code) cannot run in xstate-rs; reference a named implementation instead",
-                ));
-            }
-            if map.contains_key("@expr") {
-                return Err(err(
-                    K::Code,
-                    path,
-                    "expressions (@expr) cannot run in xstate-rs; reference a named implementation instead",
-                ));
+            if let Some(key) = ["@code", "@expr"].into_iter().find(|k| map.contains_key(*k)) {
+                if !map[key].is_string() {
+                    return Err(err(K::Code, path, format!("{key} must be a string")));
+                }
+                let lang = match map.get("@lang") {
+                    Some(Value::String(l)) => Some(l.as_str()),
+                    Some(_) => return Err(err(K::Code, path, "@lang must be a string")),
+                    None => default_lang,
+                };
+                return match lang {
+                    Some(RUST_LANG) => Ok(()),
+                    Some(other) => Err(err(
+                        K::Code,
+                        path,
+                        format!(
+                            "{key} in language '{other}' cannot run in xstate-rs; use \"@lang\": \"rust\" with the \
+                             name of a Rust expression, or reference a named implementation"
+                        ),
+                    )),
+                    None => Err(err(K::Code, path, format!("{key} without @lang (and no root @exprLang)"))),
+                };
             }
             for (k, v) in map {
-                reject_code(v, &child_path(path, k))?;
+                check_code(v, &child_path(path, k), default_lang)?;
             }
         }
         Value::Array(items) => {
             for (i, v) in items.iter().enumerate() {
-                reject_code(v, &format!("{path}[{i}]"))?;
+                check_code(v, &format!("{path}[{i}]"), default_lang)?;
             }
         }
         _ => {}
     }
     Ok(())
+}
+
+/// Rejects code nodes where this runtime does not evaluate them.
+fn reject_code(value: &Value, path: &str, what: &str) -> Result<()> {
+    match value {
+        Value::Object(map) => {
+            if code_source(value).is_some() {
+                return Err(err(K::Unsupported, path, format!("expressions are not supported in {what}")));
+            }
+            for (k, v) in map {
+                reject_code(v, &child_path(path, k), what)?;
+            }
+        }
+        Value::Array(items) => {
+            for (i, v) in items.iter().enumerate() {
+                reject_code(v, &format!("{path}[{i}]"), what)?;
+            }
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
+fn contains_code(value: &Value) -> bool {
+    match value {
+        Value::Object(map) => code_source(value).is_some() || map.values().any(contains_code),
+        Value::Array(items) => items.iter().any(contains_code),
+        _ => false,
+    }
+}
+
+/// Which expressions a template's code nodes name.
+#[derive(Clone, Copy, PartialEq)]
+enum Slot {
+    /// [`Registry::expr`].
+    Scope,
+    /// The root `context`: [`Registry::context`].
+    Context,
 }
 
 fn has_unescaped_dot(key: &str) -> bool {
@@ -174,6 +231,15 @@ struct Loader<'j, 'r, C, E> {
     delays: Vec<crate::registry::DelayFn<C, E>>,
     named_delays: HashMap<String, DelaySpec>,
     raise_events: Vec<Ev<E>>,
+    exprs: Vec<crate::registry::ExprFn<C, E>>,
+    expr_index: HashMap<String, u32>,
+    context_exprs: Vec<crate::registry::ContextFn>,
+    context_index: HashMap<String, u32>,
+    /// Code nodes compiled so far (to tell whether a named action or guard
+    /// has expressions that read its params).
+    expr_refs: usize,
+    dynamic_actions: Vec<Dynamic<crate::registry::ActionFn>>,
+    dynamic_guards: Vec<Dynamic<crate::registry::GuardFn<C, E>>>,
     /// When set, missing implementations are recorded here and replaced by
     /// stubs instead of failing the load (see [`references`]).
     refs: Option<References>,
@@ -197,6 +263,10 @@ pub struct References {
     pub actions: Vec<Reference>,
     pub delays: Vec<Reference>,
     pub actors: Vec<Reference>,
+    /// Expressions (`{"@code": name, "@lang": "rust"}`), each name once.
+    pub exprs: Vec<Reference>,
+    /// Expressions in the root `context`, computed from the input.
+    pub contexts: Vec<Reference>,
 }
 
 /// Validates a definition as [`load`] does and lists the implementations it
@@ -226,8 +296,9 @@ where
     C: DeserializeOwned,
     E: EventType,
 {
-    reject_code(json, "$")?;
     let root_json = json.as_object().ok_or_else(|| invalid("$", "a machine definition must be a JSON object"))?;
+    let default_lang = opt_str(root_json, "@exprLang", "$")?;
+    check_code(json, "$", default_lang)?;
     let machine_id = opt_str(root_json, "id", "$")?.map(str::to_owned);
     let version = opt_str(root_json, "version", "$")?.map(str::to_owned);
 
@@ -245,6 +316,13 @@ where
         delays: Vec::new(),
         named_delays: HashMap::new(),
         raise_events: Vec::new(),
+        exprs: Vec::new(),
+        expr_index: HashMap::new(),
+        context_exprs: Vec::new(),
+        context_index: HashMap::new(),
+        expr_refs: 0,
+        dynamic_actions: Vec::new(),
+        dynamic_guards: Vec::new(),
         refs,
     };
     loader.check_machine_keys()?;
@@ -255,11 +333,25 @@ where
     }
 
     let initial_context = match root_json.get("context") {
-        Some(ctx) => C::deserialize(ctx)
-            .map_err(|e| invalid("$.context", format!("context does not fit the context type: {e}")))?,
-        None => C::deserialize(&Value::Object(Map::new())).or_else(|_| C::deserialize(&Value::Null)).map_err(|e| {
-            invalid("$", format!("the definition has no context and the context type cannot be built from {{}}: {e}"))
-        })?,
+        Some(ctx) if contains_code(ctx) => {
+            InitialContext::Template(loader.compile_template(ctx, "$.context", Slot::Context)?)
+        }
+        Some(ctx) => InitialContext::Value(
+            C::deserialize(ctx)
+                .map_err(|e| invalid("$.context", format!("context does not fit the context type: {e}")))?,
+        ),
+        None => InitialContext::Value(
+            C::deserialize(&Value::Object(Map::new())).or_else(|_| C::deserialize(&Value::Null)).map_err(|e| {
+                invalid(
+                    "$",
+                    format!("the definition has no context and the context type cannot be built from {{}}: {e}"),
+                )
+            })?,
+        ),
+    };
+    let output = match root_json.get("output") {
+        Some(o) => Some(loader.compile_template(o, "$.output", Slot::Scope)?),
+        None => None,
     };
     let internal_events = match root_json.get("internalEvents") {
         None => Vec::new(),
@@ -312,10 +404,14 @@ where
         actors: registry.actors.clone(),
         delays: loader.delays,
         raise_events: loader.raise_events,
+        exprs: loader.exprs,
+        context_exprs: loader.context_exprs,
+        dynamic_actions: loader.dynamic_actions,
+        dynamic_guards: loader.dynamic_guards,
         id_map: loader.id_map,
         internal_events,
         initial_context,
-        output: root_json.get("output").cloned(),
+        output,
         options,
         start_error: (root_json.contains_key("initial") && obj_is_empty(root_json.get("states")))
             .then(|| "Initial state not found on \"#\"".to_owned()),
@@ -357,6 +453,86 @@ fn check_reserved(kind: &str, name: &str, path: &str) -> Result<()> {
 }
 
 impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
+    /// A JSON value with code nodes compiled to expressions.
+    fn compile_template(&mut self, value: &Value, path: &str, slot: Slot) -> Result<Template> {
+        if let Some(name) = code_source(value) {
+            self.expr_refs += 1;
+            return self.expr(name, path, slot).map(Template::Expr);
+        }
+        if !contains_code(value) {
+            return Ok(Template::Static(value.clone()));
+        }
+        match value {
+            Value::Object(map) => map
+                .iter()
+                .map(|(k, v)| Ok((k.clone(), self.compile_template(v, &child_path(path, k), slot)?)))
+                .collect::<Result<_>>()
+                .map(Template::Object),
+            Value::Array(items) => items
+                .iter()
+                .enumerate()
+                .map(|(i, v)| self.compile_template(v, &format!("{path}[{i}]"), slot))
+                .collect::<Result<_>>()
+                .map(Template::Array),
+            _ => unreachable!("only objects and arrays contain code"),
+        }
+    }
+
+    /// The index of a named expression.
+    fn expr(&mut self, name: &str, path: &str, slot: Slot) -> Result<u32> {
+        let (index, found) = match slot {
+            Slot::Scope => (&self.expr_index, self.registry.exprs.contains_key(name)),
+            Slot::Context => (&self.context_index, self.registry.contexts.contains_key(name)),
+        };
+        if let Some(&i) = index.get(name) {
+            return Ok(i);
+        }
+        if !found {
+            let recorded = match slot {
+                Slot::Scope => self.record(|r| &mut r.exprs, name, path, None),
+                Slot::Context => self.record(|r| &mut r.contexts, name, path, None),
+            };
+            if !recorded {
+                let hint = match slot {
+                    Slot::Scope if self.registry.contexts.contains_key(name) => {
+                        " (it is registered with `Registry::context`, which only the root `context` uses)"
+                    }
+                    Slot::Context if self.registry.exprs.contains_key(name) => {
+                        " (the root `context` is computed from the input: register it with `Registry::context`)"
+                    }
+                    _ => "",
+                };
+                return Err(err(K::MissingImplementation, path, format!("missing expression \"{name}\"{hint}")));
+            }
+        }
+        let i = match slot {
+            Slot::Scope => {
+                let f = self.registry.exprs.get(name).cloned().unwrap_or_else(|| Arc::new(|_| Value::Null));
+                self.exprs.push(f);
+                self.expr_index.insert(name.to_owned(), self.exprs.len() as u32 - 1);
+                self.exprs.len() as u32 - 1
+            }
+            Slot::Context => {
+                let f = self.registry.contexts.get(name).cloned().unwrap_or_else(|| Arc::new(|_| Value::Null));
+                self.context_exprs.push(f);
+                self.context_index.insert(name.to_owned(), self.context_exprs.len() as u32 - 1);
+                self.context_exprs.len() as u32 - 1
+            }
+        };
+        Ok(i)
+    }
+
+    /// A delay given as a code node.
+    fn delay_expr(&mut self, value: &Value, path: &str) -> Result<Option<DelaySpec>> {
+        match code_source(value) {
+            Some(name) => {
+                self.expr_refs += 1;
+                Ok(Some(DelaySpec::Expr(self.expr(name, path, Slot::Scope)?)))
+            }
+            None => Ok(None),
+        }
+    }
+
     fn check_machine_keys(&self) -> Result<()> {
         for kind in ["actions", "guards", "delays"] {
             if let Some(map) = opt_object(self.root_json, kind, "$")? {
@@ -379,6 +555,15 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
         let Some(delays) = opt_object(self.root_json, "delays", "$")? else { return Ok(()) };
         for (name, def) in delays {
             let path = format!("$.delays.{name}");
+            if code_source(def).is_some() {
+                return Err(invalid(&path, "a computed delay is { \"duration\": <expression> }"));
+            }
+            if let Some(spec) =
+                def.get("duration").map(|d| self.delay_expr(d, &child_path(&path, "duration"))).transpose()?.flatten()
+            {
+                self.named_delays.insert(name.clone(), spec);
+                continue;
+            }
             let value = match def {
                 Value::Object(o) => o
                     .get("duration")
@@ -735,7 +920,9 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             (None, None) => {}
             (Some(timeout), Some(on_timeout)) => {
                 let tpath = child_path(&path, "timeout");
+                let computed = self.delay_expr(timeout, &tpath)?;
                 let delay = match timeout {
+                    _ if computed.is_some() => computed,
                     Value::Number(n) => n.as_f64().and_then(ms_to_u64).map(DelaySpec::Fixed),
                     Value::String(s) => self
                         .named_delay(s)
@@ -789,7 +976,12 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                 .collect::<Result<_>>()?,
             Some(_) => return Err(invalid(&child_path(&path, "tags"), "expected an array of strings")),
         };
-        let output = if kind == NodeKind::Final { json.get("output").cloned() } else { None };
+        let output = match json.get("output") {
+            Some(o) if kind == NodeKind::Final => {
+                Some(self.compile_template(o, &child_path(&path, "output"), Slot::Scope)?)
+            }
+            _ => None,
+        };
 
         let n = &mut self.nodes[node as usize];
         n.entry = entry;
@@ -901,12 +1093,13 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
         let timeout = match (obj.get("timeout"), obj.get("onTimeout")) {
             (None, None) => None,
             (Some(timeout), Some(_)) => {
+                let computed = self.delay_expr(timeout, &child_path(path, "timeout"))?;
                 let delay = match timeout {
-                    Value::Number(n) => n.as_f64().and_then(ms_to_u64),
-                    Value::String(s) => parse_duration_ms(s).and_then(ms_to_u64),
+                    _ if computed.is_some() => computed,
+                    Value::Number(n) => n.as_f64().and_then(ms_to_u64).map(DelaySpec::Fixed),
+                    Value::String(s) => parse_duration_ms(s).and_then(ms_to_u64).map(DelaySpec::Fixed),
                     _ => None,
                 }
-                .map(DelaySpec::Fixed)
                 .ok_or_else(|| {
                     invalid(&child_path(path, "timeout"), "invalid timeout: expected milliseconds or a duration string")
                 })?;
@@ -940,6 +1133,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                 matches: vec![("actorId".to_owned(), Value::String(id.clone()))],
                 guard: None,
                 context: None,
+                context_expr: None,
                 actions: Vec::new(),
                 reenter: false,
                 session: Some(id.clone()),
@@ -979,13 +1173,11 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             }
             _ => None,
         };
-        let def = InvokeDef {
-            id,
-            logic,
-            input: obj.get("input").cloned(),
-            registry_key,
-            sync_snapshot: obj.contains_key("onSnapshot"),
+        let input = match obj.get("input") {
+            Some(i) => Some(self.compile_template(i, &child_path(path, "input"), Slot::Scope)?),
+            None => None,
         };
+        let def = InvokeDef { id, logic, input, registry_key, sync_snapshot: obj.contains_key("onSnapshot") };
         Ok((def, timeout))
     }
 
@@ -1000,6 +1192,9 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             let Some(route) = json.get("route") else { continue };
             let Some(Value::String(id)) = json.get("id") else { continue };
             let path = child_path(&self.raw[n].path, "route");
+            if code_source(route).is_some() {
+                return Err(err(K::Unsupported, &path, "computed routes (a route expression) are not supported"));
+            }
             let mut config = match route {
                 Value::Null | Value::Bool(false) => continue,
                 Value::Bool(true) => Map::new(),
@@ -1062,6 +1257,14 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
         path: &str,
         extra_matches: &[(String, Value)],
     ) -> Result<TransitionId> {
+        if code_source(value).is_some() {
+            return Err(err(
+                K::Unsupported,
+                path,
+                "transition functions (a transition expression) are not supported; compute values in the \
+                 transition's `context`, `actions` or `guard` instead",
+            ));
+        }
         let obj = match value {
             Value::Object(o) => o,
             Value::String(s) => {
@@ -1091,6 +1294,9 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             Some(t) => Some(self.resolve_targets(source, Some(t), &child_path(path, "target"), false)?.into()),
             None => None,
         };
+        if let Some(m) = obj.get("matches") {
+            reject_code(m, &child_path(path, "matches"), "`matches` patterns")?;
+        }
         let mut matches: Vec<(String, Value)> = match opt_object(obj, "matches", path)? {
             Some(m) => m.iter().map(|(k, v)| (k.clone(), v.clone())).collect(),
             None => Vec::new(),
@@ -1105,7 +1311,12 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             Some(g) => Some(self.compile_guard(g, &child_path(path, "guard"), &mut Vec::new())?),
             None => None,
         };
-        let context = opt_object(obj, "context", path)?.cloned();
+        let (context, context_expr) = match obj.get("context") {
+            Some(c) if contains_code(c) => {
+                (None, Some(self.compile_template(c, &child_path(path, "context"), Slot::Scope)?))
+            }
+            _ => (opt_object(obj, "context", path)?.cloned(), None),
+        };
         let actions = self.compile_action_list(obj.get("actions"), &child_path(path, "actions"), false)?;
         let reenter = match obj.get("reenter") {
             None => false,
@@ -1118,6 +1329,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             matches,
             guard,
             context,
+            context_expr,
             actions,
             reenter,
             session: None,
@@ -1128,10 +1340,15 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
     }
 
     fn compile_guard(&mut self, value: &Value, path: &str, stack: &mut Vec<String>) -> Result<Guard> {
+        if let Some(name) = code_source(value) {
+            self.expr_refs += 1;
+            return Ok(Guard::Expr(self.expr(name, path, Slot::Scope)?));
+        }
         let obj =
             value.as_object().ok_or_else(|| invalid(path, "a guard must be { \"type\": ..., \"params\"?: ... }"))?;
         let ty = opt_str(obj, "type", path)?.ok_or_else(|| invalid(path, "a guard must have a string \"type\""))?;
         let params = obj.get("params").unwrap_or(&Value::Null);
+        let params_path = format!("{path}.params");
         match ty {
             "@xstate.not" => {
                 let inner =
@@ -1140,6 +1357,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             }
             "@xstate.stateIn" => {
                 let spath = format!("{path}.params.stateId");
+                reject_code(params, &params_path, "`@xstate.stateIn` params")?;
                 let id =
                     params.get("stateId").and_then(Value::as_str).ok_or_else(|| invalid(&spath, "missing state id"))?;
                 let id = id.strip_prefix('#').unwrap_or(id);
@@ -1155,19 +1373,35 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                     if stack.iter().any(|s| s == ty) {
                         return Err(invalid(path, format!("circular guard reference: {} -> {ty}", stack.join(" -> "))));
                     }
+                    // The guard's params are its expressions' scope; they
+                    // are resolved only when an expression reads them.
+                    let scope = match obj.get("params") {
+                        Some(p) => Some(self.compile_template(p, &params_path, Slot::Scope)?),
+                        None => None,
+                    };
+                    let before = self.expr_refs;
                     stack.push(ty.to_owned());
                     let when = def.get("when").expect("checked in check_machine_keys");
                     let guard = self.compile_guard(when, &format!("$.guards.{ty}.when"), stack);
                     stack.pop();
-                    return guard;
+                    let guard = guard?;
+                    return Ok(match scope {
+                        Some(scope) if self.expr_refs > before => Guard::Scoped(Box::new(scope), Box::new(guard)),
+                        _ => guard,
+                    });
                 }
                 if let Some(factory) = self.registry.guards.get(ty) {
+                    if contains_code(params) {
+                        let template = self.compile_template(params, &params_path, Slot::Scope)?;
+                        self.dynamic_guards.push(Dynamic {
+                            name: ty.to_owned(),
+                            factory: factory.clone(),
+                            params: template,
+                        });
+                        return Ok(Guard::Dynamic(self.dynamic_guards.len() as u32 - 1));
+                    }
                     let f = factory(params).map_err(|m| {
-                        err(
-                            K::InvalidParams,
-                            &format!("{path}.params"),
-                            format!("invalid params for guard '{ty}': {m}"),
-                        )
+                        err(K::InvalidParams, &params_path, format!("invalid params for guard '{ty}': {m}"))
                     })?;
                     self.guards.push(f);
                     return Ok(Guard::Custom(self.guards.len() as u32 - 1));
@@ -1176,6 +1410,9 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                     return Err(err(K::Unsupported, path, format!("unknown built-in guard \"{ty}\"")));
                 }
                 if self.record(|r| &mut r.guards, ty, path, obj.get("params")) {
+                    if contains_code(params) {
+                        self.compile_template(params, &params_path, Slot::Scope)?;
+                    }
                     self.guards.push(Box::new(|_| false));
                     return Ok(Guard::Custom(self.guards.len() as u32 - 1));
                 }
@@ -1208,6 +1445,11 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
         stack: &mut Vec<String>,
         out: &mut Vec<Action>,
     ) -> Result<()> {
+        if let Some(name) = code_source(value) {
+            self.expr_refs += 1;
+            out.push(Action::Expr(self.expr(name, path, Slot::Scope)?));
+            return Ok(());
+        }
         let obj = value.as_object().ok_or_else(|| invalid(path, "invalid action: expected { \"type\": ... }"))?;
         let ty = opt_str(obj, "type", path)?.ok_or_else(|| invalid(path, "invalid action: missing string \"type\""))?;
         let event_object = |key: &str| -> Result<Value> {
@@ -1216,9 +1458,28 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                 _ => Err(invalid(&child_path(path, key), "expected an event object with a string \"type\"")),
             }
         };
+        // A computed event: a code node, or an object with code in it.
+        let computed_event = |this: &mut Self, key: &str| -> Result<Option<Template>> {
+            match obj.get(key) {
+                Some(e) if contains_code(e) => {
+                    if let Some(t) = e.get("type").filter(|t| !t.is_string() && code_source(t).is_none()) {
+                        return Err(invalid(
+                            &child_path(path, key),
+                            format!("an event's \"type\" must be a string, not {t}"),
+                        ));
+                    }
+                    this.compile_template(e, &child_path(path, key), Slot::Scope).map(Some)
+                }
+                _ => Ok(None),
+            }
+        };
         match ty {
             "@xstate.raise" => {
-                let event = event_object("event")?;
+                let computed = computed_event(self, "event")?;
+                let event = match &computed {
+                    Some(_) => Value::Null,
+                    None => event_object("event")?,
+                };
                 let id = opt_str(obj, "id", path)?.map(str::to_owned);
                 let delay =
                     match obj.get("delay") {
@@ -1230,6 +1491,10 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                             return Err(invalid(&child_path(path, "delay"), "a delay must be a number of milliseconds"))
                         }
                     };
+                if let Some(event) = computed {
+                    out.push(Action::RaiseExpr { event, id, delay });
+                    return Ok(());
+                }
                 let ev = Ev::<E>::from_json(event).expect("checked to have a string type");
                 self.raise_events.push(ev);
                 out.push(Action::Raise { event: self.raise_events.len() as u32 - 1, id, delay });
@@ -1239,6 +1504,9 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                 out.push(Action::Cancel(id.to_owned()));
             }
             "@xstate.log" => {
+                if let Some(args) = obj.get("args") {
+                    reject_code(args, &child_path(path, "args"), "`@xstate.log` args")?;
+                }
                 let args = match obj.get("args") {
                     None => Vec::new(),
                     Some(Value::Array(a)) => a.clone(),
@@ -1246,8 +1514,16 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                 };
                 out.push(Action::Log(args));
             }
-            "@xstate.emit" => out.push(Action::Emit(event_object("event")?)),
+            "@xstate.emit" => match computed_event(self, "event")? {
+                Some(event) => out.push(Action::EmitExpr(event)),
+                None => out.push(Action::Emit(event_object("event")?)),
+            },
             "@xstate.assign" => {
+                if let Some(c) = obj.get("context").filter(|c| contains_code(c)) {
+                    let t = self.compile_template(c, &child_path(path, "context"), Slot::Scope)?;
+                    out.push(Action::AssignExpr(t));
+                    return Ok(());
+                }
                 let patch = opt_object(obj, "context", path)?
                     .ok_or_else(|| invalid(&child_path(path, "context"), "missing context patch"))?;
                 out.push(Action::Assign(patch.clone()));
@@ -1263,6 +1539,14 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                             format!("circular action reference: {} -> {ty}", stack.join(" -> ")),
                         ));
                     }
+                    // The reference's params (resolved where it runs) are the
+                    // scope of the expressions in the definition; they are
+                    // resolved only when one of those reads them.
+                    let scope = match obj.get("params") {
+                        Some(p) => Some(self.compile_template(p, &child_path(path, "params"), Slot::Scope)?),
+                        None => None,
+                    };
+                    let (start, before) = (out.len(), self.expr_refs);
                     stack.push(ty.to_owned());
                     let items: Vec<&Value> = match def {
                         Value::Array(items) => items.iter().collect(),
@@ -1274,10 +1558,30 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                         self.compile_action(item, &ipath, stack, out)?;
                     }
                     stack.pop();
+                    if let Some(scope) = scope.filter(|_| self.expr_refs > before) {
+                        out.insert(start, Action::Params(scope));
+                        out.push(Action::EndParams);
+                    }
+                    return Ok(());
+                }
+                let params = obj.get("params").unwrap_or(&Value::Null);
+                if contains_code(params) {
+                    let template = self.compile_template(params, &child_path(path, "params"), Slot::Scope)?;
+                    let factory = match self.registry.actions.get(ty) {
+                        Some(factory) => factory.clone(),
+                        None if self.record(|r| &mut r.actions, ty, path, obj.get("params")) => {
+                            Arc::new(|_: &Value| Ok(Arc::new(|| {}) as crate::registry::ActionFn))
+                        }
+                        None => {
+                            return Err(err(K::MissingImplementation, path, format!("missing action source \"{ty}\"")))
+                        }
+                    };
+                    self.dynamic_actions.push(Dynamic { name: ty.to_owned(), factory, params: template });
+                    out.push(Action::CustomExpr(self.dynamic_actions.len() as u32 - 1));
                     return Ok(());
                 }
                 let f = match self.registry.actions.get(ty) {
-                    Some(factory) => factory(obj.get("params").unwrap_or(&Value::Null)).map_err(|m| {
+                    Some(factory) => factory(params).map_err(|m| {
                         err(
                             K::InvalidParams,
                             &child_path(path, "params"),

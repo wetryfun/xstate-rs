@@ -27,7 +27,7 @@ use serde_json::{json, Map, Value};
 use crate::core::{self, Host, MicrostepResult, Nid, RegionOutput, Resolved, Resolver, TRef, Tid};
 use crate::event::{Ev, EventType, AFTER, DONE_STATE};
 use crate::machine::*;
-use crate::registry::GuardArgs;
+use crate::registry::{ActionFn, ExprArgs, GuardArgs};
 use crate::system::{
     has_builtin_timer_identity, ActorRef, AfterDelay, AllocateOptions, AnySnapshot, Context, Effect, EffectKind,
     EffectType, ExternalSpec, Logic, Status, SystemError, TimerKey, Transition,
@@ -319,11 +319,21 @@ fn js_eq(a: &Value, b: &Value) -> bool {
 
 /// What an action list asks for, before resolution.
 enum Op<E> {
-    Raise { event: Ev<E>, id: Option<String>, delay: u64 },
+    Raise {
+        event: Ev<E>,
+        id: Option<String>,
+        delay: u64,
+    },
     Cancel(TimerKey),
     Log(Vec<Value>),
     Emit(Value),
     Custom(u32),
+    /// A custom action bound to params computed when it ran.
+    CustomDyn {
+        name: String,
+        params: Value,
+        exec: ActionFn,
+    },
     Spawn(ActorRef),
     Stop(ActorRef),
 }
@@ -398,6 +408,38 @@ struct SavedParts<E> {
 impl<E> Default for SavedParts<E> {
     fn default() -> Self {
         Self { history: None, children: None, timers: None }
+    }
+}
+
+/// A computed context patch: an object, or nothing for the values XState's
+/// object spread ignores (`null`, booleans, numbers). Strings and arrays,
+/// which JavaScript spreads into index keys, are errors.
+fn computed_patch(value: Value, what: &str) -> Result<Option<Map<String, Value>>, SystemError> {
+    match value {
+        Value::Object(patch) => Ok(Some(patch)),
+        Value::Null | Value::Bool(_) | Value::Number(_) => Ok(None),
+        other => Err(SystemError::Failed(format!("{what} must be an object, not {other}"))),
+    }
+}
+
+/// A computed event to raise or emit: an object with a string type, or
+/// nothing for the values XState drops (`null`, booleans, numbers).
+fn computed_event(value: Value, what: &str) -> Result<Option<Value>, SystemError> {
+    match value {
+        Value::Object(ref e) if e.get("type").is_some_and(Value::is_string) => Ok(Some(value)),
+        Value::Null | Value::Bool(_) | Value::Number(_) => Ok(None),
+        other => Err(SystemError::Failed(format!("{what} must be an object with a string type, not {other}"))),
+    }
+}
+
+/// JavaScript truthiness (`!!value`).
+fn js_truthy(value: &Value) -> bool {
+    match value {
+        Value::Null => false,
+        Value::Bool(b) => *b,
+        Value::Number(n) => n.as_f64().is_some_and(|f| f != 0.0 && !f.is_nan()),
+        Value::String(s) => !s.is_empty(),
+        Value::Array(_) | Value::Object(_) => true,
     }
 }
 
@@ -793,21 +835,67 @@ where
         Ok(())
     }
 
-    /// The context an action list starts from, which only `@xstate.assign`
-    /// reads (serializing the context is skipped otherwise).
-    fn action_base(&self, actions: &[Action]) -> Result<Map<String, Value>, SystemError> {
-        if actions.iter().any(|a| matches!(a, Action::Assign(_))) {
-            self.context_object()
+    /// The context an action list starts from, which only actions that
+    /// assign read (and expressions after them or after a transition's
+    /// `context` patch); `None` (not serialized) otherwise.
+    fn action_base(&self, actions: &[Action], patched: bool) -> Result<Option<Map<String, Value>>, SystemError> {
+        if actions.iter().any(Action::assigns) || (patched && actions.iter().any(Action::evaluates)) {
+            self.context_object().map(Some)
         } else {
-            Ok(Map::new())
+            Ok(None)
         }
     }
 
-    /// `executeActions` from `machineFromJSON`, against `base` as the context.
-    fn execute_actions(&self, actions: &[Action], base: &Map<String, Value>) -> Outcome<E> {
+    /// The context `base` with `assigned` merged in, as the context type.
+    fn context_from(&self, base: &Map<String, Value>, assigned: Option<&Map<String, Value>>) -> Result<C, SystemError> {
+        let mut map = base.clone();
+        for (k, v) in assigned.into_iter().flatten() {
+            map.insert(k.clone(), v.clone());
+        }
+        let merged = Value::Object(map);
+        if std::any::TypeId::of::<C>() == std::any::TypeId::of::<Value>() {
+            return Ok(*(Box::new(merged) as Box<dyn Any>).downcast::<C>().expect("C is Value"));
+        }
+        C::deserialize(&merged).map_err(|e| SystemError::Failed(format!("invalid context: {e}")))
+    }
+
+    /// A template's value in the expression scope (the current event).
+    fn eval(&self, t: &Template, context: &C, params: Option<&Value>) -> Value {
+        self.eval_for(t, context, &self.event, params)
+    }
+
+    fn eval_for(&self, t: &Template, context: &C, event: &Ev<E>, params: Option<&Value>) -> Value {
+        if let Template::Static(v) = t {
+            return v.clone();
+        }
+        let m = self.m;
+        let args = ExprArgs { context, event, params, machine: m, config: &self.st.nodes };
+        t.eval(&mut |i| (m.exprs[i as usize])(&args))
+    }
+
+    /// `executeActions` from `machineFromJSON`, against `base` as the
+    /// context (`patched`: a transition's `context` patch is in `base`, so
+    /// expressions see it).
+    fn execute_actions(
+        &self,
+        actions: &[Action],
+        base: &Map<String, Value>,
+        patched: bool,
+    ) -> Result<Outcome<E>, SystemError> {
         let mut assigned: Option<Map<String, Value>> = None;
         let mut out = Outcome::empty();
+        // The context expressions see when it is not the snapshot's: the
+        // base with what was assigned before them (built when one reads it).
+        let mut scope: Option<C> = None;
+        let mut stale = patched;
+        let mut params: Vec<Value> = Vec::new();
         for action in actions {
+            if stale && action.evaluates() {
+                scope = Some(self.context_from(base, assigned.as_ref())?);
+                stale = false;
+            }
+            let context = scope.as_ref().unwrap_or(&self.st.context);
+            let p = params.last();
             match action {
                 Action::Raise { event, id, delay } => {
                     let event = self.m.raise_events[*event as usize].clone();
@@ -816,16 +904,63 @@ where
                         Some(delay) => out.ops.push(Op::Raise { event, id: id.clone(), delay: *delay }),
                     }
                 }
+                Action::RaiseExpr { event, id, delay } => {
+                    let Some(value) = computed_event(self.eval(event, context, p), "a raised event")? else {
+                        continue;
+                    };
+                    let event = Ev::from_json(value).expect("an object with a string type");
+                    match delay {
+                        None => out.internal.push(event),
+                        Some(delay) => out.ops.push(Op::Raise { event, id: id.clone(), delay: *delay }),
+                    }
+                }
                 Action::Cancel(id) => out.ops.push(Op::Cancel(TimerKey::Id(id.clone()))),
                 Action::Log(args) => out.ops.push(Op::Log(args.clone())),
                 Action::Emit(event) => out.ops.push(Op::Emit(event.clone())),
+                Action::EmitExpr(event) => {
+                    if let Some(event) = computed_event(self.eval(event, context, p), "an emitted event")? {
+                        out.ops.push(Op::Emit(event));
+                    }
+                }
                 Action::Assign(patch) => {
                     let a = assigned.get_or_insert_with(Map::new);
                     for (k, v) in patch {
                         a.insert(k.clone(), v.clone());
                     }
+                    stale = true;
+                }
+                Action::AssignExpr(patch) => {
+                    let patch = computed_patch(self.eval(patch, context, p), "an assigned context")?;
+                    assigned.get_or_insert_with(Map::new).extend(patch.into_iter().flatten());
+                    stale = true;
                 }
                 Action::Custom(i) => out.ops.push(Op::Custom(*i)),
+                Action::CustomExpr(i) => {
+                    let d = &self.m.dynamic_actions[*i as usize];
+                    let params = self.eval(&d.params, context, p);
+                    let exec = (d.factory)(&params)
+                        .map_err(|m| SystemError::Failed(format!("invalid params for action '{}': {m}", d.name)))?;
+                    out.ops.push(Op::CustomDyn { name: d.name.clone(), params, exec });
+                }
+                Action::Expr(i) => {
+                    let m = self.m;
+                    let args = ExprArgs { context, event: &self.event, params: p, machine: m, config: &self.st.nodes };
+                    // XState merges a truthy `context` of the result.
+                    if let Some(patch) = (m.exprs[*i as usize])(&args).get_mut("context").map(Value::take) {
+                        if js_truthy(&patch) {
+                            let patch = computed_patch(patch, "an action's context")?;
+                            assigned.get_or_insert_with(Map::new).extend(patch.into_iter().flatten());
+                            stale = true;
+                        }
+                    }
+                }
+                Action::Params(t) => {
+                    let value = self.eval(t, context, p);
+                    params.push(value);
+                }
+                Action::EndParams => {
+                    params.pop();
+                }
             }
         }
         out.context = assigned.map(|patch| {
@@ -835,7 +970,7 @@ where
             }
             full
         });
-        out
+        Ok(out)
     }
 
     /// The transition function `machineFromJSON` builds for a transition
@@ -846,21 +981,31 @@ where
         if !tr.is_dynamic() {
             return Ok(Outcome::empty());
         }
-        let mut out = if tr.context.is_some() || !tr.actions.is_empty() {
-            let mut base = self.action_base(&tr.actions)?;
-            // Only `@xstate.assign` reads the base (`action_base` is empty
-            // otherwise), so only then does it need the patch.
-            if let Some(patch) =
-                tr.context.as_ref().filter(|_| tr.actions.iter().any(|a| matches!(a, Action::Assign(_))))
-            {
+        let mut out = if tr.context.is_some() || tr.context_expr.is_some() || !tr.actions.is_empty() {
+            let computed = match &tr.context_expr {
+                Some(patch) => computed_patch(self.eval(patch, &self.st.context, None), "a transition's context")?,
+                None => None,
+            };
+            let patch = computed.as_ref().or(tr.context.as_ref());
+            // Only actions that assign, or expressions after the patch, read
+            // the base (`None` otherwise), so only then does it need the patch.
+            let mut base = self.action_base(&tr.actions, patch.is_some())?;
+            if let (Some(base), Some(patch)) = (&mut base, patch) {
                 for (k, v) in patch {
                     base.insert(k.clone(), v.clone());
                 }
             }
-            let mut out =
-                if tr.actions.is_empty() { Outcome::empty() } else { self.execute_actions(&tr.actions, &base) };
-            if out.context.is_none() && tr.context.is_some() {
-                out.static_patch = Some(t);
+            let mut out = if tr.actions.is_empty() {
+                Outcome::empty()
+            } else {
+                self.execute_actions(&tr.actions, base.as_ref().unwrap_or(&Map::new()), patch.is_some())?
+            };
+            if out.context.is_none() {
+                if computed.is_some() {
+                    out.context = computed;
+                } else if tr.context.is_some() {
+                    out.static_patch = Some(t);
+                }
             }
             out
         } else {
@@ -929,6 +1074,15 @@ where
                         exec: None,
                     }));
                 }
+                Op::CustomDyn { name, params, exec } => self.effects.push(Effect::External(ExternalSpec {
+                    kind: EffectKind::Action,
+                    ty: EffectType::Action(name),
+                    params: Some(json!({})),
+                    args: vec![params],
+                    event: None,
+                    reason: None,
+                    exec: Some(exec),
+                })),
                 Op::Custom(i) => {
                     let action = &self.m.actions[i as usize];
                     self.effects.push(Effect::External(ExternalSpec {
@@ -960,8 +1114,8 @@ where
     /// nest, so the last first), then the exit actions run.
     fn exit_outcome(&self, node: Nid) -> Result<Outcome<E>, SystemError> {
         let data = self.m.data(node);
-        let base = self.action_base(&data.exit)?;
-        let mut out = self.execute_actions(&data.exit, &base);
+        let base = self.action_base(&data.exit, false)?.unwrap_or_default();
+        let mut out = self.execute_actions(&data.exit, &base, false)?;
         let mut ops: Vec<Op<E>> = data.delayed.iter().rev().map(|d| Op::Cancel(self.delayed_key(node, d))).collect();
         ops.append(&mut out.ops);
         out.ops = ops;
@@ -1007,11 +1161,27 @@ where
         Ev::Internal { event_type: Cow::Borrowed(ty), data }
     }
 
-    fn resolve_delay(&self, spec: DelaySpec) -> u64 {
-        match spec {
+    fn resolve_delay(&self, spec: DelaySpec) -> Result<u64, SystemError> {
+        Ok(match spec {
             DelaySpec::Fixed(ms) => ms,
             DelaySpec::Named(i) => (self.m.delays[i as usize])(&self.st.context, &self.event),
-        }
+            DelaySpec::Expr(i) => {
+                let value = self.eval(&Template::Expr(i), &self.st.context, None);
+                match &value {
+                    Value::Number(n) => n.as_f64().and_then(crate::delay::ms_to_u64),
+                    Value::String(s) => crate::delay::parse_duration_ms(s).and_then(crate::delay::ms_to_u64),
+                    _ => None,
+                }
+                .ok_or_else(|| {
+                    SystemError::Failed(format!("a delay must be milliseconds or a duration string, not {value}"))
+                })?
+            }
+        })
+    }
+
+    /// A final state's output, computed against the current context and event.
+    fn output_of(&self, node: Nid) -> Option<Value> {
+        self.m.data(node).output.as_ref().map(|t| self.eval(t, &self.st.context, None))
     }
 
     fn done_event(&self, node: Nid, output: Option<Value>) -> Ev<E> {
@@ -1035,22 +1205,29 @@ where
         })
     }
 
-    fn eval_guard(&self, guard: &Guard) -> bool {
-        match guard {
-            Guard::Custom(i) => {
-                let args = GuardArgs {
-                    context: &self.st.context,
-                    event: &self.event,
-                    machine: self.m,
-                    config: &self.st.nodes,
-                };
-                (self.m.guards[*i as usize])(&args)
-            }
-            Guard::Not(inner) => !self.eval_guard(inner),
+    /// A guard, with `params` the scope of its expressions.
+    fn eval_guard(&self, guard: &Guard, params: Option<&Value>) -> Result<bool, SystemError> {
+        let args =
+            || GuardArgs { context: &self.st.context, event: &self.event, machine: self.m, config: &self.st.nodes };
+        Ok(match guard {
+            Guard::Custom(i) => (self.m.guards[*i as usize])(&args()),
+            Guard::Not(inner) => !self.eval_guard(inner, params)?,
             Guard::StateIn(node) => self.st.nodes.contains(node),
             Guard::RouteTo(to) => self.event.field("to").as_ref().and_then(Value::as_str) == Some(to.as_str()),
-            Guard::And(a, b) => self.eval_guard(a) && self.eval_guard(b),
-        }
+            Guard::And(a, b) => self.eval_guard(a, params)? && self.eval_guard(b, params)?,
+            Guard::Expr(i) => js_truthy(&self.eval(&Template::Expr(*i), &self.st.context, params)),
+            Guard::Dynamic(i) => {
+                let d = &self.m.dynamic_guards[*i as usize];
+                let value = self.eval(&d.params, &self.st.context, params);
+                let f = (d.factory)(&value)
+                    .map_err(|m| SystemError::Failed(format!("invalid params for guard '{}': {m}", d.name)))?;
+                f(&args())
+            }
+            Guard::Scoped(scope, inner) => {
+                let value = self.eval(scope, &self.st.context, params);
+                self.eval_guard(inner, Some(&value))?
+            }
+        })
     }
 
     /// XState's `matchesActorSession`.
@@ -1138,7 +1315,7 @@ where
             }
         }
         Ok(match &tr.guard {
-            Some(g) => self.eval_guard(g),
+            Some(g) => self.eval_guard(g, None)?,
             None => true,
         })
     }
@@ -1239,7 +1416,7 @@ where
                     &inv.logic,
                     AllocateOptions {
                         id: inv.id.clone(),
-                        input: inv.input.clone(),
+                        input: inv.input.as_ref().map(|t| self.eval(t, &self.st.context, None)),
                         parent: Some(self.cx.self_ref()),
                         registry_key: inv.registry_key.clone(),
                         sync_snapshot: Some(inv.sync_snapshot),
@@ -1250,15 +1427,15 @@ where
                 self.cloned = true;
             }
         }
-        let base = self.action_base(&data.entry)?;
-        let mut out = self.execute_actions(&data.entry, &base);
+        let base = self.action_base(&data.entry, false)?.unwrap_or_default();
+        let mut out = self.execute_actions(&data.entry, &base, false)?;
         // Delayed transitions' timers are scheduled by entry wrappers, after
         // the entry actions and against the context they produced.
         if let Some(ctx) = &out.context {
             self.merge_context(ctx)?;
         }
         for d in &data.delayed {
-            let delay = self.resolve_delay(d.delay);
+            let delay = self.resolve_delay(d.delay)?;
             out.ops.push(Op::Raise { event: self.delayed_event(node, d), id: None, delay });
         }
         self.queue.extend(out.internal);
@@ -1270,7 +1447,7 @@ where
     }
 
     fn done_compound(&mut self, parent: Nid, final_child: Nid) -> Result<(), SystemError> {
-        let event = self.done_event(parent, self.m.data(final_child).output.clone());
+        let event = self.done_event(parent, self.output_of(final_child));
         self.queue.push_back(event);
         Ok(())
     }
@@ -1279,9 +1456,9 @@ where
         let mut output = Map::new();
         for region in regions {
             let (node, value) = match *region {
-                RegionOutput::Final(r) => (r, self.m.data(r).output.clone()),
+                RegionOutput::Final(r) => (r, self.output_of(r)),
                 RegionOutput::Parallel(r) => (r, self.queued_done_output(r)),
-                RegionOutput::Compound(r, child) => (r, child.and_then(|c| self.m.data(c).output.clone())),
+                RegionOutput::Compound(r, child) => (r, child.and_then(|c| self.output_of(c))),
             };
             if let Some(value) = value {
                 output.insert(self.m.data(node).key.clone(), value);
@@ -1297,7 +1474,7 @@ where
         let completion_output = if self.m.data(completion).output.is_some() && tree.node(completion).parent.is_some() {
             let root_done =
                 if tree.node(completion).parent == Some(ROOT) { self.queued_done_output(ROOT) } else { None };
-            root_done.or_else(|| self.m.data(completion).output.clone())
+            root_done.or_else(|| self.output_of(completion))
         } else if tree.kind(completion) == core::Kind::Parallel {
             self.queued_done_output(completion)
         } else {
@@ -1305,7 +1482,12 @@ where
         };
         self.st.status = Status::Done;
         self.st.output = match &self.m.output {
-            Some(output) => Some(Box::new(output.clone())),
+            Some(Template::Static(output)) => Some(Box::new(output.clone())),
+            // Computed with the completing state's done event.
+            Some(output) => {
+                let event = self.done_event(completion, completion_output);
+                Some(Box::new(self.eval_for(output, &self.st.context, &event, None)))
+            }
             None if tree.node(completion).parent == Some(ROOT) => completion_output.map(Box::new),
             None => None,
         };
@@ -1676,11 +1858,20 @@ where
         Some(self.id.clone().unwrap_or_else(|| "(machine)".into()))
     }
 
-    fn initial_transition(&self, _input: Option<&Value>, cx: &mut dyn Context) -> Result<Transition, SystemError> {
+    fn initial_transition(&self, input: Option<&Value>, cx: &mut dyn Context) -> Result<Transition, SystemError> {
         if let Some(e) = &self.start_error {
             return Err(SystemError::Failed(e.clone()));
         }
-        let mut st = State::new(self.initial_context.clone(), &self.empty);
+        let context = match &self.initial_context {
+            InitialContext::Value(c) => c.clone(),
+            InitialContext::Template(t) => {
+                let value = t.eval(&mut |i| (self.context_exprs[i as usize])(input));
+                C::deserialize(&value).map_err(|e| {
+                    SystemError::Failed(format!("the computed context does not fit the context type: {e}"))
+                })?
+            }
+        };
+        let mut st = State::new(context, &self.empty);
         let effects = self.run_macrostep(&mut st, cx, MacroEvent::Init)?;
         Ok(Transition { snapshot: Box::new(st), effects })
     }

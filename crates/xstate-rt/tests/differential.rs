@@ -13,6 +13,9 @@ fn as_f64(v: Option<&Value>) -> Option<f64> {
 }
 
 /// Rust equivalents of the stubs in `tools/differential/generate.mjs`.
+#[path = "common/exprs.rs"]
+mod exprs;
+
 fn stubs() -> Registry<Value, Value> {
     #[derive(serde::Deserialize)]
     struct KeyValue {
@@ -30,6 +33,7 @@ fn stubs() -> Registry<Value, Value> {
         .action("noop", || {})
         .delay_ms("short", 100)
         .delay_ms("long", 1000);
+    exprs::register(&mut r);
     r
 }
 
@@ -77,7 +81,8 @@ fn tolerate(actor: &Actor<Value, Value>, result: Result<(), xstate_rt::SystemErr
 /// with no value).
 fn trace(fixture: &Value) -> Result<Option<Vec<Value>>, String> {
     let machine = Machine::from_json(&fixture["machine"], &stubs()).map_err(|e| e.to_string())?;
-    let mut actor = match Actor::start(Arc::new(machine), 0) {
+    let options = xstate_rt::InitOptions { input: fixture.get("input").cloned(), ..Default::default() };
+    let mut actor = match Actor::start_with(Arc::new(machine), options) {
         Ok(actor) => actor,
         Err(_) => return Ok(None),
     };

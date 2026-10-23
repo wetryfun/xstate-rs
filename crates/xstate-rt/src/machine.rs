@@ -8,7 +8,7 @@ use serde_json::{Map, Value};
 
 use crate::core::{Nid, Tid, Tree};
 use crate::event::{matches_descriptor, Ev};
-use crate::registry::{DelayFn, GuardFn};
+use crate::registry::{ActionFn, ContextFn, DelayFn, ExprFn, Factory, GuardFn};
 use crate::system::{EffectExec, Logic};
 
 /// Index of a state node, in document order.
@@ -26,7 +26,7 @@ pub(crate) struct NodeData {
     /// the state `timeout`, then invoke timeouts.
     pub delayed: Vec<DelayedDef>,
     pub invokes: Vec<InvokeDef>,
-    pub output: Option<Value>,
+    pub output: Option<Template>,
     pub tags: Vec<String>,
     /// The static targets of a compound state's `initial`.
     pub initial: Arc<[Nid]>,
@@ -55,7 +55,7 @@ pub(crate) enum DelayedKind {
 pub(crate) struct InvokeDef {
     pub id: String,
     pub logic: Arc<dyn Logic>,
-    pub input: Option<Value>,
+    pub input: Option<Template>,
     pub registry_key: Option<String>,
     /// Whether the invoke has `onSnapshot` (the child then reports snapshots).
     pub sync_snapshot: bool,
@@ -69,10 +69,44 @@ pub(crate) struct CustomAction {
     pub exec: EffectExec,
 }
 
+/// A custom action or guard whose `params` hold expressions: its
+/// implementation is bound to the params each time it runs.
+pub(crate) struct Dynamic<T> {
+    pub name: String,
+    pub factory: Factory<T>,
+    pub params: Template,
+}
+
+/// A JSON value with expressions in it (XState's resolvable values).
+#[derive(Debug, Clone)]
+pub(crate) enum Template {
+    Static(Value),
+    /// Index into `Machine::exprs` (or `Machine::context_exprs` in the root
+    /// `context`).
+    Expr(u32),
+    Object(Vec<(String, Template)>),
+    Array(Vec<Template>),
+}
+
+impl Template {
+    /// The value, with `expr` computing each expression.
+    pub fn eval(&self, expr: &mut dyn FnMut(u32) -> Value) -> Value {
+        match self {
+            Template::Static(v) => v.clone(),
+            Template::Expr(i) => expr(*i),
+            Template::Object(fields) => Value::Object(fields.iter().map(|(k, t)| (k.clone(), t.eval(expr))).collect()),
+            Template::Array(items) => Value::Array(items.iter().map(|t| t.eval(expr)).collect()),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub(crate) enum DelaySpec {
     Fixed(u64),
     Named(u32),
+    /// An expression (index into `Machine::exprs`): milliseconds or a
+    /// duration string.
+    Expr(u32),
 }
 
 pub(crate) struct TransitionData {
@@ -82,6 +116,8 @@ pub(crate) struct TransitionData {
     pub guard: Option<Guard>,
     /// The transition's `context` patch.
     pub context: Option<Map<String, Value>>,
+    /// Instead of `context`: a patch with expressions in it.
+    pub context_expr: Option<Template>,
     pub actions: Vec<Action>,
     pub reenter: bool,
     /// For invoke completion transitions: the child's id, whose session must
@@ -97,7 +133,10 @@ impl TransitionData {
     /// (`machineFromJSON` does so for any `context` or `actions`; invoke
     /// timeouts wrap completion transitions in one).
     pub fn is_dynamic(&self) -> bool {
-        self.context.is_some() || !self.actions.is_empty() || self.cancel_timeout.is_some()
+        self.context.is_some()
+            || self.context_expr.is_some()
+            || !self.actions.is_empty()
+            || self.cancel_timeout.is_some()
     }
 }
 
@@ -110,6 +149,14 @@ pub(crate) enum Guard {
     RouteTo(String),
     /// Both, in order (a route's match, then its named guard).
     And(Box<Guard>, Box<Guard>),
+    /// An inline expression, truthy as in JavaScript.
+    Expr(u32),
+    /// A custom guard with expressions in its params (index into
+    /// `Machine::dynamic_guards`).
+    Dynamic(u32),
+    /// A named JSON guard with params its expressions read: the params
+    /// (resolved in the outer scope), then the guard.
+    Scoped(Box<Template>, Box<Guard>),
 }
 
 #[derive(Debug, Clone)]
@@ -125,6 +172,48 @@ pub(crate) enum Action {
     Emit(Value),
     Assign(Map<String, Value>),
     Custom(u32),
+    /// `@xstate.raise` of an event with expressions in it.
+    RaiseExpr {
+        event: Template,
+        id: Option<String>,
+        delay: Option<u64>,
+    },
+    EmitExpr(Template),
+    AssignExpr(Template),
+    /// Index into `Machine::dynamic_actions`.
+    CustomExpr(u32),
+    /// An expression as an action: its result's `context` is merged.
+    Expr(u32),
+    /// The start of a named JSON action whose params its expressions read:
+    /// the params, resolved here, are their scope's until `EndParams`.
+    Params(Template),
+    EndParams,
+}
+
+impl Action {
+    /// Whether the action writes the context (and so needs the context it
+    /// starts from).
+    pub fn assigns(&self) -> bool {
+        matches!(self, Action::Assign(_) | Action::AssignExpr(_) | Action::Expr(_))
+    }
+
+    /// Whether the action evaluates expressions (which read the context).
+    pub fn evaluates(&self) -> bool {
+        matches!(
+            self,
+            Action::RaiseExpr { .. }
+                | Action::EmitExpr(_)
+                | Action::AssignExpr(_)
+                | Action::CustomExpr(_)
+                | Action::Expr(_)
+                | Action::Params(_)
+        )
+    }
+}
+
+pub(crate) enum InitialContext<C> {
+    Value(C),
+    Template(Template),
 }
 
 /// Options for compiling a machine.
@@ -153,10 +242,16 @@ pub struct Machine<C, E> {
     pub(crate) actors: Vec<(String, Arc<dyn Logic>)>,
     pub(crate) delays: Vec<DelayFn<C, E>>,
     pub(crate) raise_events: Vec<Ev<E>>,
+    pub(crate) exprs: Vec<ExprFn<C, E>>,
+    pub(crate) context_exprs: Vec<ContextFn>,
+    pub(crate) dynamic_actions: Vec<Dynamic<ActionFn>>,
+    pub(crate) dynamic_guards: Vec<Dynamic<GuardFn<C, E>>>,
     pub(crate) id_map: HashMap<String, Nid>,
     pub(crate) internal_events: Vec<String>,
-    pub(crate) initial_context: C,
-    pub(crate) output: Option<Value>,
+    /// The initial context: a value, or, when the root `context` has
+    /// expressions, computed from the actor's input at start.
+    pub(crate) initial_context: InitialContext<C>,
+    pub(crate) output: Option<Template>,
     pub(crate) options: MachineOptions,
     /// Why starting fails although the definition loads: a root `initial`
     /// without child states, which XState accepts and fails on at start.

@@ -2,6 +2,7 @@
 // with a SimulatedClock) and returns the trace the Rust differential tests
 // compare against. Shared by generate.mjs and fuzz.mjs.
 import { machineFromJSON, createActor, SimulatedClock } from 'xstate';
+import { evaluators } from './exprs.mjs';
 
 // Stub implementations. Keep in sync with `stubs()` in differential.rs.
 export const guards = {
@@ -18,13 +19,13 @@ export const delays = { short: 100, long: 1000 };
 // output and the events emitted since the last record. A step first advances
 // the clock to `at` (firing due timers), then sends `send` if present.
 export function runFixture(fixture) {
-  const machine = machineFromJSON(fixture.machine, { guards, actions, delays });
+  const machine = machineFromJSON(fixture.machine, { guards, actions, delays, evaluators });
   // alpha.70's `_transitionFast` shortcut (an atomic child of the root with
   // one plain candidate) skips the `matches` check, so a transition whose
   // pattern fails is taken. Compare against XState's full algorithm.
   machine._transitionFast = () => undefined;
   const clock = new SimulatedClock();
-  const actor = createActor(machine, { clock });
+  const actor = createActor(machine, { clock, input: fixture.input });
   let emitted = [];
   actor.on('*', (e) => emitted.push(e));
   // Errors are part of the trace (status "error"); keep them off the console.

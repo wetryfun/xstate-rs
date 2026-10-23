@@ -19,6 +19,7 @@ import {
   systemTransition,
   advanceSystemTime
 } from 'xstate';
+import { evaluators } from './exprs.mjs';
 
 // Keep in sync with the stubs in system_differential.rs.
 const guards = {
@@ -38,7 +39,7 @@ export function buildSystem(fixture) {
       const actors = Object.fromEntries((def.actors ?? []).map((n) => [n, logic[n]]));
       // One implementation per machine and action name, as in Rust.
       const actions = { noop: () => {}, track: () => {} };
-      logic[def.name] = machineFromJSON(def.machine, { guards, delays, actors, actions });
+      logic[def.name] = machineFromJSON(def.machine, { guards, delays, actors, actions, evaluators });
     }
   }
   return { root: logic[fixture.root] };
