@@ -10,8 +10,20 @@ publish = false
 
 [features]
 default = []
-# The Kafka driver (librdkafka, built from source).
-kafka = ["dep:rdkafka", "dep:ctrlc", "dep:mimalloc"]
+# The Kafka driver (librdkafka, built from source), with TLS (OpenSSL built
+# in, so the binary needs no system libssl), SASL PLAIN / SCRAM /
+# OAUTHBEARER (built into librdkafka with TLS), and zstd and gzip
+# compression (lz4 and snappy are built in).
+kafka = [
+    "dep:rdkafka",
+    "dep:ctrlc",
+    "dep:mimalloc",
+    "rdkafka/ssl-vendored",
+    "rdkafka/zstd",
+    "rdkafka/libz-static",
+]
+# SASL GSSAPI (Kerberos), through the system's Cyrus SASL (libsasl2-dev).
+kafka-gssapi = ["kafka", "rdkafka/gssapi"]
 
 [dependencies]
 xstate-rt = { path = "../xstate-rt" }

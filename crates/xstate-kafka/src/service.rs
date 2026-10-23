@@ -52,11 +52,13 @@ use std::sync::Arc;
 use std::thread::JoinHandle;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
+use rdkafka::client::ClientContext;
 use rdkafka::config::ClientConfig;
-use rdkafka::consumer::{BaseConsumer, Consumer};
+use rdkafka::consumer::{BaseConsumer, Consumer, ConsumerContext, Rebalance};
 use rdkafka::error::{KafkaError, RDKafkaErrorCode};
 use rdkafka::message::{Header, Headers, Message, OwnedHeaders};
 use rdkafka::producer::{BaseProducer, BaseRecord, Producer};
+use rdkafka::statistics::Statistics;
 use rdkafka::{Offset, TopicPartitionList};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
@@ -103,6 +105,16 @@ pub struct ServiceConfig {
     pub state_dir: Option<PathBuf>,
     /// Minimum time between two checkpoints of a partition.
     pub checkpoint_interval: Duration,
+    /// Cooperative (incremental) rebalancing (`cooperative-sticky`): a
+    /// rebalance moves only the partitions that change owner, and the other
+    /// partitions keep running. Otherwise every rebalance revokes and
+    /// restores every partition (`range,roundrobin`). Switching a running
+    /// group between the two takes two rolling restarts, as for any Kafka
+    /// consumer group.
+    pub cooperative: bool,
+    /// How often librdkafka reports statistics (consumer lag for the
+    /// metrics); zero turns them off.
+    pub stats_interval: Duration,
 }
 
 impl ServiceConfig {
@@ -133,6 +145,8 @@ impl ServiceConfig {
             engine: EngineConfig::default(),
             state_dir: None,
             checkpoint_interval: Duration::from_secs(60),
+            cooperative: true,
+            stats_interval: Duration::from_secs(5),
         }
     }
 
@@ -198,7 +212,11 @@ impl Service {
                 let (config, machine, stop, metrics) = (config.clone(), machine.clone(), stop.clone(), metrics.clone());
                 std::thread::Builder::new()
                     .name(format!("xstate-worker-{i}"))
-                    .spawn(move || Worker::new(i, config, machine, metrics)?.run(&stop))
+                    .spawn(move || {
+                        let result = Worker::new(i, config, machine, metrics.clone()).and_then(|w| w.run(&stop));
+                        metrics.set_alive(i, false);
+                        result
+                    })
                     .map_err(|e| ServiceError(format!("spawning a worker failed: {e}")))
             })
             .collect::<Result<Vec<_>>>()?;
@@ -244,7 +262,7 @@ struct Worker<C, E> {
     metrics: Arc<Metrics>,
     config: Arc<ServiceConfig>,
     machine: Arc<MachineSet<C, E>>,
-    consumer: BaseConsumer,
+    consumer: BaseConsumer<WorkerContext>,
     producer: Arc<BaseProducer>,
     /// Commits a batch's transaction while the worker runs the next batch.
     committer: Committer,
@@ -257,6 +275,47 @@ struct Worker<C, E> {
     checkpointed: HashMap<i32, Instant>,
     /// Partitions whose state changed since their last checkpoint.
     changed: HashSet<i32>,
+}
+
+/// The worker consumer's context: reports joining the group (readiness) and
+/// consumer lag (from librdkafka's statistics) to the metrics. Rebalancing
+/// itself is librdkafka's default, incremental under the cooperative
+/// protocol.
+struct WorkerContext {
+    index: usize,
+    metrics: Arc<Metrics>,
+    topic: String,
+}
+
+impl ClientContext for WorkerContext {
+    fn stats(&self, statistics: Statistics) {
+        let lag = statistics
+            .topics
+            .get(&self.topic)
+            .map(|t| {
+                // librdkafka's own `consumer_lag` counts from offsets the
+                // consumer commits; this service commits them in its
+                // transactions. Lag is what is left to read: the last
+                // stable offset (`read_committed`) less the next offset to
+                // read, for partitions this worker is fetching (statistics
+                // keep partitions it no longer owns).
+                t.partitions
+                    .values()
+                    .filter(|p| p.partition >= 0 && p.fetch_state == "active" && p.app_offset >= 0 && p.ls_offset >= 0)
+                    .map(|p| (p.partition, (p.ls_offset - p.app_offset).max(0)))
+                    .collect()
+            })
+            .unwrap_or_default();
+        self.metrics.set_lag(self.index, lag);
+    }
+}
+
+impl ConsumerContext for WorkerContext {
+    fn post_rebalance(&self, _: &BaseConsumer<Self>, rebalance: &Rebalance<'_>) {
+        if matches!(rebalance, Rebalance::Assign(_)) {
+            self.metrics.set_joined(self.index);
+        }
+    }
 }
 
 /// A batch handed to the committer: what to count once it commits.
@@ -277,13 +336,22 @@ where
         machine: Arc<MachineSet<C, E>>,
         metrics: Arc<Metrics>,
     ) -> Result<Self> {
-        let consumer: BaseConsumer = config
-            .client()
+        let mut client = config.client();
+        let strategy = if config.cooperative { "cooperative-sticky" } else { "range,roundrobin" };
+        let stats = config.stats_interval.as_millis().to_string();
+        for (key, value) in [("partition.assignment.strategy", strategy), ("statistics.interval.ms", &stats)] {
+            // Settings in `client_config` win.
+            if client.get(key).is_none() {
+                client.set(key, value);
+            }
+        }
+        let context = WorkerContext { index, metrics: metrics.clone(), topic: config.input_topic.clone() };
+        let consumer: BaseConsumer<WorkerContext> = client
             .set("group.id", &config.group_id)
             .set("enable.auto.commit", "false")
             .set("auto.offset.reset", "earliest")
             .set("isolation.level", "read_committed")
-            .create()?;
+            .create_with_context(context)?;
         consumer.subscribe(&[&config.input_topic])?;
         let producer: BaseProducer = config
             .client()
@@ -294,6 +362,7 @@ where
         let producer = Arc::new(producer);
         let restorer = restore_consumer(&config)?;
         let committer = Committer::spawn(index, producer.clone(), config.clone())?;
+        metrics.set_alive(index, true);
         Ok(Self {
             index,
             metrics,
@@ -356,9 +425,12 @@ where
         self.forget(|p| assigned.contains(&p));
         let missing: Vec<i32> = assigned.iter().copied().filter(|p| !self.partitions.contains_key(p)).collect();
         if !missing.is_empty() {
+            self.metrics.set_restoring(self.index, true);
             // Restore what is committed, including the batch in flight.
             self.settle()?;
+            self.await_previous_owner(&missing)?;
             self.restore(&missing)?;
+            self.metrics.set_restoring(self.index, false);
         }
         let mut offsets: HashMap<i32, i64> = HashMap::new();
         let now = clock_ms();
@@ -524,6 +596,22 @@ where
         if self.in_flight.take().is_some() {
             let _ = self.committer.wait_result();
         }
+    }
+
+    /// Waits until no transaction of a previous owner of `partitions` is
+    /// pending. Its changelog records would otherwise be missing from the
+    /// restore (which reads to the last stable offset) while its input
+    /// offsets are committed. A `read_committed` consumer's offset fetch asks
+    /// for stable offsets (KIP-447), which the broker answers only once
+    /// pending transactional offset commits are resolved; this is what Kafka
+    /// Streams does before restoring.
+    fn await_previous_owner(&self, partitions: &[i32]) -> Result<()> {
+        let mut tpl = TopicPartitionList::new();
+        for &p in partitions {
+            tpl.add_partition(&self.config.input_topic, p);
+        }
+        self.consumer.committed_offsets(tpl, self.config.request_timeout)?;
+        Ok(())
     }
 
     fn restore(&mut self, partitions: &[i32]) -> Result<()> {

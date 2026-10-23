@@ -2,7 +2,8 @@
 //! renderable in the Prometheus text format.
 
 use std::fmt::{self, Write};
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::Mutex;
 
 /// What one committed transaction adds to the counters.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -38,6 +39,20 @@ pub struct Metrics {
     commit_micros_max: AtomicU64,
     /// Live actors, per worker.
     actors: Vec<AtomicU64>,
+    workers: Vec<WorkerState>,
+}
+
+/// One worker's health, for `/health` and `/ready`.
+#[derive(Debug, Default)]
+struct WorkerState {
+    /// Running (set when it starts, cleared when it stops or fails).
+    alive: AtomicBool,
+    /// Has joined the consumer group (received an assignment).
+    joined: AtomicBool,
+    /// Restoring newly assigned partitions.
+    restoring: AtomicBool,
+    /// Consumer lag per input partition, from the latest statistics.
+    lag: Mutex<Vec<(i32, i64)>>,
 }
 
 /// A point-in-time copy of [`Metrics`].
@@ -60,6 +75,10 @@ pub struct MetricsSnapshot {
     pub commit_micros_total: u64,
     pub commit_micros_max: u64,
     pub actors: u64,
+    pub healthy: bool,
+    pub ready: bool,
+    /// Consumer lag per input partition, by partition.
+    pub lag: Vec<(i32, i64)>,
 }
 
 impl Metrics {
@@ -83,6 +102,7 @@ impl Metrics {
             commit_micros_total: zero(),
             commit_micros_max: zero(),
             actors: (0..workers.max(1)).map(|_| zero()).collect(),
+            workers: (0..workers.max(1)).map(|_| WorkerState::default()).collect(),
         }
     }
 
@@ -116,6 +136,43 @@ impl Metrics {
         self.checkpoints.fetch_add(1, Ordering::Relaxed);
     }
 
+    pub fn set_alive(&self, worker: usize, alive: bool) {
+        if let Some(w) = self.workers.get(worker) {
+            w.alive.store(alive, Ordering::Relaxed);
+        }
+    }
+
+    pub fn set_joined(&self, worker: usize) {
+        if let Some(w) = self.workers.get(worker) {
+            w.joined.store(true, Ordering::Relaxed);
+        }
+    }
+
+    pub fn set_restoring(&self, worker: usize, restoring: bool) {
+        if let Some(w) = self.workers.get(worker) {
+            w.restoring.store(restoring, Ordering::Relaxed);
+        }
+    }
+
+    /// The worker's consumer lag per input partition.
+    pub fn set_lag(&self, worker: usize, lag: Vec<(i32, i64)>) {
+        if let Some(w) = self.workers.get(worker) {
+            *w.lag.lock().unwrap_or_else(|e| e.into_inner()) = lag;
+        }
+    }
+
+    /// Every worker is running.
+    pub fn healthy(&self) -> bool {
+        self.workers.iter().all(|w| w.alive.load(Ordering::Relaxed))
+    }
+
+    /// Every worker is running, has joined the group and is not restoring.
+    pub fn ready(&self) -> bool {
+        self.workers.iter().all(|w| {
+            w.alive.load(Ordering::Relaxed) && w.joined.load(Ordering::Relaxed) && !w.restoring.load(Ordering::Relaxed)
+        })
+    }
+
     pub fn set_actors(&self, worker: usize, actors: u64) {
         if let Some(slot) = self.actors.get(worker) {
             slot.store(actors, Ordering::Relaxed);
@@ -142,6 +199,14 @@ impl Metrics {
             commit_micros_total: get(&self.commit_micros_total),
             commit_micros_max: get(&self.commit_micros_max),
             actors: self.actors.iter().map(get).sum(),
+            healthy: self.healthy(),
+            ready: self.ready(),
+            lag: {
+                let mut lag: Vec<(i32, i64)> =
+                    self.workers.iter().flat_map(|w| w.lag.lock().unwrap_or_else(|e| e.into_inner()).clone()).collect();
+                lag.sort_unstable();
+                lag
+            },
         }
     }
 }
@@ -180,7 +245,26 @@ impl MetricsSnapshot {
         metric("commit_micros_total", "counter", "Time spent committing transactions.", self.commit_micros_total);
         metric("commit_micros_max", "gauge", "Longest transaction commit.", self.commit_micros_max);
         metric("actors", "gauge", "Live actors.", self.actors);
+        metric(
+            "ready",
+            "gauge",
+            "1 when every worker has joined the group and none is restoring.",
+            u64::from(self.ready),
+        );
+        metric("consumer_lag_total", "gauge", "Input records not yet processed, all partitions.", self.lag_total());
+        let _ = writeln!(
+            out,
+            "# HELP xstate_consumer_lag Input records not yet processed, per partition.\n# TYPE xstate_consumer_lag gauge"
+        );
+        for (partition, lag) in &self.lag {
+            let _ = writeln!(out, "xstate_consumer_lag{{partition=\"{partition}\"}} {lag}");
+        }
         out
+    }
+
+    /// The consumer lag of all partitions.
+    pub fn lag_total(&self) -> u64 {
+        self.lag.iter().map(|(_, l)| (*l).max(0) as u64).sum()
     }
 }
 
@@ -226,10 +310,14 @@ pub fn serve(
                 line.clear();
             }
             let path = request_line.split_whitespace().nth(1).unwrap_or("");
-            let (status, body) = if path == "/metrics" {
-                ("200 OK", metrics.snapshot().prometheus())
-            } else {
-                ("404 Not Found", "not found\n".to_owned())
+            let probe = |ok: bool| if ok { ("200 OK", "ok\n".to_owned()) } else { ("503 Service Unavailable", "not ready\n".to_owned()) };
+            let (status, body) = match path {
+                "/metrics" => ("200 OK", metrics.snapshot().prometheus()),
+                // Liveness: every worker is running.
+                "/health" => probe(metrics.healthy()),
+                // Readiness: joined the group, nothing restoring.
+                "/ready" => probe(metrics.ready()),
+                _ => ("404 Not Found", "not found\n".to_owned()),
             };
             let mut stream = &stream;
             let _ = write!(
@@ -270,5 +358,29 @@ mod tests {
         assert!(text.contains("xstate_duplicates_total 2\n"), "{text}");
         assert!(text.contains("# TYPE xstate_actors gauge\nxstate_actors 9\n"), "{text}");
         assert!(s.to_string().contains("commit_avg_us=700"));
+    }
+
+    #[test]
+    fn health_readiness_and_lag() {
+        let m = Metrics::new(2);
+        assert!(!m.healthy() && !m.ready(), "not started");
+        m.set_alive(0, true);
+        m.set_alive(1, true);
+        assert!(m.healthy() && !m.ready(), "not joined");
+        m.set_joined(0);
+        m.set_joined(1);
+        assert!(m.ready());
+        m.set_restoring(1, true);
+        assert!(!m.ready());
+        m.set_restoring(1, false);
+        m.set_lag(0, vec![(2, 5), (0, 1)]);
+        m.set_lag(1, vec![(1, 0)]);
+        let s = m.snapshot();
+        assert_eq!((s.lag.clone(), s.lag_total()), (vec![(0, 1), (1, 0), (2, 5)], 6));
+        let text = s.prometheus();
+        assert!(text.contains("xstate_consumer_lag{partition=\"2\"} 5\n"), "{text}");
+        assert!(text.contains("xstate_ready 1\n") && text.contains("xstate_consumer_lag_total 6\n"), "{text}");
+        m.set_alive(1, false);
+        assert!(!m.healthy() && !m.ready());
     }
 }

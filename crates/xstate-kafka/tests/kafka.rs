@@ -393,3 +393,80 @@ fn a_record_of_an_unknown_version_is_a_dead_letter_not_a_crash() {
     assert_eq!(states(&output)["a"], vec!["s1", "s1", "s2"]);
     assert_eq!(read(&bootstrap, "dead", 2).len(), 2, "no new dead letters");
 }
+
+/// TLS, SASL and compression are built in: a client configured for SCRAM
+/// over TLS with zstd can be created (no connection is made).
+#[test]
+fn clients_support_tls_sasl_and_compression() {
+    let native = ClientConfig::new().create_native_config().unwrap();
+    let features = native.get("builtin.features").unwrap();
+    for feature in ["ssl", "sasl_plain", "sasl_scram", "sasl_oauthbearer", "zstd", "gzip", "lz4", "snappy"] {
+        assert!(features.split(',').any(|f| f == feature), "{feature} missing from {features}");
+    }
+    let producer: Result<BaseProducer, _> = ClientConfig::new()
+        .set("bootstrap.servers", "localhost:9093")
+        .set("security.protocol", "SASL_SSL")
+        .set("sasl.mechanisms", "SCRAM-SHA-512")
+        .set("sasl.username", "user")
+        .set("sasl.password", "secret")
+        .set("compression.type", "zstd")
+        .create();
+    assert!(producer.is_ok(), "{:?}", producer.err());
+}
+
+/// Plain HTTP GET of `path`: the status code and the body.
+fn http_get(address: std::net::SocketAddr, path: &str) -> (u16, String) {
+    use std::io::{Read, Write};
+    let mut stream = std::net::TcpStream::connect(address).unwrap();
+    write!(stream, "GET {path} HTTP/1.1\r\nHost: x\r\n\r\n").unwrap();
+    let mut response = String::new();
+    stream.read_to_string(&mut response).unwrap();
+    let status = response.split_whitespace().nth(1).unwrap().parse().unwrap();
+    (status, response.split("\r\n\r\n").nth(1).unwrap_or("").to_owned())
+}
+
+/// A second instance joins while records flow: partitions move to it
+/// cooperatively, and every key still ends exactly once in its final state.
+/// Readiness, liveness and lag are served over HTTP.
+#[test]
+fn partitions_move_cooperatively_and_probes_report_it() {
+    let cluster = MockCluster::new(3).unwrap();
+    for topic in ["input", "output", "changelog", "dead"] {
+        cluster.create_topic(topic, PARTITIONS, 3).unwrap();
+    }
+    let bootstrap = cluster.bootstrap_servers();
+    let mut first_config = config(&bootstrap);
+    first_config.stats_interval = Duration::from_millis(200);
+    let first = Service::start(first_config, machine()).unwrap();
+    let (address, _) = xstate_kafka::metrics::serve("127.0.0.1:0", first.metrics_handle()).unwrap();
+    let deadline = Instant::now() + Duration::from_secs(30);
+    while http_get(address, "/ready").0 != 200 {
+        assert!(Instant::now() < deadline, "never ready");
+        std::thread::sleep(Duration::from_millis(100));
+    }
+    assert_eq!(http_get(address, "/health").0, 200);
+
+    let keys: Vec<String> = (0..40).map(|i| format!("k{i}")).collect();
+    let next: Vec<(Option<&str>, &str)> = keys.iter().map(|k| (Some(k.as_str()), r#"{"type":"next"}"#)).collect();
+    produce(&bootstrap, &next);
+    assert_eq!(read(&bootstrap, "output", 40).len(), 40);
+
+    // A second instance joins: some partitions move to it.
+    let second = Service::start(config(&bootstrap), machine()).unwrap();
+    produce(&bootstrap, &next);
+    produce(&bootstrap, &next);
+    let output = read(&bootstrap, "output", 120);
+    let (_, metrics) = http_get(address, "/metrics");
+    assert!(first.is_running() && second.is_running());
+    first.stop().unwrap();
+    second.stop().unwrap();
+
+    let by_key = states(&output);
+    for k in &keys {
+        assert_eq!(by_key[k.as_str()], vec!["s1", "s2", "s3"], "key {k}: {output:?}");
+    }
+    assert_eq!(output.len(), 120, "no duplicates");
+    assert!(read(&bootstrap, "dead", 0).is_empty());
+    assert!(metrics.contains("xstate_consumer_lag{partition="), "{metrics}");
+    assert_eq!(http_get(address, "/health").0, 503, "stopped");
+}

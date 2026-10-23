@@ -22,7 +22,13 @@
 //!     { "version": "0", "migrate": { "states": {} } }
 //!   ],
 //!   "onRestoreError": "deadLetter",
-//!   "client": { "compression.type": "lz4" },
+//!   "rebalance": "cooperative", "statsIntervalMs": 5000,
+//!   "client": {
+//!     "compression.type": "zstd",
+//!     "security.protocol": "SASL_SSL", "sasl.mechanisms": "SCRAM-SHA-256",
+//!     "sasl.username": "orders", "sasl.password": { "env": "KAFKA_PASSWORD" },
+//!     "ssl.ca.location": "/etc/ssl/certs/ca-certificates.crt"
+//!   },
 //!   "stateDir": "/var/lib/xstate", "checkpointIntervalMs": 60000,
 //!   "metricsAddress": "0.0.0.0:9464",
 //!   "logIntervalMs": 10000
@@ -46,6 +52,10 @@
 //! it, else `version` names it). `onRestoreError` (`"deadLetter"`, the
 //! default when a dead-letter topic is set, or `"fail"`) decides what a
 //! record that cannot be restored does.
+//!
+//! `client` passes librdkafka settings through (TLS and SASL PLAIN, SCRAM
+//! and OAUTHBEARER are built in); a value can name a secret instead of
+//! holding it: `{ "env": "NAME" }` or `{ "file": "/run/secrets/name" }`.
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -133,6 +143,11 @@ pub struct FileConfig {
     /// `"deadLetter"` or `"fail"`.
     #[serde(default)]
     pub on_restore_error: Option<String>,
+    /// `"cooperative"` (default) or `"eager"`.
+    #[serde(default)]
+    pub rebalance: Option<String>,
+    #[serde(default)]
+    pub stats_interval_ms: Option<u64>,
     #[serde(default)]
     pub client: serde_json::Map<String, Value>,
     #[serde(default)]
@@ -156,6 +171,14 @@ impl FileConfig {
         }
         if let Some(dir) = config.state_dir.as_mut().filter(|d| d.is_relative()) {
             *dir = base.join(&*dir);
+        }
+        // Secret files are relative to the configuration file too.
+        for v in config.client.values_mut() {
+            if let Some(Value::String(file)) = v.as_object_mut().and_then(|o| o.get_mut("file")) {
+                if Path::new(file.as_str()).is_relative() {
+                    *file = base.join(&*file).to_string_lossy().into_owned();
+                }
+            }
         }
         for p in &mut config.previous_versions {
             if let Some(m) = p.machine.as_mut().filter(|m| m.is_relative()) {
@@ -192,6 +215,16 @@ impl FileConfig {
             c.request_timeout = ms(v);
         }
         c.state_dir = self.state_dir.clone();
+        c.cooperative = match self.rebalance.as_deref() {
+            None | Some("cooperative") => true,
+            Some("eager") => false,
+            Some(other) => {
+                return Err(format!("unknown rebalance \"{other}\" (expected \"cooperative\" or \"eager\")"))
+            }
+        };
+        if let Some(v) = self.stats_interval_ms {
+            c.stats_interval = ms(v);
+        }
         if let Some(v) = self.checkpoint_interval_ms {
             c.checkpoint_interval = ms(v);
         }
@@ -256,6 +289,7 @@ impl FileConfig {
         for (k, v) in &self.client {
             let v = match v {
                 Value::String(s) => s.clone(),
+                Value::Object(o) => secret(o).map_err(|e| format!("client.{k}: {e}"))?,
                 other => other.to_string(),
             };
             c.client_config.push((k.clone(), v));
@@ -346,6 +380,19 @@ impl FileConfig {
     }
 }
 
+/// A client setting kept out of the file: `{ "env": "NAME" }` (an
+/// environment variable) or `{ "file": "/run/secrets/x" }` (a file's
+/// contents, without a trailing newline).
+fn secret(o: &serde_json::Map<String, Value>) -> Result<String, String> {
+    match (o.len(), o.get("env").and_then(Value::as_str), o.get("file").and_then(Value::as_str)) {
+        (1, Some(name), _) => std::env::var(name).map_err(|_| format!("environment variable {name} is not set")),
+        (1, _, Some(path)) => std::fs::read_to_string(path)
+            .map(|s| s.trim_end_matches(['\n', '\r']).to_owned())
+            .map_err(|e| format!("{path}: {e}")),
+        _ => Err("expected a string, a number, { \"env\": name } or { \"file\": path }".into()),
+    }
+}
+
 fn read_json(path: &Path) -> Result<Value, String> {
     let text = std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
     serde_json::from_str(&text).map_err(|e| format!("{}: {e}", path.display()))
@@ -371,10 +418,12 @@ mod tests {
             "c.json",
             r#"{ "machine": "m.json", "bootstrapServers": "b:9092", "groupId": "g",
                  "topics": { "input": "i", "output": "o", "changelog": "c" },
-                 "workers": 3, "codec": "json", "batchLingerMs": 5, "client": { "linger.ms": 7 },
+                 "workers": 3, "codec": "json", "batchLingerMs": 5,
+                 "client": { "linger.ms": 7, "sasl.password": { "file": "secret.txt" }, "sasl.username": { "env": "HOME" } },
                  "stateDir": "state", "checkpointIntervalMs": 1000, "snapshots": "compact",
                  "dedupe": { "sequence": "seq" } }"#,
         );
+        write(&dir, "secret.txt", "s3cret\n");
         let config = FileConfig::load(&path).unwrap();
         let service = config.service().unwrap();
         assert_eq!(service.workers, 3);
@@ -384,7 +433,14 @@ mod tests {
         assert_eq!(service.batch_linger, Duration::from_millis(5));
         assert_eq!(service.state_dir, Some(dir.join("state")));
         assert_eq!(service.checkpoint_interval, Duration::from_secs(1));
-        assert_eq!(service.client_config, vec![("linger.ms".to_owned(), "7".to_owned())]);
+        assert_eq!(
+            service.client_config,
+            vec![
+                ("linger.ms".to_owned(), "7".to_owned()),
+                ("sasl.password".to_owned(), "s3cret".to_owned()),
+                ("sasl.username".to_owned(), std::env::var("HOME").unwrap())
+            ]
+        );
         assert!(config.machine().is_ok());
 
         write(

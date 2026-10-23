@@ -4,8 +4,8 @@
 
 FROM rust:1.97.0-trixie AS build
 WORKDIR /src
-# librdkafka is built from source by rdkafka-sys (./configure && make), with
-# zlib, SSL, SASL and zstd off: the full Debian image has the C toolchain.
+# librdkafka, OpenSSL, zlib and zstd are built from source by the -sys
+# crates: the full Debian image has the C toolchain, perl and make.
 COPY . .
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/src/target \
