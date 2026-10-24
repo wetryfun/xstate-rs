@@ -495,23 +495,31 @@ struct ContextSpawner<'a, 'c> {
 }
 
 impl ContextSpawner<'_, '_> {
-    fn fail(&self, message: String) -> Option<ActorRef> {
+    fn fail_spawn(&self, message: String) -> Option<ActorRef> {
         self.error.borrow_mut().get_or_insert(SystemError::Failed(message));
         None
     }
 }
 
 impl crate::registry::Spawner for ContextSpawner<'_, '_> {
+    fn self_ref(&self) -> ActorRef {
+        self.cx.borrow().self_ref()
+    }
+
+    fn fail(&self, message: String) {
+        self.fail_spawn(message);
+    }
+
     fn spawn(&self, src: &str, options: SpawnOptions) -> Option<ActorRef> {
         if self.error.borrow().is_some() {
             return None;
         }
         let Some(logic) = self.actors.iter().find(|(name, _)| name == src).map(|(_, l)| l.clone()) else {
-            return self.fail(format!("Actor source '{src}' is not provided"));
+            return self.fail_spawn(format!("Actor source '{src}' is not provided"));
         };
         let in_use = |id: &str| self.spawned.borrow().iter().any(|(taken, _)| taken == id);
         let id = match &options.id {
-            Some(id) if in_use(id) => return self.fail(format!("Child actor id '{id}' is already in use")),
+            Some(id) if in_use(id) => return self.fail_spawn(format!("Child actor id '{id}' is already in use")),
             Some(id) => id.clone(),
             None => {
                 let mut counters = self.counters.borrow_mut();
@@ -1015,6 +1023,9 @@ struct NativeHost<'a, C, E> {
     /// and the parts saved for it.
     rollback: bool,
     saved_parts: SavedParts<E>,
+    /// The failure an expression reported ([`ExprArgs::fail`]), taken
+    /// after each evaluation.
+    expr_error: RefCell<Option<String>>,
 }
 
 impl<C, E> NativeHost<'_, C, E>
@@ -1151,13 +1162,13 @@ where
     }
 
     /// A template's value in the expression scope (the current event).
-    fn eval(&self, t: &Template, context: &C, params: Option<&Value>) -> Value {
+    fn eval(&self, t: &Template, context: &C, params: Option<&Value>) -> Result<Value, SystemError> {
         self.eval_for(t, context, &self.event, params)
     }
 
-    fn eval_for(&self, t: &Template, context: &C, event: &Ev<E>, params: Option<&Value>) -> Value {
+    fn eval_for(&self, t: &Template, context: &C, event: &Ev<E>, params: Option<&Value>) -> Result<Value, SystemError> {
         if let Template::Static(v) = t {
-            return v.clone();
+            return Ok(v.clone());
         }
         let m = self.m;
         let args = ExprArgs {
@@ -1168,11 +1179,24 @@ where
             machine: m,
             config: &self.st.nodes,
             enq: None,
+            children: &self.st.children,
+            cx: &*self.cx,
+            error: &self.expr_error,
         };
-        t.eval(&mut |i| {
+        let value = t.eval(&mut |i| {
             crate::ops::count(crate::ops::Op::Expr);
             (m.exprs[i as usize])(&args)
-        })
+        });
+        self.expr_failed()?;
+        Ok(value)
+    }
+
+    /// The failure an expression reported, if any.
+    fn expr_failed(&self) -> Result<(), SystemError> {
+        match self.expr_error.borrow_mut().take() {
+            Some(message) => Err(SystemError::Failed(message)),
+            None => Ok(()),
+        }
     }
 
     /// The input of the state in scope.
@@ -1221,7 +1245,7 @@ where
                     }
                 }
                 Action::RaiseExpr { event, id, delay } => {
-                    let Some(value) = computed_raise(self.eval(event, context, p))? else {
+                    let Some(value) = computed_raise(self.eval(event, context, p)?)? else {
                         continue;
                     };
                     let event = Ev::from_json(value).expect("an object with a string type");
@@ -1234,7 +1258,7 @@ where
                 Action::Log(args) => out.ops.push(Op::Log(args.clone())),
                 Action::Emit(event) => out.ops.push(Op::Emit(event.clone())),
                 Action::EmitExpr(event) => {
-                    if let Some(event) = computed_event(self.eval(event, context, p), "an emitted event")? {
+                    if let Some(event) = computed_event(self.eval(event, context, p)?, "an emitted event")? {
                         out.ops.push(Op::Emit(event));
                     }
                 }
@@ -1246,14 +1270,14 @@ where
                     stale = true;
                 }
                 Action::AssignExpr(patch) => {
-                    let patch = computed_patch(self.eval(patch, context, p), "an assigned context")?;
+                    let patch = computed_patch(self.eval(patch, context, p)?, "an assigned context")?;
                     assigned.get_or_insert_with(Map::new).extend(patch.into_iter().flatten());
                     stale = true;
                 }
                 Action::Custom(i) => out.ops.push(Op::Custom(*i)),
                 Action::CustomExpr(i) => {
                     let d = &self.m.dynamic_actions[*i as usize];
-                    let params = self.eval(&d.params, context, p);
+                    let params = self.eval(&d.params, context, p)?;
                     let exec = (d.factory)(&params)
                         .map_err(|m| SystemError::Failed(format!("invalid params for action '{}': {m}", d.name)))?;
                     out.ops.push(Op::CustomDyn { name: d.name.clone(), params, exec });
@@ -1269,6 +1293,9 @@ where
                         machine: m,
                         config: &self.st.nodes,
                         enq: Some(&enq),
+                        children: &self.st.children,
+                        cx: &*self.cx,
+                        error: &self.expr_error,
                     };
                     crate::ops::count(crate::ops::Op::Expr);
                     let mut result = (m.exprs[*i as usize])(&args);
@@ -1283,7 +1310,7 @@ where
                     }
                 }
                 Action::Params(t) => {
-                    let value = self.eval(t, context, p);
+                    let value = self.eval(t, context, p)?;
                     params.push(value);
                 }
                 Action::EndParams => {
@@ -1311,7 +1338,7 @@ where
         let input = match &tr.input {
             Some(input) => {
                 let _scope = self.scoped(None);
-                Some(self.eval(input, &self.st.context, None)).filter(js_truthy).map(Box::new)
+                Some(self.eval(input, &self.st.context, None)?).filter(js_truthy).map(Box::new)
             }
             None => None,
         };
@@ -1331,7 +1358,7 @@ where
         }
         let mut out = if tr.context.is_some() || tr.context_expr.is_some() || !tr.actions.is_empty() {
             let computed = match &tr.context_expr {
-                Some(patch) => computed_patch(self.eval(patch, &self.st.context, None), "a transition's context")?,
+                Some(patch) => computed_patch(self.eval(patch, &self.st.context, None)?, "a transition's context")?,
                 None => None,
             };
             let patch = computed.as_ref().or(tr.context.as_ref());
@@ -1461,6 +1488,9 @@ where
                 machine: m,
                 config: &self.st.nodes,
                 enq,
+                children: &self.st.children,
+                cx: &*self.cx,
+                error: &self.expr_error,
             };
             crate::ops::count(crate::ops::Op::Expr);
             (m.exprs[expr as usize])(&args)
@@ -1519,10 +1549,10 @@ where
                 }
                 let mut result = Map::new();
                 if let Some(context) = &branch.context {
-                    result.insert("context".into(), self.eval(context, &self.st.context, None));
+                    result.insert("context".into(), self.eval(context, &self.st.context, None)?);
                 }
                 if let Some(input) = &branch.input {
-                    result.insert("input".into(), self.eval(input, &self.st.context, None));
+                    result.insert("input".into(), self.eval(input, &self.st.context, None)?);
                 }
                 result.insert("reenter".into(), Value::Bool(branch.reenter));
                 (Value::Object(result), branch.targets.clone())
@@ -1759,7 +1789,7 @@ where
             DelaySpec::Fixed(ms) => ms,
             DelaySpec::Named(i) => (self.m.delays[i as usize])(&self.st.context, &self.event),
             DelaySpec::Expr(i) => {
-                let value = self.eval(&Template::Expr(i), &self.st.context, None);
+                let value = self.eval(&Template::Expr(i), &self.st.context, None)?;
                 match &value {
                     Value::Number(n) => n.as_f64().and_then(crate::delay::ms_to_u64),
                     Value::String(s) => crate::delay::parse_duration_ms(s).and_then(crate::delay::ms_to_u64),
@@ -1793,7 +1823,7 @@ where
                     &inv.logic,
                     AllocateOptions {
                         id: inv.id.clone(),
-                        input: inv.input.as_ref().map(|t| self.eval(t, &self.st.context, None)),
+                        input: inv.input.as_ref().map(|t| self.eval(t, &self.st.context, None)).transpose()?,
                         parent: Some(self.cx.self_ref()),
                         registry_key: inv.registry_key.clone(),
                         sync_snapshot: Some(inv.sync_snapshot),
@@ -1824,9 +1854,9 @@ where
     }
 
     /// A final state's output, computed against the current context and event.
-    fn output_of(&self, node: Nid) -> Option<Value> {
+    fn output_of(&self, node: Nid) -> Result<Option<Value>, SystemError> {
         let _scope = self.scoped(Some(node));
-        self.m.data(node).output.as_ref().map(|t| self.eval(t, &self.st.context, None))
+        self.m.data(node).output.as_ref().map(|t| self.eval(t, &self.st.context, None)).transpose()
     }
 
     fn done_event(&self, node: Nid, output: Option<Value>) -> Ev<E> {
@@ -1863,16 +1893,16 @@ where
             Guard::StateIn(node) => self.st.nodes.contains(node),
             Guard::RouteTo(to) => self.event.field("to").as_ref().and_then(Value::as_str) == Some(to.as_str()),
             Guard::And(a, b) => self.eval_guard(a, params)? && self.eval_guard(b, params)?,
-            Guard::Expr(i) => js_truthy(&self.eval(&Template::Expr(*i), &self.st.context, params)),
+            Guard::Expr(i) => js_truthy(&self.eval(&Template::Expr(*i), &self.st.context, params)?),
             Guard::Dynamic(i) => {
                 let d = &self.m.dynamic_guards[*i as usize];
-                let value = self.eval(&d.params, &self.st.context, params);
+                let value = self.eval(&d.params, &self.st.context, params)?;
                 let f = (d.factory)(&value)
                     .map_err(|m| SystemError::Failed(format!("invalid params for guard '{}': {m}", d.name)))?;
                 f(&args())
             }
             Guard::StateInExpr(params_template) => {
-                let resolved = self.eval(params_template, &self.st.context, params);
+                let resolved = self.eval(params_template, &self.st.context, params)?;
                 match resolved.get("stateId").and_then(Value::as_str) {
                     Some(id) => {
                         let id = id.strip_prefix('#').unwrap_or(id);
@@ -1886,7 +1916,7 @@ where
                 }
             }
             Guard::Scoped(scope, inner) => {
-                let value = self.eval(scope, &self.st.context, params);
+                let value = self.eval(scope, &self.st.context, params)?;
                 self.eval_guard(inner, Some(&value))?
             }
         })
@@ -2158,7 +2188,8 @@ where
     }
 
     fn done_compound(&mut self, parent: Nid, final_child: Nid) -> Result<(), SystemError> {
-        let event = self.done_event(parent, self.output_of(final_child));
+        let output = self.output_of(final_child)?;
+        let event = self.done_event(parent, output);
         self.queue.push_back(event);
         Ok(())
     }
@@ -2167,9 +2198,9 @@ where
         let mut output = Map::new();
         for region in regions {
             let (node, value) = match *region {
-                RegionOutput::Final(r) => (r, self.output_of(r)),
+                RegionOutput::Final(r) => (r, self.output_of(r)?),
                 RegionOutput::Parallel(r) => (r, self.queued_done_output(r)),
-                RegionOutput::Compound(r, child) => (r, child.and_then(|c| self.output_of(c))),
+                RegionOutput::Compound(r, child) => (r, child.map(|c| self.output_of(c)).transpose()?.flatten()),
             };
             if let Some(value) = value {
                 output.insert(self.m.data(node).key.clone(), value);
@@ -2185,7 +2216,10 @@ where
         let completion_output = if self.m.data(completion).output.is_some() && tree.node(completion).parent.is_some() {
             let root_done =
                 if tree.node(completion).parent == Some(ROOT) { self.queued_done_output(ROOT) } else { None };
-            root_done.or_else(|| self.output_of(completion))
+            match root_done {
+                Some(done) => Some(done),
+                None => self.output_of(completion)?,
+            }
         } else if tree.kind(completion) == core::Kind::Parallel {
             self.queued_done_output(completion)
         } else {
@@ -2197,7 +2231,7 @@ where
             // Computed with the completing state's done event.
             Some(output) => {
                 let event = self.done_event(completion, completion_output);
-                Some(Box::new(self.eval_for(output, &self.st.context, &event, None)))
+                Some(Box::new(self.eval_for(output, &self.st.context, &event, None)?))
             }
             None if tree.node(completion).parent == Some(ROOT) => completion_output.map(Box::new),
             None => None,
@@ -2356,6 +2390,7 @@ where
             context_undo: Vec::new(),
             rollback: !initial,
             saved_parts: SavedParts::default(),
+            expr_error: RefCell::new(None),
         };
         if let Err(e) = self.macrostep_body(&mut h, event) {
             let context = h.context_backup.take();

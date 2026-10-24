@@ -1,0 +1,56 @@
+{
+  "notes": "An evaluator that throws fails the step (the guard here), as in XState; the actor keeps its previous snapshot in the error status.",
+  "logic": [
+    {
+      "name": "root",
+      "machine": {
+        "id": "m",
+        "@exprLang": "probe",
+        "context": {
+          "n": 0
+        },
+        "initial": "a",
+        "states": {
+          "a": {
+            "on": {
+              "OK": {
+                "context": {
+                  "n": 1
+                }
+              },
+              "BOOM": {
+                "guard": {
+                  "@expr": "throw"
+                },
+                "target": "b"
+              }
+            }
+          },
+          "b": {}
+        }
+      }
+    }
+  ],
+  "root": "root",
+  "init": {},
+  "steps": [
+    {
+      "send": "m",
+      "event": {
+        "type": "OK"
+      }
+    },
+    {
+      "send": "m",
+      "event": {
+        "type": "BOOM"
+      }
+    },
+    {
+      "send": "m",
+      "event": {
+        "type": "OK"
+      }
+    }
+  ]
+}

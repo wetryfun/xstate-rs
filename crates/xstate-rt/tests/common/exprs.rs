@@ -4,7 +4,7 @@
 //! whole).
 
 use serde_json::{json, Value};
-use xstate_rt::{Registry, SpawnOptions};
+use xstate_rt::{Code, Registry, Scope, SpawnOptions};
 
 fn num(v: Option<&Value>) -> f64 {
     v.and_then(Value::as_f64).unwrap_or(f64::NAN)
@@ -21,6 +21,7 @@ fn js(n: f64) -> Value {
 }
 
 pub fn register(r: &mut Registry<Value, Value>) {
+    r.evaluator("probe", probe);
     r.expr("countPlusOne", |a| js(num(a.context.get("count")) + 1.0))
         .expr("totalPlusAmount", |a| js(num(a.context.get("total")) + num(a.event.field("amount").as_ref())))
         .expr("attemptsPlusOne", |a| js(num(a.context.get("attempts")) + 1.0))
@@ -214,4 +215,38 @@ pub fn register(r: &mut Registry<Value, Value>) {
             let start = input.and_then(|i| i.get("start")).cloned().unwrap_or(json!(0));
             json!({ "count": start, "total": 0, "attempts": 0, "items": [] })
         });
+}
+
+/// The `probe` language: reports the arguments an evaluator gets (as
+/// `probe` in tools/differential/exprs.mjs).
+fn probe(code: &Code, scope: Scope<'_, '_, Value, Value>) -> Result<Value, String> {
+    let info = json!({ "slot": code.slot.as_str(), "path": code.path, "kind": code.kind.as_str() });
+    let mut parts = code.source.splitn(3, ':');
+    let op = parts.next().unwrap_or_default();
+    let mut matches = || parts.next() == Some(code.slot.as_str()) && parts.next() == Some(code.path.as_str());
+    Ok(match op {
+        "info" => info,
+        "infoAction" => json!({ "context": { "act": info } }),
+        "fn" => json!({ "target": "b", "context": { "fn": info } }),
+        "is" => Value::Bool(matches()),
+        "delay" => json!(if matches() { 1000 } else { 7 }),
+        "inc" => match scope {
+            Scope::Expr(a) => js(num(a.context.get("count")) + 1.0),
+            Scope::Context(_) => return Err("no context yet".into()),
+        },
+        "input" => match scope {
+            Scope::Expr(a) => a.input.cloned().unwrap_or(Value::Null),
+            Scope::Context(a) => a.input.cloned().unwrap_or(Value::Null),
+        },
+        "children" => match scope {
+            Scope::Expr(a) => {
+                let mut ids: Vec<&String> = a.children().keys().collect();
+                ids.sort();
+                json!(ids)
+            }
+            Scope::Context(_) => json!([]),
+        },
+        "throw" => return Err(format!("probe {} at {}", code.slot.as_str(), code.path)),
+        _ => return Err(format!("no probe '{}'", code.source)),
+    })
 }

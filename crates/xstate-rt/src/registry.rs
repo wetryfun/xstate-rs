@@ -19,6 +19,11 @@
 //! a context value, an assigned patch, a raised or emitted event, action or
 //! guard params, an inline guard, a delay, an invoke's input, an output, or
 //! an action whose result's `context` is merged.
+//!
+//! Code nodes in other languages run through the evaluator registered for
+//! the language ([`Registry::evaluator`]), as `machineFromJSON` hands them to
+//! `sources.evaluators[lang]`: the evaluator gets the node ([`Code`]: its
+//! source, kind, slot and JSON path) and XState's scope ([`Scope`]).
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -30,7 +35,8 @@ use serde_json::Value;
 use crate::core::Nid;
 use crate::event::Ev;
 use crate::machine::Machine;
-use crate::system::ActorRef;
+use crate::system::{ActorRef, Context};
+use indexmap::IndexMap;
 
 pub(crate) type GuardFn<C, E> = Box<dyn Fn(&GuardArgs<'_, C, E>) -> bool + Send + Sync>;
 pub(crate) type ActionFn = crate::system::EffectExec;
@@ -72,9 +78,33 @@ pub struct ExprArgs<'a, C, E> {
     pub(crate) machine: &'a Machine<C, E>,
     pub(crate) config: &'a [Nid],
     pub(crate) enq: Option<&'a Enq<'a>>,
+    pub(crate) children: &'a IndexMap<String, ActorRef>,
+    pub(crate) cx: &'a dyn Context,
+    pub(crate) error: &'a RefCell<Option<String>>,
 }
 
 impl<C, E> ExprArgs<'_, C, E> {
+    /// The actor's children by id (XState's `children`).
+    pub fn children(&self) -> &IndexMap<String, ActorRef> {
+        self.children
+    }
+
+    /// The actor itself (XState's `self`).
+    pub fn self_ref(&self) -> ActorRef {
+        self.cx.self_ref()
+    }
+
+    /// The actor's parent (XState's `self._parent`); `None` for the root.
+    pub fn parent_ref(&self) -> Option<ActorRef> {
+        self.cx.parent_ref()
+    }
+
+    /// Fails the step with `message` once the expression returns, as an
+    /// exception thrown by XState's evaluator does (the first failure wins).
+    pub fn fail(&self, message: impl Into<String>) {
+        self.error.borrow_mut().get_or_insert_with(|| message.into());
+    }
+
     /// Whether the state with this id (with or without a leading `#`) is
     /// active, like `snapshot.matches('#id')`.
     pub fn in_state(&self, id: &str) -> bool {
@@ -296,6 +326,7 @@ pub struct Registry<C, E> {
     pub(crate) actors: Vec<(String, Arc<dyn crate::system::Logic>)>,
     pub(crate) exprs: HashMap<String, ExprFn<C, E>>,
     pub(crate) contexts: HashMap<String, ContextFn>,
+    pub(crate) evaluators: HashMap<String, Arc<dyn Evaluator<C, E>>>,
 }
 
 impl<C, E> Default for Registry<C, E> {
@@ -307,6 +338,7 @@ impl<C, E> Default for Registry<C, E> {
             actors: Vec::new(),
             exprs: HashMap::new(),
             contexts: HashMap::new(),
+            evaluators: HashMap::new(),
         }
     }
 }
@@ -462,11 +494,24 @@ impl<C: 'static, E: 'static> Registry<C, E> {
         self.contexts.insert(name.into(), Arc::new(f));
         self
     }
+
+    /// Registers the evaluator of the code nodes in language `lang`
+    /// (`"@lang": lang`, or the root `@exprLang`), XState's
+    /// `sources.evaluators[lang]`. The `rust` language is built in
+    /// ([`Registry::expr`]), so `lang` must be another one.
+    pub fn evaluator(&mut self, lang: impl Into<String>, evaluator: impl Evaluator<C, E> + 'static) -> &mut Self {
+        let lang = lang.into();
+        assert!(lang != crate::load::RUST_LANG, "the rust language is built in: use Registry::expr");
+        self.evaluators.insert(lang, Arc::new(evaluator));
+        self
+    }
 }
 
 /// Spawns children for a context factory (the machine's initial transition).
 pub(crate) trait Spawner {
     fn spawn(&self, src: &str, options: SpawnOptions) -> Option<ActorRef>;
+    fn self_ref(&self) -> ActorRef;
+    fn fail(&self, message: String);
 }
 
 /// What a root `context` expression sees: XState's context factory
@@ -477,6 +522,20 @@ pub struct ContextArgs<'a> {
 }
 
 impl ContextArgs<'_> {
+    /// The actor whose context this is (XState's `self`); `None` outside
+    /// an actor system (when listing references).
+    pub fn self_ref(&self) -> Option<ActorRef> {
+        self.spawner.map(|s| s.self_ref())
+    }
+
+    /// Fails the actor's start with `message` once the expression returns,
+    /// as an exception thrown by XState's context factory does.
+    pub fn fail(&self, message: impl Into<String>) {
+        if let Some(s) = self.spawner {
+            s.fail(message.into());
+        }
+    }
+
     /// XState's context factory `spawn(src, options)`: a child running the
     /// registered actor logic `src` (an invoke source of this machine),
     /// allocated now and started with the actor. Returns its reference as
@@ -489,5 +548,111 @@ impl ContextArgs<'_> {
             Some(r) => r.to_json(),
             None => Value::Null,
         }
+    }
+}
+
+/// The evaluator slot a code node fills: where XState evaluates it (the
+/// `slot` XState passes to its evaluators).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum Slot {
+    /// The root `context` (scope: [`ContextArgs`]).
+    Context,
+    /// An inline guard, a guard's params, a named guard's `when`.
+    Guard,
+    /// A choice state's `choice` expression, or a branch's `when`.
+    Choice,
+    /// A transition's or choice branch's `context`, an `@xstate.assign`'s.
+    TransitionContext,
+    /// A transition's, choice branch's or invoke's `input`.
+    Input,
+    /// A transition function or a route function.
+    Transition,
+    /// An expression as an action.
+    Action,
+    /// A raised or emitted event, a custom action's params.
+    ActionParams,
+    /// A delay's duration, a state's or invoke's `timeout`.
+    Delay,
+    /// A final state's or the root's `output`.
+    Output,
+}
+
+impl Slot {
+    /// XState's name for the slot.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Slot::Context => "context",
+            Slot::Guard => "guard",
+            Slot::Choice => "choice",
+            Slot::TransitionContext => "transitionContext",
+            Slot::Input => "input",
+            Slot::Transition => "transition",
+            Slot::Action => "action",
+            Slot::ActionParams => "actionParams",
+            Slot::Delay => "delay",
+            Slot::Output => "output",
+        }
+    }
+}
+
+/// Whether a code node is `{ "@code": ... }` or `{ "@expr": ... }`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum CodeKind {
+    Code,
+    Expr,
+}
+
+impl CodeKind {
+    /// XState's name for the kind (`code` or `expr`).
+    pub fn as_str(self) -> &'static str {
+        match self {
+            CodeKind::Code => "code",
+            CodeKind::Expr => "expr",
+        }
+    }
+}
+
+/// A code node handed to an [`Evaluator`]: XState's evaluator arguments
+/// without the scope.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Code {
+    /// Unique per code node of a loaded machine for the life of the process,
+    /// so evaluators can cache what they compile from `source`.
+    pub id: u64,
+    pub lang: String,
+    pub source: String,
+    pub kind: CodeKind,
+    pub slot: Slot,
+    /// The node's JSON path (`$.states.a.entry[0]`).
+    pub path: String,
+}
+
+/// What a code node sees: XState's evaluator scope. The root `context` is
+/// computed by the context factory ([`ContextArgs`]: the input, `spawn`,
+/// `self`); everything else sees the transition arguments ([`ExprArgs`]).
+pub enum Scope<'s, 'a, C, E> {
+    Expr(&'s ExprArgs<'a, C, E>),
+    Context(&'s ContextArgs<'a>),
+}
+
+/// Evaluates the code nodes of one language (XState's
+/// `sources.evaluators[lang]`), called where and when XState calls it. An
+/// error fails the step, as an exception from XState's evaluator does.
+pub trait Evaluator<C, E>: Send + Sync {
+    fn eval(&self, code: &Code, scope: Scope<'_, '_, C, E>) -> Result<Value, String>;
+}
+
+impl<C, E, F> Evaluator<C, E> for F
+where
+    F: Fn(&Code, Scope<'_, '_, C, E>) -> Result<Value, String> + Send + Sync,
+{
+    fn eval(&self, code: &Code, scope: Scope<'_, '_, C, E>) -> Result<Value, String> {
+        self(code, scope)
+    }
+}
+
+impl<C, E> Evaluator<C, E> for Arc<dyn Evaluator<C, E>> {
+    fn eval(&self, code: &Code, scope: Scope<'_, '_, C, E>) -> Result<Value, String> {
+        (**self).eval(code, scope)
     }
 }

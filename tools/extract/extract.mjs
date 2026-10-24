@@ -32,7 +32,7 @@
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { basename, dirname, join, resolve, extname } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { registerHooks } from 'node:module';
+import { registerHooks, stripTypeScriptTypes } from 'node:module';
 import { machineFromJSON, machineToJSON, createAsyncLogic } from 'xstate';
 import { z } from 'zod';
 
@@ -123,30 +123,47 @@ function convertSchemas(schemas = {}) {
   return out;
 }
 
-// Code nodes run in Rust only in the `rust` language, where the source is
-// the name of a Rust expression (`{ "@code": "addLine", "@lang": "rust" }`).
-function rejectCode(value, path, lang) {
-  if (Array.isArray(value)) return value.forEach((v, i) => rejectCode(v, `${path}[${i}]`, lang));
-  if (!value || typeof value !== 'object') return;
+// Code nodes: in the `rust` language the source names a Rust expression
+// (`{ "@code": "addLine", "@lang": "rust" }`); other languages run through
+// the evaluator the Rust host registers for them (Registry::evaluator, or
+// codegen's `evaluator_<lang>`). TypeScript sources lose their types here
+// (Node's stripTypeScriptTypes), so a JavaScript engine can run them.
+function prepareCode(value, path, lang) {
+  if (Array.isArray(value)) return value.map((v, i) => prepareCode(v, `${path}[${i}]`, lang));
+  if (!value || typeof value !== 'object') return value;
   for (const key of ['@code', '@expr']) {
     if (!(key in value)) continue;
     const valueLang = value['@lang'] ?? lang;
-    if (valueLang !== 'rust') {
-      fail(
-        `${path}: ${key}${valueLang ? ` in '${valueLang}'` : ''} is not portable to Rust; ` +
-          `use { "${key}": "<name>", "@lang": "rust" } with a Rust expression, or reference a named guard or action`
-      );
-    }
-    return;
+    if (!valueLang) fail(`${path}: ${key} without @lang (and no root @exprLang)`);
+    if (typeof value[key] !== 'string') fail(`${path}: ${key} must be a string`);
+    if (valueLang !== 'ts') return value;
+    return { ...value, [key]: stripTypes(value[key], `${path}.${key}`) };
   }
-  for (const [k, v] of Object.entries(value)) rejectCode(v, `${path}.${k}`, lang);
+  return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, prepareCode(v, `${path}.${k}`, lang)]));
+}
+
+function stripTypes(source, path) {
+  const emit = process.emitWarning;
+  // The API is experimental in Node 22; its warning is noise here.
+  process.emitWarning = () => {};
+  try {
+    // An expression as a statement: parenthesized, so an object literal or
+    // a function expression stays one; the parentheses come off again.
+    const stripped = stripTypeScriptTypes(`(${source})`).trim();
+    return stripped.slice(1, -1).trimEnd();
+  } catch (e) {
+    fail(`${path}: ${e.message}`);
+  } finally {
+    process.emitWarning = emit;
+  }
 }
 
 // machineFromJSON with stubs for every source it reports missing.
 function checkWithXState(machine) {
   const stubLogic = createAsyncLogic({ run: async () => undefined });
-  // Rust expressions cannot run here: they evaluate to nothing.
-  const sources = { guards: {}, actions: {}, actors: {}, delays: {}, evaluators: { rust: () => undefined } };
+  // Code cannot run here: in every language, it evaluates to nothing.
+  const evaluators = new Proxy({}, { get: () => () => undefined });
+  const sources = { guards: {}, actions: {}, actors: {}, delays: {}, evaluators };
   const stub = { guard: ['guards', () => false], action: ['actions', () => {}], actor: ['actors', stubLogic], delay: ['delays', 1] };
   for (let i = 0; i < 10_000; i++) {
     try {
@@ -166,7 +183,7 @@ async function extract(modulePath) {
   if (!mod.machine) fail('the module must export `machine` (a MachineJSON definition)');
   let machine = typeof mod.machine.getInitialSnapshot === 'function' ? machineToJSON(mod.machine) : mod.machine;
   machine = JSON.parse(JSON.stringify(machine));
-  rejectCode(machine, '$', machine['@exprLang']);
+  machine = prepareCode(machine, '$', machine['@exprLang']);
   const schemas = convertSchemas(mod.schemas);
   const internal = Object.keys(schemas.internalEvents ?? {});
   if (internal.length && machine.internalEvents === undefined) machine.internalEvents = internal;

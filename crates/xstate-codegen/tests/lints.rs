@@ -107,10 +107,10 @@ fn context_and_patches_must_fit_the_context_schema() {
 
 #[test]
 fn definition_errors_come_from_the_runtime_loader() {
-    let m = simple(json!({ "go": { "@code": "() => {}", "@lang": "ts" } }));
+    let m = simple(json!({ "go": { "@code": "() => {}" } }));
     let (path, message) = error(bundle(m, json!({})));
     assert_eq!(path, "$.states.a.on.go");
-    assert!(message.contains("@code"), "{message}");
+    assert!(message.contains("@exprLang"), "{message}");
     let m = json!({ "id": "m", "initial": "nope", "states": { "a": {} } });
     assert!(generate(&bundle(m, json!({})), "m").is_err());
 }
@@ -210,4 +210,22 @@ fn computed_values_are_checked_where_static_and_become_trait_methods() {
     assert_eq!(path, "$.states.a.entry[0].context.label");
     let (path, _) = error(bundle(machine(json!({ "count": code("next"), "other": 1 })), schemas));
     assert_eq!(path, "$.states.a.entry[0].context.other");
+}
+
+#[test]
+fn other_languages_need_an_evaluator_method() {
+    let m = json!({
+        "id": "m", "initial": "a", "@exprLang": "js",
+        "states": { "a": { "on": { "go": {
+            "guard": { "@expr": "context.n < 3" },
+            "actions": [{ "@expr": "enq.emit({ type: 'went' })", "@lang": "ts" }]
+        } } } }
+    });
+    let code = generate(&bundle(m, json!({ "events": { "go": obj() } })), "m").unwrap().code;
+    assert!(
+        code.contains("fn evaluator_js(&self) -> ::std::sync::Arc<dyn __rt::Evaluator<Context, Event>>;"),
+        "{code}"
+    );
+    assert!(code.contains("fn evaluator_ts("));
+    assert!(code.contains("r.evaluator(\"js\", imp.evaluator_js());"));
 }

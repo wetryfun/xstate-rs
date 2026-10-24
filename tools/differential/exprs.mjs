@@ -119,10 +119,42 @@ export const exprs = {
   }
 };
 
+// The `probe` language (fixtures/system/eval_probe*): reports the
+// arguments XState hands an evaluator, so the Rust runtime's slots, paths
+// and kinds are checked against XState's. Twinned in
+// crates/xstate-rt/tests/common/exprs.rs.
+const probe = ({ source, kind, slot, path, scope }) => {
+  const info = { slot, path, kind };
+  const [op, wantSlot, wantPath] = source.split(':');
+  switch (op) {
+    case 'info':
+      return info;
+    case 'infoAction':
+      return { context: { act: info } };
+    case 'fn':
+      return { target: 'b', context: { fn: info } };
+    case 'is':
+      return slot === wantSlot && path === wantPath;
+    case 'delay':
+      return slot === wantSlot && path === wantPath ? 1000 : 7;
+    case 'inc':
+      return scope.context.count + 1;
+    case 'input':
+      return scope.input ?? null;
+    case 'children':
+      return Object.keys(scope.children ?? {}).sort();
+    case 'throw':
+      throw new Error(`probe ${slot} at ${path}`);
+    default:
+      throw new Error(`no probe '${source}'`);
+  }
+};
+
 export const evaluators = {
   rust: ({ source, scope }) => {
     const f = exprs[source];
     if (!f) throw new Error(`no expression '${source}'`);
     return f(scope);
-  }
+  },
+  probe
 };

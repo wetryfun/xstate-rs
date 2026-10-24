@@ -1,0 +1,4047 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "m",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "m": {
+          "id": "m",
+          "address": "m",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "input": {
+            "from": "input"
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "info": {
+                "slot": "context",
+                "path": "$.context.info",
+                "kind": "expr"
+              },
+              "input": {
+                "from": "input"
+              },
+              "count": 0
+            },
+            "value": "a",
+            "children": {
+              "k": {
+                "$actor": "m/k",
+                "incarnation": "1"
+              }
+            },
+            "timers": [
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": "wait",
+                  "stateId": "m.a"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.timeout.actor",
+                  "actorId": "k",
+                  "sessionId": "1"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "m",
+              "m.a"
+            ]
+          }
+        },
+        "m/k": {
+          "id": "k",
+          "address": "m/k",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "info": {
+              "slot": "input",
+              "path": "$.states.a.invoke.input.info",
+              "kind": "expr"
+            }
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 0,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": "wait",
+              "stateId": "m.a"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "occurrence": 1,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 1,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.timeout.actor",
+              "actorId": "k"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "entry",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          },
+          "args": [],
+          "event": {
+            "type": "entry",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 2,
+        "sequence": 2,
+        "effect": 1
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "m",
+          "incarnation": "0"
+        },
+        "type": "entry",
+        "kind": "emit",
+        "params": {
+          "info": {
+            "slot": "actionParams",
+            "path": "$.states.a.entry[0].event.info",
+            "kind": "code"
+          },
+          "children": [
+            "k"
+          ]
+        },
+        "args": [],
+        "event": {
+          "type": "entry",
+          "info": {
+            "slot": "actionParams",
+            "path": "$.states.a.entry[0].event.info",
+            "kind": "code"
+          },
+          "children": [
+            "k"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "m",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "m": {
+          "id": "m",
+          "address": "m",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "input": {
+            "from": "input"
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "info": {
+                "slot": "context",
+                "path": "$.context.info",
+                "kind": "expr"
+              },
+              "input": {
+                "from": "input"
+              },
+              "count": 0
+            },
+            "value": "a",
+            "children": {
+              "k": {
+                "$actor": "m/k",
+                "incarnation": "1"
+              }
+            },
+            "timers": [
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": "wait",
+                  "stateId": "m.a"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.timeout.actor",
+                  "actorId": "k",
+                  "sessionId": "1"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "m",
+              "m.a"
+            ]
+          }
+        },
+        "m/k": {
+          "id": "k",
+          "address": "m/k",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "info": {
+              "slot": "input",
+              "path": "$.states.a.invoke.input.info",
+              "kind": "expr"
+            }
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 0,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": "wait",
+              "stateId": "m.a"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "occurrence": 1,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 1,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.timeout.actor",
+              "actorId": "k"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "entry",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          },
+          "args": [],
+          "event": {
+            "type": "entry",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked1",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked1"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 2,
+        "sequence": 3,
+        "effect": 2
+      }
+    },
+    "effects": [
+      {
+        "id": "system:1",
+        "source": {
+          "$actor": "m",
+          "incarnation": "0"
+        },
+        "type": "checked1",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "checked1"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "m",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "m": {
+          "id": "m",
+          "address": "m",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "input": {
+            "from": "input"
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "info": {
+                "slot": "context",
+                "path": "$.context.info",
+                "kind": "expr"
+              },
+              "input": {
+                "from": "input"
+              },
+              "count": 0
+            },
+            "value": "a",
+            "children": {
+              "k": {
+                "$actor": "m/k",
+                "incarnation": "1"
+              }
+            },
+            "timers": [
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": "wait",
+                  "stateId": "m.a"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.timeout.actor",
+                  "actorId": "k",
+                  "sessionId": "1"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "m",
+              "m.a"
+            ]
+          }
+        },
+        "m/k": {
+          "id": "k",
+          "address": "m/k",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "info": {
+              "slot": "input",
+              "path": "$.states.a.invoke.input.info",
+              "kind": "expr"
+            }
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 0,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": "wait",
+              "stateId": "m.a"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "occurrence": 1,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 1,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.timeout.actor",
+              "actorId": "k"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "entry",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          },
+          "args": [],
+          "event": {
+            "type": "entry",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked1",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked1"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked2",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked2"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 2,
+        "sequence": 4,
+        "effect": 3
+      }
+    },
+    "effects": [
+      {
+        "id": "system:2",
+        "source": {
+          "$actor": "m",
+          "incarnation": "0"
+        },
+        "type": "checked2",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "checked2"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "m",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "m": {
+          "id": "m",
+          "address": "m",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "input": {
+            "from": "input"
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "info": {
+                "slot": "context",
+                "path": "$.context.info",
+                "kind": "expr"
+              },
+              "input": {
+                "from": "input"
+              },
+              "count": 0
+            },
+            "value": "a",
+            "children": {
+              "k": {
+                "$actor": "m/k",
+                "incarnation": "1"
+              }
+            },
+            "timers": [
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": "wait",
+                  "stateId": "m.a"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.timeout.actor",
+                  "actorId": "k",
+                  "sessionId": "1"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "m",
+              "m.a"
+            ]
+          }
+        },
+        "m/k": {
+          "id": "k",
+          "address": "m/k",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "info": {
+              "slot": "input",
+              "path": "$.states.a.invoke.input.info",
+              "kind": "expr"
+            }
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 0,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": "wait",
+              "stateId": "m.a"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "occurrence": 1,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 1,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.timeout.actor",
+              "actorId": "k"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "entry",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          },
+          "args": [],
+          "event": {
+            "type": "entry",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked1",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked1"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked2",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked2"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 2,
+        "sequence": 5,
+        "effect": 3
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 3",
+    "snapshot": {
+      "root": "m",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "m": {
+          "id": "m",
+          "address": "m",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "input": {
+            "from": "input"
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "info": {
+                "slot": "context",
+                "path": "$.context.info",
+                "kind": "expr"
+              },
+              "input": {
+                "from": "input"
+              },
+              "count": 0
+            },
+            "value": "a",
+            "children": {
+              "k": {
+                "$actor": "m/k",
+                "incarnation": "1"
+              }
+            },
+            "timers": [
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": "wait",
+                  "stateId": "m.a"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.timeout.actor",
+                  "actorId": "k",
+                  "sessionId": "1"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "m",
+              "m.a"
+            ]
+          }
+        },
+        "m/k": {
+          "id": "k",
+          "address": "m/k",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "info": {
+              "slot": "input",
+              "path": "$.states.a.invoke.input.info",
+              "kind": "expr"
+            }
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 0,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": "wait",
+              "stateId": "m.a"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "occurrence": 1,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 1,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.timeout.actor",
+              "actorId": "k"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "entry",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          },
+          "args": [],
+          "event": {
+            "type": "entry",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked1",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked1"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked2",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked2"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked4",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked4"
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 2,
+        "sequence": 6,
+        "effect": 4
+      }
+    },
+    "effects": [
+      {
+        "id": "system:3",
+        "source": {
+          "$actor": "m",
+          "incarnation": "0"
+        },
+        "type": "checked4",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "checked4"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "snapshot": {
+      "root": "m",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "m": {
+          "id": "m",
+          "address": "m",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "input": {
+            "from": "input"
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "info": {
+                "slot": "context",
+                "path": "$.context.info",
+                "kind": "expr"
+              },
+              "input": {
+                "from": "input"
+              },
+              "count": 1,
+              "t": {
+                "slot": "transitionContext",
+                "path": "$.states.a.on.GO.context.t",
+                "kind": "expr"
+              },
+              "as": {
+                "slot": "transitionContext",
+                "path": "$.states.a.on.GO.actions[0].context.as",
+                "kind": "expr"
+              },
+              "act": {
+                "slot": "action",
+                "path": "$.states.a.on.GO.actions[1]",
+                "kind": "expr"
+              }
+            },
+            "value": "b",
+            "children": {},
+            "timers": [
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.timeout.state",
+                  "stateId": "m.b"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {
+              "m.b": {
+                "i": {
+                  "slot": "input",
+                  "path": "$.states.a.on.GO.input.i",
+                  "kind": "expr"
+                }
+              }
+            },
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "m",
+              "m.b"
+            ]
+          }
+        },
+        "m/k": {
+          "id": "k",
+          "address": "m/k",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "info": {
+              "slot": "input",
+              "path": "$.states.a.invoke.input.info",
+              "kind": "expr"
+            }
+          },
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "occurrence": 2,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 8,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.timeout.state",
+              "stateId": "m.b"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "entry",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          },
+          "args": [],
+          "event": {
+            "type": "entry",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked1",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked1"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked2",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked2"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked4",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked4"
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "named",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.on.GO.actions[2].actions.named[0].event.info",
+              "kind": "code"
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "named",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.on.GO.actions[2].actions.named[0].event.info",
+              "kind": "code"
+            }
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "root/actions/noop",
+          "kind": "action",
+          "params": {},
+          "args": [
+            {
+              "info": {
+                "slot": "actionParams",
+                "path": "$.states.a.on.GO.actions[3].params.info",
+                "kind": "expr"
+              }
+            }
+          ]
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "bInput",
+          "kind": "emit",
+          "params": {
+            "input": {
+              "i": {
+                "slot": "input",
+                "path": "$.states.a.on.GO.input.i",
+                "kind": "expr"
+              }
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "bInput",
+            "input": {
+              "i": {
+                "slot": "input",
+                "path": "$.states.a.on.GO.input.i",
+                "kind": "expr"
+              }
+            }
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "raised",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.b.on.RAISED.actions[0].event.info",
+              "kind": "expr"
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "raised",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.b.on.RAISED.actions[0].event.info",
+              "kind": "expr"
+            }
+          }
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 3,
+        "sequence": 9,
+        "effect": 8
+      }
+    },
+    "effects": [
+      {
+        "id": "system:4",
+        "source": {
+          "$actor": "m",
+          "incarnation": "0"
+        },
+        "type": "named",
+        "kind": "emit",
+        "params": {
+          "info": {
+            "slot": "actionParams",
+            "path": "$.states.a.on.GO.actions[2].actions.named[0].event.info",
+            "kind": "code"
+          }
+        },
+        "args": [],
+        "event": {
+          "type": "named",
+          "info": {
+            "slot": "actionParams",
+            "path": "$.states.a.on.GO.actions[2].actions.named[0].event.info",
+            "kind": "code"
+          }
+        }
+      },
+      {
+        "id": "system:5",
+        "source": {
+          "$actor": "m",
+          "incarnation": "0"
+        },
+        "type": "root/actions/noop",
+        "kind": "action",
+        "params": {},
+        "args": [
+          {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.on.GO.actions[3].params.info",
+              "kind": "expr"
+            }
+          }
+        ]
+      },
+      {
+        "id": "system:6",
+        "source": {
+          "$actor": "m",
+          "incarnation": "0"
+        },
+        "type": "bInput",
+        "kind": "emit",
+        "params": {
+          "input": {
+            "i": {
+              "slot": "input",
+              "path": "$.states.a.on.GO.input.i",
+              "kind": "expr"
+            }
+          }
+        },
+        "args": [],
+        "event": {
+          "type": "bInput",
+          "input": {
+            "i": {
+              "slot": "input",
+              "path": "$.states.a.on.GO.input.i",
+              "kind": "expr"
+            }
+          }
+        }
+      },
+      {
+        "id": "system:7",
+        "source": {
+          "$actor": "m",
+          "incarnation": "0"
+        },
+        "type": "raised",
+        "kind": "emit",
+        "params": {
+          "info": {
+            "slot": "actionParams",
+            "path": "$.states.b.on.RAISED.actions[0].event.info",
+            "kind": "expr"
+          }
+        },
+        "args": [],
+        "event": {
+          "type": "raised",
+          "info": {
+            "slot": "actionParams",
+            "path": "$.states.b.on.RAISED.actions[0].event.info",
+            "kind": "expr"
+          }
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 5",
+    "snapshot": {
+      "root": "m",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "m": {
+          "id": "m",
+          "address": "m",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "input": {
+            "from": "input"
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "info": {
+                "slot": "context",
+                "path": "$.context.info",
+                "kind": "expr"
+              },
+              "input": {
+                "from": "input"
+              },
+              "count": 1,
+              "t": {
+                "slot": "transitionContext",
+                "path": "$.states.a.on.GO.context.t",
+                "kind": "expr"
+              },
+              "as": {
+                "slot": "transitionContext",
+                "path": "$.states.a.on.GO.actions[0].context.as",
+                "kind": "expr"
+              },
+              "act": {
+                "slot": "action",
+                "path": "$.states.a.on.GO.actions[1]",
+                "kind": "expr"
+              }
+            },
+            "value": "a",
+            "children": {
+              "k": {
+                "$actor": "m/k",
+                "incarnation": "2"
+              }
+            },
+            "timers": [
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": "wait",
+                  "stateId": "m.a"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.timeout.actor",
+                  "actorId": "k",
+                  "sessionId": "2"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "m",
+              "m.a"
+            ]
+          }
+        },
+        "m/k": {
+          "id": "k",
+          "address": "m/k",
+          "incarnation": "2",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "info": {
+              "slot": "input",
+              "path": "$.states.a.invoke.input.info",
+              "kind": "expr"
+            }
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "occurrence": 3,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 10,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": "wait",
+              "stateId": "m.a"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "occurrence": 4,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 11,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.timeout.actor",
+              "actorId": "k"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "entry",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          },
+          "args": [],
+          "event": {
+            "type": "entry",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked1",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked1"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked2",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked2"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked4",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked4"
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "named",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.on.GO.actions[2].actions.named[0].event.info",
+              "kind": "code"
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "named",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.on.GO.actions[2].actions.named[0].event.info",
+              "kind": "code"
+            }
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "root/actions/noop",
+          "kind": "action",
+          "params": {},
+          "args": [
+            {
+              "info": {
+                "slot": "actionParams",
+                "path": "$.states.a.on.GO.actions[3].params.info",
+                "kind": "expr"
+              }
+            }
+          ]
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "bInput",
+          "kind": "emit",
+          "params": {
+            "input": {
+              "i": {
+                "slot": "input",
+                "path": "$.states.a.on.GO.input.i",
+                "kind": "expr"
+              }
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "bInput",
+            "input": {
+              "i": {
+                "slot": "input",
+                "path": "$.states.a.on.GO.input.i",
+                "kind": "expr"
+              }
+            }
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "raised",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.b.on.RAISED.actions[0].event.info",
+              "kind": "expr"
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "raised",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.b.on.RAISED.actions[0].event.info",
+              "kind": "expr"
+            }
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "entry",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          },
+          "args": [],
+          "event": {
+            "type": "entry",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          }
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 5,
+        "sequence": 12,
+        "effect": 9
+      }
+    },
+    "effects": [
+      {
+        "id": "system:8",
+        "source": {
+          "$actor": "m",
+          "incarnation": "0"
+        },
+        "type": "entry",
+        "kind": "emit",
+        "params": {
+          "info": {
+            "slot": "actionParams",
+            "path": "$.states.a.entry[0].event.info",
+            "kind": "code"
+          },
+          "children": [
+            "k"
+          ]
+        },
+        "args": [],
+        "event": {
+          "type": "entry",
+          "info": {
+            "slot": "actionParams",
+            "path": "$.states.a.entry[0].event.info",
+            "kind": "code"
+          },
+          "children": [
+            "k"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 6",
+    "snapshot": {
+      "root": "m",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "m": {
+          "id": "m",
+          "address": "m",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "input": {
+            "from": "input"
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "info": {
+                "slot": "context",
+                "path": "$.context.info",
+                "kind": "expr"
+              },
+              "input": {
+                "from": "input"
+              },
+              "count": 1,
+              "t": {
+                "slot": "transitionContext",
+                "path": "$.states.a.on.GO.context.t",
+                "kind": "expr"
+              },
+              "as": {
+                "slot": "transitionContext",
+                "path": "$.states.a.on.GO.actions[0].context.as",
+                "kind": "expr"
+              },
+              "act": {
+                "slot": "action",
+                "path": "$.states.a.on.GO.actions[1]",
+                "kind": "expr"
+              },
+              "fn": {
+                "slot": "transition",
+                "path": "$.states.a.on.FN",
+                "kind": "code"
+              }
+            },
+            "value": "b",
+            "children": {},
+            "timers": [
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.timeout.state",
+                  "stateId": "m.b"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "m",
+              "m.b"
+            ]
+          }
+        },
+        "m/k": {
+          "id": "k",
+          "address": "m/k",
+          "incarnation": "2",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "info": {
+              "slot": "input",
+              "path": "$.states.a.invoke.input.info",
+              "kind": "expr"
+            }
+          },
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "occurrence": 5,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 14,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.timeout.state",
+              "stateId": "m.b"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "entry",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          },
+          "args": [],
+          "event": {
+            "type": "entry",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked1",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked1"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked2",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked2"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked4",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked4"
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "named",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.on.GO.actions[2].actions.named[0].event.info",
+              "kind": "code"
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "named",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.on.GO.actions[2].actions.named[0].event.info",
+              "kind": "code"
+            }
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "root/actions/noop",
+          "kind": "action",
+          "params": {},
+          "args": [
+            {
+              "info": {
+                "slot": "actionParams",
+                "path": "$.states.a.on.GO.actions[3].params.info",
+                "kind": "expr"
+              }
+            }
+          ]
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "bInput",
+          "kind": "emit",
+          "params": {
+            "input": {
+              "i": {
+                "slot": "input",
+                "path": "$.states.a.on.GO.input.i",
+                "kind": "expr"
+              }
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "bInput",
+            "input": {
+              "i": {
+                "slot": "input",
+                "path": "$.states.a.on.GO.input.i",
+                "kind": "expr"
+              }
+            }
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "raised",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.b.on.RAISED.actions[0].event.info",
+              "kind": "expr"
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "raised",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.b.on.RAISED.actions[0].event.info",
+              "kind": "expr"
+            }
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "entry",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          },
+          "args": [],
+          "event": {
+            "type": "entry",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          }
+        },
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "bInput",
+          "kind": "emit",
+          "params": {
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "bInput",
+            "input": null
+          }
+        }
+      },
+      "counters": {
+        "actor": 3,
+        "timer": 6,
+        "sequence": 15,
+        "effect": 10
+      }
+    },
+    "effects": [
+      {
+        "id": "system:9",
+        "source": {
+          "$actor": "m",
+          "incarnation": "0"
+        },
+        "type": "bInput",
+        "kind": "emit",
+        "params": {
+          "input": null
+        },
+        "args": [],
+        "event": {
+          "type": "bInput",
+          "input": null
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 7",
+    "snapshot": {
+      "root": "m",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "m": {
+          "id": "m",
+          "address": "m",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "input": {
+            "from": "input"
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "info": {
+                "slot": "context",
+                "path": "$.context.info",
+                "kind": "expr"
+              },
+              "input": {
+                "from": "input"
+              },
+              "count": 1,
+              "t": {
+                "slot": "transitionContext",
+                "path": "$.states.a.on.GO.context.t",
+                "kind": "expr"
+              },
+              "as": {
+                "slot": "transitionContext",
+                "path": "$.states.a.on.GO.actions[0].context.as",
+                "kind": "expr"
+              },
+              "act": {
+                "slot": "action",
+                "path": "$.states.a.on.GO.actions[1]",
+                "kind": "expr"
+              },
+              "fn": {
+                "slot": "transition",
+                "path": "$.states.a.on.FN",
+                "kind": "code"
+              }
+            },
+            "value": "a",
+            "children": {
+              "k": {
+                "$actor": "m/k",
+                "incarnation": "3"
+              }
+            },
+            "timers": [
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.after",
+                  "delay": "wait",
+                  "stateId": "m.a"
+                },
+                "target": "self"
+              },
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.timeout.actor",
+                  "actorId": "k",
+                  "sessionId": "3"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "m",
+              "m.a"
+            ]
+          }
+        },
+        "m/k": {
+          "id": "k",
+          "address": "m/k",
+          "incarnation": "3",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "info": {
+              "slot": "input",
+              "path": "$.states.a.invoke.input.info",
+              "kind": "expr"
+            }
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {},
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "occurrence": 6,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 16,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.after",
+              "delay": "wait",
+              "stateId": "m.a"
+            }
+          }
+        },
+        {
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "occurrence": 7,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 17,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.timeout.actor",
+              "actorId": "k"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "entry",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          },
+          "args": [],
+          "event": {
+            "type": "entry",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked1",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked1"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked2",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked2"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked4",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked4"
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "named",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.on.GO.actions[2].actions.named[0].event.info",
+              "kind": "code"
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "named",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.on.GO.actions[2].actions.named[0].event.info",
+              "kind": "code"
+            }
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "root/actions/noop",
+          "kind": "action",
+          "params": {},
+          "args": [
+            {
+              "info": {
+                "slot": "actionParams",
+                "path": "$.states.a.on.GO.actions[3].params.info",
+                "kind": "expr"
+              }
+            }
+          ]
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "bInput",
+          "kind": "emit",
+          "params": {
+            "input": {
+              "i": {
+                "slot": "input",
+                "path": "$.states.a.on.GO.input.i",
+                "kind": "expr"
+              }
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "bInput",
+            "input": {
+              "i": {
+                "slot": "input",
+                "path": "$.states.a.on.GO.input.i",
+                "kind": "expr"
+              }
+            }
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "raised",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.b.on.RAISED.actions[0].event.info",
+              "kind": "expr"
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "raised",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.b.on.RAISED.actions[0].event.info",
+              "kind": "expr"
+            }
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "entry",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          },
+          "args": [],
+          "event": {
+            "type": "entry",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          }
+        },
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "bInput",
+          "kind": "emit",
+          "params": {
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "bInput",
+            "input": null
+          }
+        },
+        "system:10": {
+          "id": "system:10",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "entry",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          },
+          "args": [],
+          "event": {
+            "type": "entry",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          }
+        }
+      },
+      "counters": {
+        "actor": 4,
+        "timer": 8,
+        "sequence": 18,
+        "effect": 11
+      }
+    },
+    "effects": [
+      {
+        "id": "system:10",
+        "source": {
+          "$actor": "m",
+          "incarnation": "0"
+        },
+        "type": "entry",
+        "kind": "emit",
+        "params": {
+          "info": {
+            "slot": "actionParams",
+            "path": "$.states.a.entry[0].event.info",
+            "kind": "code"
+          },
+          "children": [
+            "k"
+          ]
+        },
+        "args": [],
+        "event": {
+          "type": "entry",
+          "info": {
+            "slot": "actionParams",
+            "path": "$.states.a.entry[0].event.info",
+            "kind": "code"
+          },
+          "children": [
+            "k"
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 8",
+    "snapshot": {
+      "root": "m",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "m": {
+          "id": "m",
+          "address": "m",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "input": {
+            "from": "input"
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "info": {
+                "slot": "context",
+                "path": "$.context.info",
+                "kind": "expr"
+              },
+              "input": {
+                "from": "input"
+              },
+              "count": 1,
+              "t": {
+                "slot": "transitionContext",
+                "path": "$.states.a.on.GO.context.t",
+                "kind": "expr"
+              },
+              "as": {
+                "slot": "transitionContext",
+                "path": "$.states.a.on.GO.actions[0].context.as",
+                "kind": "expr"
+              },
+              "act": {
+                "slot": "action",
+                "path": "$.states.a.on.GO.actions[1]",
+                "kind": "expr"
+              },
+              "fn": {
+                "slot": "transition",
+                "path": "$.states.a.on.FN",
+                "kind": "code"
+              },
+              "ci": {
+                "slot": "transitionContext",
+                "path": "$.states.c.choice[0].context.ci",
+                "kind": "expr"
+              }
+            },
+            "value": "b",
+            "children": {},
+            "timers": [
+              {
+                "delay": 1000,
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "xstate.timeout.state",
+                  "stateId": "m.b"
+                },
+                "target": "self"
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {
+              "m.b": {
+                "ii": {
+                  "slot": "input",
+                  "path": "$.states.c.choice[0].input.ii",
+                  "kind": "expr"
+                }
+              }
+            },
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "m",
+              "m.b"
+            ]
+          }
+        },
+        "m/k": {
+          "id": "k",
+          "address": "m/k",
+          "incarnation": "3",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "info": {
+              "slot": "input",
+              "path": "$.states.a.invoke.input.info",
+              "kind": "expr"
+            }
+          },
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "occurrence": 8,
+          "scheduledAt": 0,
+          "dueAt": 1000,
+          "sequence": 20,
+          "event": {
+            "type": "xstate.timer",
+            "event": {
+              "type": "xstate.timeout.state",
+              "stateId": "m.b"
+            }
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "entry",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          },
+          "args": [],
+          "event": {
+            "type": "entry",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked1",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked1"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked2",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked2"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked4",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked4"
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "named",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.on.GO.actions[2].actions.named[0].event.info",
+              "kind": "code"
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "named",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.on.GO.actions[2].actions.named[0].event.info",
+              "kind": "code"
+            }
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "root/actions/noop",
+          "kind": "action",
+          "params": {},
+          "args": [
+            {
+              "info": {
+                "slot": "actionParams",
+                "path": "$.states.a.on.GO.actions[3].params.info",
+                "kind": "expr"
+              }
+            }
+          ]
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "bInput",
+          "kind": "emit",
+          "params": {
+            "input": {
+              "i": {
+                "slot": "input",
+                "path": "$.states.a.on.GO.input.i",
+                "kind": "expr"
+              }
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "bInput",
+            "input": {
+              "i": {
+                "slot": "input",
+                "path": "$.states.a.on.GO.input.i",
+                "kind": "expr"
+              }
+            }
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "raised",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.b.on.RAISED.actions[0].event.info",
+              "kind": "expr"
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "raised",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.b.on.RAISED.actions[0].event.info",
+              "kind": "expr"
+            }
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "entry",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          },
+          "args": [],
+          "event": {
+            "type": "entry",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          }
+        },
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "bInput",
+          "kind": "emit",
+          "params": {
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "bInput",
+            "input": null
+          }
+        },
+        "system:10": {
+          "id": "system:10",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "entry",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          },
+          "args": [],
+          "event": {
+            "type": "entry",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          }
+        },
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "bInput",
+          "kind": "emit",
+          "params": {
+            "input": {
+              "ii": {
+                "slot": "input",
+                "path": "$.states.c.choice[0].input.ii",
+                "kind": "expr"
+              }
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "bInput",
+            "input": {
+              "ii": {
+                "slot": "input",
+                "path": "$.states.c.choice[0].input.ii",
+                "kind": "expr"
+              }
+            }
+          }
+        }
+      },
+      "counters": {
+        "actor": 4,
+        "timer": 9,
+        "sequence": 21,
+        "effect": 12
+      }
+    },
+    "effects": [
+      {
+        "id": "system:11",
+        "source": {
+          "$actor": "m",
+          "incarnation": "0"
+        },
+        "type": "bInput",
+        "kind": "emit",
+        "params": {
+          "input": {
+            "ii": {
+              "slot": "input",
+              "path": "$.states.c.choice[0].input.ii",
+              "kind": "expr"
+            }
+          }
+        },
+        "args": [],
+        "event": {
+          "type": "bInput",
+          "input": {
+            "ii": {
+              "slot": "input",
+              "path": "$.states.c.choice[0].input.ii",
+              "kind": "expr"
+            }
+          }
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 9",
+    "snapshot": {
+      "root": "m",
+      "executionId": "system",
+      "now": 5000,
+      "actors": {
+        "m": {
+          "id": "m",
+          "address": "m",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "input": {
+            "from": "input"
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "info": {
+                "slot": "context",
+                "path": "$.context.info",
+                "kind": "expr"
+              },
+              "input": {
+                "from": "input"
+              },
+              "count": 1,
+              "t": {
+                "slot": "transitionContext",
+                "path": "$.states.a.on.GO.context.t",
+                "kind": "expr"
+              },
+              "as": {
+                "slot": "transitionContext",
+                "path": "$.states.a.on.GO.actions[0].context.as",
+                "kind": "expr"
+              },
+              "act": {
+                "slot": "action",
+                "path": "$.states.a.on.GO.actions[1]",
+                "kind": "expr"
+              },
+              "fn": {
+                "slot": "transition",
+                "path": "$.states.a.on.FN",
+                "kind": "code"
+              },
+              "ci": {
+                "slot": "transitionContext",
+                "path": "$.states.c.choice[0].context.ci",
+                "kind": "expr"
+              }
+            },
+            "value": "b",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {
+              "m.b": {
+                "ii": {
+                  "slot": "input",
+                  "path": "$.states.c.choice[0].input.ii",
+                  "kind": "expr"
+                }
+              }
+            },
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "m",
+              "m.b"
+            ]
+          }
+        },
+        "m/k": {
+          "id": "k",
+          "address": "m/k",
+          "incarnation": "3",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "info": {
+              "slot": "input",
+              "path": "$.states.a.invoke.input.info",
+              "kind": "expr"
+            }
+          },
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "entry",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          },
+          "args": [],
+          "event": {
+            "type": "entry",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked1",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked1"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked2",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked2"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked4",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked4"
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "named",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.on.GO.actions[2].actions.named[0].event.info",
+              "kind": "code"
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "named",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.on.GO.actions[2].actions.named[0].event.info",
+              "kind": "code"
+            }
+          }
+        },
+        "system:5": {
+          "id": "system:5",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "root/actions/noop",
+          "kind": "action",
+          "params": {},
+          "args": [
+            {
+              "info": {
+                "slot": "actionParams",
+                "path": "$.states.a.on.GO.actions[3].params.info",
+                "kind": "expr"
+              }
+            }
+          ]
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "bInput",
+          "kind": "emit",
+          "params": {
+            "input": {
+              "i": {
+                "slot": "input",
+                "path": "$.states.a.on.GO.input.i",
+                "kind": "expr"
+              }
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "bInput",
+            "input": {
+              "i": {
+                "slot": "input",
+                "path": "$.states.a.on.GO.input.i",
+                "kind": "expr"
+              }
+            }
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "raised",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.b.on.RAISED.actions[0].event.info",
+              "kind": "expr"
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "raised",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.b.on.RAISED.actions[0].event.info",
+              "kind": "expr"
+            }
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "entry",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          },
+          "args": [],
+          "event": {
+            "type": "entry",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          }
+        },
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "bInput",
+          "kind": "emit",
+          "params": {
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "bInput",
+            "input": null
+          }
+        },
+        "system:10": {
+          "id": "system:10",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "entry",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          },
+          "args": [],
+          "event": {
+            "type": "entry",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          }
+        },
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "bInput",
+          "kind": "emit",
+          "params": {
+            "input": {
+              "ii": {
+                "slot": "input",
+                "path": "$.states.c.choice[0].input.ii",
+                "kind": "expr"
+              }
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "bInput",
+            "input": {
+              "ii": {
+                "slot": "input",
+                "path": "$.states.c.choice[0].input.ii",
+                "kind": "expr"
+              }
+            }
+          }
+        },
+        "system:12": {
+          "id": "system:12",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "bTimedOut",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "bTimedOut"
+          }
+        }
+      },
+      "counters": {
+        "actor": 4,
+        "timer": 9,
+        "sequence": 22,
+        "effect": 13
+      }
+    },
+    "effects": [
+      {
+        "id": "system:12",
+        "source": {
+          "$actor": "m",
+          "incarnation": "0"
+        },
+        "type": "bTimedOut",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "bTimedOut"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 10",
+    "snapshot": {
+      "root": "m",
+      "executionId": "system",
+      "now": 5000,
+      "actors": {
+        "m": {
+          "id": "m",
+          "address": "m",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "input": {
+            "from": "input"
+          },
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "root": {
+                "slot": "output",
+                "path": "$.output.root",
+                "kind": "expr"
+              }
+            },
+            "context": {
+              "info": {
+                "slot": "context",
+                "path": "$.context.info",
+                "kind": "expr"
+              },
+              "input": {
+                "from": "input"
+              },
+              "count": 1,
+              "t": {
+                "slot": "transitionContext",
+                "path": "$.states.a.on.GO.context.t",
+                "kind": "expr"
+              },
+              "as": {
+                "slot": "transitionContext",
+                "path": "$.states.a.on.GO.actions[0].context.as",
+                "kind": "expr"
+              },
+              "act": {
+                "slot": "action",
+                "path": "$.states.a.on.GO.actions[1]",
+                "kind": "expr"
+              },
+              "fn": {
+                "slot": "transition",
+                "path": "$.states.a.on.FN",
+                "kind": "code"
+              },
+              "ci": {
+                "slot": "transitionContext",
+                "path": "$.states.c.choice[0].context.ci",
+                "kind": "expr"
+              }
+            },
+            "value": "done",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "m.done",
+              "m"
+            ]
+          }
+        },
+        "m/k": {
+          "id": "k",
+          "address": "m/k",
+          "incarnation": "3",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "info": {
+              "slot": "input",
+              "path": "$.states.a.invoke.input.info",
+              "kind": "expr"
+            }
+          },
+          "snapshot": {
+            "status": "stopped",
+            "context": {},
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "entry",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          },
+          "args": [],
+          "event": {
+            "type": "entry",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked1",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked1"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked2",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked2"
+          }
+        },
+        "system:3": {
+          "id": "system:3",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "checked4",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "checked4"
+          }
+        },
+        "system:4": {
+          "id": "system:4",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "named",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.on.GO.actions[2].actions.named[0].event.info",
+              "kind": "code"
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "named",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.on.GO.actions[2].actions.named[0].event.info",
+              "kind": "code"
+            }
+          }
+        },
+        "system:6": {
+          "id": "system:6",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "bInput",
+          "kind": "emit",
+          "params": {
+            "input": {
+              "i": {
+                "slot": "input",
+                "path": "$.states.a.on.GO.input.i",
+                "kind": "expr"
+              }
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "bInput",
+            "input": {
+              "i": {
+                "slot": "input",
+                "path": "$.states.a.on.GO.input.i",
+                "kind": "expr"
+              }
+            }
+          }
+        },
+        "system:7": {
+          "id": "system:7",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "raised",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.b.on.RAISED.actions[0].event.info",
+              "kind": "expr"
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "raised",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.b.on.RAISED.actions[0].event.info",
+              "kind": "expr"
+            }
+          }
+        },
+        "system:8": {
+          "id": "system:8",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "entry",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          },
+          "args": [],
+          "event": {
+            "type": "entry",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          }
+        },
+        "system:9": {
+          "id": "system:9",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "bInput",
+          "kind": "emit",
+          "params": {
+            "input": null
+          },
+          "args": [],
+          "event": {
+            "type": "bInput",
+            "input": null
+          }
+        },
+        "system:10": {
+          "id": "system:10",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "entry",
+          "kind": "emit",
+          "params": {
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          },
+          "args": [],
+          "event": {
+            "type": "entry",
+            "info": {
+              "slot": "actionParams",
+              "path": "$.states.a.entry[0].event.info",
+              "kind": "code"
+            },
+            "children": [
+              "k"
+            ]
+          }
+        },
+        "system:11": {
+          "id": "system:11",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "bInput",
+          "kind": "emit",
+          "params": {
+            "input": {
+              "ii": {
+                "slot": "input",
+                "path": "$.states.c.choice[0].input.ii",
+                "kind": "expr"
+              }
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "bInput",
+            "input": {
+              "ii": {
+                "slot": "input",
+                "path": "$.states.c.choice[0].input.ii",
+                "kind": "expr"
+              }
+            }
+          }
+        },
+        "system:12": {
+          "id": "system:12",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "type": "bTimedOut",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "bTimedOut"
+          }
+        },
+        "system:13": {
+          "id": "system:13",
+          "source": {
+            "$actor": "m",
+            "incarnation": "0"
+          },
+          "kind": "action",
+          "type": "@xstate.cancelEffect",
+          "params": {
+            "effectId": "system:5"
+          }
+        }
+      },
+      "counters": {
+        "actor": 4,
+        "timer": 9,
+        "sequence": 23,
+        "effect": 14
+      }
+    },
+    "effects": [
+      {
+        "id": "system:13",
+        "source": {
+          "$actor": "m",
+          "incarnation": "0"
+        },
+        "kind": "action",
+        "type": "@xstate.cancelEffect",
+        "params": {
+          "effectId": "system:5"
+        }
+      }
+    ]
+  }
+]

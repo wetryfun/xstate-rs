@@ -47,7 +47,9 @@ pub use event::{js_numbers, Ev, EventType};
 pub use load::{Reference, References};
 pub use machine::{Machine, MachineOptions, NodeId};
 pub use migrate::Migration;
-pub use registry::{ContextArgs, Enq, ExprArgs, GuardArgs, Registry, SpawnOptions};
+pub use registry::{
+    Code, CodeKind, ContextArgs, Enq, Evaluator, ExprArgs, GuardArgs, Registry, Scope, Slot, SpawnOptions,
+};
 pub use system::{
     ActorRef, Effect, EffectKind, ExternalEffect, InitOptions, Logic, Status, System, SystemError, SystemLogic,
 };
@@ -56,7 +58,7 @@ pub use system::{
 #[doc(hidden)]
 pub mod __codegen {
     pub use crate::{
-        Actor, Ev, EventType, ExprArgs, GuardArgs, LoadError, Logic, Machine, Registry, Status, SystemError,
+        Actor, Ev, Evaluator, EventType, ExprArgs, GuardArgs, LoadError, Logic, Machine, Registry, Status, SystemError,
     };
     pub use indexmap::IndexMap;
     pub use serde;
@@ -80,8 +82,8 @@ macro_rules! include_machine {
 
 impl<C, E> Machine<C, E>
 where
-    C: DeserializeOwned,
-    E: EventType,
+    C: DeserializeOwned + 'static,
+    E: EventType + 'static,
 {
     /// Compiles a `MachineJSON` definition. Every referenced guard, action and
     /// named delay must be in `registry` (or defined in the JSON itself).

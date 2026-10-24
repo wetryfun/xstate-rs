@@ -12,7 +12,10 @@ use crate::delay::{ms_to_u64, parse_duration_ms};
 use crate::error::{LoadError, LoadErrorKind as K};
 use crate::event::{Ev, EventType, AFTER, DONE_STATE};
 use crate::machine::*;
-use crate::registry::Registry;
+use crate::registry::{Code, CodeKind, ContextArgs, ExprArgs, Registry, Scope, Slot};
+
+/// Ids of compiled code nodes ([`Code::id`]).
+static NEXT_CODE_ID: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
 type TransitionId = Tid;
 
@@ -99,9 +102,14 @@ fn code_source(value: &Value) -> Option<&str> {
     map.get("@code").or_else(|| map.get("@expr")).and_then(Value::as_str)
 }
 
-/// Checks every code node's language: only `rust` runs here (the node's
-/// `@lang`, else the root `@exprLang`).
-fn check_code(value: &Value, path: &str, default_lang: Option<&str>) -> Result<()> {
+/// The language of a code node (its `@lang`, else the root `@exprLang`).
+fn code_lang<'v>(value: &'v Value, default_lang: Option<&'v str>) -> Option<&'v str> {
+    value.get("@lang").and_then(Value::as_str).or(default_lang)
+}
+
+/// Checks every code node's language: `rust`, or one `accept`s (a language
+/// with an evaluator).
+fn check_code(value: &Value, path: &str, default_lang: Option<&str>, accept: &dyn Fn(&str) -> bool) -> Result<()> {
     match value {
         Value::Object(map) => {
             if let Some(key) = ["@code", "@expr"].into_iter().find(|k| map.contains_key(*k)) {
@@ -115,24 +123,25 @@ fn check_code(value: &Value, path: &str, default_lang: Option<&str>) -> Result<(
                 };
                 return match lang {
                     Some(RUST_LANG) => Ok(()),
+                    Some(other) if accept(other) => Ok(()),
                     Some(other) => Err(err(
                         K::Code,
                         path,
                         format!(
-                            "{key} in language '{other}' cannot run in xstate-rs; use \"@lang\": \"rust\" with the \
-                             name of a Rust expression, or reference a named implementation"
+                            "{key} in language '{other}' has no evaluator: register one with Registry::evaluator, \
+                             or use \"@lang\": \"rust\" with the name of a Rust expression"
                         ),
                     )),
                     None => Err(err(K::Code, path, format!("{key} without @lang (and no root @exprLang)"))),
                 };
             }
             for (k, v) in map {
-                check_code(v, &child_path(path, k), default_lang)?;
+                check_code(v, &child_path(path, k), default_lang, accept)?;
             }
         }
         Value::Array(items) => {
             for (i, v) in items.iter().enumerate() {
-                check_code(v, &format!("{path}[{i}]"), default_lang)?;
+                check_code(v, &format!("{path}[{i}]"), default_lang, accept)?;
             }
         }
         _ => {}
@@ -146,15 +155,6 @@ fn contains_code(value: &Value) -> bool {
         Value::Array(items) => items.iter().any(contains_code),
         _ => false,
     }
-}
-
-/// Which expressions a template's code nodes name.
-#[derive(Clone, Copy, PartialEq)]
-enum Slot {
-    /// [`Registry::expr`].
-    Scope,
-    /// The root `context`: [`Registry::context`].
-    Context,
 }
 
 fn has_unescaped_dot(key: &str) -> bool {
@@ -199,6 +199,7 @@ struct RawNode<'j> {
 
 struct Loader<'j, 'r, C, E> {
     root_json: &'j Map<String, Value>,
+    default_lang: Option<&'j str>,
     registry: &'r Registry<C, E>,
     machine_id: Option<String>,
     nodes: Vec<Node>,
@@ -247,6 +248,9 @@ pub struct References {
     pub exprs: Vec<Reference>,
     /// Expressions in the root `context`, computed from the input.
     pub contexts: Vec<Reference>,
+    /// Languages other than `rust` whose code nodes need an evaluator
+    /// ([`Registry::evaluator`]), each once, at its first node.
+    pub languages: Vec<Reference>,
 }
 
 /// Validates a definition as [`load`] does and lists the implementations it
@@ -260,8 +264,8 @@ pub(crate) fn references(json: &Value) -> Result<References> {
 /// Compiles a machine definition against a registry of implementations.
 pub(crate) fn load<C, E>(json: &Value, registry: &Registry<C, E>, options: MachineOptions) -> Result<Machine<C, E>>
 where
-    C: DeserializeOwned,
-    E: EventType,
+    C: DeserializeOwned + 'static,
+    E: EventType + 'static,
 {
     load_inner(json, registry, options, None).map(|(m, _)| m)
 }
@@ -273,17 +277,19 @@ fn load_inner<C, E>(
     refs: Option<References>,
 ) -> Result<(Machine<C, E>, Option<References>)>
 where
-    C: DeserializeOwned,
-    E: EventType,
+    C: DeserializeOwned + 'static,
+    E: EventType + 'static,
 {
     let root_json = json.as_object().ok_or_else(|| invalid("$", "a machine definition must be a JSON object"))?;
     let default_lang = opt_str(root_json, "@exprLang", "$")?;
-    check_code(json, "$", default_lang)?;
+    let listing = refs.is_some();
+    check_code(json, "$", default_lang, &|lang| listing || registry.evaluators.contains_key(lang))?;
     let machine_id = opt_str(root_json, "id", "$")?.map(str::to_owned);
     let version = opt_str(root_json, "version", "$")?.map(str::to_owned);
 
     let mut loader = Loader {
         root_json,
+        default_lang,
         registry,
         machine_id,
         nodes: Vec::new(),
@@ -330,7 +336,7 @@ where
         ),
     };
     let output = match root_json.get("output") {
-        Some(o) => Some(loader.compile_template(o, "$.output", Slot::Scope)?),
+        Some(o) => Some(loader.compile_template(o, "$.output", Slot::Output)?),
         None => None,
     };
     let internal_events = match root_json.get("internalEvents") {
@@ -437,12 +443,11 @@ fn check_reserved(kind: &str, name: &str, path: &str) -> Result<()> {
     Ok(())
 }
 
-impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
+impl<'j, C: 'static, E: EventType + 'static> Loader<'j, '_, C, E> {
     /// A JSON value with code nodes compiled to expressions.
     fn compile_template(&mut self, value: &Value, path: &str, slot: Slot) -> Result<Template> {
-        if let Some(name) = code_source(value) {
-            self.expr_refs += 1;
-            return self.expr(name, path, slot).map(Template::Expr);
+        if code_source(value).is_some() {
+            return self.code(value, path, slot).map(Template::Expr);
         }
         if !contains_code(value) {
             return Ok(Template::Static(value.clone()));
@@ -466,24 +471,24 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
     /// The index of a named expression.
     fn expr(&mut self, name: &str, path: &str, slot: Slot) -> Result<u32> {
         let (index, found) = match slot {
-            Slot::Scope => (&self.expr_index, self.registry.exprs.contains_key(name)),
             Slot::Context => (&self.context_index, self.registry.contexts.contains_key(name)),
+            _ => (&self.expr_index, self.registry.exprs.contains_key(name)),
         };
         if let Some(&i) = index.get(name) {
             return Ok(i);
         }
         if !found {
             let recorded = match slot {
-                Slot::Scope => self.record(|r| &mut r.exprs, name, path, None),
                 Slot::Context => self.record(|r| &mut r.contexts, name, path, None),
+                _ => self.record(|r| &mut r.exprs, name, path, None),
             };
             if !recorded {
                 let hint = match slot {
-                    Slot::Scope if self.registry.contexts.contains_key(name) => {
-                        " (it is registered with `Registry::context`, which only the root `context` uses)"
-                    }
                     Slot::Context if self.registry.exprs.contains_key(name) => {
                         " (the root `context` is computed from the input: register it with `Registry::context`)"
+                    }
+                    _ if slot != Slot::Context && self.registry.contexts.contains_key(name) => {
+                        " (it is registered with `Registry::context`, which only the root `context` uses)"
                     }
                     _ => "",
                 };
@@ -491,29 +496,79 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             }
         }
         let i = match slot {
-            Slot::Scope => {
-                let f = self.registry.exprs.get(name).cloned().unwrap_or_else(|| Arc::new(|_| Value::Null));
-                self.exprs.push(f);
-                self.expr_index.insert(name.to_owned(), self.exprs.len() as u32 - 1);
-                self.exprs.len() as u32 - 1
-            }
             Slot::Context => {
                 let f = self.registry.contexts.get(name).cloned().unwrap_or_else(|| Arc::new(|_| Value::Null));
                 self.context_exprs.push(f);
                 self.context_index.insert(name.to_owned(), self.context_exprs.len() as u32 - 1);
                 self.context_exprs.len() as u32 - 1
             }
+            _ => {
+                let f = self.registry.exprs.get(name).cloned().unwrap_or_else(|| Arc::new(|_| Value::Null));
+                self.exprs.push(f);
+                self.expr_index.insert(name.to_owned(), self.exprs.len() as u32 - 1);
+                self.exprs.len() as u32 - 1
+            }
         };
         Ok(i)
+    }
+
+    /// The index of a code node's expression (in `exprs`, or for the root
+    /// `context` in `context_exprs`): a [`Registry::expr`] by name for the
+    /// `rust` language, otherwise the language's evaluator bound to the node.
+    fn code(&mut self, value: &Value, path: &str, slot: Slot) -> Result<u32> {
+        self.expr_refs += 1;
+        let source = code_source(value).expect("a code node");
+        let lang = code_lang(value, self.default_lang).expect("checked by check_code");
+        if lang == RUST_LANG {
+            return self.expr(source, path, slot);
+        }
+        let evaluator = self.registry.evaluators.get(lang).cloned();
+        let listed = self.refs.as_ref().is_some_and(|r| r.languages.iter().any(|l| l.name == lang));
+        if evaluator.is_none() && !listed {
+            self.record(|r| &mut r.languages, lang, path, None);
+        }
+        let code = Code {
+            id: NEXT_CODE_ID.fetch_add(1, std::sync::atomic::Ordering::Relaxed),
+            lang: lang.to_owned(),
+            source: source.to_owned(),
+            kind: if value.get("@code").is_some() { CodeKind::Code } else { CodeKind::Expr },
+            slot,
+            path: path.to_owned(),
+        };
+        Ok(match slot {
+            Slot::Context => {
+                let f: crate::registry::ContextFn = match evaluator {
+                    Some(ev) => Arc::new(move |args: &ContextArgs<'_>| {
+                        ev.eval(&code, Scope::Context(args)).unwrap_or_else(|m| {
+                            args.fail(m);
+                            Value::Null
+                        })
+                    }),
+                    None => Arc::new(|_| Value::Null),
+                };
+                self.context_exprs.push(f);
+                self.context_exprs.len() as u32 - 1
+            }
+            _ => {
+                let f: crate::registry::ExprFn<C, E> = match evaluator {
+                    Some(ev) => Arc::new(move |args: &ExprArgs<'_, C, E>| {
+                        ev.eval(&code, Scope::Expr(args)).unwrap_or_else(|m| {
+                            args.fail(m);
+                            Value::Null
+                        })
+                    }),
+                    None => Arc::new(|_| Value::Null),
+                };
+                self.exprs.push(f);
+                self.exprs.len() as u32 - 1
+            }
+        })
     }
 
     /// A delay given as a code node.
     fn delay_expr(&mut self, value: &Value, path: &str) -> Result<Option<DelaySpec>> {
         match code_source(value) {
-            Some(name) => {
-                self.expr_refs += 1;
-                Ok(Some(DelaySpec::Expr(self.expr(name, path, Slot::Scope)?)))
-            }
+            Some(_) => Ok(Some(DelaySpec::Expr(self.code(value, path, Slot::Delay)?))),
             None => Ok(None),
         }
     }
@@ -978,7 +1033,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
         };
         let output = match json.get("output") {
             Some(o) if kind == NodeKind::Final => {
-                Some(self.compile_template(o, &child_path(&path, "output"), Slot::Scope)?)
+                Some(self.compile_template(o, &child_path(&path, "output"), Slot::Output)?)
             }
             _ => None,
         };
@@ -1177,7 +1232,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             _ => None,
         };
         let input = match obj.get("input") {
-            Some(i) => Some(self.compile_template(i, &child_path(path, "input"), Slot::Scope)?),
+            Some(i) => Some(self.compile_template(i, &child_path(path, "input"), Slot::Input)?),
             None => None,
         };
         let def = InvokeDef { id, logic, input, registry_key, sync_snapshot: obj.contains_key("onSnapshot") };
@@ -1195,10 +1250,9 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             let Some(route) = json.get("route") else { continue };
             let Some(Value::String(id)) = json.get("id") else { continue };
             let path = child_path(&self.raw[n].path, "route");
-            if let Some(name) = code_source(route) {
+            if code_source(route).is_some() {
                 // A route function: the route's guard and resolver.
-                self.expr_refs += 1;
-                let expr = self.expr(name, &path, Slot::Scope)?;
+                let expr = self.code(route, &path, Slot::Transition)?;
                 let target: Arc<[NodeId]> = Arc::from([n as NodeId]);
                 let t = self.push_function(0, TransitionFn::Route { expr, target }, &[]);
                 self.transitions[t as usize].guard = Some(Guard::RouteTo(format!("#{id}")));
@@ -1226,8 +1280,12 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             let t = self.compile_transition(0, &Value::Object(config), &path, &[])?;
             let mut guard = Guard::RouteTo(to);
             if let Some(name) = named {
-                let named =
-                    self.compile_guard(&json!({ "type": name }), &child_path(&path, "guard"), &mut Vec::new())?;
+                let named = self.compile_guard(
+                    &json!({ "type": name }),
+                    &child_path(&path, "guard"),
+                    Slot::Guard,
+                    &mut Vec::new(),
+                )?;
                 guard = Guard::And(Box::new(guard), Box::new(named));
             }
             self.transitions[t as usize].guard = Some(guard);
@@ -1260,10 +1318,9 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
         path: &str,
         extra_matches: &[(String, Value)],
     ) -> Result<TransitionId> {
-        if let Some(name) = code_source(value) {
+        if code_source(value).is_some() {
             // A transition function: its result is the transition.
-            self.expr_refs += 1;
-            let expr = self.expr(name, path, Slot::Scope)?;
+            let expr = self.code(value, path, Slot::Transition)?;
             return Ok(self.push_function(source, TransitionFn::Expr(expr), extra_matches));
         }
         let obj = match value {
@@ -1299,18 +1356,18 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             }
         }
         let guard = match obj.get("guard") {
-            Some(g) => Some(self.compile_guard(g, &child_path(path, "guard"), &mut Vec::new())?),
+            Some(g) => Some(self.compile_guard(g, &child_path(path, "guard"), Slot::Guard, &mut Vec::new())?),
             None => None,
         };
         let (context, context_expr) = match obj.get("context") {
             Some(c) if contains_code(c) => {
-                (None, Some(self.compile_template(c, &child_path(path, "context"), Slot::Scope)?))
+                (None, Some(self.compile_template(c, &child_path(path, "context"), Slot::TransitionContext)?))
             }
             _ => (opt_object(obj, "context", path)?.cloned(), None),
         };
         let actions = self.compile_action_list(obj.get("actions"), &child_path(path, "actions"), false)?;
         let input = match obj.get("input") {
-            Some(i) => Some(self.compile_template(i, &child_path(path, "input"), Slot::Scope)?),
+            Some(i) => Some(self.compile_template(i, &child_path(path, "input"), Slot::Input)?),
             None => None,
         };
         let reenter = match obj.get("reenter") {
@@ -1346,8 +1403,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
         let function = match json.get("choice") {
             None => return Err(invalid(path, format!("Choice state at {path} must declare choice."))),
             Some(value) if code_source(value).is_some() => {
-                self.expr_refs += 1;
-                let expr = self.expr(code_source(value).expect("code"), &cpath, Slot::Scope)?;
+                let expr = self.code(value, &cpath, Slot::Choice)?;
                 TransitionFn::ChoiceExpr { expr, id }
             }
             Some(Value::Array(items)) => {
@@ -1366,7 +1422,9 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                         return Err(invalid(&bpath, format!("Choice fallback branch at {bpath} must be last.")));
                     }
                     let when = match b.get("when") {
-                        Some(g) => Some(self.compile_guard(g, &child_path(&bpath, "when"), &mut Vec::new())?),
+                        Some(g) => {
+                            Some(self.compile_guard(g, &child_path(&bpath, "when"), Slot::Choice, &mut Vec::new())?)
+                        }
                         None => None,
                     };
                     let targets = match b.get("target") {
@@ -1376,11 +1434,13 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                         None => None,
                     };
                     let context = match b.get("context") {
-                        Some(c) => Some(self.compile_template(c, &child_path(&bpath, "context"), Slot::Scope)?),
+                        Some(c) => {
+                            Some(self.compile_template(c, &child_path(&bpath, "context"), Slot::TransitionContext)?)
+                        }
                         None => None,
                     };
                     let input = match b.get("input") {
-                        Some(i) => Some(self.compile_template(i, &child_path(&bpath, "input"), Slot::Scope)?),
+                        Some(i) => Some(self.compile_template(i, &child_path(&bpath, "input"), Slot::Input)?),
                         None => None,
                     };
                     let reenter = match b.get("reenter") {
@@ -1417,10 +1477,9 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
         self.transitions.len() as TransitionId - 1
     }
 
-    fn compile_guard(&mut self, value: &Value, path: &str, stack: &mut Vec<String>) -> Result<Guard> {
-        if let Some(name) = code_source(value) {
-            self.expr_refs += 1;
-            return Ok(Guard::Expr(self.expr(name, path, Slot::Scope)?));
+    fn compile_guard(&mut self, value: &Value, path: &str, slot: Slot, stack: &mut Vec<String>) -> Result<Guard> {
+        if code_source(value).is_some() {
+            return Ok(Guard::Expr(self.code(value, path, slot)?));
         }
         let obj =
             value.as_object().ok_or_else(|| invalid(path, "a guard must be { \"type\": ..., \"params\"?: ... }"))?;
@@ -1431,13 +1490,13 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             "@xstate.not" => {
                 let inner =
                     params.get("guard").ok_or_else(|| invalid(&format!("{path}.params.guard"), "missing guard"))?;
-                Ok(Guard::Not(Box::new(self.compile_guard(inner, &format!("{path}.params.guard"), stack)?)))
+                Ok(Guard::Not(Box::new(self.compile_guard(inner, &format!("{path}.params.guard"), slot, stack)?)))
             }
             "@xstate.stateIn" => {
                 let spath = format!("{path}.params.stateId");
                 if contains_code(params) {
                     // Resolved when the guard runs, as XState does.
-                    let params = self.compile_template(params, &params_path, Slot::Scope)?;
+                    let params = self.compile_template(params, &params_path, slot)?;
                     return Ok(Guard::StateInExpr(Box::new(params)));
                 }
                 let id =
@@ -1458,13 +1517,13 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                     // The guard's params are its expressions' scope; they
                     // are resolved only when an expression reads them.
                     let scope = match obj.get("params") {
-                        Some(p) => Some(self.compile_template(p, &params_path, Slot::Scope)?),
+                        Some(p) => Some(self.compile_template(p, &params_path, slot)?),
                         None => None,
                     };
                     let before = self.expr_refs;
                     stack.push(ty.to_owned());
                     let when = def.get("when").expect("checked in check_machine_keys");
-                    let guard = self.compile_guard(when, &format!("$.guards.{ty}.when"), stack);
+                    let guard = self.compile_guard(when, &format!("$.guards.{ty}.when"), Slot::Guard, stack);
                     stack.pop();
                     let guard = guard?;
                     return Ok(match scope {
@@ -1474,7 +1533,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                 }
                 if let Some(factory) = self.registry.guards.get(ty) {
                     if contains_code(params) {
-                        let template = self.compile_template(params, &params_path, Slot::Scope)?;
+                        let template = self.compile_template(params, &params_path, slot)?;
                         self.dynamic_guards.push(Dynamic {
                             name: ty.to_owned(),
                             factory: factory.clone(),
@@ -1493,7 +1552,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                 }
                 if self.record(|r| &mut r.guards, ty, path, obj.get("params")) {
                     if contains_code(params) {
-                        self.compile_template(params, &params_path, Slot::Scope)?;
+                        self.compile_template(params, &params_path, slot)?;
                     }
                     self.guards.push(Box::new(|_| false));
                     return Ok(Guard::Custom(self.guards.len() as u32 - 1));
@@ -1527,9 +1586,8 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
         stack: &mut Vec<String>,
         out: &mut Vec<Action>,
     ) -> Result<()> {
-        if let Some(name) = code_source(value) {
-            self.expr_refs += 1;
-            out.push(Action::Expr(self.expr(name, path, Slot::Scope)?));
+        if code_source(value).is_some() {
+            out.push(Action::Expr(self.code(value, path, Slot::Action)?));
             return Ok(());
         }
         let obj = value.as_object().ok_or_else(|| invalid(path, "invalid action: expected { \"type\": ... }"))?;
@@ -1550,7 +1608,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                             format!("an event's \"type\" must be a string, not {t}"),
                         ));
                     }
-                    this.compile_template(e, &child_path(path, key), Slot::Scope).map(Some)
+                    this.compile_template(e, &child_path(path, key), Slot::ActionParams).map(Some)
                 }
                 _ => Ok(None),
             }
@@ -1599,7 +1657,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
             },
             "@xstate.assign" => {
                 if let Some(c) = obj.get("context").filter(|c| contains_code(c)) {
-                    let t = self.compile_template(c, &child_path(path, "context"), Slot::Scope)?;
+                    let t = self.compile_template(c, &child_path(path, "context"), Slot::TransitionContext)?;
                     out.push(Action::AssignExpr(t));
                     return Ok(());
                 }
@@ -1622,7 +1680,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                     // scope of the expressions in the definition; they are
                     // resolved only when one of those reads them.
                     let scope = match obj.get("params") {
-                        Some(p) => Some(self.compile_template(p, &child_path(path, "params"), Slot::Scope)?),
+                        Some(p) => Some(self.compile_template(p, &child_path(path, "params"), Slot::ActionParams)?),
                         None => None,
                     };
                     let (start, before) = (out.len(), self.expr_refs);
@@ -1631,9 +1689,9 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                         Value::Array(items) => items.iter().collect(),
                         single => vec![single],
                     };
-                    let many = items.len() > 1;
                     for (i, item) in items.into_iter().enumerate() {
-                        let ipath = if many { format!("$.actions.{ty}[{i}]") } else { format!("$.actions.{ty}") };
+                        // XState's path for the definition's actions.
+                        let ipath = format!("{path}.actions.{ty}[{i}]");
                         self.compile_action(item, &ipath, stack, out)?;
                     }
                     stack.pop();
@@ -1645,7 +1703,7 @@ impl<'j, C, E: EventType> Loader<'j, '_, C, E> {
                 }
                 let params = obj.get("params").unwrap_or(&Value::Null);
                 if contains_code(params) {
-                    let template = self.compile_template(params, &child_path(path, "params"), Slot::Scope)?;
+                    let template = self.compile_template(params, &child_path(path, "params"), Slot::ActionParams)?;
                     let factory = match self.registry.actions.get(ty) {
                         Some(factory) => factory.clone(),
                         None if self.record(|r| &mut r.actions, ty, path, obj.get("params")) => {

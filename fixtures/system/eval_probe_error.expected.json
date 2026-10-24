@@ -1,0 +1,138 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "m",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "m": {
+          "id": "m",
+          "address": "m",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "n": 0
+            },
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "m",
+              "m.a"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 0,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "m",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "m": {
+          "id": "m",
+          "address": "m",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "n": 1
+            },
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "m",
+              "m.a"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 1,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 1",
+    "error": "probe guard at $.states.a.on.BOOM.guard"
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "m",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "m": {
+          "id": "m",
+          "address": "m",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "n": 1
+            },
+            "value": "a",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "m",
+              "m.a"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 1,
+        "timer": 0,
+        "sequence": 2,
+        "effect": 0
+      }
+    },
+    "effects": []
+  }
+]

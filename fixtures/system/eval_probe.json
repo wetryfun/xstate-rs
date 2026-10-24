@@ -1,0 +1,385 @@
+{
+  "notes": "Code nodes in a language with an evaluator (`probe`, in tools/differential/exprs.mjs and tests/common/exprs.rs): the slot, JSON path and kind XState passes for each place it evaluates code, and the scope (context, input, children).",
+  "logic": [
+    {
+      "name": "kid",
+      "machine": {
+        "id": "kid",
+        "initial": "on",
+        "states": {
+          "on": {}
+        }
+      }
+    },
+    {
+      "name": "root",
+      "machine": {
+        "id": "m",
+        "@exprLang": "probe",
+        "context": {
+          "info": {
+            "@expr": "info"
+          },
+          "input": {
+            "@expr": "input"
+          },
+          "count": 0
+        },
+        "delays": {
+          "wait": {
+            "duration": {
+              "@expr": "delay:delay:$.delays.wait.duration"
+            }
+          }
+        },
+        "actions": {
+          "named": [
+            {
+              "type": "@xstate.emit",
+              "event": {
+                "type": "named",
+                "info": {
+                  "@code": "info"
+                }
+              }
+            }
+          ]
+        },
+        "guards": {
+          "probeGuard": {
+            "when": {
+              "@expr": "is:guard:$.guards.probeGuard.when"
+            }
+          }
+        },
+        "initial": "a",
+        "states": {
+          "a": {
+            "entry": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "entry",
+                  "info": {
+                    "@code": "info"
+                  },
+                  "children": {
+                    "@expr": "children"
+                  }
+                }
+              }
+            ],
+            "invoke": {
+              "src": "kid",
+              "id": "k",
+              "input": {
+                "info": {
+                  "@expr": "info"
+                }
+              },
+              "timeout": {
+                "@expr": "delay:delay:$.states.a.invoke.timeout"
+              },
+              "onTimeout": {
+                "actions": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "invokeTimedOut"
+                    }
+                  }
+                ]
+              }
+            },
+            "after": {
+              "wait": {
+                "actions": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "waited"
+                    }
+                  }
+                ]
+              }
+            },
+            "on": {
+              "CHECK1": {
+                "guard": {
+                  "@expr": "is:guard:$.states.a.on.CHECK1.guard"
+                },
+                "actions": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "checked1"
+                    }
+                  }
+                ]
+              },
+              "CHECK2": {
+                "guard": {
+                  "type": "probeGuard"
+                },
+                "actions": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "checked2"
+                    }
+                  }
+                ]
+              },
+              "CHECK3": {
+                "guard": {
+                  "type": "@xstate.not",
+                  "params": {
+                    "guard": {
+                      "@expr": "is:guard:$.states.a.on.CHECK3.guard.params.guard"
+                    }
+                  }
+                },
+                "actions": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "checked3"
+                    }
+                  }
+                ]
+              },
+              "CHECK4": [
+                {
+                  "guard": {
+                    "@expr": "is:guard:$.states.a.on.CHECK4[0].guard"
+                  },
+                  "actions": [
+                    {
+                      "type": "@xstate.emit",
+                      "event": {
+                        "type": "checked4"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "GO": {
+                "target": "b",
+                "context": {
+                  "t": {
+                    "@expr": "info"
+                  },
+                  "count": {
+                    "@expr": "inc"
+                  }
+                },
+                "input": {
+                  "i": {
+                    "@expr": "info"
+                  }
+                },
+                "actions": [
+                  {
+                    "type": "@xstate.assign",
+                    "context": {
+                      "as": {
+                        "@expr": "info"
+                      }
+                    }
+                  },
+                  {
+                    "@expr": "infoAction"
+                  },
+                  {
+                    "type": "named"
+                  },
+                  {
+                    "type": "noop",
+                    "params": {
+                      "info": {
+                        "@expr": "info"
+                      }
+                    }
+                  },
+                  {
+                    "type": "@xstate.raise",
+                    "event": {
+                      "type": "RAISED",
+                      "info": {
+                        "@expr": "info"
+                      }
+                    }
+                  }
+                ]
+              },
+              "FN": {
+                "@code": "fn"
+              },
+              "CHOOSE": {
+                "target": "c"
+              }
+            }
+          },
+          "b": {
+            "entry": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "bInput",
+                  "input": {
+                    "@expr": "input"
+                  }
+                }
+              }
+            ],
+            "timeout": {
+              "@expr": "delay:delay:$.states.b.timeout"
+            },
+            "onTimeout": {
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "bTimedOut"
+                  }
+                }
+              ]
+            },
+            "on": {
+              "RAISED": {
+                "actions": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "raised",
+                      "info": {
+                        "@expr": "info"
+                      }
+                    }
+                  }
+                ]
+              },
+              "BACK": {
+                "target": "a"
+              },
+              "FINISH": {
+                "target": "done"
+              }
+            }
+          },
+          "c": {
+            "type": "choice",
+            "choice": [
+              {
+                "when": {
+                  "@expr": "is:choice:$.states.c.choice[0].when"
+                },
+                "target": "b",
+                "context": {
+                  "ci": {
+                    "@expr": "info"
+                  }
+                },
+                "input": {
+                  "ii": {
+                    "@expr": "info"
+                  }
+                }
+              },
+              {
+                "target": "a"
+              }
+            ]
+          },
+          "done": {
+            "type": "final",
+            "output": {
+              "info": {
+                "@expr": "info"
+              }
+            }
+          }
+        },
+        "output": {
+          "root": {
+            "@expr": "info"
+          }
+        }
+      },
+      "actors": [
+        "kid"
+      ]
+    }
+  ],
+  "root": "root",
+  "init": {
+    "input": {
+      "from": "input"
+    }
+  },
+  "steps": [
+    {
+      "send": "m",
+      "event": {
+        "type": "CHECK1"
+      }
+    },
+    {
+      "send": "m",
+      "event": {
+        "type": "CHECK2"
+      }
+    },
+    {
+      "send": "m",
+      "event": {
+        "type": "CHECK3"
+      }
+    },
+    {
+      "send": "m",
+      "event": {
+        "type": "CHECK4"
+      }
+    },
+    {
+      "send": "m",
+      "event": {
+        "type": "GO"
+      }
+    },
+    {
+      "send": "m",
+      "event": {
+        "type": "BACK"
+      }
+    },
+    {
+      "send": "m",
+      "event": {
+        "type": "FN"
+      }
+    },
+    {
+      "send": "m",
+      "event": {
+        "type": "BACK"
+      }
+    },
+    {
+      "send": "m",
+      "event": {
+        "type": "CHOOSE"
+      }
+    },
+    {
+      "advance": 5000
+    },
+    {
+      "send": "m",
+      "event": {
+        "type": "FINISH"
+      }
+    }
+  ]
+}
