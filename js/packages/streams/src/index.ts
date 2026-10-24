@@ -9,5 +9,5 @@ export { json, ndjson, sse } from './framing.ts';
 export type { SseMessage, SseOptions, TextChunk } from './framing.ts';
 export { durable, filter, MemoryLog, project, replay } from './log.ts';
 export type { Log, LogEntry } from './log.ts';
-export { durableWritable, fanIn, through } from './write.ts';
+export { chunks, durableWritable, fanIn, through } from './write.ts';
 export type { FanIn } from './write.ts';

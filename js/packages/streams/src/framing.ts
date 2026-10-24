@@ -3,6 +3,8 @@
  * changes what a stream means: one logical record per chunk, in order.
  */
 
+import { chunks } from './write.ts';
+
 /** Text or bytes as they arrive from a socket, a file or a response body. */
 export type TextChunk = string | Uint8Array;
 
@@ -128,7 +130,7 @@ export const json = {
   async read<T>(stream: ReadableStream<TextChunk>): Promise<T> {
     const decoder = new TextDecoder();
     let text = '';
-    for await (const chunk of stream) text += typeof chunk === 'string' ? chunk : decoder.decode(chunk, { stream: true });
+    for await (const chunk of chunks(stream)) text += typeof chunk === 'string' ? chunk : decoder.decode(chunk, { stream: true });
     return JSON.parse(text + decoder.decode()) as T;
   },
 };

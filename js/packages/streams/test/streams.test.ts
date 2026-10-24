@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { durable, durableWritable, fanIn, filter, json, MemoryLog, ndjson, project, replay, sse, through } from '@xmachines/streams';
+import { chunks, durable, durableWritable, fanIn, filter, json, MemoryLog, ndjson, project, replay, sse, through } from '@xmachines/streams';
 
 const from = <T>(chunks: T[]) =>
   new ReadableStream<T>({
@@ -70,4 +70,27 @@ test('write-through stages acknowledge end to end; senders fan in in order', asy
   await Promise.all([a.write(1), b.write(2), a.write(3), b.write(4)]);
   await fan.close();
   assert.deepEqual(merged, [1, 2, 3, 4]);
+});
+
+test('chunks reads a stream without async iteration and cancels it when left early', async () => {
+  let cancelled = false;
+  const stream = new ReadableStream<number>({
+    start(c) {
+      for (const n of [1, 2, 3]) c.enqueue(n);
+    },
+    cancel() {
+      cancelled = true;
+    },
+  });
+  const seen: number[] = [];
+  for await (const n of chunks(stream)) {
+    seen.push(n);
+    if (n === 2) break;
+  }
+  assert.deepEqual(seen, [1, 2]);
+  assert.ok(cancelled);
+  assert.ok(!stream.locked);
+  const all: number[] = [];
+  for await (const n of chunks(from([4, 5]))) all.push(n);
+  assert.deepEqual(all, [4, 5]);
 });

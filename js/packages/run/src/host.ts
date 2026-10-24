@@ -7,6 +7,7 @@
  */
 import type { Engine, EngineMachine, Event } from './engine.ts';
 import { forkObjects, machineObjects, type ForkOptions } from './ids.ts';
+import { chunks } from '@xmachines/streams';
 import { Latest } from './ports.ts';
 import { createRun, time, type Input, type Run, type RunSnapshot } from './run.ts';
 
@@ -124,7 +125,7 @@ export async function host(options: HostOptions): Promise<HostedRun> {
   let journaled = restored?.snapshot?.seq ?? -1;
   const snapshots = new Latest<RunSnapshot>();
   const followed = (async () => {
-    for await (const s of run.snapshot) {
+    for await (const s of chunks(run.snapshot)) {
       latest = s;
       clearTimeout(timer);
       timer = undefined;

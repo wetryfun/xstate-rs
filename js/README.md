@@ -13,6 +13,7 @@ high-throughput, exactly-once path; these packages are the JavaScript one.
 | `@xmachines/run/native` | The engine on the xstate-rs runtime as a Node addon (`crates/xstate-node`, injected) |
 | `@xmachines/run/wasi` | The engine on the xstate-rs runtime as a WASI component (transpiled with jco, injected) |
 | `@xmachines/git` | Git durability on isomorphic-git: machines are orphan branches, runs are forks, batches and snapshots are commits (`GitStore`, `GitJournal`) |
+| `@xmachines/git/browser` | The same for browsers: installs the global `Buffer` isomorphic-git needs, before it loads |
 | `@xmachines/git/http` | A pure-JavaScript Git Smart HTTP server (`/<repo>.git/**`) that refuses history rewrites |
 | `@xmachines/broker` | `BrokerConsumer` / `BrokerProducer` / `PartitionLease`, and `serve`: record keys to runs, from leased partitions |
 | `@xmachines/broker/memory` | An in-memory broker with Kafka's model, for tests and local runs |
@@ -76,6 +77,40 @@ branch, `refs/heads/runs/<run id>` a run, whose commits are its batches
 `fetch` and `push` (fast-forward only; deletes and rewrites are refused with
 a reason), so runs replicate with plain Git.
 
+`push(store, remote)` and `pull(store, remote)` replicate machines and runs
+through isomorphic-git's HTTP client (injected: `isomorphic-git/http/web` or
+`/http/node`) with any Smart HTTP server. Both are append-only: a push only
+fast-forwards, and a pull takes a remote branch only when it extends the
+local one (diverged runs are reported, never merged).
+
+## In the browser
+
+Everything but the Node addon, the Kafka transport and the Smart HTTP server
+runs in browsers (those use only Web Streams, Web Crypto and `fetch`;
+streams are read through readers, so browsers without async iteration of
+`ReadableStream`, such as Safari, work too):
+
+```ts
+import { GitStore, pull, push } from '@xmachines/git/browser'; // first: it installs Buffer
+import LightningFS from '@isomorphic-git/lightning-fs';
+import http from 'isomorphic-git/http/web';
+import { runner } from '@xmachines/run';
+import { xstateEngine } from '@xmachines/run/xstate';
+import { project, sse } from '@xmachines/streams';
+
+const store = new GitStore({ fs: new LightningFS('runs'), gitdir: '/runs.git' }); // IndexedDB
+const remote = { http, url: 'https://example.com/git/runs.git' };
+await pull(store, remote);
+const run = await runner({ engine: xstateEngine(), machine, journals: store })('front-door');
+run.out.pipeTo(render);
+await (await fetch('/events')).body!.pipeThrough(sse.decode()).pipeThrough(project((m) => m.data)).pipeTo(run.in);
+await push(store, remote);
+```
+
+A server on another origin needs CORS: `smartHttp({ ..., cors: 'https://app.example.com' })`
+(or `true`, a list, or a predicate). Web Crypto needs a secure context
+(HTTPS, or localhost).
+
 ## Brokers (Broker RFC)
 
 `serve` maps each record key to a run (`open(key)`), writes a partition's
@@ -102,3 +137,5 @@ Optional binaries (tests that need them skip without them):
 - Native engine: `crates/xstate-node/build.sh` (or `XSTATE_NODE_ADDON`).
 - WASI engine: `cargo build -p xstate-wasi --target wasm32-wasip2 --release
   --target-dir target/wasi` (or `XSTATE_WASI_COMPONENT`).
+- Browser test: Playwright with its Chromium (`require('playwright')`); the
+  page is bundled with esbuild.

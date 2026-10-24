@@ -51,6 +51,13 @@ export interface SmartHttpOptions {
   readonly receive?: boolean;
   /** Path prefix to strip before matching (default ''). */
   readonly prefix?: string;
+  /**
+   * Cross-origin access, for browsers (isomorphic-git's `http/web` client) on
+   * other origins: `true` for any origin, an origin, a list of them, or a
+   * predicate. Preflight requests are answered, and responses carry the CORS
+   * headers. Off by default.
+   */
+  readonly cors?: boolean | string | readonly string[] | ((origin: string) => boolean);
 }
 
 type Service = 'git-upload-pack' | 'git-receive-pack';
@@ -73,13 +80,19 @@ const decoder = new TextDecoder();
 export function smartHttp(options: SmartHttpOptions): (request: Request) => Promise<Response> {
   const prefix = (options.prefix ?? '').replace(/\/+$/, '');
   const fs = wrapFs(options.fs);
+  const allowed = corsPolicy(options.cors);
   return async (request) => {
+    const origin = request.headers.get('Origin');
+    const cors = origin !== null && allowed(origin) ? corsHeaders(origin) : undefined;
+    if (cors && request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+    let response: Response;
     try {
-      return await handle(request);
+      response = await handle(request);
     } catch (err) {
-      if (err instanceof HttpError) return text(err.status, err.message, err.headers);
-      return text(500, 'Internal Server Error');
+      response = err instanceof HttpError ? text(err.status, err.message, err.headers) : text(500, 'Internal Server Error');
     }
+    if (cors) for (const [k, v] of Object.entries(cors)) response.headers.set(k, v);
+    return response;
   };
 
   async function handle(request: Request): Promise<Response> {
@@ -134,6 +147,27 @@ export function smartHttp(options: SmartHttpOptions): (request: Request) => Prom
       headers: { 'Content-Type': `application/x-${service}-result`, ...NO_CACHE },
     });
   }
+}
+
+/** Whether an origin may call the server. */
+function corsPolicy(cors: SmartHttpOptions['cors']): (origin: string) => boolean {
+  if (cors === undefined || cors === false) return () => false;
+  if (cors === true) return () => true;
+  if (typeof cors === 'string') return (o) => o === cors;
+  if (typeof cors === 'function') return cors;
+  return (o) => cors.includes(o);
+}
+
+function corsHeaders(origin: string): Record<string, string> {
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET, HEAD, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Content-Encoding, Git-Protocol, Authorization, Accept',
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Expose-Headers': 'Content-Type',
+    'Access-Control-Max-Age': '600',
+    Vary: 'Origin',
+  };
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -533,6 +567,7 @@ async function receivePack(ctx: Ctx, body: Uint8Array<ArrayBuffer>): Promise<Uin
   } else {
     await withLock(ctx, async () => {
       for (const command of commands) results.set(command, await update(ctx, objects, packOids, command));
+      await adoptHead(ctx, commands.filter((c) => results.get(c) === undefined && c.old === ZERO_OID));
     });
   }
 
@@ -645,6 +680,20 @@ async function update(ctx: Ctx, objects: Objects, packOids: Set<string>, command
     return 'failed to update ref';
   }
   return undefined;
+}
+
+/**
+ * Points an unborn HEAD at the first branch a push created, as Git hosting
+ * does: clients (isomorphic-git's fetch among them) need a HEAD to resolve.
+ */
+async function adoptHead(ctx: Ctx, created: readonly Command[]): Promise<void> {
+  const branch = created.find((c) => c.ref.startsWith('refs/heads/'));
+  if (!branch) return;
+  try {
+    await resolveRef({ fs: ctx.gitfs, gitdir: ctx.gitdir, ref: 'HEAD' });
+  } catch {
+    await writeRef({ fs: ctx.gitfs, gitdir: ctx.gitdir, ref: 'HEAD', value: branch.ref, symbolic: true, force: true });
+  }
 }
 
 /** Git's check-ref-format rules for a full ref name. */

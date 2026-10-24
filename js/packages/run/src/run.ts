@@ -9,6 +9,7 @@
  * a run always ends in the same state with the same outputs.
  */
 import { errorMessage, type EngineInstance, type EngineMachine, type Event, type RootState, type Step } from './engine.ts';
+import { chunks } from '@xmachines/streams';
 import { Latest, Port } from './ports.ts';
 
 export const TIME = 'xmachines.time';
@@ -197,7 +198,7 @@ export function createRun(options: RunOptions): Run {
     const source = options.replay;
     if (!source) return;
     if (source instanceof ReadableStream) {
-      for await (const chunk of source) consume(chunk, true);
+      for await (const chunk of chunks(source)) consume(chunk, true);
     } else {
       for (const chunk of source) consume(chunk, true);
     }

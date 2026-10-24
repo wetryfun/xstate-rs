@@ -30,6 +30,29 @@ export function durableWritable<T>(target: WritableStream<T>, log: Log<T>): Writ
   });
 }
 
+/**
+ * A stream's chunks as an async iterable, through a reader: browsers without
+ * `ReadableStream` async iteration (Safari) read streams this way. Leaving
+ * the loop early cancels the stream, as native iteration does.
+ */
+export async function* chunks<T>(stream: ReadableStream<T>): AsyncGenerator<T, void, undefined> {
+  const reader = stream.getReader();
+  let done = false;
+  try {
+    for (;;) {
+      const next = await reader.read();
+      if (next.done) {
+        done = true;
+        return;
+      }
+      yield next.value;
+    }
+  } finally {
+    if (!done) await reader.cancel().catch(() => {});
+    reader.releaseLock();
+  }
+}
+
 /** Many senders into one writable. */
 export interface FanIn<T> {
   /** A new writable for one sender; its writes are serialized with every other sender's. */

@@ -128,6 +128,11 @@ export class GitStore implements Journals {
     if (tip !== undefined) throw new Error(`${ref} holds another definition (${tip}): give the new one a version`);
     for (const o of [objects.definition, objects.tree, objects.commit]) await this.write(o);
     await this.advance(ref, undefined, objects.id);
+    // Give an unborn HEAD a branch: clients need one to resolve (the first
+    // machine's, as a default branch).
+    if ((await this.tip('HEAD')) === undefined) {
+      await git.writeRef({ fs: this.fs, gitdir: this.gitdir, ref: 'HEAD', value: ref, symbolic: true, force: true });
+    }
     return objects;
   }
 
