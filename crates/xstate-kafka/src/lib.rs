@@ -22,6 +22,7 @@ pub mod config;
 #[cfg(feature = "kafka")]
 pub mod effects;
 pub mod engine;
+pub mod git;
 pub mod metrics;
 mod msgpack;
 pub mod proto;

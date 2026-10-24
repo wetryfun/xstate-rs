@@ -10,7 +10,14 @@
 //! Format: `XSCK`, version `1` (u8), `next_offset` (i64 LE), record count
 //! (u32 LE), then per record: key length (u32 LE), key bytes, record length
 //! (u32 LE), record bytes.
+//!
+//! Checkpoints go to [`Store`]s: these files ([`Files`]) and a Git
+//! repository ([`crate::git::GitStore`], an archive with every checkpoint's
+//! history) are two. The changelog topic stays the log every transaction
+//! writes, so state commits exactly once with the input offsets whatever
+//! the stores are; a store only shortens restores and keeps copies.
 
+use std::fmt;
 use std::fs::File;
 use std::io::{self, BufReader, BufWriter, Read, Write};
 use std::path::{Path, PathBuf};
@@ -25,6 +32,47 @@ pub struct Checkpoint {
     pub next_offset: i64,
     /// Key and changelog record of every live actor.
     pub records: Vec<(String, Vec<u8>)>,
+}
+
+/// Where a changelog partition's checkpoints are saved and loaded from.
+///
+/// `save` is called by the worker that owns the partition, after the
+/// transaction whose state the checkpoint holds committed; `load` when the
+/// partition is assigned. Workers call a store from their own threads, for
+/// different partitions at the same time.
+pub trait Store: Send + Sync + fmt::Debug {
+    /// Saves `checkpoint` as the partition's latest.
+    fn save(&self, topic: &str, partition: i32, checkpoint: &Checkpoint) -> io::Result<()>;
+    /// The partition's latest checkpoint; `None` when there is none.
+    fn load(&self, topic: &str, partition: i32) -> io::Result<Option<Checkpoint>>;
+    /// Where the partition's checkpoint lives, for messages.
+    fn location(&self, topic: &str, partition: i32) -> String;
+}
+
+/// Checkpoint files in a directory, one per partition (the format above).
+#[derive(Debug, Clone)]
+pub struct Files {
+    pub dir: PathBuf,
+}
+
+impl Files {
+    pub fn new(dir: impl Into<PathBuf>) -> Self {
+        Self { dir: dir.into() }
+    }
+}
+
+impl Store for Files {
+    fn save(&self, topic: &str, partition: i32, checkpoint: &Checkpoint) -> io::Result<()> {
+        write(&path(&self.dir, topic, partition), checkpoint)
+    }
+
+    fn load(&self, topic: &str, partition: i32) -> io::Result<Option<Checkpoint>> {
+        read(&path(&self.dir, topic, partition))
+    }
+
+    fn location(&self, topic: &str, partition: i32) -> String {
+        path(&self.dir, topic, partition).display().to_string()
+    }
 }
 
 /// The checkpoint file of a changelog partition in `dir`.

@@ -32,6 +32,7 @@
 //!     "ssl.ca.location": "/etc/ssl/certs/ca-certificates.crt"
 //!   },
 //!   "stateDir": "/var/lib/xstate", "checkpointIntervalMs": 60000,
+//!   "checkpoints": [{ "git": "/var/lib/xstate/archive.git", "remote": "origin", "intervalMs": 3600000 }],
 //!   "metricsAddress": "0.0.0.0:9464",
 //!   "logIntervalMs": 10000
 //! }
@@ -39,7 +40,12 @@
 //!
 //! `machine` is a path (relative to the configuration file) to a
 //! `MachineJSON` file or an extract bundle (`{ "machine", "schemas" }`);
-//! a relative `stateDir` is relative to the configuration file too. Every
+//! a relative `stateDir` is relative to the configuration file too.
+//! `checkpoints` adds checkpoint stores after `stateDir`'s files, each with
+//! its own `intervalMs`: `{ "files": dir }` or a Git archive, `{ "git":
+//! repository, "remote"?, "prefix"? }` (see `xstate_kafka::git`), which
+//! restores also use when the stores before it have no usable checkpoint.
+//! Every
 //! actor the machine invokes (`invoke.src`) runs as async work published to
 //! `topics.effects` (required then), completed by results on the input
 //! topic (see `xstate_kafka::engine`). `dedupe` skips events an actor
@@ -75,10 +81,12 @@ use xstate_rt::{Machine, Migration, Registry};
 
 use crate::avro::registry::HttpRegistry;
 use crate::avro::AvroSchemas;
+use crate::checkpoint::Files;
 use crate::codec::Codec;
 use crate::engine::{Dedupe, EngineConfig, EventFormat, MachineSet, OutputFormat, RestoreErrors, SnapshotFormat};
+use crate::git::GitStore;
 use crate::proto::events::EventSchema;
-use crate::service::ServiceConfig;
+use crate::service::{CheckpointStore, ServiceConfig};
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -125,6 +133,28 @@ pub struct PreviousVersion {
     /// Move its actors to the current machine as they are restored.
     #[serde(default)]
     pub migrate: Option<Migration>,
+}
+
+/// A checkpoint store: `{ "files": dir }` or `{ "git": repository,
+/// "remote"?, "prefix"? }` (paths relative to the configuration file),
+/// with `intervalMs` (default 60000) between two checkpoints of a
+/// partition.
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct CheckpointStoreConfig {
+    #[serde(default)]
+    pub files: Option<PathBuf>,
+    #[serde(default)]
+    pub git: Option<PathBuf>,
+    /// A remote (name or URL) Git checkpoints are pushed to and restored
+    /// from.
+    #[serde(default)]
+    pub remote: Option<String>,
+    /// The prefix of Git checkpoint refs (default `refs/xstate`).
+    #[serde(default)]
+    pub prefix: Option<String>,
+    #[serde(default)]
+    pub interval_ms: Option<u64>,
 }
 
 /// The configuration file.
@@ -189,6 +219,9 @@ pub struct FileConfig {
     pub state_dir: Option<PathBuf>,
     #[serde(default)]
     pub checkpoint_interval_ms: Option<u64>,
+    /// More checkpoint stores, after `stateDir`'s files.
+    #[serde(default)]
+    pub checkpoints: Vec<CheckpointStoreConfig>,
     #[serde(default)]
     pub metrics_address: Option<String>,
     #[serde(default)]
@@ -206,6 +239,11 @@ impl FileConfig {
         }
         if let Some(dir) = config.state_dir.as_mut().filter(|d| d.is_relative()) {
             *dir = base.join(&*dir);
+        }
+        for c in &mut config.checkpoints {
+            for dir in [&mut c.files, &mut c.git].into_iter().flatten().filter(|d| d.is_relative()) {
+                *dir = base.join(&*dir);
+            }
         }
         // Secret files are relative to the configuration file too.
         for v in config.client.values_mut() {
@@ -333,6 +371,7 @@ impl FileConfig {
             avro,
             outputs,
         };
+        c.checkpoint_stores = self.checkpoint_stores(c.engine.avro.as_ref())?;
         for (k, v) in &self.client {
             let v = match v {
                 Value::String(s) => s.clone(),
@@ -342,6 +381,44 @@ impl FileConfig {
             c.client_config.push((k.clone(), v));
         }
         Ok(c)
+    }
+
+    /// The stores of `checkpoints`. Git checkpoints of Avro snapshots are
+    /// decoded with the schemas.
+    fn checkpoint_stores(&self, avro: Option<&Arc<AvroSchemas>>) -> Result<Vec<CheckpointStore>, String> {
+        let mut stores = Vec::new();
+        for (i, c) in self.checkpoints.iter().enumerate() {
+            let interval = Duration::from_millis(c.interval_ms.unwrap_or(60_000));
+            let store = match (&c.files, &c.git) {
+                (Some(dir), None) if c.remote.is_none() && c.prefix.is_none() => {
+                    CheckpointStore::new(Files::new(dir.clone()), interval)
+                }
+                (None, Some(repository)) => {
+                    let mut git = GitStore::new(repository.clone());
+                    if let Some(remote) = &c.remote {
+                        git = git.remote(remote.clone());
+                    }
+                    if let Some(prefix) = &c.prefix {
+                        if !prefix.starts_with("refs/") {
+                            return Err(format!("checkpoints[{i}].prefix must start with \"refs/\""));
+                        }
+                        git = git.prefix(prefix.clone());
+                    }
+                    if let Some(avro) = avro {
+                        let avro = avro.clone();
+                        git = git.decoder(Arc::new(move |record| avro.decode_snapshot(record)));
+                    }
+                    CheckpointStore::new(git, interval)
+                }
+                _ => {
+                    return Err(format!(
+                        "checkpoints[{i}]: expected {{ \"files\": dir }} or {{ \"git\": repository, \"remote\"?, \"prefix\"? }}"
+                    ))
+                }
+            };
+            stores.push(store);
+        }
+        Ok(stores)
     }
 
     /// The Avro schemas, registered under `<topic>-value` subjects: the
@@ -524,6 +601,7 @@ mod tests {
                  "workers": 3, "codec": "json", "batchLingerMs": 5,
                  "client": { "linger.ms": 7, "sasl.password": { "file": "secret.txt" }, "sasl.username": { "env": "HOME" } },
                  "stateDir": "state", "checkpointIntervalMs": 1000, "snapshots": "compact",
+                 "checkpoints": [{ "git": "archive.git", "prefix": "refs/archive", "intervalMs": 3600000 }],
                  "dedupe": { "sequence": "seq" } }"#,
         );
         write(&dir, "secret.txt", "s3cret\n");
@@ -536,6 +614,11 @@ mod tests {
         assert_eq!(service.batch_linger, Duration::from_millis(5));
         assert_eq!(service.state_dir, Some(dir.join("state")));
         assert_eq!(service.checkpoint_interval, Duration::from_secs(1));
+        let stores = service.checkpoint_targets();
+        assert_eq!(stores.len(), 2);
+        assert_eq!(stores[1].interval, Duration::from_secs(3600));
+        assert_eq!(stores[1].store.location("c", 2), format!("{} refs/archive/c/2", dir.join("archive.git").display()));
+        assert!(!dir.join("archive.git").exists(), "created on first use");
         assert_eq!(
             service.client_config,
             vec![

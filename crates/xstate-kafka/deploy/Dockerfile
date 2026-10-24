@@ -13,6 +13,9 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     && cp target/release/xstate-kafka /usr/local/bin/xstate-kafka
 
 FROM debian:trixie-slim
+# git: for Git checkpoint archives ("checkpoints": [{ "git": ... }]).
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates openssh-client \
+    && rm -rf /var/lib/apt/lists/*
 COPY --from=build /usr/local/bin/xstate-kafka /usr/local/bin/xstate-kafka
 RUN useradd --system --home-dir /var/lib/xstate --create-home xstate
 USER xstate

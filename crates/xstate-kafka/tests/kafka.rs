@@ -321,6 +321,59 @@ fn restores_from_local_checkpoints() {
 }
 
 #[test]
+fn restores_from_a_git_archive() {
+    use xstate_kafka::checkpoint::Store;
+    use xstate_kafka::git::GitStore;
+    use xstate_kafka::service::CheckpointStore;
+    let cluster = MockCluster::new(1).unwrap();
+    for topic in ["input", "output", "changelog", "dead"] {
+        cluster.create_topic(topic, PARTITIONS, 1).unwrap();
+    }
+    let bootstrap = cluster.bootstrap_servers();
+    let dir = std::env::temp_dir().join(format!("xstate-git-archive-{}", rand_suffix()));
+    let (archive, node) = (dir.join("archive.git"), dir.join("node.git"));
+    let with = |store: GitStore| {
+        let mut c = config(&bootstrap);
+        c.checkpoint_stores = vec![CheckpointStore::new(store, Duration::ZERO)];
+        c.workers = 1;
+        c
+    };
+    let keys: Vec<String> = (0..12).map(|i| format!("k{i}")).collect();
+    let next = r#"{"type":"next"}"#;
+    let round: Vec<(Option<&str>, &str)> = keys.iter().map(|k| (Some(k.as_str()), next)).collect();
+
+    let service = Service::start(with(GitStore::new(&archive)), machine()).unwrap();
+    produce(&bootstrap, &round);
+    assert_eq!(read(&bootstrap, "output", 12).len(), 12);
+    service.stop().unwrap();
+    commit_processed(&bootstrap);
+    // Every partition's checkpoints are a history of readable commits.
+    let archived = GitStore::new(&archive);
+    let total: usize =
+        (0..PARTITIONS).map(|p| archived.load("changelog", p).unwrap().map_or(0, |c| c.records.len())).sum();
+    assert_eq!(total, 12);
+
+    // A node with an empty repository restores from the archive as its
+    // remote, without reading the changelog, and pushes on from there.
+    let service = Service::start(with(GitStore::new(&node).remote(archive.to_str().unwrap())), machine()).unwrap();
+    produce(&bootstrap, &[(Some("k1"), next)]);
+    let output = read(&bootstrap, "output", 13);
+    let metrics = service.metrics();
+    service.stop().unwrap();
+    assert_eq!(states(&output)["k1"], vec!["s1", "s2"]);
+    assert_eq!(metrics.restored_actors, 12, "{metrics:?}");
+    assert_eq!(metrics.restored_records, 0, "{metrics:?}");
+    let k1 = (0..PARTITIONS)
+        .filter_map(|p| archived.load("changelog", p).unwrap())
+        .flat_map(|c| c.records)
+        .find(|(k, _)| k == "k1")
+        .unwrap();
+    let snapshot = xstate_kafka::Codec::decode(&k1.1).unwrap();
+    assert_eq!(snapshot["actors"]["steps"]["snapshot"]["value"], json!("s2"));
+    std::fs::remove_dir_all(&dir).ok();
+}
+
+#[test]
 fn a_failed_commit_discards_the_batch_behind_it() {
     use rdkafka::types::{RDKafkaApiKey, RDKafkaRespErr};
     let cluster = MockCluster::new(1).unwrap();
