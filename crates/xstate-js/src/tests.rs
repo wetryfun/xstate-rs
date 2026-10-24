@@ -127,3 +127,24 @@ fn the_root_context_sees_input_and_self() {
     let a = Actor::start_with(machine, options).unwrap();
     assert_eq!(a.context(), &json!({ "start": 4, "me": "m" }));
 }
+
+#[test]
+fn failures_in_functions_actions_and_the_context_fail_the_step() {
+    // A transition function that reads a name its module had (serialized
+    // closures lose their scope): the step fails, as in XState.
+    let mut a = actor(one_event(json!({ "@code": "({ context }) => ({ context: { n: context.n + LIMIT } })" })));
+    let e = a.send(json!({ "type": "go" }), 0).unwrap_err().to_string();
+    assert!(e.contains("LIMIT"), "{e}");
+    assert_eq!(a.status(), Status::Error);
+
+    let mut a = actor(one_event(json!({ "actions": [{ "@code": "() => { throw new Error('nope'); }" }] })));
+    assert_eq!(a.send(json!({ "type": "go" }), 0).unwrap_err().to_string(), "nope");
+
+    let mut r: Registry<Value, Value> = Registry::new();
+    r.evaluator("js", JsEvaluator::new());
+    let definition =
+        json!({ "@exprLang": "js", "context": { "@code": "() => missing" }, "initial": "a", "states": { "a": {} } });
+    let machine = Arc::new(Machine::from_json(&definition, &r).unwrap());
+    let e = Actor::start(machine, 0).err().expect("the start fails").to_string();
+    assert!(e.contains("missing"), "{e}");
+}

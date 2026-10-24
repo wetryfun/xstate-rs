@@ -1299,6 +1299,7 @@ where
                     };
                     crate::ops::count(crate::ops::Op::Expr);
                     let mut result = (m.exprs[*i as usize])(&args);
+                    self.expr_failed()?;
                     self.push_enq_ops(enq.take(), &mut out)?;
                     // XState merges a truthy `context` of the result.
                     if let Some(patch) = result.get_mut("context").map(Value::take) {
@@ -1493,7 +1494,8 @@ where
                 error: &self.expr_error,
             };
             crate::ops::count(crate::ops::Op::Expr);
-            (m.exprs[expr as usize])(&args)
+            let value = (m.exprs[expr as usize])(&args);
+            self.expr_failed().map(|()| value)
         };
         let targets_of = |result: &Value| -> Result<Option<Arc<[Nid]>>, SystemError> {
             let list: Vec<&str> = match result.get("target") {
@@ -1509,7 +1511,7 @@ where
         };
         let (result, targets) = match tr.function.as_ref().expect("a transition function") {
             TransitionFn::Expr(expr) => {
-                let result = call(*expr, Some(&enq));
+                let result = call(*expr, Some(&enq))?;
                 if result.is_null() && enq.ops.borrow().is_empty() {
                     return Ok(None);
                 }
@@ -1517,14 +1519,14 @@ where
                 (result, targets)
             }
             TransitionFn::Route { expr, target } => {
-                let result = call(*expr, None);
+                let result = call(*expr, None)?;
                 if !js_truthy(&result) {
                     return Ok(None);
                 }
                 (if result == Value::Bool(true) { Value::Object(Map::new()) } else { result }, Some(target.clone()))
             }
             TransitionFn::ChoiceExpr { expr, id } => {
-                let result = call(*expr, None);
+                let result = call(*expr, None)?;
                 if !js_truthy(&result) || result.get("target").is_none() {
                     return Err(SystemError::Failed(format!("Choice \"{id}\" has no target")));
                 }

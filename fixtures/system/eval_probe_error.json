@@ -1,5 +1,5 @@
 {
-  "notes": "An evaluator that throws fails the step (the guard here), as in XState; the actor keeps its previous snapshot in the error status.",
+  "notes": "An evaluator that throws fails the step wherever it runs (a guard, a transition function, an action, a transition's context, an assign, an emitted event, a custom action's params, a choice, a delay, an output), as in XState; the actor keeps its previous snapshot.",
   "logic": [
     {
       "name": "root",
@@ -8,6 +8,9 @@
         "@exprLang": "probe",
         "context": {
           "n": 0
+        },
+        "actions": {
+          "x": []
         },
         "initial": "a",
         "states": {
@@ -18,15 +21,106 @@
                   "n": 1
                 }
               },
-              "BOOM": {
+              "GUARD": {
                 "guard": {
                   "@expr": "throw"
                 },
                 "target": "b"
+              },
+              "FN": {
+                "@code": "throw"
+              },
+              "ACT": {
+                "actions": [
+                  {
+                    "@expr": "throw"
+                  }
+                ]
+              },
+              "CTX": {
+                "context": {
+                  "n": {
+                    "@expr": "throw"
+                  }
+                }
+              },
+              "ASSIGN": {
+                "actions": [
+                  {
+                    "type": "@xstate.assign",
+                    "context": {
+                      "n": {
+                        "@expr": "throw"
+                      }
+                    }
+                  }
+                ]
+              },
+              "EMIT": {
+                "actions": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "e",
+                      "v": {
+                        "@expr": "throw"
+                      }
+                    }
+                  }
+                ]
+              },
+              "PARAMS": {
+                "actions": [
+                  {
+                    "type": "noop",
+                    "params": {
+                      "v": {
+                        "@expr": "throw"
+                      }
+                    }
+                  }
+                ]
+              },
+              "CHOOSE": {
+                "target": "c"
+              },
+              "WAIT": {
+                "target": "w"
+              },
+              "END": {
+                "target": "f"
               }
             }
           },
-          "b": {}
+          "b": {},
+          "c": {
+            "type": "choice",
+            "choice": {
+              "@code": "throw"
+            }
+          },
+          "w": {
+            "after": {
+              "d": {
+                "target": "a"
+              }
+            }
+          },
+          "f": {
+            "type": "final",
+            "output": {
+              "v": {
+                "@expr": "throw"
+              }
+            }
+          }
+        },
+        "delays": {
+          "d": {
+            "duration": {
+              "@expr": "throw"
+            }
+          }
         }
       }
     }
@@ -43,7 +137,61 @@
     {
       "send": "m",
       "event": {
-        "type": "BOOM"
+        "type": "GUARD"
+      }
+    },
+    {
+      "send": "m",
+      "event": {
+        "type": "FN"
+      }
+    },
+    {
+      "send": "m",
+      "event": {
+        "type": "ACT"
+      }
+    },
+    {
+      "send": "m",
+      "event": {
+        "type": "CTX"
+      }
+    },
+    {
+      "send": "m",
+      "event": {
+        "type": "ASSIGN"
+      }
+    },
+    {
+      "send": "m",
+      "event": {
+        "type": "EMIT"
+      }
+    },
+    {
+      "send": "m",
+      "event": {
+        "type": "PARAMS"
+      }
+    },
+    {
+      "send": "m",
+      "event": {
+        "type": "CHOOSE"
+      }
+    },
+    {
+      "send": "m",
+      "event": {
+        "type": "WAIT"
+      }
+    },
+    {
+      "send": "m",
+      "event": {
+        "type": "END"
       }
     },
     {

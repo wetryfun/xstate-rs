@@ -89,10 +89,46 @@
   },
   {
     "label": "step 1",
-    "error": "probe guard at $.states.a.on.BOOM.guard"
+    "error": "probe guard at $.states.a.on.GUARD.guard"
   },
   {
     "label": "step 2",
+    "error": "probe transition at $.states.a.on.FN"
+  },
+  {
+    "label": "step 3",
+    "error": "probe action at $.states.a.on.ACT.actions[0]"
+  },
+  {
+    "label": "step 4",
+    "error": "probe transitionContext at $.states.a.on.CTX.context.n"
+  },
+  {
+    "label": "step 5",
+    "error": "probe transitionContext at $.states.a.on.ASSIGN.actions[0].context.n"
+  },
+  {
+    "label": "step 6",
+    "error": "probe actionParams at $.states.a.on.EMIT.actions[0].event.v"
+  },
+  {
+    "label": "step 7",
+    "error": "probe actionParams at $.states.a.on.PARAMS.actions[0].params.v"
+  },
+  {
+    "label": "step 8",
+    "error": "probe choice at $.states.c.choice"
+  },
+  {
+    "label": "step 9",
+    "error": "probe delay at $.delays.d.duration"
+  },
+  {
+    "label": "step 10",
+    "error": "probe output at $.states.f.output.v"
+  },
+  {
+    "label": "step 11",
     "snapshot": {
       "root": "m",
       "executionId": "system",
