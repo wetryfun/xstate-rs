@@ -1,0 +1,41 @@
+{
+  "name": "@xmachines/broker",
+  "version": "0.1.0",
+  "description": "Broker interfaces (BrokerConsumer, BrokerProducer) and a runner that serves machine runs from partitions over Web Streams",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./memory": {
+      "source": "./src/memory.ts",
+      "types": "./dist/memory.d.ts",
+      "default": "./dist/memory.js"
+    },
+    "./xstate": {
+      "source": "./src/xstate.ts",
+      "types": "./dist/xstate.d.ts",
+      "default": "./dist/xstate.js"
+    },
+    "./wasi": {
+      "source": "./src/wasi.ts",
+      "types": "./dist/wasi.d.ts",
+      "default": "./dist/wasi.js"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "peerDependencies": {
+    "xstate": ">=6.0.0-alpha.70"
+  },
+  "peerDependenciesMeta": {
+    "xstate": {
+      "optional": true
+    }
+  }
+}

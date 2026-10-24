@@ -63,3 +63,7 @@ required-features = ["kafka"]
 [[example]]
 name = "effects_worker"
 required-features = ["kafka"]
+
+[[example]]
+name = "mock_cluster"
+required-features = ["kafka"]
