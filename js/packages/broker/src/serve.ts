@@ -1,47 +1,50 @@
+import type { Event, Input, RunError, RunSnapshot } from '@xmachines/run';
 import { producerSink, type SinkOptions } from './sink.ts';
 import type { BrokerConsumer, BrokerProducer, BrokerRecord, OutboundRecord, PartitionLease } from './types.ts';
 
 /**
- * A run: one machine instance (actor), fed the events of its run id in
- * partition order and producing results.
+ * A run as the broker drives it: the Run RFC's ports (`@xmachines/run`'s
+ * `Run` and `HostedRun` are ones). A write to `in` resolves once the input is
+ * applied (or rejected onto `err`) and its outputs are enqueued on `out`:
+ * the record's offset may be committed after that.
  */
-export interface Run<In = unknown, Out = unknown> {
-  /**
-   * Inputs. A write resolves once the input is processed, its outputs are
-   * enqueued on `out` and its state is as durable as the run makes it: the
-   * input's offset may be committed after that. A rejected write sends the
-   * record to the dead-letter topic and ends the run (the next input for its
-   * id starts a new one).
-   */
-  readonly in: WritableStream<In>;
-  /** Outputs, produced to the output topic under the run id. */
-  readonly out: ReadableStream<Out>;
+export interface BrokerRun {
+  readonly in: WritableStream<Input>;
+  /** Produced to the output topic, keyed by the record key. */
+  readonly out: ReadableStream<Event>;
+  /** Produced to the dead-letter topic, keyed by the record key. */
+  readonly err: ReadableStream<RunError>;
+  /** Produced to the snapshot topic (latest per key, for a compacted topic) when there is one. */
+  readonly snapshot?: ReadableStream<RunSnapshot>;
+  /** Ends the run (default: closing `in`). */
+  close?(): Promise<void>;
 }
 
 export interface Topics {
   readonly input: string;
   readonly output: string;
-  /** Records that cannot be processed, with a `reason` header. */
+  /** Records that cannot be processed and errors runs report, with a `reason` header. */
   readonly deadLetter?: string;
+  /** Run snapshots, keyed by record key: a compacted topic of every run's latest state. */
+  readonly snapshots?: string;
 }
 
-export interface ServeOptions<In, Out> {
+export interface ServeOptions {
   readonly consumer: BrokerConsumer;
   readonly producer: BrokerProducer;
   readonly topics: Topics;
   /**
-   * Instantiates (or restores) the run for `runId`. Runs live while their
-   * partition's lease does; restoring state from a durability backend is the
-   * run's concern. A rejection stops serving (a store that is down should
-   * not turn every record into a dead letter).
+   * Opens the run of a record key: the partition key maps to a run (with
+   * `@xmachines/run`'s `runner`, the fork of the machine named by the key,
+   * restored from its journal). Runs live while their partition's lease
+   * does. A rejection stops serving (a store that is down should not turn
+   * every record into a dead letter).
    */
-  createRun(runId: string, lease: PartitionLease): Run<In, Out> | Promise<Run<In, Out>>;
-  /** The run a record is for (default: its key; `null` is a dead letter). */
-  runId?(record: BrokerRecord): string | null;
+  open(key: string, lease: PartitionLease): BrokerRun | Promise<BrokerRun>;
   /** The input of a record (default: its value as JSON). Throwing makes it a dead letter. */
-  decode?(record: BrokerRecord): In;
+  decode?(record: BrokerRecord): Input;
   /** The output record of a run's output (default: JSON). */
-  encode?(output: Out, runId: string): Pick<OutboundRecord, 'value' | 'headers'>;
+  encode?(output: Event, key: string): Pick<OutboundRecord, 'value' | 'headers'>;
   /** How often processed offsets are committed (default 100 ms). */
   readonly commitIntervalMs?: number;
   /** Output batching. */
@@ -63,9 +66,9 @@ export interface Serving {
 
 const decoder = new TextDecoder();
 
-function defaultDecode(record: BrokerRecord): unknown {
+function defaultDecode(record: BrokerRecord): Input {
   if (record.value === null) throw new Error('no value');
-  return JSON.parse(decoder.decode(record.value));
+  return JSON.parse(decoder.decode(record.value)) as Input;
 }
 
 function defaultEncode(output: unknown): Pick<OutboundRecord, 'value' | 'headers'> {
@@ -79,8 +82,9 @@ const message = (error: unknown) => (error instanceof Error ? error.message : St
 
 /**
  * Serves runs from the input topic: each assigned partition is read in
- * order, each record goes to the run of its key (created on its first
- * record), and the runs' outputs go to the output topic under their run id.
+ * order, each record goes to the run of its key (opened on its first
+ * record), and the runs' outputs go to the output topic and their errors to
+ * the dead-letter topic, under the key.
  *
  * - Ordering: a partition's records reach each run in offset order.
  * - Backpressure: a record waits until its run takes inputs again
@@ -91,12 +95,11 @@ const message = (error: unknown) => (error instanceof Error ? error.message : St
  *   broker. Records after the last commit are delivered again to the next
  *   holder of the partition, so runs should tolerate redelivery.
  */
-export function serve<In = unknown, Out = unknown>(options: ServeOptions<In, Out>): Serving {
+export function serve(options: ServeOptions): Serving {
   const sink = producerSink(options.producer, options.sink);
   const writer = sink.writable.getWriter();
-  const decode = (options.decode ?? defaultDecode) as (record: BrokerRecord) => In;
-  const encode = (options.encode ?? defaultEncode) as (output: Out, runId: string) => Pick<OutboundRecord, 'value' | 'headers'>;
-  const runIdOf = options.runId ?? ((record: BrokerRecord) => record.key);
+  const decode = options.decode ?? defaultDecode;
+  const encode = options.encode ?? defaultEncode;
   const commitIntervalMs = options.commitIntervalMs ?? 100;
   const report = options.onError ?? ((error: unknown) => console.error('@xmachines/broker:', error));
   const partitions = new Set<PartitionTask>();
@@ -118,11 +121,12 @@ export function serve<In = unknown, Out = unknown>(options: ServeOptions<In, Out
   };
 
   interface RunState {
-    readonly id: string;
-    readonly writer: WritableStreamDefaultWriter<In>;
-    /** Reading `out` or producing what it read. */
-    busy: boolean;
-    readonly pumped: Promise<void>;
+    readonly key: string;
+    readonly run: BrokerRun;
+    readonly writer: WritableStreamDefaultWriter<Input>;
+    /** Pumps reading a port or producing what they read. */
+    busy: number;
+    readonly pumped: Promise<unknown>;
   }
 
   /** One leased partition being served. */
@@ -174,13 +178,13 @@ export function serve<In = unknown, Out = unknown>(options: ServeOptions<In, Out
     async handle(record: BrokerRecord) {
       const entry = { offset: record.offset, done: false };
       this.offsets.push(entry);
-      const runId = runIdOf(record);
-      if (runId === null) {
-        await deadLetter(record, 'no run id (the record has no key)');
+      const key = record.key;
+      if (key === null) {
+        await deadLetter(record, 'no key (the key names the run)');
         entry.done = true;
         return;
       }
-      let input: In;
+      let input: Input;
       try {
         input = decode(record);
       } catch (error) {
@@ -190,14 +194,14 @@ export function serve<In = unknown, Out = unknown>(options: ServeOptions<In, Out
       }
       let run: RunState;
       for (;;) {
-        run = this.runs.get(runId) ?? (await this.open(runId));
+        run = this.runs.get(key) ?? (await this.open(key));
         try {
           // A run that is behind stops the partition's reading here.
           await run.writer.ready;
           break;
         } catch {
-          // The run failed on an earlier input: this one goes to a new run.
-          if (this.runs.get(runId) === run) this.runs.delete(runId);
+          // The run broke on an earlier input: this one goes to a new run.
+          if (this.runs.get(key) === run) this.runs.delete(key);
         }
       }
       const write = run.writer.write(input).then(
@@ -205,8 +209,10 @@ export function serve<In = unknown, Out = unknown>(options: ServeOptions<In, Out
           entry.done = true;
         },
         async (error: unknown) => {
-          if (this.runs.get(runId) === run) {
-            this.runs.delete(runId);
+          // The run could not take it (its journal failed, ...): it is
+          // broken; the next record reopens it from its durable state.
+          if (this.runs.get(key) === run) {
+            this.runs.delete(key);
             run.writer.abort(error).catch(() => {});
           }
           await deadLetter(record, `run failed: ${message(error)}`).catch(report);
@@ -217,35 +223,50 @@ export function serve<In = unknown, Out = unknown>(options: ServeOptions<In, Out
       void write.finally(() => this.writes.delete(write));
     }
 
-    async open(runId: string): Promise<RunState> {
-      const run = await options.createRun(runId, this.lease);
-      const state: RunState = {
-        id: runId,
-        writer: run.in.getWriter(),
-        busy: false,
-        pumped: Promise.resolve(),
-      };
-      (state as { pumped: Promise<void> }).pumped = this.pump(state, run.out);
-      this.runs.set(runId, state);
+    async open(key: string): Promise<RunState> {
+      const run = await options.open(key, this.lease);
+      const state: RunState = { key, run, writer: run.in.getWriter(), busy: 0, pumped: Promise.resolve() };
+      const snapshots = options.topics.snapshots;
+      (state as { pumped: Promise<unknown> }).pumped = Promise.all([
+        this.pump(state, run.out, (output) => ({ topic: options.topics.output, key, ...encode(output, key) })),
+        this.pump(state, run.err, (error) => ({
+          topic: options.topics.deadLetter!,
+          key,
+          value: JSON.stringify(error),
+          headers: { 'content-type': 'application/json', reason: error.message },
+        }), !options.topics.deadLetter),
+        run.snapshot &&
+          (snapshots
+            ? this.pump(state, run.snapshot, (s) => ({
+                topic: snapshots,
+                key,
+                value: JSON.stringify(s),
+                headers: { 'content-type': 'application/json' },
+              }))
+            : run.snapshot.cancel()),
+      ]);
+      this.runs.set(key, state);
       return state;
     }
 
-    /** Produces a run's outputs. */
-    async pump(state: RunState, out: ReadableStream<Out>) {
-      const reader = out.getReader();
+    /** Produces what a port gives (or reports it, when it has no topic). */
+    async pump<T>(state: RunState, port: ReadableStream<T>, record: (chunk: T) => OutboundRecord, report_ = false) {
+      const reader = port.getReader();
       try {
         for (;;) {
-          state.busy = false;
           const next = await reader.read();
-          state.busy = true;
           if (next.done) return;
-          const { value, headers } = encode(next.value, state.id);
-          await writer.write({ topic: options.topics.output, key: state.id, value, headers });
+          state.busy++;
+          try {
+            if (report_) report(new Error(`run ${state.key}: ${(next.value as RunError).message}`));
+            else await writer.write(record(next.value));
+          } finally {
+            state.busy--;
+          }
         }
       } catch (error) {
         report(error);
       } finally {
-        state.busy = false;
         reader.releaseLock();
       }
     }
@@ -266,7 +287,7 @@ export function serve<In = unknown, Out = unknown>(options: ServeOptions<In, Out
         // Every output enqueued by a processed input is read by its pump
         // and batched once the pumps are idle (reads resolve in microtasks).
         do await tick();
-        while ([...this.runs.values()].some((r) => r.busy));
+        while ([...this.runs.values()].some((r) => r.busy > 0));
         await sink.flush();
         if (this.lease.signal.aborted) return;
         await this.lease.commit(last);
@@ -280,7 +301,12 @@ export function serve<In = unknown, Out = unknown>(options: ServeOptions<In, Out
     async closeRuns() {
       const runs = [...this.runs.values()];
       this.runs.clear();
-      await Promise.allSettled(runs.map((r) => r.writer.close()));
+      await Promise.allSettled(
+        runs.map((r) => {
+          r.writer.releaseLock();
+          return r.run.close ? r.run.close() : r.run.in.close();
+        }),
+      );
       await Promise.allSettled(runs.map((r) => r.pumped));
     }
 

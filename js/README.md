@@ -1,71 +1,104 @@
-# @xmachines/broker packages
+# @xmachines packages
 
-TypeScript packages that serve machine runs from Kafka-API brokers over Web
-Streams, following the xmachin.es Broker RFC. The Rust service in
-`crates/xstate-kafka` is the high-throughput, exactly-once path; these
-packages are the JavaScript one (at-least-once), for machines whose runs
-live in JS or in the xstate-rs runtime as a WASI component.
+TypeScript packages that implement the XMachines Run, Streams, Git and Broker
+RFCs in pure JavaScript, over WHATWG Web Streams, with upstream XState as the
+default engine. The Rust service in `crates/xstate-kafka` is the
+high-throughput, exactly-once path; these packages are the JavaScript one.
 
 | Package | What it is |
 | --- | --- |
-| `@xmachines/broker` | `BrokerConsumer` / `BrokerProducer` / `PartitionLease`, `serve` (the runner), `producerSink`, `createLease` (for transport authors) |
+| `@xmachines/streams` | Framing transforms (`ndjson`, `sse`, `json`), durability as a transform (`durable(log)`), `replay`, `project`, `filter`, and write-through helpers that keep acknowledgements (`through`, `durableWritable`, `fanIn`) |
+| `@xmachines/run` | Runs: ports `in` / `out` / `err` / `snapshot`, Git-compatible ids, time as an input (`xmachines.time`), atomic batches; `host` (clock, timers, journal) and `runner` (runs by name) |
+| `@xmachines/run/xstate` | The engine on upstream XState's pure system API |
+| `@xmachines/run/native` | The engine on the xstate-rs runtime as a Node addon (`crates/xstate-node`, injected) |
+| `@xmachines/run/wasi` | The engine on the xstate-rs runtime as a WASI component (transpiled with jco, injected) |
+| `@xmachines/git` | Git durability on isomorphic-git: machines are orphan branches, runs are forks, batches and snapshots are commits (`GitStore`, `GitJournal`) |
+| `@xmachines/git/http` | A pure-JavaScript Git Smart HTTP server (`/<repo>.git/**`) that refuses history rewrites |
+| `@xmachines/broker` | `BrokerConsumer` / `BrokerProducer` / `PartitionLease`, and `serve`: record keys to runs, from leased partitions |
 | `@xmachines/broker/memory` | An in-memory broker with Kafka's model, for tests and local runs |
-| `@xmachines/broker/xstate` | Runs as XState actors (`xstateRuns`), with a `SnapshotStore` |
-| `@xmachines/broker/wasi` | Runs on the xstate-rs runtime: the `xstate-wasi` component transpiled with jco (`wasiRuns`, `componentImports`) |
-| `@xmachines/broker-kafka` | The transport for KafkaJS-style clients (KafkaJS, or `@confluentinc/kafka-javascript`'s KafkaJS API) |
-| `@xmachines/broker-redpanda` | The Kafka transport with a KafkaJS client set up for Redpanda (SCRAM over TLS, idempotent producer, murmur2 keys) |
+| `@xmachines/broker-kafka` | The transport over injected `@platformatic/kafka` clients |
+| `@xmachines/broker-redpanda` | `@platformatic/kafka` options for Redpanda, and the Kafka transport |
 
 ```ts
+import * as fs from 'node:fs';
+import { Consumer, Producer } from '@platformatic/kafka';
 import { serve } from '@xmachines/broker';
-import { xstateRuns, MemorySnapshotStore } from '@xmachines/broker/xstate';
-import { redpanda } from '@xmachines/broker-redpanda';
+import { kafkaConsumer, kafkaProducer, redpandaClientOptions } from '@xmachines/broker-redpanda';
+import { GitStore } from '@xmachines/git';
+import { runner } from '@xmachines/run';
+import { xstateEngine } from '@xmachines/run/xstate';
 
-const rp = redpanda({ brokers: ['localhost:9092'] });
+const options = redpandaClientOptions({ brokers: ['localhost:9092'] });
 const serving = serve({
-  consumer: rp.consumer({ groupId: 'orders' }),
-  producer: rp.producer(),
-  topics: { input: 'orders', output: 'orders-out', deadLetter: 'orders-dead' },
-  createRun: xstateRuns({ machine: orderMachineJSON, store: new MemorySnapshotStore() }),
+  consumer: kafkaConsumer({ consumer: new Consumer({ ...options, groupId: 'orders' }) }),
+  producer: kafkaProducer({ producer: new Producer(options) }),
+  topics: { input: 'orders', output: 'orders-out', deadLetter: 'orders-dead', snapshots: 'orders-snapshots' },
+  open: runner({ engine: xstateEngine(), machine: orderMachineJSON, journals: new GitStore({ fs, gitdir: 'orders.git' }) }),
 });
 ```
 
-How `serve` runs (the RFC's execution model):
+## Runs (Run RFC)
 
-- **Partition leasing.** Each partition assigned to the consumer group member
-  is a `PartitionLease`: its records in offset order, `commit`, and a signal
-  aborted when a rebalance revokes it. One holder per partition is the
-  single-writer guarantee for its runs.
-- **Runs.** A record's key is its run id; the run (`{ in: WritableStream,
-  out: ReadableStream }`) is created on its first record. Inputs are written
-  to `in` in partition order; `out` is produced to the output topic under the
-  run id. Records without a key, undecodable values and inputs a run rejects
-  go to the dead-letter topic with a `reason` header (a run that rejected an
-  input ends; the next input starts a new one).
-- **Backpressure.** A run that is behind (its `in` writer not ready) stops the
-  partition's reading; a lease whose buffer passes its high-water mark pauses
-  fetching that partition (`consumer.pause`) and resumes when the reader
-  catches up. Outputs wait on the producer the same way (`producerSink`
-  batches sends, with a cap on sends in flight).
-- **At-least-once.** An offset is committed once every record up to it was
-  processed (its `in` write resolved) and the outputs enqueued by then were
-  acknowledged. After a rebalance or crash, records after the last commit are
-  delivered again, so runs should tolerate redelivery.
-- **Durability.** Run state goes wherever the run puts it: `xstateRuns` and
-  `wasiRuns` save the persisted snapshot to a `SnapshotStore` before an input
-  counts as processed, and restore from it when a partition moves.
+A run is one execution lineage of a machine, driven only by ordered events.
+
+- **Ports.** `in` (a `WritableStream` of events or atomic batches), `out`
+  (emitted events), `err` (rejected batches), `snapshot` (the latest state,
+  read-only). A write to `in` resolves once the chunk is applied and its
+  outputs are enqueued; `out` and `err` apply backpressure (cancel one to drop
+  it), `snapshot` keeps only the latest value.
+- **Determinism.** A run never reads a clock: `{ type: "xmachines.time",
+  now }` advances its clock and fires due timers; other events apply at the
+  current clock. The same machine and inputs give the same outputs and state.
+- **Atomic batches.** A batch that fails (an engine error, a machine in
+  `error`, an input that is not an event) leaves the run as it was and goes
+  to `err`, time events included.
+- **Identity.** A machine is the Git commit of its `machine.json`; a run is
+  the commit that forks it with `run.json` (`runId(definition, { name })`).
+  The ids are computed with Web Crypto and are the same commit hashes Git
+  stores.
+- **Engines.** `xstateEngine()`, `nativeEngine({ addon })` and
+  `wasiEngine({ actors })` all implement XState's pure system semantics and
+  persist XState's `SystemSnapshot` JSON, so a run's state moves between
+  engines (tested in every direction).
+- **Hosting.** `host` stamps each input with the time (a leading time event
+  in the same batch), appends it to the run's `Journal`, applies it, sends
+  time events when timers are due, and journals snapshots. `runner` opens
+  runs by name, restoring from the latest snapshot and replaying the batches
+  after it (without emitting their outputs again).
+
+## Git (Git RFC)
+
+`GitStore` keeps machines and runs in a repository (bare, created on first
+use; the fs is injected): `refs/heads/machines/<id>` is a machine's orphan
+branch, `refs/heads/runs/<run id>` a run, whose commits are its batches
+(`events.ndjson`) and snapshots (`snapshot.json`). Refs only move forward.
+`smartHttp({ fs, resolve, receive })` serves repositories to `git clone`,
+`fetch` and `push` (fast-forward only; deletes and rewrites are refused with
+a reason), so runs replicate with plain Git.
+
+## Brokers (Broker RFC)
+
+`serve` maps each record key to a run (`open(key)`), writes a partition's
+records in order, produces `out` to the output topic, `err` and unprocessable
+records to the dead-letter topic (`reason` header), and snapshots to a
+compacted snapshot topic. A run that falls behind stops its partition's
+reading, and the lease pauses fetching. Offsets are committed at least once:
+after every record up to them was applied and the outputs enqueued by then
+were acknowledged.
 
 ## Development
 
 ```sh
 cd js && npm install
-npm test           # node --test, sources run directly (Node 22 strips types)
+npm test           # node --test; sources run directly (Node 22 strips types)
 npm run typecheck
 npm run build      # dist/ for publishing
 ```
 
-The Kafka tests run against librdkafka's mock cluster (the Kafka protocol in
-a Rust process): `cargo build -p xstate-kafka --features kafka --example
-mock_cluster` first (or set `XSTATE_MOCK_CLUSTER`). The WASI tests need the
-component: `cargo build -p xstate-wasi --target wasm32-wasip2 --release
---target-dir target/wasi` (or set `XSTATE_WASI_COMPONENT`). Both are skipped
-when the binaries are missing.
+Optional binaries (tests that need them skip without them):
+
+- Kafka tests: librdkafka's mock cluster, `cargo build -p xstate-kafka
+  --features kafka --example mock_cluster` (or `XSTATE_MOCK_CLUSTER`).
+- Native engine: `crates/xstate-node/build.sh` (or `XSTATE_NODE_ADDON`).
+- WASI engine: `cargo build -p xstate-wasi --target wasm32-wasip2 --release
+  --target-dir target/wasi` (or `XSTATE_WASI_COMPONENT`).

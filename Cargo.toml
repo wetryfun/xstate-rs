@@ -8,10 +8,13 @@ members = [
     "crates/xstate-wasi-host",
     "crates/xstate-wasi-guest",
     "crates/xstate-kafka",
+    "crates/xstate-node",
     "examples/checkout",
     "examples/checkout-component",
 ]
 # xstate-wasi-host builds Wasmtime; test it explicitly with `cargo test -p xstate-wasi-host`.
+# xstate-node is a Node.js addon; build and test it with `crates/xstate-node/build.sh` and
+# `node --test crates/xstate-node/test.mjs`.
 default-members = [
     "crates/xstate-rt",
     "crates/xstate-wasm",

@@ -1,124 +1,125 @@
 /**
  * `@xmachines/broker-kafka`: `BrokerConsumer` and `BrokerProducer` for
- * Kafka-API brokers through a KafkaJS-style client: KafkaJS itself, or the
- * KafkaJS-compatible API of `@confluentinc/kafka-javascript` (librdkafka).
+ * Kafka-API brokers through `@platformatic/kafka` (pure JavaScript). The
+ * clients are injected: create a `Consumer` and a `Producer` with the
+ * default (Buffer) serialisers and pass them in.
  *
- * Each assigned partition is a lease; when its reader falls behind, the
- * partition is paused (`consumer.pause`) and resumed when the reader catches
- * up. Offsets are committed only through `PartitionLease.commit` (auto-commit
- * is off). Every rebalance revokes the member's leases (KafkaJS rebalances
- * eagerly) and partitions come back as new leases from the committed
- * offsets.
+ * Each assigned partition is a lease. A member reads its partitions through
+ * one message stream, so when any lease's reader falls behind the stream is
+ * paused (the client stops fetching) until every lease has room again.
+ * Offsets are committed only through `PartitionLease.commit` (autocommit is
+ * off). A rebalance revokes the leases of partitions the member lost; a
+ * partition it keeps keeps its lease, and records the client fetches again
+ * from the committed offset are skipped there.
  */
 import { createLease, type BrokerConsumer, type BrokerProducer, type LeaseHandle, type OutboundRecord, type PartitionLease } from '@xmachines/broker';
+import type { ConsumeOptions, Consumer, Message, MessagesStream, Producer } from '@platformatic/kafka';
 
-type Bytes = Uint8Array;
-type HeaderValue = Bytes | string | (Bytes | string)[] | undefined;
-
-/** The message shape KafkaJS hands to `eachMessage`. */
-export interface KafkaMessage {
-  readonly key: Bytes | null;
-  readonly value: Bytes | null;
-  readonly offset: string;
-  readonly headers?: Readonly<Record<string, HeaderValue>>;
-}
-
-export interface TopicPartitions {
-  topic: string;
-  partitions?: number[];
-}
-
-/** The consumer methods this package uses (KafkaJS's `Consumer`). */
-export interface ConsumerLike {
-  connect(): Promise<void>;
-  disconnect(): Promise<void>;
-  subscribe(subscription: { topics: string[]; fromBeginning?: boolean }): Promise<void>;
-  run(config: {
-    autoCommit?: boolean;
-    partitionsConsumedConcurrently?: number;
-    eachMessage(payload: { topic: string; partition: number; message: KafkaMessage }): Promise<void>;
-  }): Promise<void>;
-  pause(topics: TopicPartitions[]): void;
-  resume(topics: TopicPartitions[]): void;
-  commitOffsets(offsets: { topic: string; partition: number; offset: string }[]): Promise<void>;
-  on(event: string, listener: (event: { payload?: unknown }) => void): unknown;
-  readonly events: { readonly GROUP_JOIN: string; readonly REBALANCING?: string; readonly CRASH?: string };
-}
-
-/** The producer methods this package uses (KafkaJS's `Producer`). */
-export interface ProducerLike {
-  connect(): Promise<void>;
-  disconnect(): Promise<void>;
-  sendBatch(batch: {
-    topicMessages: { topic: string; messages: { key: string | null; value: Bytes | string | null; headers?: Record<string, string> }[] }[];
-    acks?: number;
-  }): Promise<unknown>;
-}
-
-/** A KafkaJS-style client (`new Kafka({ brokers })`). */
-export interface KafkaLike {
-  consumer(config: { groupId: string } & Record<string, unknown>): ConsumerLike;
-  producer(config?: Record<string, unknown>): ProducerLike;
-}
+type Bytes = Buffer;
 
 export interface KafkaConsumerOptions {
-  readonly groupId: string;
-  /** Read partitions without a committed offset from the beginning (default true). */
-  readonly fromBeginning?: boolean;
-  /** Records buffered per partition before it is paused (default 1000). */
+  /** The injected group consumer (default Buffer deserialisers). */
+  readonly consumer: Consumer<Bytes, Bytes, Bytes, Bytes>;
+  /** Records buffered per partition before reading pauses (default 1000). */
   readonly highWaterMark?: number;
-  /** Partitions handed to readers at the same time (default 16). */
-  readonly partitionsConsumedConcurrently?: number;
-  /** More consumer settings (`sessionTimeout`, `heartbeatInterval`, ...). */
-  readonly config?: Record<string, unknown>;
+  /** More `consume` options (`sessionTimeout`, `heartbeatInterval`, `maxWaitTime`, ...). */
+  readonly consume?: Partial<ConsumeOptions<Bytes, Bytes, Bytes, Bytes>>;
+  /** Close the client with the broker consumer (default true; false leaves it to its owner). */
+  readonly closeClient?: boolean;
 }
 
-const text = (v: Bytes | string) => (typeof v === 'string' ? v : new TextDecoder().decode(v));
+interface Held {
+  readonly handle: LeaseHandle;
+  /** The next offset to deliver: anything before it was delivered already. */
+  next: bigint;
+  epoch: number;
+}
 
-function headers(h: KafkaMessage['headers']): Record<string, string> {
+const text = (b: Bytes) => b.toString('utf8');
+
+function headers(map: Map<Bytes, Bytes> | undefined): Record<string, string> {
   const out: Record<string, string> = {};
-  for (const [name, value] of Object.entries(h ?? {})) {
-    const first = Array.isArray(value) ? value[0] : value;
-    if (first !== undefined) out[name] = text(first);
+  for (const [k, v] of map ?? []) {
+    const name = text(k);
+    if (!(name in out)) out[name] = text(v);
   }
   return out;
 }
 
-/** A group member reading through `kafka`. */
-export function kafkaConsumer(kafka: KafkaLike, options: KafkaConsumerOptions): BrokerConsumer {
-  const consumer = kafka.consumer({ ...options.config, groupId: options.groupId });
-  const held = new Map<string, LeaseHandle>();
+/** A group member reading through an injected `@platformatic/kafka` consumer. */
+export function kafkaConsumer(options: KafkaConsumerOptions): BrokerConsumer {
+  const { consumer } = options;
+  const held = new Map<string, Held>();
+  /** Leases whose readers are behind. */
+  const behind = new Set<string>();
+  let stream: MessagesStream<Bytes, Bytes, Bytes, Bytes> | undefined;
   let controller: ReadableStreamDefaultController<PartitionLease> | undefined;
   let closing = false;
 
-  const revokeAll = () => {
-    for (const h of held.values()) h.revoke();
-    held.clear();
+  const assigned = (topic: string, partition: number) =>
+    consumer.assignments?.some((a) => a.topic === topic && a.partitions.includes(partition)) ?? false;
+
+  const release = (id: string) => {
+    behind.delete(id);
+    if (behind.size === 0 && stream?.isPaused()) stream.resume();
   };
 
-  const lease = (topic: string, partition: number): LeaseHandle => {
-    const id = `${topic}/${partition}`;
-    let handle = held.get(id);
-    if (handle) return handle;
-    const created: LeaseHandle = createLease(
-      topic,
-      partition,
-      {
-        pause: () => consumer.pause([{ topic, partitions: [partition] }]),
-        resume: () => {
-          if (held.get(id) === created) consumer.resume([{ topic, partitions: [partition] }]);
+  const revoke = (id: string) => {
+    held.get(id)?.handle.revoke();
+    held.delete(id);
+    release(id);
+  };
+
+  const onJoin = () => {
+    for (const [id, h] of held) if (!assigned(h.handle.lease.topic, h.handle.lease.partition)) revoke(id);
+  };
+
+  const lease = (topic: string, partition: number): Held => {
+    const id = `${topic}:${partition}`;
+    const existing = held.get(id);
+    if (existing) return existing;
+    const entry: Held = {
+      next: -1n,
+      epoch: -1,
+      handle: createLease(
+        topic,
+        partition,
+        {
+          pause: () => {
+            behind.add(id);
+            stream?.pause();
+          },
+          resume: () => release(id),
+          commit: async (offset) => {
+            if (held.get(id) !== entry) throw new Error(`partition ${topic}/${partition} is no longer held`);
+            await consumer.commit({
+              offsets: [{ topic, partition, offset: BigInt(offset) + 1n, leaderEpoch: entry.epoch }],
+            });
+          },
         },
-        commit: async (offset) => {
-          if (held.get(id) !== created) throw new Error(`partition ${id} is no longer held`);
-          await consumer.commitOffsets([{ topic, partition, offset: (BigInt(offset) + 1n).toString() }]);
-        },
-      },
-      { highWaterMark: options.highWaterMark },
-    );
-    handle = created;
-    held.set(id, handle);
-    controller?.enqueue(handle.lease);
-    return handle;
+        { highWaterMark: options.highWaterMark },
+      ),
+    };
+    held.set(id, entry);
+    controller?.enqueue(entry.handle.lease);
+    return entry;
+  };
+
+  const onMessage = (m: Message<Bytes, Bytes, Bytes, Bytes>) => {
+    if (closing || !assigned(m.topic, m.partition)) return;
+    const entry = lease(m.topic, m.partition);
+    // After a rebalance the client fetches again from the committed offset.
+    if (m.offset < entry.next) return;
+    entry.next = m.offset + 1n;
+    entry.epoch = m.leaderEpoch;
+    entry.handle.push({
+      topic: m.topic,
+      partition: m.partition,
+      offset: m.offset.toString(),
+      key: m.key === undefined || m.key === null ? null : text(m.key),
+      value: m.value ?? null,
+      headers: headers(m.headers),
+    });
   };
 
   return {
@@ -126,34 +127,17 @@ export function kafkaConsumer(kafka: KafkaLike, options: KafkaConsumerOptions): 
       return new ReadableStream<PartitionLease>({
         start: async (c) => {
           controller = c;
-          // A rebalance revokes every lease: KafkaJS's protocol is eager,
-          // and it fetches again from the committed offsets.
-          consumer.on(consumer.events.GROUP_JOIN, revokeAll);
-          if (consumer.events.REBALANCING) consumer.on(consumer.events.REBALANCING, revokeAll);
-          if (consumer.events.CRASH) {
-            consumer.on(consumer.events.CRASH, (e) => {
-              const payload = e.payload as { error?: unknown; restart?: boolean } | undefined;
-              if (!payload?.restart && !closing) c.error(payload?.error ?? new Error('the Kafka consumer crashed'));
-            });
-          }
-          await consumer.connect();
-          await consumer.subscribe({ topics: [...topics], fromBeginning: options.fromBeginning ?? true });
-          await consumer.run({
-            autoCommit: false,
-            partitionsConsumedConcurrently: options.partitionsConsumedConcurrently ?? 16,
-            eachMessage: async ({ topic, partition, message }) => {
-              if (closing) return;
-              // A full lease pauses its partition; the rest of this batch
-              // is not delivered and is fetched again after the resume.
-              lease(topic, partition).push({
-                topic,
-                partition,
-                offset: message.offset,
-                key: message.key === null ? null : text(message.key),
-                value: message.value,
-                headers: headers(message.headers),
-              });
-            },
+          consumer.on('consumer:group:join', onJoin);
+          stream = await consumer.consume({
+            mode: 'committed',
+            fallbackMode: 'earliest',
+            ...options.consume,
+            topics: [...topics],
+            autocommit: false,
+          });
+          stream.on('data', onMessage);
+          stream.on('error', (error: Error) => {
+            if (!closing) c.error(error);
           });
         },
         cancel: () => {
@@ -163,46 +147,51 @@ export function kafkaConsumer(kafka: KafkaLike, options: KafkaConsumerOptions): 
     },
     async close() {
       closing = true;
-      revokeAll();
+      for (const id of [...held.keys()]) revoke(id);
       try {
         controller?.close();
       } catch {
         // Already closed or cancelled.
       }
       controller = undefined;
-      await consumer.disconnect();
+      consumer.removeListener('consumer:group:join', onJoin);
+      await stream?.close();
+      if (options.closeClient ?? true) await consumer.close();
     },
   };
 }
 
 export interface KafkaProducerOptions {
-  /** Producer settings (`idempotent`, `maxInFlightRequests`, ...). */
-  readonly config?: Record<string, unknown>;
+  /** The injected producer (default Buffer serialisers). */
+  readonly producer: Producer<Bytes, Bytes, Bytes, Bytes>;
   /** Acknowledgements per send: -1 (all in-sync replicas, the default), 1 or 0. */
   readonly acks?: number;
+  /** Close the client with the broker producer (default true). */
+  readonly closeClient?: boolean;
 }
 
-/** Sends through `kafka`; connects on first use. */
-export function kafkaProducer(kafka: KafkaLike, options: KafkaProducerOptions = {}): BrokerProducer {
-  const producer = kafka.producer(options.config);
-  let connected: Promise<void> | undefined;
+const bytes = (v: Uint8Array | string) => (typeof v === 'string' ? Buffer.from(v) : Buffer.from(v.buffer, v.byteOffset, v.byteLength));
+
+/** Sends through an injected `@platformatic/kafka` producer. */
+export function kafkaProducer(options: KafkaProducerOptions): BrokerProducer {
+  const { producer } = options;
   return {
     async send(records: readonly OutboundRecord[]) {
       if (records.length === 0) return;
-      await (connected ??= producer.connect());
-      const byTopic = new Map<string, { key: string | null; value: Bytes | string | null; headers?: Record<string, string> }[]>();
-      for (const r of records) {
-        let messages = byTopic.get(r.topic);
-        if (!messages) byTopic.set(r.topic, (messages = []));
-        messages.push({ key: r.key, value: r.value, ...(r.headers ? { headers: { ...r.headers } } : {}) });
-      }
-      await producer.sendBatch({
-        topicMessages: [...byTopic].map(([topic, messages]) => ({ topic, messages })),
+      await producer.send({
         acks: options.acks ?? -1,
+        messages: records.map((r) => ({
+          topic: r.topic,
+          ...(r.key !== null && { key: bytes(r.key) }),
+          ...(r.value !== null && { value: bytes(r.value) }),
+          ...(r.headers && {
+            headers: new Map(Object.entries(r.headers).map(([k, v]) => [Buffer.from(k), Buffer.from(v)])),
+          }),
+        })),
       });
     },
     async close() {
-      if (connected) await producer.disconnect();
+      if (options.closeClient ?? true) await producer.close();
     },
   };
 }

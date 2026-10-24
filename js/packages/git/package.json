@@ -1,0 +1,13 @@
+{
+  "name": "@xmachines/git",
+  "version": "0.1.0",
+  "description": "Git as a durable, append-only stream for XMachines (isomorphic-git): machines as orphan branches, runs as forks, events and snapshots as commits, and a Smart HTTP server",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": { "source": "./src/index.ts", "types": "./dist/index.d.ts", "default": "./dist/index.js" },
+    "./http": { "source": "./src/http.ts", "types": "./dist/http.d.ts", "default": "./dist/http.js" }
+  },
+  "files": ["dist", "src"],
+  "dependencies": { "@xmachines/run": "0.1.0", "@xmachines/streams": "0.1.0", "isomorphic-git": "^1.44.4" }
+}

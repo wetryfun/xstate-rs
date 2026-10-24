@@ -1,12 +1,24 @@
 {
   "name": "@xmachines/broker-redpanda",
   "version": "0.1.0",
-  "description": "@xmachines/broker for Redpanda: the Kafka adapter with a KafkaJS client set up for Redpanda",
+  "description": "@xmachines/broker for Redpanda: @platformatic/kafka client options for Redpanda and the Kafka adapters",
   "type": "module",
   "license": "MIT",
   "exports": {
-    ".": { "source": "./src/index.ts", "types": "./dist/index.d.ts", "default": "./dist/index.js" }
+    ".": {
+      "source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
   },
-  "files": ["dist", "src"],
-  "dependencies": { "@xmachines/broker": "0.1.0", "@xmachines/broker-kafka": "0.1.0", "kafkajs": "^2.2.4" }
+  "files": [
+    "dist",
+    "src"
+  ],
+  "dependencies": {
+    "@xmachines/broker-kafka": "0.1.0"
+  },
+  "peerDependencies": {
+    "@platformatic/kafka": "^2.14.0"
+  }
 }

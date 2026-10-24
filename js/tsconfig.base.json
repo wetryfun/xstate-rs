@@ -4,7 +4,7 @@
     "module": "nodenext",
     "moduleResolution": "nodenext",
     "customConditions": ["source"],
-    "lib": ["es2022", "dom"],
+    "lib": ["es2022", "dom", "dom.asynciterable"],
     "types": ["node"],
     "strict": true,
     "noUncheckedIndexedAccess": true,

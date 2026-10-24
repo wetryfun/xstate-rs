@@ -2,20 +2,21 @@
   "name": "xmachines-broker-workspace",
   "private": true,
   "type": "module",
-  "description": "@xmachines/broker packages: machines served from Kafka-API brokers over Web Streams",
+  "description": "@xmachines packages: runs, streams, Git durability and brokers over Web Streams",
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
     "test": "node --conditions=source --test packages/*/test/*.test.ts",
     "typecheck": "tsc -p tsconfig.json",
-    "build": "tsc -b packages/broker packages/broker-kafka packages/broker-redpanda"
+    "build": "tsc -b packages/streams packages/run packages/git packages/broker packages/broker-kafka packages/broker-redpanda"
   },
   "devDependencies": {
     "@bytecodealliance/jco": "1.15.4",
     "@bytecodealliance/preview2-shim": "0.17.5",
+    "@platformatic/kafka": "2.14.0",
     "@types/node": "22.19.1",
-    "kafkajs": "2.2.4",
+    "isomorphic-git": "1.44.4",
     "typescript": "5.9.3",
     "xstate": "6.0.0-alpha.70"
   }

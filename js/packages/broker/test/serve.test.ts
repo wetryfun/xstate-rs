@@ -1,8 +1,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { serve, type BrokerProducer, type BrokerRecord, type OutboundRecord, type Run } from '@xmachines/broker';
+import * as fs from 'node:fs';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { serve, type BrokerProducer, type BrokerRecord, type BrokerRun, type OutboundRecord } from '@xmachines/broker';
 import { MemoryBroker } from '@xmachines/broker/memory';
-import { MemorySnapshotStore, xstateRuns } from '@xmachines/broker/xstate';
+import { GitStore } from '@xmachines/git';
+import { MemoryJournals, runner, type Event, type Input, type RunError } from '@xmachines/run';
+import { xstateEngine } from '@xmachines/run/xstate';
 
 const decoder = new TextDecoder();
 const json = (r: BrokerRecord) => JSON.parse(decoder.decode(r.value!));
@@ -18,26 +24,41 @@ async function until(check: () => boolean, ms = 5000) {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** A run that numbers its inputs and outputs `{ n, event }` for each. */
+/**
+ * A run that numbers its inputs and outputs `{ n, event }` for each; `boom`
+ * is reported on `err`, and `fatal` breaks the run (its write rejects).
+ */
 function counter(delayMs = 0, log?: string[]) {
-  return (runId: string): Run<{ type: string }, unknown> => {
+  return (key: string): BrokerRun => {
     let n = 0;
-    let out!: ReadableStreamDefaultController<unknown>;
+    let out!: ReadableStreamDefaultController<Event>;
+    let err!: ReadableStreamDefaultController<RunError>;
     return {
-      in: new WritableStream({
-        async write(event) {
+      in: new WritableStream<Input>({
+        async write(input) {
+          const event = input as Event;
           if (delayMs) await sleep(delayMs);
-          if (event.type === 'boom') throw new Error('boom');
-          log?.push(`${runId}:${event.type}`);
-          out.enqueue({ n: ++n, event: event.type });
+          if (event.type === 'fatal') throw new Error('fatal');
+          if (event.type === 'boom') {
+            err.enqueue({ run: key, seq: ++n, batch: [event], message: 'boom' });
+            return;
+          }
+          log?.push(`${key}:${event.type}`);
+          out.enqueue({ type: 'counted', n: ++n, event: event.type });
         },
         close() {
           out.close();
+          err.close();
         },
       }),
       out: new ReadableStream({
         start(c) {
           out = c;
+        },
+      }),
+      err: new ReadableStream({
+        start(c) {
+          err = c;
         },
       }),
     };
@@ -51,7 +72,7 @@ function send(broker: MemoryBroker, key: string | null, value: unknown) {
 test('runs get their records in order and outputs go out under the run id', async () => {
   const broker = new MemoryBroker({ in: 3, out: 3, dead: 1 });
   for (let i = 0; i < 20; i++) for (const k of ['a', 'b', 'c', 'd']) send(broker, k, { type: `e${i}` });
-  const serving = serve({ consumer: broker.consumer('g'), producer: broker.producer(), topics, createRun: counter() });
+  const serving = serve({ consumer: broker.consumer('g'), producer: broker.producer(), topics, open: counter() });
   await until(() => broker.records('out').length === 80);
   await serving.close();
   const byKey = new Map<string, unknown[]>();
@@ -63,7 +84,7 @@ test('runs get their records in order and outputs go out under the run id', asyn
   for (const k of ['a', 'b', 'c', 'd']) {
     assert.deepEqual(
       byKey.get(k),
-      Array.from({ length: 20 }, (_, i) => ({ n: i + 1, event: `e${i}` })),
+      Array.from({ length: 20 }, (_, i) => ({ type: 'counted', n: i + 1, event: `e${i}` })),
     );
   }
   for (let p = 0; p < 3; p++) {
@@ -75,7 +96,7 @@ test('a slow run pauses its partition and catches up', async () => {
   const broker = new MemoryBroker({ in: 1, out: 1, dead: 1 });
   for (let i = 0; i < 40; i++) send(broker, 'k', { type: `e${i}` });
   const consumer = broker.consumer('g', { highWaterMark: 4 });
-  const serving = serve({ consumer, producer: broker.producer(), topics, createRun: counter(2) });
+  const serving = serve({ consumer, producer: broker.producer(), topics, open: counter(2) });
   await until(() => broker.records('out').length === 40);
   await serving.close();
   assert.ok(consumer.pauses > 0, `paused ${consumer.pauses} times`);
@@ -108,7 +129,7 @@ test('offsets are committed only after their outputs are acknowledged', async ()
       checks.push([last, acknowledged.length]);
     }
   }, 1);
-  const serving = serve({ consumer, producer, topics, createRun: counter(), commitIntervalMs: 5 });
+  const serving = serve({ consumer, producer, topics, open: counter(), commitIntervalMs: 5 });
   for (let i = 0; i < 30; i++) {
     send(broker, 'k', { type: `e${i}` });
     await sleep(3);
@@ -121,31 +142,34 @@ test('offsets are committed only after their outputs are acknowledged', async ()
   for (const [offset, acks] of checks) assert.ok(BigInt(acks) >= offset, `${offset} committed with ${acks} acknowledged`);
 });
 
-test('records that cannot be processed become dead letters', async () => {
+test('records that cannot be processed and run errors become dead letters', async () => {
   const broker = new MemoryBroker({ in: 1, out: 1, dead: 1 });
   send(broker, null, { type: 'x' });
   send(broker, 'k', 'not json');
   send(broker, 'k', { type: 'one' });
   send(broker, 'k', { type: 'boom' });
   send(broker, 'k', { type: 'two' });
-  const serving = serve({ consumer: broker.consumer('g'), producer: broker.producer(), topics, createRun: counter() });
-  await until(() => broker.records('dead').length === 3 && broker.records('out').length === 2).catch((e) => {
-    throw new Error(`${e.message}: dead ${JSON.stringify(broker.records('dead').map((r) => r.headers.reason))}, out ${broker.records('out').length}`);
-  });
+  send(broker, 'k', { type: 'fatal' });
+  send(broker, 'k', { type: 'three' });
+  const serving = serve({ consumer: broker.consumer('g'), producer: broker.producer(), topics, open: counter() });
+  await until(() => broker.records('dead').length === 4 && broker.records('out').length === 3);
   await serving.close();
   const reasons = broker.records('dead').map((r) => r.headers.reason!);
-  assert.match(reasons[0]!, /no run id/);
+  assert.match(reasons[0]!, /no key/);
   assert.match(reasons[1]!, /undecodable/);
-  assert.match(reasons[2]!, /run failed: boom/);
-  // The failed run ended; the next record started a new one.
+  assert.equal(reasons[2], 'boom', 'reported by the run, which goes on');
+  assert.deepEqual(json(broker.records('dead')[2]!), { run: 'k', seq: 2, batch: [{ type: 'boom' }], message: 'boom' });
+  assert.match(reasons[3]!, /run failed: fatal/);
+  // The broken run was dropped; the next record opened a new one.
   assert.deepEqual(
-    broker.records('out').map(json),
+    broker.records('out').map((r) => [json(r).event, json(r).n]),
     [
-      { n: 1, event: 'one' },
-      { n: 1, event: 'two' },
+      ['one', 1],
+      ['two', 3],
+      ['three', 1],
     ],
   );
-  assert.equal(broker.committed('g', 'in', 0), 5n);
+  assert.equal(broker.committed('g', 'in', 0), 7n);
 });
 
 test('a rebalance hands partitions over from the committed offsets', async () => {
@@ -155,7 +179,7 @@ test('a rebalance hands partitions over from the committed offsets', async () =>
     consumer: broker.consumer('g'),
     producer: broker.producer(),
     topics,
-    createRun: counter(1, seen),
+    open: counter(1, seen),
     commitIntervalMs: 5,
   });
   for (let i = 0; i < 30; i++) {
@@ -176,40 +200,53 @@ test('a rebalance hands partitions over from the committed offsets', async () =>
   for (let p = 0; p < 2; p++) assert.equal(broker.committed('g', 'in', p) ?? 0n, BigInt(broker.log('in')[p]!.length));
 });
 
-test('XState runs keep their state in a snapshot store across restarts', async () => {
-  const machine = {
-    id: 'light',
-    initial: 'green',
-    states: {
-      green: { on: { next: { target: 'yellow', actions: [{ type: '@xstate.emit', event: { type: 'yellow' } }] } } },
-      yellow: { on: { next: { target: 'red', actions: [{ type: '@xstate.emit', event: { type: 'red' } }] } } },
-      red: { on: { next: { target: 'green', actions: [{ type: '@xstate.emit', event: { type: 'green' } }] } } },
-    },
-  };
-  const store = new MemorySnapshotStore();
-  const broker = new MemoryBroker({ in: 2, out: 2, dead: 1 });
-  const start = () =>
-    serve({ consumer: broker.consumer('g'), producer: broker.producer(), topics, createRun: xstateRuns({ machine, store }) });
-  let serving = start();
-  send(broker, 'x', { type: 'next' });
-  send(broker, 'y', { type: 'next' });
-  send(broker, 'x', { type: 'next' });
-  await until(() => broker.records('out').length === 3);
-  await serving.close();
-  assert.equal((store.snapshots.get('x') as { value: string }).value, 'red');
+const light = {
+  id: 'light',
+  initial: 'green',
+  states: {
+    green: { on: { next: { target: 'yellow', actions: [{ type: '@xstate.emit', event: { type: 'yellow' } }] } } },
+    yellow: { on: { next: { target: 'red', actions: [{ type: '@xstate.emit', event: { type: 'red' } }] } } },
+    red: { on: { next: { target: 'green', actions: [{ type: '@xstate.emit', event: { type: 'green' } }] } } },
+  },
+};
 
-  serving = start();
-  send(broker, 'x', { type: 'next' });
-  send(broker, 'y', { type: 'unknown' });
-  send(broker, 'y', { type: 'next' });
-  await until(() => broker.records('out').length === 5);
-  await serving.close();
-  const types = (k: string) =>
-    broker
-      .records('out')
-      .filter((r) => r.key === k)
-      .map((r) => json(r).type);
-  assert.deepEqual(types('x'), ['yellow', 'red', 'green']);
-  assert.deepEqual(types('y'), ['yellow', 'red']);
-  assert.equal(broker.records('dead').length, 0);
-});
+for (const [name, journals] of [
+  ['memory', () => new MemoryJournals()],
+  ['Git', () => new GitStore({ fs, gitdir: mkdtempSync(join(tmpdir(), 'xmachines-broker-')) })],
+] as const) {
+  test(`runs keep their state in ${name} journals across restarts, and publish snapshots`, async () => {
+    const store = journals();
+    const broker = new MemoryBroker({ in: 2, out: 2, dead: 1, snapshots: 1 });
+    const start = () =>
+      serve({
+        consumer: broker.consumer('g'),
+        producer: broker.producer(),
+        topics: { ...topics, snapshots: 'snapshots' },
+        open: runner({ engine: xstateEngine(), machine: light, journals: store }),
+      });
+    let serving = start();
+    send(broker, 'x', { type: 'next' });
+    send(broker, 'y', { type: 'next' });
+    send(broker, 'x', { type: 'next' });
+    await until(() => broker.records('out').length === 3);
+    await serving.close();
+
+    serving = start();
+    send(broker, 'x', { type: 'next' });
+    send(broker, 'y', { type: 'unknown' });
+    send(broker, 'y', { type: 'next' });
+    await until(() => broker.records('out').length === 5);
+    await serving.close();
+    const types = (k: string) =>
+      broker
+        .records('out')
+        .filter((r) => r.key === k)
+        .map((r) => json(r).type);
+    assert.deepEqual(types('x'), ['yellow', 'red', 'green']);
+    assert.deepEqual(types('y'), ['yellow', 'red']);
+    assert.equal(broker.records('dead').length, 0);
+    const latest = new Map(broker.records('snapshots').map((r) => [r.key, json(r)]));
+    assert.equal(latest.get('x').value, 'green');
+    assert.equal(latest.get('y').value, 'red');
+  });
+}

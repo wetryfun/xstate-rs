@@ -1,0 +1,22 @@
+[package]
+name = "xstate-node"
+version = "0.1.0"
+description = "Node.js native addon (napi-rs) that runs XState v6 machine definitions, with guards and actions from JavaScript"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+# napi-rs 3 needs Rust 1.88 (the core keeps 1.80).
+rust-version = "1.88"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+xstate-rt = { path = "../xstate-rt" }
+serde_json.workspace = true
+napi = { version = "3", default-features = false, features = ["napi8"] }
+napi-derive = "3"
+
+[build-dependencies]
+napi-build = "2"
