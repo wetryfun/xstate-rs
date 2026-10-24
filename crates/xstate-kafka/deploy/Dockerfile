@@ -6,10 +6,11 @@ FROM rust:1.97.0-trixie AS build
 WORKDIR /src
 # librdkafka, OpenSSL, zlib and zstd are built from source by the -sys
 # crates: the full Debian image has the C toolchain, perl and make.
+# `js`: JavaScript and TypeScript code nodes run in an embedded QuickJS.
 COPY . .
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/src/target \
-    cargo build --release --locked -p xstate-kafka --features kafka --bin xstate-kafka \
+    cargo build --release --locked -p xstate-kafka --features kafka,js --bin xstate-kafka \
     && cp target/release/xstate-kafka /usr/local/bin/xstate-kafka
 
 FROM debian:trixie-slim

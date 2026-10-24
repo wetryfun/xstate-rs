@@ -1,0 +1,110 @@
+{
+  "notes": "Computed values XState's spread or enqueue ignores (numbers): a transition context, an assign, an action result, an emitted and a raised event. (Ported from expr_scalars.json by port-js.mjs: JavaScript code nodes.)",
+  "machine": {
+    "id": "scalars",
+    "context": {
+      "count": 1
+    },
+    "initial": "a",
+    "states": {
+      "a": {
+        "on": {
+          "OK": {
+            "context": {
+              "count": {
+                "@code": "({ context }) => context.count + 1",
+                "@lang": "js"
+              }
+            }
+          },
+          "CTX": {
+            "context": {
+              "@code": "({ context }) => context.count + 1",
+              "@lang": "js"
+            },
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "ctx",
+                  "count": {
+                    "@code": "({ context }) => context.count + 1",
+                    "@lang": "js"
+                  }
+                }
+              }
+            ]
+          },
+          "ASSIGN": {
+            "actions": [
+              {
+                "type": "@xstate.assign",
+                "context": {
+                  "@code": "({ context }) => context.count + 1",
+                  "@lang": "js"
+                }
+              },
+              {
+                "@code": "({ context }) => context.count + 1",
+                "@lang": "js"
+              }
+            ]
+          },
+          "EVENTS": {
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "@code": "({ context }) => context.count + 1",
+                  "@lang": "js"
+                }
+              },
+              {
+                "type": "@xstate.raise",
+                "event": {
+                  "@code": "({ context }) => context.count + 1",
+                  "@lang": "js"
+                }
+              },
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "after"
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  "steps": [
+    {
+      "at": 0,
+      "send": {
+        "type": "OK"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "CTX"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "ASSIGN"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "EVENTS"
+      }
+    }
+  ],
+  "languages": [
+    "js"
+  ]
+}

@@ -34,7 +34,8 @@
 //!   "stateDir": "/var/lib/xstate", "checkpointIntervalMs": 60000,
 //!   "checkpoints": [{ "git": "/var/lib/xstate/archive.git", "remote": "origin", "intervalMs": 3600000 }],
 //!   "metricsAddress": "0.0.0.0:9464",
-//!   "logIntervalMs": 10000
+//!   "logIntervalMs": 10000,
+//!   "javascript": { "memoryLimit": 33554432, "interruptLimit": 1000, "deterministic": true }
 //! }
 //! ```
 //!
@@ -61,6 +62,11 @@
 //! default when a dead-letter topic is set, or `"fail"`) decides what a
 //! record that cannot be restored does.
 //!
+//! Code nodes in `js` or `ts` (TypeScript the extract script stripped) run
+//! in an embedded QuickJS when the binary is built with the `js` feature
+//! (`javascript` sets its limits; see `xstate_js`); machines with Rust
+//! expressions or other languages need a binary of their own.
+//!
 //! `client` passes librdkafka settings through (TLS and SASL PLAIN, SCRAM
 //! and OAUTHBEARER are built in); a value can name a secret instead of
 //! holding it: `{ "env": "NAME" }` or `{ "file": "/run/secrets/name" }`.
@@ -77,7 +83,7 @@ use std::time::Duration;
 use serde::Deserialize;
 use serde_json::Value;
 use xstate_rt::step::async_logic;
-use xstate_rt::{Machine, Migration, Registry};
+use xstate_rt::{Machine, Migration, Reference, Registry};
 
 use crate::avro::registry::HttpRegistry;
 use crate::avro::AvroSchemas;
@@ -229,6 +235,24 @@ pub struct FileConfig {
     pub metrics_address: Option<String>,
     #[serde(default)]
     pub log_interval_ms: Option<u64>,
+    /// Limits of the JavaScript evaluator (feature `js`).
+    #[serde(default)]
+    pub javascript: Option<JavaScriptConfig>,
+}
+
+/// The embedded QuickJS that runs `js` and `ts` code nodes (feature `js`).
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct JavaScriptConfig {
+    /// Heap bytes per worker thread (default 32 MiB).
+    #[serde(default)]
+    pub memory_limit: Option<usize>,
+    /// Interrupt checks per call, about 10 000 instructions each (default 1000).
+    #[serde(default)]
+    pub interrupt_limit: Option<u64>,
+    /// Whether `Math.random()` and the clock throw (default true).
+    #[serde(default)]
+    pub deterministic: Option<bool>,
 }
 
 impl FileConfig {
@@ -550,6 +574,7 @@ impl FileConfig {
             )));
         }
         let mut registry = Registry::new();
+        self.add_evaluators(&mut registry, &refs.languages).map_err(at)?;
         if let Some(r) = refs.actors.first() {
             if self.topics.effects.is_none() {
                 return Err(at(format!(
@@ -563,6 +588,44 @@ impl FileConfig {
             registry.actor(r.name.clone(), Arc::new(logic));
         }
         Machine::from_json(&definition, &registry).map_err(|e| at(e.to_string()))
+    }
+}
+
+impl FileConfig {
+    /// Registers the evaluators the machine's code nodes need: QuickJS for
+    /// `js` and `ts` (feature `js`); other languages need a binary of one's own.
+    fn add_evaluators(&self, registry: &mut Registry<Value, Value>, languages: &[Reference]) -> Result<(), String> {
+        for r in languages {
+            match r.name.as_str() {
+                #[cfg(feature = "js")]
+                "js" | "ts" => {
+                    let c = self.javascript.clone().unwrap_or_default();
+                    let defaults = xstate_js::JsOptions::default();
+                    let options = xstate_js::JsOptions {
+                        memory_limit: c.memory_limit.unwrap_or(defaults.memory_limit),
+                        interrupt_limit: c.interrupt_limit.unwrap_or(defaults.interrupt_limit),
+                        deterministic: c.deterministic.unwrap_or(defaults.deterministic),
+                        ..defaults
+                    };
+                    registry.evaluator(r.name.clone(), xstate_js::JsEvaluator::with_options(options));
+                }
+                #[cfg(not(feature = "js"))]
+                "js" | "ts" => {
+                    return Err(format!(
+                        "code in language '{}' at {}: build xstate-kafka with the `js` feature (embedded QuickJS)",
+                        r.name, r.path
+                    ))
+                }
+                other => {
+                    return Err(format!(
+                        "code in language '{other}' at {}: no evaluator; run the machine with \
+                         xstate_kafka::service::Service::start and Registry::evaluator in a binary of your own",
+                        r.path
+                    ))
+                }
+            }
+        }
+        Ok(())
     }
 }
 
@@ -592,6 +655,44 @@ mod tests {
         let p = dir.join(name);
         std::fs::write(&p, text).unwrap();
         p
+    }
+
+    #[test]
+    fn javascript_code_nodes_need_the_js_feature() {
+        let dir = std::env::temp_dir().join(format!("xstate-config-js-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        write(
+            &dir,
+            "m.json",
+            r#"{ "id": "m", "@exprLang": "ts", "context": { "n": 0 }, "initial": "a", "states": { "a": { "on": {
+                 "go": { "context": { "n": { "@code": "({ context }) => context.n + 1" } } } } } } }"#,
+        );
+        let path = write(
+            &dir,
+            "c.json",
+            r#"{ "machine": "m.json", "bootstrapServers": "b", "groupId": "g",
+                 "topics": { "input": "i", "output": "o", "changelog": "c" }, "javascript": { "interruptLimit": 50 } }"#,
+        );
+        let config = FileConfig::load(&path).unwrap();
+        #[cfg(feature = "js")]
+        {
+            let machine = Arc::new(config.machine().unwrap());
+            let mut actor = xstate_rt::Actor::start(machine, 0).unwrap();
+            actor.send(serde_json::json!({ "type": "go" }), 0).unwrap();
+            assert_eq!(actor.context()["n"], 1);
+        }
+        #[cfg(not(feature = "js"))]
+        {
+            let err = config.machine().err().expect("rejected");
+            assert!(err.contains("`js` feature"), "{err}");
+        }
+        write(
+            &dir,
+            "m.json",
+            r#"{ "id": "m", "context": { "n": { "@expr": "n", "@lang": "lua" } }, "initial": "a", "states": { "a": {} } }"#,
+        );
+        let err = config.machine().err().expect("rejected");
+        assert!(err.contains("language 'lua'"), "{err}");
     }
 
     #[test]

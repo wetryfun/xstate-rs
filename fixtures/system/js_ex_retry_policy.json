@@ -1,0 +1,184 @@
+{
+  "source": "examples/pattern-retry-policy/src/main.ts",
+  "notes": "A faithful port with Rust expressions: the context from input, the invoke input, the attempts counter and error (the source's onError function becomes a guarded pair, its guards.canRetry(attempts + 1) an expression guard), the exponential backoff delay (100 * 2^attempts), the log message and both outputs. MAX_ATTEMPTS = 5. (Ported from ex_retry_policy.json by port-js.mjs: JavaScript code nodes.)",
+  "logic": [
+    {
+      "name": "storePatient",
+      "async": {}
+    },
+    {
+      "name": "retry",
+      "actors": [
+        "storePatient"
+      ],
+      "machine": {
+        "id": "retry",
+        "context": {
+          "@code": "({ input }) => ({ name: input.name, attempts: 0, recordId: null, error: null })",
+          "@lang": "js"
+        },
+        "delays": {
+          "backoff": {
+            "duration": {
+              "@code": "({ context }) => 100 * 2 ** context.attempts",
+              "@lang": "js"
+            }
+          }
+        },
+        "initial": "attempting",
+        "states": {
+          "attempting": {
+            "invoke": {
+              "src": "storePatient",
+              "input": {
+                "name": {
+                  "@code": "({ context }) => context.name",
+                  "@lang": "js"
+                }
+              },
+              "onDone": {
+                "target": "stored",
+                "context": {
+                  "recordId": {
+                    "@code": "({ event }) => event.output.recordId",
+                    "@lang": "js"
+                  }
+                }
+              },
+              "onError": [
+                {
+                  "guard": {
+                    "@code": "({ context }) => context.attempts + 1 < 5",
+                    "@lang": "js"
+                  },
+                  "target": "backingOff",
+                  "context": {
+                    "attempts": {
+                      "@code": "({ context }) => context.attempts + 1",
+                      "@lang": "js"
+                    },
+                    "error": {
+                      "@code": "({ event }) => String(event.error.message)",
+                      "@lang": "js"
+                    }
+                  }
+                },
+                {
+                  "target": "gaveUp",
+                  "context": {
+                    "attempts": {
+                      "@code": "({ context }) => context.attempts + 1",
+                      "@lang": "js"
+                    },
+                    "error": {
+                      "@code": "({ event }) => String(event.error.message)",
+                      "@lang": "js"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "backingOff": {
+            "entry": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "log",
+                  "message": {
+                    "@code": "({ context }) =>\n    `attempt ${context.attempts} failed (${context.error}); retrying in ${100 * 2 ** context.attempts}ms`",
+                    "@lang": "js"
+                  }
+                }
+              }
+            ],
+            "after": {
+              "backoff": {
+                "target": "attempting"
+              }
+            }
+          },
+          "stored": {
+            "type": "final",
+            "output": {
+              "@code": "({ context }) => ({ ok: true, recordId: context.recordId })",
+              "@lang": "js"
+            }
+          },
+          "gaveUp": {
+            "type": "final",
+            "output": {
+              "@code": "({ context }) => ({ ok: false, attempts: context.attempts })",
+              "@lang": "js"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "root": "retry",
+  "init": {
+    "input": {
+      "name": "Ada Lovelace"
+    }
+  },
+  "steps": [
+    {
+      "resolve": 0,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "ServiceUnavailable"
+        }
+      }
+    },
+    {
+      "advance": 199
+    },
+    {
+      "advance": 200
+    },
+    {
+      "resolve": 1,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "ServiceUnavailable"
+        }
+      }
+    },
+    {
+      "advance": 500
+    },
+    {
+      "advance": 600
+    },
+    {
+      "resolve": 2,
+      "event": {
+        "type": "xstate.async.reject",
+        "data": {
+          "message": "ServiceUnavailable"
+        }
+      }
+    },
+    {
+      "advance": 1300
+    },
+    {
+      "advance": 1400
+    },
+    {
+      "resolve": 3,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "recordId": "rec-4"
+        }
+      }
+    }
+  ],
+  "languages": [
+    "js"
+  ]
+}

@@ -1,0 +1,171 @@
+{
+  "notes": "A root context code node that spawns (XState's context factory spawn): children allocated during the initial transition, before the initial state's invoke; their references kept in the context and used to send to them (now, delayed, after one finished); generated ids and _nextActorIds. (Ported from expr_context_spawn.json by port-js.mjs: JavaScript code nodes.)",
+  "logic": [
+    {
+      "name": "kid",
+      "machine": {
+        "id": "kid",
+        "context": {
+          "@code": "({ input }) => ({ count: input?.start ?? 0, total: 0, attempts: 0, items: [] })",
+          "@lang": "js"
+        },
+        "initial": "on",
+        "states": {
+          "on": {
+            "on": {
+              "PING": {
+                "context": {
+                  "count": {
+                    "@code": "({ context }) => context.count + 1",
+                    "@lang": "js"
+                  }
+                },
+                "actions": [
+                  {
+                    "@code": "({ enq, self }) => {\n    enq.sendTo(self._parent, { type: 'PONG' });\n  }",
+                    "@lang": "js"
+                  }
+                ]
+              },
+              "STOP": {
+                "target": "off"
+              }
+            }
+          },
+          "off": {
+            "type": "final",
+            "output": {
+              "@code": "({ context }) => ({ count: context.count, total: context.total })",
+              "@lang": "js"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "boss",
+      "machine": {
+        "id": "boss",
+        "context": {
+          "@code": "({ spawn, actors, input }) => ({\n    first: spawn(actors.kid, { id: 'first', input: { start: input?.start ?? 3 } }),\n    second: spawn(actors.kid),\n    third: spawn(actors.kid, { input: { start: 100 } }),\n    pongs: 0\n  })",
+          "@lang": "js"
+        },
+        "initial": "idle",
+        "states": {
+          "idle": {
+            "invoke": {
+              "src": "kid",
+              "id": "invoked",
+              "input": {
+                "start": 50
+              }
+            },
+            "on": {
+              "PING_FIRST": {
+                "actions": [
+                  {
+                    "@code": "({ enq, context }) => {\n    enq.sendTo(context.first, { type: 'PING' });\n  }",
+                    "@lang": "js"
+                  }
+                ]
+              },
+              "PING_SECOND": {
+                "actions": [
+                  {
+                    "@code": "({ enq, context }) => {\n    enq.sendTo(context.second, { type: 'PING' }, { delay: 100, id: 'later' });\n  }",
+                    "@lang": "js"
+                  }
+                ]
+              },
+              "FINISH": {
+                "actions": [
+                  {
+                    "@code": "({ enq, context }) => {\n    enq.sendTo(context.first, { type: 'STOP' });\n  }",
+                    "@lang": "js"
+                  }
+                ]
+              },
+              "PONG": {
+                "context": {
+                  "pongs": {
+                    "@code": "({ context }) => context.pongs + 1",
+                    "@lang": "js"
+                  }
+                },
+                "actions": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "ponged"
+                    }
+                  }
+                ]
+              },
+              "xstate.done.actor": {
+                "actions": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "child.done",
+                      "output": {
+                        "@code": "({ event }) => event.output",
+                        "@lang": "js"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "actors": [
+        "kid"
+      ]
+    }
+  ],
+  "root": "boss",
+  "init": {
+    "input": {
+      "start": 7
+    }
+  },
+  "steps": [
+    {
+      "send": "boss",
+      "event": {
+        "type": "PING_FIRST"
+      }
+    },
+    {
+      "send": "boss",
+      "event": {
+        "type": "PING_SECOND"
+      }
+    },
+    {
+      "advance": 150
+    },
+    {
+      "send": "boss",
+      "event": {
+        "type": "FINISH"
+      }
+    },
+    {
+      "send": "boss",
+      "event": {
+        "type": "PING_FIRST"
+      }
+    },
+    {
+      "send": "boss",
+      "event": {
+        "type": "PING_SECOND"
+      }
+    }
+  ],
+  "languages": [
+    "js"
+  ]
+}

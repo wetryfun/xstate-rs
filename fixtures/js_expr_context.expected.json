@@ -1,0 +1,173 @@
+[
+  {
+    "label": "start",
+    "value": "idle",
+    "context": {
+      "count": 3,
+      "total": 0,
+      "attempts": 0,
+      "items": []
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "entered",
+        "count": 4
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "value": "idle",
+    "context": {
+      "count": 5,
+      "total": 0,
+      "attempts": 0,
+      "items": []
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "seen",
+        "count": 5
+      },
+      {
+        "type": "after",
+        "count": 6,
+        "kind": "INC"
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "value": "idle",
+    "context": {
+      "count": 6,
+      "total": 0,
+      "attempts": 0,
+      "items": []
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 2",
+    "value": "idle",
+    "context": {
+      "count": 6,
+      "total": 5,
+      "attempts": 0,
+      "items": [
+        "a"
+      ]
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "total",
+        "count": 7
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "value": "idle",
+    "context": {
+      "count": 6,
+      "total": 7.5,
+      "attempts": 0,
+      "items": [
+        "a",
+        {
+          "n": 1
+        }
+      ]
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "total",
+        "count": 7
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "value": "idle",
+    "context": {
+      "count": 6,
+      "total": 7.5,
+      "attempts": 0,
+      "items": [
+        "a",
+        {
+          "n": 1
+        }
+      ]
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "echoed",
+        "value": 42
+      }
+    ]
+  },
+  {
+    "label": "step 5",
+    "value": "idle",
+    "context": {
+      "count": 6,
+      "total": 7.5,
+      "attempts": 0,
+      "items": [
+        "a",
+        {
+          "n": 1
+        }
+      ]
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 6",
+    "value": "idle",
+    "context": {
+      "count": 6,
+      "total": 7.5,
+      "attempts": 0,
+      "items": [
+        "a",
+        {
+          "n": 1
+        }
+      ],
+      "last": 7
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 7",
+    "value": "done",
+    "context": {
+      "count": 6,
+      "total": 7.5,
+      "attempts": 0,
+      "items": [
+        "a",
+        {
+          "n": 1
+        }
+      ],
+      "last": 7
+    },
+    "status": "done",
+    "emitted": [],
+    "output": {
+      "count": 6,
+      "total": 7.5
+    }
+  }
+]

@@ -1,0 +1,1790 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "boss",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "boss": {
+          "id": "boss",
+          "address": "boss",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "input": {
+            "start": 7
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "first": {
+                "$actor": "boss/first",
+                "incarnation": "1"
+              },
+              "second": {
+                "$actor": "boss/kid:0",
+                "incarnation": "2"
+              },
+              "third": {
+                "$actor": "boss/kid:1",
+                "incarnation": "3"
+              },
+              "pongs": 0
+            },
+            "value": "idle",
+            "children": {
+              "first": {
+                "$actor": "boss/first",
+                "incarnation": "1"
+              },
+              "kid:0": {
+                "$actor": "boss/kid:0",
+                "incarnation": "2"
+              },
+              "kid:1": {
+                "$actor": "boss/kid:1",
+                "incarnation": "3"
+              },
+              "invoked": {
+                "$actor": "boss/invoked",
+                "incarnation": "4"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "_nextActorIds": {
+              "kid": 2
+            },
+            "nodeIds": [
+              "boss",
+              "boss.idle"
+            ]
+          }
+        },
+        "boss/first": {
+          "id": "first",
+          "address": "boss/first",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "started": true,
+          "input": {
+            "start": 7
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 7,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        },
+        "boss/kid:0": {
+          "id": "kid:0",
+          "address": "boss/kid:0",
+          "incarnation": "2",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 0,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        },
+        "boss/kid:1": {
+          "id": "kid:1",
+          "address": "boss/kid:1",
+          "incarnation": "3",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "started": true,
+          "input": {
+            "start": 100
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 100,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        },
+        "boss/invoked": {
+          "id": "invoked",
+          "address": "boss/invoked",
+          "incarnation": "4",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "start": 50
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 50,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 5,
+        "timer": 0,
+        "sequence": 0,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "boss",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "boss": {
+          "id": "boss",
+          "address": "boss",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "input": {
+            "start": 7
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "first": {
+                "$actor": "boss/first",
+                "incarnation": "1"
+              },
+              "second": {
+                "$actor": "boss/kid:0",
+                "incarnation": "2"
+              },
+              "third": {
+                "$actor": "boss/kid:1",
+                "incarnation": "3"
+              },
+              "pongs": 1
+            },
+            "value": "idle",
+            "children": {
+              "first": {
+                "$actor": "boss/first",
+                "incarnation": "1"
+              },
+              "kid:0": {
+                "$actor": "boss/kid:0",
+                "incarnation": "2"
+              },
+              "kid:1": {
+                "$actor": "boss/kid:1",
+                "incarnation": "3"
+              },
+              "invoked": {
+                "$actor": "boss/invoked",
+                "incarnation": "4"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "_nextActorIds": {
+              "kid": 2
+            },
+            "nodeIds": [
+              "boss",
+              "boss.idle"
+            ]
+          }
+        },
+        "boss/first": {
+          "id": "first",
+          "address": "boss/first",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "started": true,
+          "input": {
+            "start": 7
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 8,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        },
+        "boss/kid:0": {
+          "id": "kid:0",
+          "address": "boss/kid:0",
+          "incarnation": "2",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 0,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        },
+        "boss/kid:1": {
+          "id": "kid:1",
+          "address": "boss/kid:1",
+          "incarnation": "3",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "started": true,
+          "input": {
+            "start": 100
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 100,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        },
+        "boss/invoked": {
+          "id": "invoked",
+          "address": "boss/invoked",
+          "incarnation": "4",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "start": 50
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 50,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "type": "ponged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "ponged"
+          }
+        }
+      },
+      "counters": {
+        "actor": 5,
+        "timer": 0,
+        "sequence": 3,
+        "effect": 1
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "boss",
+          "incarnation": "0"
+        },
+        "type": "ponged",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "ponged"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "boss",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "boss": {
+          "id": "boss",
+          "address": "boss",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "input": {
+            "start": 7
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "first": {
+                "$actor": "boss/first",
+                "incarnation": "1"
+              },
+              "second": {
+                "$actor": "boss/kid:0",
+                "incarnation": "2"
+              },
+              "third": {
+                "$actor": "boss/kid:1",
+                "incarnation": "3"
+              },
+              "pongs": 1
+            },
+            "value": "idle",
+            "children": {
+              "first": {
+                "$actor": "boss/first",
+                "incarnation": "1"
+              },
+              "kid:0": {
+                "$actor": "boss/kid:0",
+                "incarnation": "2"
+              },
+              "kid:1": {
+                "$actor": "boss/kid:1",
+                "incarnation": "3"
+              },
+              "invoked": {
+                "$actor": "boss/invoked",
+                "incarnation": "4"
+              }
+            },
+            "timers": [
+              {
+                "id": "later",
+                "delay": 100,
+                "type": "@xstate.sendTo",
+                "event": {
+                  "type": "PING"
+                },
+                "target": {
+                  "$actor": "boss/kid:0",
+                  "incarnation": "2"
+                }
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "_nextActorIds": {
+              "kid": 2
+            },
+            "nodeIds": [
+              "boss",
+              "boss.idle"
+            ]
+          }
+        },
+        "boss/first": {
+          "id": "first",
+          "address": "boss/first",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "started": true,
+          "input": {
+            "start": 7
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 8,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        },
+        "boss/kid:0": {
+          "id": "kid:0",
+          "address": "boss/kid:0",
+          "incarnation": "2",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 0,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        },
+        "boss/kid:1": {
+          "id": "kid:1",
+          "address": "boss/kid:1",
+          "incarnation": "3",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "started": true,
+          "input": {
+            "start": 100
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 100,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        },
+        "boss/invoked": {
+          "id": "invoked",
+          "address": "boss/invoked",
+          "incarnation": "4",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "start": 50
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 50,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 100,
+          "sequence": 4,
+          "event": {
+            "type": "xstate.timer",
+            "id": "later"
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "type": "ponged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "ponged"
+          }
+        }
+      },
+      "counters": {
+        "actor": 5,
+        "timer": 1,
+        "sequence": 5,
+        "effect": 1
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "boss",
+      "executionId": "system",
+      "now": 150,
+      "actors": {
+        "boss": {
+          "id": "boss",
+          "address": "boss",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "input": {
+            "start": 7
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "first": {
+                "$actor": "boss/first",
+                "incarnation": "1"
+              },
+              "second": {
+                "$actor": "boss/kid:0",
+                "incarnation": "2"
+              },
+              "third": {
+                "$actor": "boss/kid:1",
+                "incarnation": "3"
+              },
+              "pongs": 2
+            },
+            "value": "idle",
+            "children": {
+              "first": {
+                "$actor": "boss/first",
+                "incarnation": "1"
+              },
+              "kid:0": {
+                "$actor": "boss/kid:0",
+                "incarnation": "2"
+              },
+              "kid:1": {
+                "$actor": "boss/kid:1",
+                "incarnation": "3"
+              },
+              "invoked": {
+                "$actor": "boss/invoked",
+                "incarnation": "4"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "_nextActorIds": {
+              "kid": 2
+            },
+            "nodeIds": [
+              "boss",
+              "boss.idle"
+            ]
+          }
+        },
+        "boss/first": {
+          "id": "first",
+          "address": "boss/first",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "started": true,
+          "input": {
+            "start": 7
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 8,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        },
+        "boss/kid:0": {
+          "id": "kid:0",
+          "address": "boss/kid:0",
+          "incarnation": "2",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 1,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        },
+        "boss/kid:1": {
+          "id": "kid:1",
+          "address": "boss/kid:1",
+          "incarnation": "3",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "started": true,
+          "input": {
+            "start": 100
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 100,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        },
+        "boss/invoked": {
+          "id": "invoked",
+          "address": "boss/invoked",
+          "incarnation": "4",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "start": 50
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 50,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "type": "ponged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "ponged"
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "type": "ponged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "ponged"
+          }
+        }
+      },
+      "counters": {
+        "actor": 5,
+        "timer": 1,
+        "sequence": 8,
+        "effect": 2
+      }
+    },
+    "effects": [
+      {
+        "id": "system:1",
+        "source": {
+          "$actor": "boss",
+          "incarnation": "0"
+        },
+        "type": "ponged",
+        "kind": "emit",
+        "params": {},
+        "args": [],
+        "event": {
+          "type": "ponged"
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "snapshot": {
+      "root": "boss",
+      "executionId": "system",
+      "now": 150,
+      "actors": {
+        "boss": {
+          "id": "boss",
+          "address": "boss",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "input": {
+            "start": 7
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "first": {
+                "$actor": "boss/first",
+                "incarnation": "1"
+              },
+              "second": {
+                "$actor": "boss/kid:0",
+                "incarnation": "2"
+              },
+              "third": {
+                "$actor": "boss/kid:1",
+                "incarnation": "3"
+              },
+              "pongs": 2
+            },
+            "value": "idle",
+            "children": {
+              "kid:0": {
+                "$actor": "boss/kid:0",
+                "incarnation": "2"
+              },
+              "kid:1": {
+                "$actor": "boss/kid:1",
+                "incarnation": "3"
+              },
+              "invoked": {
+                "$actor": "boss/invoked",
+                "incarnation": "4"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "_nextActorIds": {
+              "kid": 2
+            },
+            "nodeIds": [
+              "boss",
+              "boss.idle"
+            ]
+          }
+        },
+        "boss/first": {
+          "id": "first",
+          "address": "boss/first",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "started": true,
+          "input": {
+            "start": 7
+          },
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "count": 8,
+              "total": 0
+            },
+            "context": {
+              "count": 8,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "off",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid.off",
+              "kid"
+            ]
+          }
+        },
+        "boss/kid:0": {
+          "id": "kid:0",
+          "address": "boss/kid:0",
+          "incarnation": "2",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 1,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        },
+        "boss/kid:1": {
+          "id": "kid:1",
+          "address": "boss/kid:1",
+          "incarnation": "3",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "started": true,
+          "input": {
+            "start": 100
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 100,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        },
+        "boss/invoked": {
+          "id": "invoked",
+          "address": "boss/invoked",
+          "incarnation": "4",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "start": 50
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 50,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "type": "ponged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "ponged"
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "type": "ponged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "ponged"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "type": "child.done",
+          "kind": "emit",
+          "params": {
+            "output": {
+              "count": 8,
+              "total": 0
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "child.done",
+            "output": {
+              "count": 8,
+              "total": 0
+            }
+          }
+        }
+      },
+      "counters": {
+        "actor": 5,
+        "timer": 1,
+        "sequence": 11,
+        "effect": 3
+      }
+    },
+    "effects": [
+      {
+        "id": "system:2",
+        "source": {
+          "$actor": "boss",
+          "incarnation": "0"
+        },
+        "type": "child.done",
+        "kind": "emit",
+        "params": {
+          "output": {
+            "count": 8,
+            "total": 0
+          }
+        },
+        "args": [],
+        "event": {
+          "type": "child.done",
+          "output": {
+            "count": 8,
+            "total": 0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "snapshot": {
+      "root": "boss",
+      "executionId": "system",
+      "now": 150,
+      "actors": {
+        "boss": {
+          "id": "boss",
+          "address": "boss",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "input": {
+            "start": 7
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "first": {
+                "$actor": "boss/first",
+                "incarnation": "1"
+              },
+              "second": {
+                "$actor": "boss/kid:0",
+                "incarnation": "2"
+              },
+              "third": {
+                "$actor": "boss/kid:1",
+                "incarnation": "3"
+              },
+              "pongs": 2
+            },
+            "value": "idle",
+            "children": {
+              "kid:0": {
+                "$actor": "boss/kid:0",
+                "incarnation": "2"
+              },
+              "kid:1": {
+                "$actor": "boss/kid:1",
+                "incarnation": "3"
+              },
+              "invoked": {
+                "$actor": "boss/invoked",
+                "incarnation": "4"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "_nextActorIds": {
+              "kid": 2
+            },
+            "nodeIds": [
+              "boss",
+              "boss.idle"
+            ]
+          }
+        },
+        "boss/first": {
+          "id": "first",
+          "address": "boss/first",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "started": true,
+          "input": {
+            "start": 7
+          },
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "count": 8,
+              "total": 0
+            },
+            "context": {
+              "count": 8,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "off",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid.off",
+              "kid"
+            ]
+          }
+        },
+        "boss/kid:0": {
+          "id": "kid:0",
+          "address": "boss/kid:0",
+          "incarnation": "2",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 1,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        },
+        "boss/kid:1": {
+          "id": "kid:1",
+          "address": "boss/kid:1",
+          "incarnation": "3",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "started": true,
+          "input": {
+            "start": 100
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 100,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        },
+        "boss/invoked": {
+          "id": "invoked",
+          "address": "boss/invoked",
+          "incarnation": "4",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "start": 50
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 50,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "type": "ponged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "ponged"
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "type": "ponged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "ponged"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "type": "child.done",
+          "kind": "emit",
+          "params": {
+            "output": {
+              "count": 8,
+              "total": 0
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "child.done",
+            "output": {
+              "count": 8,
+              "total": 0
+            }
+          }
+        }
+      },
+      "counters": {
+        "actor": 5,
+        "timer": 1,
+        "sequence": 13,
+        "effect": 3
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 5",
+    "snapshot": {
+      "root": "boss",
+      "executionId": "system",
+      "now": 150,
+      "actors": {
+        "boss": {
+          "id": "boss",
+          "address": "boss",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "input": {
+            "start": 7
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "first": {
+                "$actor": "boss/first",
+                "incarnation": "1"
+              },
+              "second": {
+                "$actor": "boss/kid:0",
+                "incarnation": "2"
+              },
+              "third": {
+                "$actor": "boss/kid:1",
+                "incarnation": "3"
+              },
+              "pongs": 2
+            },
+            "value": "idle",
+            "children": {
+              "kid:0": {
+                "$actor": "boss/kid:0",
+                "incarnation": "2"
+              },
+              "kid:1": {
+                "$actor": "boss/kid:1",
+                "incarnation": "3"
+              },
+              "invoked": {
+                "$actor": "boss/invoked",
+                "incarnation": "4"
+              }
+            },
+            "timers": [
+              {
+                "id": "later",
+                "delay": 100,
+                "type": "@xstate.sendTo",
+                "event": {
+                  "type": "PING"
+                },
+                "target": {
+                  "$actor": "boss/kid:0",
+                  "incarnation": "2"
+                }
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "_nextActorIds": {
+              "kid": 2
+            },
+            "nodeIds": [
+              "boss",
+              "boss.idle"
+            ]
+          }
+        },
+        "boss/first": {
+          "id": "first",
+          "address": "boss/first",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "started": true,
+          "input": {
+            "start": 7
+          },
+          "snapshot": {
+            "status": "done",
+            "output": {
+              "count": 8,
+              "total": 0
+            },
+            "context": {
+              "count": 8,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "off",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid.off",
+              "kid"
+            ]
+          }
+        },
+        "boss/kid:0": {
+          "id": "kid:0",
+          "address": "boss/kid:0",
+          "incarnation": "2",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 1,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        },
+        "boss/kid:1": {
+          "id": "kid:1",
+          "address": "boss/kid:1",
+          "incarnation": "3",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "started": true,
+          "input": {
+            "start": 100
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 100,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        },
+        "boss/invoked": {
+          "id": "invoked",
+          "address": "boss/invoked",
+          "incarnation": "4",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "input": {
+            "start": 50
+          },
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 50,
+              "total": 0,
+              "attempts": 0,
+              "items": []
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "occurrence": 1,
+          "scheduledAt": 150,
+          "dueAt": 250,
+          "sequence": 14,
+          "event": {
+            "type": "xstate.timer",
+            "id": "later"
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "type": "ponged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "ponged"
+          }
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "type": "ponged",
+          "kind": "emit",
+          "params": {},
+          "args": [],
+          "event": {
+            "type": "ponged"
+          }
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "boss",
+            "incarnation": "0"
+          },
+          "type": "child.done",
+          "kind": "emit",
+          "params": {
+            "output": {
+              "count": 8,
+              "total": 0
+            }
+          },
+          "args": [],
+          "event": {
+            "type": "child.done",
+            "output": {
+              "count": 8,
+              "total": 0
+            }
+          }
+        }
+      },
+      "counters": {
+        "actor": 5,
+        "timer": 2,
+        "sequence": 15,
+        "effect": 3
+      }
+    },
+    "effects": []
+  }
+]

@@ -20,7 +20,9 @@ Milestone 6 (Kafka) is `crates/xstate-kafka`, a service for any Kafka-API broker
 
 Computed values are XState's own code nodes in the `rust` language: `{ "@code": "addLine", "@lang": "rust" }` in a context patch, an assign, an event, params, a guard, a delay, an invoke input or an output names a Rust function (`Registry::expr`, or the generated `expr_add_line` trait method) that receives the context, event and params. XState runs the same JSON with an evaluator for `rust`.
 
-Not yet supported (rejected at load time with the JSON path): `@code` / `@expr` in other languages, and `spawn` / `sendTo` from JSON actions (waiting for XState's own JSON form). Rust transition functions (`{ "@code": "pick", "@lang": "rust" }` as a transition) work as XState's `to` functions, with `enq`.
+Code nodes in other languages run through an evaluator the host registers for the language (`Registry::evaluator`, XState's `sources.evaluators`), called with XState's arguments (source, kind, slot, JSON path) and scope. `crates/xstate-js` is one: an embedded QuickJS that runs `js` code nodes, and `ts` ones once the extract script has stripped their types, as XState's own evaluators run them. It is deterministic by default (no `Math.random()` or clock), memory- and time-limited, and costs about 3.4 µs per code node (an event with two Rust expressions takes about 1.3 µs in all). The Kafka binary runs such machines with its `js` feature.
+
+Not yet supported (rejected at load time with the JSON path): code nodes in a language without a registered evaluator, and `spawn` / `sendTo` from JSON actions (waiting for XState's own JSON form). Rust transition functions (`{ "@code": "pick", "@lang": "rust" }` as a transition) work as XState's `to` functions, with `enq`.
 
 ## Example
 

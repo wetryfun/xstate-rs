@@ -1,0 +1,245 @@
+{
+  "notes": "Rust expressions in context, assign, raise, emit, custom params, an action, and an output; the scope sees each earlier write. (Ported from expr_context.json by port-js.mjs: JavaScript code nodes.)",
+  "input": {
+    "start": 3
+  },
+  "machine": {
+    "id": "counter",
+    "context": {
+      "@code": "({ input }) => ({ count: input?.start ?? 0, total: 0, attempts: 0, items: [] })",
+      "@lang": "js"
+    },
+    "initial": "idle",
+    "states": {
+      "idle": {
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "entered",
+              "count": {
+                "@code": "({ context }) => context.count + 1",
+                "@lang": "js"
+              }
+            }
+          }
+        ],
+        "on": {
+          "INC": {
+            "context": {
+              "count": {
+                "@code": "({ context }) => context.count + 1",
+                "@lang": "js"
+              }
+            },
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "seen",
+                  "count": {
+                    "@code": "({ context }) => context.count + 1",
+                    "@lang": "js"
+                  }
+                }
+              },
+              {
+                "@code": "({ context }) => ({ context: { count: context.count + 1 } })",
+                "@lang": "js"
+              },
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "after",
+                  "count": {
+                    "@code": "({ context }) => context.count + 1",
+                    "@lang": "js"
+                  },
+                  "kind": {
+                    "@code": "({ event }) => event.type",
+                    "@lang": "js"
+                  }
+                }
+              }
+            ]
+          },
+          "BUMP": {
+            "context": {
+              "count": {
+                "@code": "({ context }) => context.count + 1",
+                "@lang": "js"
+              }
+            }
+          },
+          "ADD": {
+            "actions": [
+              {
+                "type": "@xstate.assign",
+                "context": {
+                  "total": {
+                    "@code": "({ context, event }) => context.total + event.amount",
+                    "@lang": "js"
+                  },
+                  "items": {
+                    "@code": "({ context, event }) => [...context.items, event.item]",
+                    "@lang": "js"
+                  }
+                }
+              },
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "total",
+                  "count": {
+                    "@code": "({ context }) => context.count + 1",
+                    "@lang": "js"
+                  }
+                }
+              }
+            ]
+          },
+          "ECHO": {
+            "actions": [
+              {
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "ECHOED",
+                  "value": {
+                    "@code": "({ event }) => event.value",
+                    "@lang": "js"
+                  }
+                }
+              },
+              {
+                "type": "noop",
+                "params": {
+                  "value": {
+                    "@code": "({ event }) => event.value",
+                    "@lang": "js"
+                  }
+                }
+              }
+            ]
+          },
+          "ECHOED": {
+            "actions": [
+              {
+                "type": "@xstate.assign",
+                "context": {
+                  "@code": "({ context }) => ({ count: context.count, total: context.total })",
+                  "@lang": "js"
+                }
+              },
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "echoed",
+                  "value": {
+                    "@code": "({ event }) => event.value",
+                    "@lang": "js"
+                  }
+                }
+              }
+            ]
+          },
+          "DELAYED": {
+            "actions": [
+              {
+                "type": "@xstate.raise",
+                "event": {
+                  "type": "LATER",
+                  "value": {
+                    "@code": "({ context }) => context.count + 1",
+                    "@lang": "js"
+                  }
+                },
+                "delay": 50,
+                "id": "later"
+              }
+            ]
+          },
+          "LATER": {
+            "actions": [
+              {
+                "type": "@xstate.assign",
+                "context": {
+                  "last": {
+                    "@code": "({ event }) => event.value",
+                    "@lang": "js"
+                  }
+                }
+              }
+            ]
+          },
+          "DONE": {
+            "target": "done"
+          }
+        }
+      },
+      "done": {
+        "type": "final",
+        "output": {
+          "@code": "({ context }) => ({ count: context.count, total: context.total })",
+          "@lang": "js"
+        }
+      }
+    }
+  },
+  "steps": [
+    {
+      "at": 0,
+      "send": {
+        "type": "INC"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "BUMP"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "ADD",
+        "amount": 5,
+        "item": "a"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "ADD",
+        "amount": 2.5,
+        "item": {
+          "n": 1
+        }
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "ECHO",
+        "value": 42
+      }
+    },
+    {
+      "at": 10,
+      "send": {
+        "type": "DELAYED"
+      }
+    },
+    {
+      "at": 100
+    },
+    {
+      "at": 100,
+      "send": {
+        "type": "DONE"
+      }
+    }
+  ],
+  "languages": [
+    "js"
+  ]
+}

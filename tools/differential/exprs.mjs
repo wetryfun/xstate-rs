@@ -156,5 +156,12 @@ export const evaluators = {
     if (!f) throw new Error(`no expression '${source}'`);
     return f(scope);
   },
-  probe
+  probe,
+  // JavaScript (fixtures js_*, ported by port-js.mjs), as XState's own
+  // tests evaluate code nodes: `@code` is a function called with the scope
+  // and `enq`, `@expr` an expression over the scope's names.
+  js: ({ source, kind, scope }) =>
+    kind === 'code'
+      ? Function(`return (${source});`)()(scope, scope.enq)
+      : Function('scope', `with (scope) { return (${source}); }`)(scope)
 };

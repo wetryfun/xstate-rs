@@ -9,6 +9,7 @@ members = [
     "crates/xstate-wasi-guest",
     "crates/xstate-kafka",
     "crates/xstate-node",
+    "crates/xstate-js",
     "examples/checkout",
     "examples/checkout-component",
 ]
@@ -22,6 +23,7 @@ default-members = [
     "crates/xstate-wasi",
     "crates/xstate-wasi-guest",
     "crates/xstate-kafka",
+    "crates/xstate-js",
     "examples/checkout",
     "examples/checkout-component",
 ]

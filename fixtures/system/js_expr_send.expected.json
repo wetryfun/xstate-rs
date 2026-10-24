@@ -1,0 +1,1424 @@
+[
+  {
+    "label": "init",
+    "snapshot": {
+      "root": "par",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "par": {
+          "id": "par",
+          "address": "par",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "pongs": 0
+            },
+            "value": "idle",
+            "children": {
+              "c": {
+                "$actor": "par/c",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "par",
+              "par.idle"
+            ]
+          }
+        },
+        "par/c": {
+          "id": "c",
+          "address": "par/c",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 0
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 0,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 0",
+    "snapshot": {
+      "root": "par",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "par": {
+          "id": "par",
+          "address": "par",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "pongs": 1
+            },
+            "value": "idle",
+            "children": {
+              "c": {
+                "$actor": "par/c",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "par",
+              "par.idle"
+            ]
+          }
+        },
+        "par/c": {
+          "id": "c",
+          "address": "par/c",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 1
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 0,
+        "sequence": 3,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 1",
+    "snapshot": {
+      "root": "par",
+      "executionId": "system",
+      "now": 0,
+      "actors": {
+        "par": {
+          "id": "par",
+          "address": "par",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "pongs": 1
+            },
+            "value": "idle",
+            "children": {
+              "c": {
+                "$actor": "par/c",
+                "incarnation": "1"
+              }
+            },
+            "timers": [
+              {
+                "id": "ping",
+                "delay": 100,
+                "type": "@xstate.sendTo",
+                "event": {
+                  "type": "PING"
+                },
+                "target": {
+                  "$actor": "par/c",
+                  "incarnation": "1"
+                }
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "par",
+              "par.idle"
+            ]
+          }
+        },
+        "par/c": {
+          "id": "c",
+          "address": "par/c",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 1
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 100,
+          "sequence": 4,
+          "event": {
+            "type": "xstate.timer",
+            "id": "ping"
+          }
+        }
+      ],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 5,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 2",
+    "snapshot": {
+      "root": "par",
+      "executionId": "system",
+      "now": 50,
+      "actors": {
+        "par": {
+          "id": "par",
+          "address": "par",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "pongs": 1
+            },
+            "value": "idle",
+            "children": {
+              "c": {
+                "$actor": "par/c",
+                "incarnation": "1"
+              }
+            },
+            "timers": [
+              {
+                "id": "ping",
+                "delay": 100,
+                "type": "@xstate.sendTo",
+                "event": {
+                  "type": "PING"
+                },
+                "target": {
+                  "$actor": "par/c",
+                  "incarnation": "1"
+                }
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "par",
+              "par.idle"
+            ]
+          }
+        },
+        "par/c": {
+          "id": "c",
+          "address": "par/c",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 1
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "occurrence": 0,
+          "scheduledAt": 0,
+          "dueAt": 100,
+          "sequence": 4,
+          "event": {
+            "type": "xstate.timer",
+            "id": "ping"
+          }
+        }
+      ],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 5,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 3",
+    "snapshot": {
+      "root": "par",
+      "executionId": "system",
+      "now": 100,
+      "actors": {
+        "par": {
+          "id": "par",
+          "address": "par",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "pongs": 2
+            },
+            "value": "idle",
+            "children": {
+              "c": {
+                "$actor": "par/c",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "par",
+              "par.idle"
+            ]
+          }
+        },
+        "par/c": {
+          "id": "c",
+          "address": "par/c",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 1,
+        "sequence": 8,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 4",
+    "snapshot": {
+      "root": "par",
+      "executionId": "system",
+      "now": 100,
+      "actors": {
+        "par": {
+          "id": "par",
+          "address": "par",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "pongs": 2
+            },
+            "value": "idle",
+            "children": {
+              "c": {
+                "$actor": "par/c",
+                "incarnation": "1"
+              }
+            },
+            "timers": [
+              {
+                "id": "ping",
+                "delay": 100,
+                "type": "@xstate.sendTo",
+                "event": {
+                  "type": "PING"
+                },
+                "target": {
+                  "$actor": "par/c",
+                  "incarnation": "1"
+                }
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "par",
+              "par.idle"
+            ]
+          }
+        },
+        "par/c": {
+          "id": "c",
+          "address": "par/c",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "occurrence": 1,
+          "scheduledAt": 100,
+          "dueAt": 200,
+          "sequence": 9,
+          "event": {
+            "type": "xstate.timer",
+            "id": "ping"
+          }
+        }
+      ],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 2,
+        "sequence": 10,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 5",
+    "snapshot": {
+      "root": "par",
+      "executionId": "system",
+      "now": 100,
+      "actors": {
+        "par": {
+          "id": "par",
+          "address": "par",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "pongs": 2
+            },
+            "value": "idle",
+            "children": {
+              "c": {
+                "$actor": "par/c",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "par",
+              "par.idle"
+            ]
+          }
+        },
+        "par/c": {
+          "id": "c",
+          "address": "par/c",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 2,
+        "sequence": 11,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 6",
+    "snapshot": {
+      "root": "par",
+      "executionId": "system",
+      "now": 300,
+      "actors": {
+        "par": {
+          "id": "par",
+          "address": "par",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "pongs": 2
+            },
+            "value": "idle",
+            "children": {
+              "c": {
+                "$actor": "par/c",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "par",
+              "par.idle"
+            ]
+          }
+        },
+        "par/c": {
+          "id": "c",
+          "address": "par/c",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {},
+      "counters": {
+        "actor": 2,
+        "timer": 2,
+        "sequence": 11,
+        "effect": 0
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 7",
+    "snapshot": {
+      "root": "par",
+      "executionId": "system",
+      "now": 300,
+      "actors": {
+        "par": {
+          "id": "par",
+          "address": "par",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "pongs": 2
+            },
+            "value": "idle",
+            "children": {
+              "c": {
+                "$actor": "par/c",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "par",
+              "par.idle"
+            ]
+          }
+        },
+        "par/c": {
+          "id": "c",
+          "address": "par/c",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "type": "@xstate.deadLetter",
+          "kind": "builtin",
+          "args": [],
+          "event": {
+            "type": "PING"
+          },
+          "reason": "missingTarget"
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 2,
+        "sequence": 12,
+        "effect": 1
+      }
+    },
+    "effects": [
+      {
+        "id": "system:0",
+        "source": {
+          "$actor": "par",
+          "incarnation": "0"
+        },
+        "type": "@xstate.deadLetter",
+        "kind": "builtin",
+        "args": [],
+        "event": {
+          "type": "PING"
+        },
+        "reason": "missingTarget"
+      }
+    ]
+  },
+  {
+    "label": "step 8",
+    "snapshot": {
+      "root": "par",
+      "executionId": "system",
+      "now": 300,
+      "actors": {
+        "par": {
+          "id": "par",
+          "address": "par",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "pongs": 2
+            },
+            "value": "idle",
+            "children": {
+              "c": {
+                "$actor": "par/c",
+                "incarnation": "1"
+              }
+            },
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "par",
+              "par.idle"
+            ]
+          }
+        },
+        "par/c": {
+          "id": "c",
+          "address": "par/c",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "type": "@xstate.deadLetter",
+          "kind": "builtin",
+          "args": [],
+          "event": {
+            "type": "PING"
+          },
+          "reason": "missingTarget"
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "type": "@xstate.deadLetter",
+          "kind": "builtin",
+          "args": [],
+          "event": {
+            "type": "PONG"
+          },
+          "reason": "missingTarget"
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 2,
+        "sequence": 13,
+        "effect": 2
+      }
+    },
+    "effects": [
+      {
+        "id": "system:1",
+        "source": {
+          "$actor": "par",
+          "incarnation": "0"
+        },
+        "type": "@xstate.deadLetter",
+        "kind": "builtin",
+        "args": [],
+        "event": {
+          "type": "PONG"
+        },
+        "reason": "missingTarget"
+      }
+    ]
+  },
+  {
+    "label": "step 9",
+    "snapshot": {
+      "root": "par",
+      "executionId": "system",
+      "now": 300,
+      "actors": {
+        "par": {
+          "id": "par",
+          "address": "par",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "pongs": 2
+            },
+            "value": "idle",
+            "children": {
+              "c": {
+                "$actor": "par/c",
+                "incarnation": "1"
+              }
+            },
+            "timers": [
+              {
+                "id": "ping",
+                "delay": 100,
+                "type": "@xstate.sendTo",
+                "event": {
+                  "type": "PING"
+                },
+                "target": {
+                  "$actor": "par/c",
+                  "incarnation": "1"
+                }
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "par",
+              "par.idle"
+            ]
+          }
+        },
+        "par/c": {
+          "id": "c",
+          "address": "par/c",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "count": 2
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "occurrence": 2,
+          "scheduledAt": 300,
+          "dueAt": 400,
+          "sequence": 14,
+          "event": {
+            "type": "xstate.timer",
+            "id": "ping"
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "type": "@xstate.deadLetter",
+          "kind": "builtin",
+          "args": [],
+          "event": {
+            "type": "PING"
+          },
+          "reason": "missingTarget"
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "type": "@xstate.deadLetter",
+          "kind": "builtin",
+          "args": [],
+          "event": {
+            "type": "PONG"
+          },
+          "reason": "missingTarget"
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 3,
+        "sequence": 15,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 10",
+    "snapshot": {
+      "root": "par",
+      "executionId": "system",
+      "now": 300,
+      "actors": {
+        "par": {
+          "id": "par",
+          "address": "par",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "pongs": 2
+            },
+            "value": "idle",
+            "children": {},
+            "timers": [
+              {
+                "id": "ping",
+                "delay": 100,
+                "type": "@xstate.sendTo",
+                "event": {
+                  "type": "PING"
+                },
+                "target": {
+                  "$actor": "par/c",
+                  "incarnation": "1"
+                }
+              }
+            ],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "par",
+              "par.idle"
+            ]
+          }
+        },
+        "par/c": {
+          "id": "c",
+          "address": "par/c",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {
+              "count": 2
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [
+        {
+          "source": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "occurrence": 2,
+          "scheduledAt": 300,
+          "dueAt": 400,
+          "sequence": 14,
+          "event": {
+            "type": "xstate.timer",
+            "id": "ping"
+          }
+        }
+      ],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "type": "@xstate.deadLetter",
+          "kind": "builtin",
+          "args": [],
+          "event": {
+            "type": "PING"
+          },
+          "reason": "missingTarget"
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "type": "@xstate.deadLetter",
+          "kind": "builtin",
+          "args": [],
+          "event": {
+            "type": "PONG"
+          },
+          "reason": "missingTarget"
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 3,
+        "sequence": 17,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 11",
+    "snapshot": {
+      "root": "par",
+      "executionId": "system",
+      "now": 500,
+      "actors": {
+        "par": {
+          "id": "par",
+          "address": "par",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "pongs": 2
+            },
+            "value": "idle",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "par",
+              "par.idle"
+            ]
+          }
+        },
+        "par/c": {
+          "id": "c",
+          "address": "par/c",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {
+              "count": 2
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "type": "@xstate.deadLetter",
+          "kind": "builtin",
+          "args": [],
+          "event": {
+            "type": "PING"
+          },
+          "reason": "missingTarget"
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "type": "@xstate.deadLetter",
+          "kind": "builtin",
+          "args": [],
+          "event": {
+            "type": "PONG"
+          },
+          "reason": "missingTarget"
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 3,
+        "sequence": 19,
+        "effect": 2
+      }
+    },
+    "effects": []
+  },
+  {
+    "label": "step 12",
+    "snapshot": {
+      "root": "par",
+      "executionId": "system",
+      "now": 500,
+      "actors": {
+        "par": {
+          "id": "par",
+          "address": "par",
+          "incarnation": "0",
+          "src": "root",
+          "started": true,
+          "snapshot": {
+            "status": "active",
+            "context": {
+              "pongs": 2
+            },
+            "value": "idle",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "par",
+              "par.idle"
+            ]
+          }
+        },
+        "par/c": {
+          "id": "c",
+          "address": "par/c",
+          "incarnation": "1",
+          "src": "root/actors/kid",
+          "parent": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "syncSnapshot": false,
+          "started": true,
+          "snapshot": {
+            "status": "stopped",
+            "context": {
+              "count": 2
+            },
+            "value": "on",
+            "children": {},
+            "timers": [],
+            "historyValue": {},
+            "_stateInputs": {},
+            "_nextTimerId": 0,
+            "nodeIds": [
+              "kid",
+              "kid.on"
+            ]
+          }
+        }
+      },
+      "registry": {},
+      "messages": [],
+      "timers": [],
+      "externalEffects": {
+        "system:0": {
+          "id": "system:0",
+          "source": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "type": "@xstate.deadLetter",
+          "kind": "builtin",
+          "args": [],
+          "event": {
+            "type": "PING"
+          },
+          "reason": "missingTarget"
+        },
+        "system:1": {
+          "id": "system:1",
+          "source": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "type": "@xstate.deadLetter",
+          "kind": "builtin",
+          "args": [],
+          "event": {
+            "type": "PONG"
+          },
+          "reason": "missingTarget"
+        },
+        "system:2": {
+          "id": "system:2",
+          "source": {
+            "$actor": "par",
+            "incarnation": "0"
+          },
+          "type": "@xstate.deadLetter",
+          "kind": "builtin",
+          "args": [],
+          "event": {
+            "type": "PING"
+          },
+          "reason": "missingTarget"
+        }
+      },
+      "counters": {
+        "actor": 2,
+        "timer": 3,
+        "sequence": 20,
+        "effect": 3
+      }
+    },
+    "effects": [
+      {
+        "id": "system:2",
+        "source": {
+          "$actor": "par",
+          "incarnation": "0"
+        },
+        "type": "@xstate.deadLetter",
+        "kind": "builtin",
+        "args": [],
+        "event": {
+          "type": "PING"
+        },
+        "reason": "missingTarget"
+      }
+    ]
+  }
+]

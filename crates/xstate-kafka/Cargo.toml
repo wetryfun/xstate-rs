@@ -27,9 +27,13 @@ kafka = [
 ]
 # SASL GSSAPI (Kerberos), through the system's Cyrus SASL (libsasl2-dev).
 kafka-gssapi = ["kafka", "rdkafka/gssapi"]
+# JavaScript code nodes (`@lang` `js` and `ts`) in the generic binary's
+# machines, run by an embedded QuickJS (xstate-js; Rust 1.87).
+js = ["dep:xstate-js"]
 
 [dependencies]
 xstate-rt = { path = "../xstate-rt" }
+xstate-js = { path = "../xstate-js", optional = true }
 serde.workspace = true
 serde_json.workspace = true
 rmp-serde = "1.3"

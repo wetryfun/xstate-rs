@@ -14,6 +14,27 @@ use xstate_rt::{InitOptions, Logic, Machine, Registry, System, SystemLogic};
 #[path = "common/exprs.rs"]
 mod exprs;
 
+/// The languages the including test crate registers evaluators for: none
+/// here; `xstate-js` includes this file as a module and defines its own at
+/// its crate root, which then runs only the fixtures that declare them.
+#[allow(dead_code)]
+pub const LANGUAGES: &[&str] = &[];
+
+#[allow(dead_code)]
+pub fn register_languages(_registry: &mut Registry<Value, Value>) {}
+
+/// Whether a fixture (its `languages`) runs in this test crate: one that
+/// needs evaluators only where they are registered, the others only here.
+fn runs_here(fixture: &Value) -> bool {
+    match fixture.get("languages").and_then(Value::as_array) {
+        Some(langs) => {
+            !crate::LANGUAGES.is_empty()
+                && langs.iter().all(|l| l.as_str().is_some_and(|l| crate::LANGUAGES.contains(&l)))
+        }
+        None => crate::LANGUAGES.is_empty(),
+    }
+}
+
 fn registry(actors: &[(String, Arc<dyn Logic>)]) -> Registry<Value, Value> {
     #[derive(serde::Deserialize)]
     struct KeyValue {
@@ -30,6 +51,7 @@ fn registry(actors: &[(String, Arc<dyn Logic>)]) -> Registry<Value, Value> {
         .delay_ms("short", 100)
         .delay_ms("long", 1000);
     exprs::register(&mut r);
+    crate::register_languages(&mut r);
     for (name, logic) in actors {
         r.actor(name.clone(), logic.clone());
     }
@@ -85,6 +107,9 @@ fn compare(label: &str, expected: &Value, actual: &Value) -> Result<(), String> 
 
 fn run_fixture(path: &PathBuf) -> Result<(), String> {
     let fixture: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    if !runs_here(&fixture) {
+        return Ok(());
+    }
     let expected: Vec<Value> = serde_json::from_str(
         &std::fs::read_to_string(path.with_extension("expected.json")).map_err(|e| e.to_string())?,
     )
@@ -215,6 +240,9 @@ fn system_fixtures_match_xstate() {
 /// when set. `XSTATE_FUZZ_CASE` selects one case.
 #[test]
 fn system_fuzz_corpus_matches_xstate() {
+    if !crate::LANGUAGES.is_empty() {
+        return;
+    }
     let mut paths = vec![PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/fuzz/system-corpus.json")];
     if let Some(extra) = std::env::var_os("XSTATE_SYSTEM_FUZZ_CORPUS") {
         paths.push(PathBuf::from(extra));

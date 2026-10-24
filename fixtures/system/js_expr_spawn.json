@@ -1,0 +1,192 @@
+{
+  "notes": "enq.spawn from Rust: generated ids (<src>:<n>, never reused), explicit ids with input, sending to and stopping spawned children, a spawned child's done event, a spawn in a transition function, and a duplicate explicit id (an error). (Ported from expr_spawn.json by port-js.mjs: JavaScript code nodes.)",
+  "logic": [
+    {
+      "name": "kid",
+      "machine": {
+        "id": "kid",
+        "context": {
+          "@code": "({ input }) => ({ count: input?.start ?? 0, total: 0, attempts: 0, items: [] })",
+          "@lang": "js"
+        },
+        "initial": "on",
+        "states": {
+          "on": {
+            "on": {
+              "PING": {
+                "context": {
+                  "count": {
+                    "@code": "({ context }) => context.count + 1",
+                    "@lang": "js"
+                  }
+                },
+                "actions": [
+                  {
+                    "@code": "({ enq, self }) => {\n    enq.sendTo(self._parent, { type: 'PONG' });\n  }",
+                    "@lang": "js"
+                  }
+                ]
+              },
+              "STOP": {
+                "target": "off"
+              }
+            }
+          },
+          "off": {
+            "type": "final",
+            "output": {
+              "@code": "({ context }) => ({ count: context.count, total: context.total })",
+              "@lang": "js"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "par",
+      "machine": {
+        "id": "par",
+        "context": {
+          "pongs": 0
+        },
+        "initial": "idle",
+        "states": {
+          "idle": {
+            "on": {
+              "SPAWN": {
+                "actions": [
+                  {
+                    "@code": "({ enq }) => {\n    const ref = enq.spawn('kid', { input: { start: 10 } });\n    return { context: { last: ref.id } };\n  }",
+                    "@lang": "js"
+                  }
+                ]
+              },
+              "NAMED": {
+                "actions": [
+                  {
+                    "@code": "({ enq }) => {\n    enq.spawn('kid', { id: 'named', input: { start: 5 } });\n  }",
+                    "@lang": "js"
+                  }
+                ]
+              },
+              "PING": {
+                "actions": [
+                  {
+                    "@code": "({ enq, context }) => {\n    enq.sendTo(context.last, { type: 'PING' });\n  }",
+                    "@lang": "js"
+                  }
+                ]
+              },
+              "FINISH": {
+                "actions": [
+                  {
+                    "@code": "({ enq, context }) => {\n    enq.sendTo(context.last, { type: 'STOP' });\n  }",
+                    "@lang": "js"
+                  }
+                ]
+              },
+              "KILL": {
+                "actions": [
+                  {
+                    "@code": "({ enq, context, children }) => {\n    enq.stop(children[context.last]);\n  }",
+                    "@lang": "js"
+                  }
+                ]
+              },
+              "FN": {
+                "@code": "({ enq }) => {\n    const ref = enq.spawn('kid');\n    return { context: { last: ref.id } };\n  }",
+                "@lang": "js"
+              },
+              "PONG": {
+                "context": {
+                  "pongs": {
+                    "@code": "({ context }) => context.pongs + 1",
+                    "@lang": "js"
+                  }
+                }
+              },
+              "xstate.done.actor": {
+                "actions": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "child.done",
+                      "output": {
+                        "@code": "({ event }) => event.output",
+                        "@lang": "js"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "actors": [
+        "kid"
+      ]
+    }
+  ],
+  "root": "par",
+  "init": {},
+  "steps": [
+    {
+      "send": "par",
+      "event": {
+        "type": "SPAWN"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "SPAWN"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "PING"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "KILL"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "SPAWN"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "NAMED"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "FN"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "FINISH"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "NAMED"
+      }
+    }
+  ],
+  "languages": [
+    "js"
+  ]
+}

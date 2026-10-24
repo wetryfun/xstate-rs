@@ -1,0 +1,133 @@
+{
+  "notes": "Named JSON actions whose expressions read the reference's params (resolved where the reference runs), nested, plus a root output computed from the done event. (Ported from expr_named_actions.json by port-js.mjs: JavaScript code nodes.)",
+  "machine": {
+    "id": "named",
+    "context": {
+      "count": 1,
+      "total": 0
+    },
+    "actions": {
+      "report": [
+        {
+          "type": "@xstate.emit",
+          "event": {
+            "type": "report",
+            "value": {
+              "@code": "({ params }) => params.value",
+              "@lang": "js"
+            },
+            "count": {
+              "@code": "({ context }) => context.count + 1",
+              "@lang": "js"
+            }
+          }
+        }
+      ],
+      "bumpThenReport": [
+        {
+          "@code": "({ context }) => ({ context: { count: context.count + 1 } })",
+          "@lang": "js"
+        },
+        {
+          "type": "report",
+          "params": {
+            "value": {
+              "@code": "({ params }) => params.value",
+              "@lang": "js"
+            }
+          }
+        },
+        {
+          "type": "@xstate.emit",
+          "event": {
+            "type": "outer",
+            "value": {
+              "@code": "({ params }) => params.value",
+              "@lang": "js"
+            }
+          }
+        }
+      ],
+      "plain": [
+        {
+          "type": "@xstate.emit",
+          "event": {
+            "type": "plain"
+          }
+        }
+      ]
+    },
+    "initial": "a",
+    "states": {
+      "a": {
+        "on": {
+          "GO": {
+            "actions": [
+              {
+                "type": "report",
+                "params": {
+                  "value": {
+                    "@code": "({ event }) => event.value",
+                    "@lang": "js"
+                  }
+                }
+              },
+              {
+                "type": "bumpThenReport",
+                "params": {
+                  "value": {
+                    "@code": "({ context }) => context.count + 1",
+                    "@lang": "js"
+                  }
+                }
+              },
+              {
+                "type": "plain",
+                "params": {
+                  "value": {
+                    "@code": "({ event }) => event.value",
+                    "@lang": "js"
+                  }
+                }
+              }
+            ]
+          },
+          "END": {
+            "target": "b"
+          }
+        }
+      },
+      "b": {
+        "type": "final"
+      }
+    },
+    "output": {
+      "kind": {
+        "@code": "({ event }) => event.type",
+        "@lang": "js"
+      },
+      "summary": {
+        "@code": "({ context }) => ({ count: context.count, total: context.total })",
+        "@lang": "js"
+      }
+    }
+  },
+  "steps": [
+    {
+      "at": 0,
+      "send": {
+        "type": "GO",
+        "value": "x"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "END"
+      }
+    }
+  ],
+  "languages": [
+    "js"
+  ]
+}

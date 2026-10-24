@@ -1,0 +1,341 @@
+{
+  "notes": "Rust transition functions (dynamic targets, context and reenter; not enabled when they return nothing and enqueue nothing), enq in transition functions and action expressions (raise, delayed raise, cancel, emit), and route functions. (Ported from expr_functions.json by port-js.mjs: JavaScript code nodes.)",
+  "machine": {
+    "id": "fn",
+    "context": {
+      "count": 0
+    },
+    "initial": "a",
+    "states": {
+      "a": {
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "enter.a"
+            }
+          }
+        ],
+        "on": {
+          "PICK": [
+            {
+              "@code": "({ context, event }) =>\n    event.value === undefined\n      ? undefined\n      : { target: event.value > 0 ? 'positive' : '#fn.negative', context: { count: context.count + 1 } }",
+              "@lang": "js"
+            },
+            {
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "fallback"
+                  }
+                }
+              ]
+            }
+          ],
+          "ENQ": {
+            "@code": "({ context, enq }) => {\n    enq.emit({ type: 'enqueued', count: context.count });\n  }",
+            "@lang": "js"
+          },
+          "LATER_SOON": {
+            "@code": "({ context, enq }) => {\n    enq.raise({ type: 'LATER', value: context.count }, { delay: 50, id: 'later' });\n    enq.raise({ type: 'NOW' });\n    return { context: { count: context.count + 100 } };\n  }",
+            "@lang": "js"
+          },
+          "NOW": {
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "now"
+                }
+              }
+            ]
+          },
+          "LATER": {
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "later",
+                  "value": {
+                    "@code": "({ event }) => event.value",
+                    "@lang": "js"
+                  }
+                }
+              }
+            ]
+          },
+          "CANCEL": {
+            "@code": "({ enq }) => {\n    enq.cancel('later');\n    return {};\n  }",
+            "@lang": "js"
+          },
+          "TWICE": {
+            "actions": [
+              {
+                "@code": "({ context, enq }) => {\n    enq.emit({ type: 'one' });\n    enq.emit({ type: 'two', count: context.count });\n    return { context: { count: context.count + 10 } };\n  }",
+                "@lang": "js"
+              },
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "after",
+                  "count": {
+                    "@code": "({ context }) => context.count + 1",
+                    "@lang": "js"
+                  }
+                }
+              }
+            ]
+          },
+          "NEST": {
+            "target": "nest"
+          }
+        }
+      },
+      "positive": {
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "enter.positive"
+            }
+          }
+        ],
+        "on": {
+          "BACK": {
+            "target": "a"
+          }
+        }
+      },
+      "negative": {
+        "id": "fn.negative",
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "enter.negative"
+            }
+          }
+        ],
+        "on": {
+          "BACK": {
+            "target": "a"
+          }
+        }
+      },
+      "nest": {
+        "initial": "inner",
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "enter.nest"
+            }
+          }
+        ],
+        "exit": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "exit.nest"
+            }
+          }
+        ],
+        "states": {
+          "inner": {
+            "entry": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "enter.inner"
+                }
+              }
+            ],
+            "exit": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "exit.inner"
+                }
+              }
+            ]
+          }
+        },
+        "on": {
+          "AGAIN": {
+            "@code": "({ context }) => ({ target: '.inner', reenter: context.count > 1 })",
+            "@lang": "js"
+          },
+          "BACK": {
+            "target": "a"
+          }
+        }
+      },
+      "routed": {
+        "id": "routed",
+        "route": {
+          "@code": "({ context }) => (context.count % 2 === 0 ? { context: { routed: context.count } } : false)",
+          "@lang": "js"
+        },
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "enter.routed"
+            }
+          }
+        ],
+        "on": {
+          "BACK": {
+            "target": "a"
+          }
+        }
+      },
+      "free": {
+        "id": "free",
+        "route": {
+          "@code": "() => true",
+          "@lang": "js"
+        },
+        "entry": [
+          {
+            "type": "@xstate.emit",
+            "event": {
+              "type": "enter.free"
+            }
+          }
+        ]
+      }
+    }
+  },
+  "steps": [
+    {
+      "at": 0,
+      "send": {
+        "type": "PICK"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "PICK",
+        "value": 3
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "BACK"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "PICK",
+        "value": -1
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "BACK"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "ENQ"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "LATER_SOON"
+      }
+    },
+    {
+      "at": 10,
+      "send": {
+        "type": "CANCEL"
+      }
+    },
+    {
+      "at": 100
+    },
+    {
+      "at": 100,
+      "send": {
+        "type": "LATER_SOON"
+      }
+    },
+    {
+      "at": 200
+    },
+    {
+      "at": 200,
+      "send": {
+        "type": "TWICE"
+      }
+    },
+    {
+      "at": 200,
+      "send": {
+        "type": "NEST"
+      }
+    },
+    {
+      "at": 200,
+      "send": {
+        "type": "AGAIN"
+      }
+    },
+    {
+      "at": 200,
+      "send": {
+        "type": "BACK"
+      }
+    },
+    {
+      "at": 200,
+      "send": {
+        "type": "xstate.route",
+        "to": "#routed"
+      }
+    },
+    {
+      "at": 200,
+      "send": {
+        "type": "TWICE"
+      }
+    },
+    {
+      "at": 200,
+      "send": {
+        "type": "BACK"
+      }
+    },
+    {
+      "at": 200,
+      "send": {
+        "type": "TWICE"
+      }
+    },
+    {
+      "at": 200,
+      "send": {
+        "type": "xstate.route",
+        "to": "#routed"
+      }
+    },
+    {
+      "at": 200,
+      "send": {
+        "type": "xstate.route",
+        "to": "#free"
+      }
+    }
+  ],
+  "languages": [
+    "js"
+  ]
+}

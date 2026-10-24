@@ -1,0 +1,462 @@
+{
+  "notes": "State input: object-form initial input, transition input (static and computed), function, choice and multi-target input; a non-reentering self-transition keeps the input, reentering replaces it; exit sees it; leaving drops it; transition expressions see the source's input, guards none; an invoke's input and a final state's output read it; _stateInputs is persisted. (Ported from expr_input.json by port-js.mjs: JavaScript code nodes.)",
+  "logic": [
+    {
+      "name": "child",
+      "machine": {
+        "id": "child",
+        "context": {
+          "@code": "({ input }) => ({ count: input?.start ?? 0, total: 0, attempts: 0, items: [] })",
+          "@lang": "js"
+        },
+        "initial": "run",
+        "states": {
+          "run": {
+            "on": {
+              "END": {
+                "target": "end"
+              }
+            }
+          },
+          "end": {
+            "type": "final",
+            "output": {
+              "@code": "({ context }) => ({ count: context.count, total: context.total })",
+              "@lang": "js"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "in",
+      "machine": {
+        "id": "in",
+        "context": {
+          "count": 2,
+          "total": 0
+        },
+        "initial": {
+          "target": "a",
+          "input": {
+            "first": true
+          }
+        },
+        "states": {
+          "a": {
+            "input": {
+              "ignored": 1
+            },
+            "entry": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "input",
+                  "at": "a.entry",
+                  "input": {
+                    "@code": "({ input }) => input ?? null",
+                    "@lang": "js"
+                  }
+                }
+              }
+            ],
+            "exit": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "input",
+                  "at": "a.exit",
+                  "input": {
+                    "@code": "({ input }) => input ?? null",
+                    "@lang": "js"
+                  }
+                }
+              }
+            ],
+            "on": {
+              "SELF": {
+                "target": "a",
+                "input": {
+                  "again": 1
+                }
+              },
+              "RE": {
+                "target": "a",
+                "reenter": true,
+                "input": {
+                  "again": 2
+                }
+              },
+              "GO": {
+                "target": "b",
+                "input": {
+                  "n": {
+                    "@code": "({ context }) => context.count + 1",
+                    "@lang": "js"
+                  }
+                }
+              },
+              "FN": {
+                "@code": "({ context }) => ({ target: 'b', input: { fromFn: context.count } })",
+                "@lang": "js"
+              },
+              "PICK": {
+                "target": "pick"
+              },
+              "PAR": {
+                "target": [
+                  "par.left.l1",
+                  "par.right.r1"
+                ],
+                "input": {
+                  "both": true
+                }
+              },
+              "NEST": {
+                "target": "nest",
+                "input": {
+                  "outer": true
+                }
+              },
+              "RUN": {
+                "target": "running",
+                "input": {
+                  "start": 7
+                }
+              },
+              "DONE": {
+                "target": "fin",
+                "input": {
+                  "why": "done"
+                }
+              }
+            }
+          },
+          "b": {
+            "entry": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "input",
+                  "at": "b.entry",
+                  "input": {
+                    "@code": "({ input }) => input ?? null",
+                    "@lang": "js"
+                  }
+                }
+              }
+            ],
+            "exit": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "input",
+                  "at": "b.exit",
+                  "input": {
+                    "@code": "({ input }) => input ?? null",
+                    "@lang": "js"
+                  }
+                }
+              }
+            ],
+            "on": {
+              "BACK": {
+                "target": "a"
+              },
+              "CTX": {
+                "context": {
+                  "seen": {
+                    "@code": "({ input }) => input ?? null",
+                    "@lang": "js"
+                  }
+                },
+                "actions": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "input",
+                      "at": "b.CTX",
+                      "input": {
+                        "@code": "({ input }) => input ?? null",
+                        "@lang": "js"
+                      }
+                    }
+                  }
+                ]
+              },
+              "CHECK": {
+                "guard": {
+                  "@code": "({ input }) => input !== undefined",
+                  "@lang": "js"
+                },
+                "actions": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "guard.saw.input"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "pick": {
+            "type": "choice",
+            "choice": [
+              {
+                "target": "b",
+                "input": {
+                  "picked": {
+                    "@code": "({ context }) => context.count + 1",
+                    "@lang": "js"
+                  }
+                }
+              }
+            ]
+          },
+          "par": {
+            "type": "parallel",
+            "on": {
+              "BACK": {
+                "target": "a"
+              }
+            },
+            "states": {
+              "left": {
+                "initial": "l0",
+                "states": {
+                  "l0": {},
+                  "l1": {
+                    "entry": [
+                      {
+                        "type": "@xstate.emit",
+                        "event": {
+                          "type": "input",
+                          "at": "l1.entry",
+                          "input": {
+                            "@code": "({ input }) => input ?? null",
+                            "@lang": "js"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              },
+              "right": {
+                "initial": "r0",
+                "states": {
+                  "r0": {},
+                  "r1": {
+                    "entry": [
+                      {
+                        "type": "@xstate.emit",
+                        "event": {
+                          "type": "input",
+                          "at": "r1.entry",
+                          "input": {
+                            "@code": "({ input }) => input ?? null",
+                            "@lang": "js"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "nest": {
+            "initial": {
+              "target": "inner",
+              "input": {
+                "inner": true
+              }
+            },
+            "entry": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "input",
+                  "at": "nest.entry",
+                  "input": {
+                    "@code": "({ input }) => input ?? null",
+                    "@lang": "js"
+                  }
+                }
+              }
+            ],
+            "on": {
+              "BACK": {
+                "target": "a"
+              }
+            },
+            "states": {
+              "inner": {
+                "entry": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "input",
+                      "at": "inner.entry",
+                      "input": {
+                        "@code": "({ input }) => input ?? null",
+                        "@lang": "js"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "running": {
+            "invoke": {
+              "id": "c",
+              "src": "child",
+              "input": {
+                "@code": "({ input }) => input ?? null",
+                "@lang": "js"
+              },
+              "onDone": {
+                "target": "a",
+                "actions": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "child.done",
+                      "output": {
+                        "@code": "({ event }) => event.output",
+                        "@lang": "js"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "fin": {
+            "type": "final",
+            "output": {
+              "from": {
+                "@code": "({ input }) => input ?? null",
+                "@lang": "js"
+              }
+            }
+          }
+        }
+      },
+      "actors": [
+        "child"
+      ]
+    }
+  ],
+  "root": "in",
+  "init": {},
+  "steps": [
+    {
+      "send": "in",
+      "event": {
+        "type": "SELF"
+      }
+    },
+    {
+      "send": "in",
+      "event": {
+        "type": "RE"
+      }
+    },
+    {
+      "send": "in",
+      "event": {
+        "type": "GO"
+      }
+    },
+    {
+      "send": "in",
+      "event": {
+        "type": "CTX"
+      }
+    },
+    {
+      "send": "in",
+      "event": {
+        "type": "CHECK"
+      }
+    },
+    {
+      "send": "in",
+      "event": {
+        "type": "BACK"
+      }
+    },
+    {
+      "send": "in",
+      "event": {
+        "type": "FN"
+      }
+    },
+    {
+      "send": "in",
+      "event": {
+        "type": "BACK"
+      }
+    },
+    {
+      "send": "in",
+      "event": {
+        "type": "PICK"
+      }
+    },
+    {
+      "send": "in",
+      "event": {
+        "type": "BACK"
+      }
+    },
+    {
+      "send": "in",
+      "event": {
+        "type": "PAR"
+      }
+    },
+    {
+      "send": "in",
+      "event": {
+        "type": "BACK"
+      }
+    },
+    {
+      "send": "in",
+      "event": {
+        "type": "NEST"
+      }
+    },
+    {
+      "send": "in",
+      "event": {
+        "type": "BACK"
+      }
+    },
+    {
+      "send": "in",
+      "event": {
+        "type": "RUN"
+      }
+    },
+    {
+      "send": "in/c",
+      "event": {
+        "type": "END"
+      }
+    },
+    {
+      "send": "in",
+      "event": {
+        "type": "DONE"
+      }
+    }
+  ],
+  "languages": [
+    "js"
+  ]
+}

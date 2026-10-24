@@ -1,0 +1,14 @@
+[package]
+name = "xstate-js"
+version = "0.1.0"
+description = "A JavaScript evaluator (embedded QuickJS) for code nodes in xstate-rs machines"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version = "1.87"
+
+[dependencies]
+xstate-rt = { path = "../xstate-rt" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+rquickjs = "0.14"

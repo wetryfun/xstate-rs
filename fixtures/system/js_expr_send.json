@@ -1,0 +1,193 @@
+{
+  "notes": "enq.sendTo from Rust: to a child (immediately and delayed, the delayed one a logical timer with a target), to a missing child and to a root's missing parent (dead letters), from a child to its parent; enq.stop. (Ported from expr_send.json by port-js.mjs: JavaScript code nodes.)",
+  "logic": [
+    {
+      "name": "kid",
+      "machine": {
+        "id": "kid",
+        "context": {
+          "count": 0
+        },
+        "initial": "on",
+        "states": {
+          "on": {
+            "on": {
+              "PING": {
+                "context": {
+                  "count": {
+                    "@code": "({ context }) => context.count + 1",
+                    "@lang": "js"
+                  }
+                },
+                "actions": [
+                  {
+                    "@code": "({ enq, self }) => {\n    enq.sendTo(self._parent, { type: 'PONG' });\n  }",
+                    "@lang": "js"
+                  }
+                ]
+              },
+              "STOP": {
+                "target": "off"
+              }
+            }
+          },
+          "off": {
+            "type": "final"
+          }
+        }
+      }
+    },
+    {
+      "name": "par",
+      "machine": {
+        "id": "par",
+        "context": {
+          "pongs": 0
+        },
+        "initial": "idle",
+        "states": {
+          "idle": {
+            "invoke": {
+              "id": "c",
+              "src": "kid"
+            },
+            "on": {
+              "PING": {
+                "actions": [
+                  {
+                    "@code": "({ enq }) => {\n    enq.sendTo('c', { type: 'PING' });\n  }",
+                    "@lang": "js"
+                  }
+                ]
+              },
+              "LATER": {
+                "actions": [
+                  {
+                    "@code": "({ enq }) => {\n    enq.sendTo('c', { type: 'PING' }, { delay: 100, id: 'ping' });\n  }",
+                    "@lang": "js"
+                  }
+                ]
+              },
+              "UNSEND": {
+                "actions": [
+                  {
+                    "type": "@xstate.cancel",
+                    "id": "ping"
+                  }
+                ]
+              },
+              "MISSING": {
+                "actions": [
+                  {
+                    "@code": "({ enq }) => {\n    enq.sendTo('nope', { type: 'PING' });\n  }",
+                    "@lang": "js"
+                  }
+                ]
+              },
+              "ORPHAN": {
+                "actions": [
+                  {
+                    "@code": "({ enq, self }) => {\n    enq.sendTo(self._parent, { type: 'PONG' });\n  }",
+                    "@lang": "js"
+                  }
+                ]
+              },
+              "KILL": {
+                "actions": [
+                  {
+                    "@code": "({ enq, children }) => {\n    enq.stop(children.c);\n  }",
+                    "@lang": "js"
+                  }
+                ]
+              },
+              "PONG": {
+                "context": {
+                  "pongs": {
+                    "@code": "({ context }) => context.pongs + 1",
+                    "@lang": "js"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "actors": [
+        "kid"
+      ]
+    }
+  ],
+  "root": "par",
+  "init": {},
+  "steps": [
+    {
+      "send": "par",
+      "event": {
+        "type": "PING"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "LATER"
+      }
+    },
+    {
+      "advance": 50
+    },
+    {
+      "advance": 100
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "LATER"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "UNSEND"
+      }
+    },
+    {
+      "advance": 300
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "MISSING"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "ORPHAN"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "LATER"
+      }
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "KILL"
+      }
+    },
+    {
+      "advance": 500
+    },
+    {
+      "send": "par",
+      "event": {
+        "type": "PING"
+      }
+    }
+  ],
+  "languages": [
+    "js"
+  ]
+}

@@ -16,6 +16,27 @@ fn as_f64(v: Option<&Value>) -> Option<f64> {
 #[path = "common/exprs.rs"]
 mod exprs;
 
+/// The languages the including test crate registers evaluators for: none
+/// here; `xstate-js` includes this file as a module and defines its own at
+/// its crate root, which then runs only the fixtures that declare them.
+#[allow(dead_code)]
+pub const LANGUAGES: &[&str] = &[];
+
+#[allow(dead_code)]
+pub fn register_languages(_registry: &mut Registry<Value, Value>) {}
+
+/// Whether a fixture (its `languages`) runs in this test crate: one that
+/// needs evaluators only where they are registered, the others only here.
+fn runs_here(fixture: &Value) -> bool {
+    match fixture.get("languages").and_then(Value::as_array) {
+        Some(langs) => {
+            !crate::LANGUAGES.is_empty()
+                && langs.iter().all(|l| l.as_str().is_some_and(|l| crate::LANGUAGES.contains(&l)))
+        }
+        None => crate::LANGUAGES.is_empty(),
+    }
+}
+
 fn stubs() -> Registry<Value, Value> {
     #[derive(serde::Deserialize)]
     struct KeyValue {
@@ -34,6 +55,7 @@ fn stubs() -> Registry<Value, Value> {
         .delay_ms("short", 100)
         .delay_ms("long", 1000);
     exprs::register(&mut r);
+    crate::register_languages(&mut r);
     r
 }
 
@@ -145,6 +167,9 @@ fn run(fixture: &Value, expected: &[Value]) -> Result<(), String> {
 
 fn run_fixture(path: &PathBuf) -> Result<(), String> {
     let fixture: Value = serde_json::from_str(&std::fs::read_to_string(path).unwrap()).unwrap();
+    if !runs_here(&fixture) {
+        return Ok(());
+    }
     let expected_path = path.with_extension("expected.json");
     let expected: Vec<Value> = serde_json::from_str(
         &std::fs::read_to_string(&expected_path).map_err(|e| format!("{}: {e}", expected_path.display()))?,
@@ -180,6 +205,9 @@ fn run_corpus(path: &PathBuf) -> Vec<String> {
 /// `tools/differential/fuzz.sh`) when set.
 #[test]
 fn fuzz_corpus_matches_xstate() {
+    if !crate::LANGUAGES.is_empty() {
+        return;
+    }
     let mut paths: Vec<PathBuf> =
         std::fs::read_dir(PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/fuzz"))
             .unwrap()

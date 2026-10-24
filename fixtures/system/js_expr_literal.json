@@ -1,0 +1,202 @@
+{
+  "notes": "Code nodes where XState does not evaluate them (matches patterns, log args: taken literally), @xstate.stateIn params (evaluated; an unknown id is an error), string and array context patches (spread into index keys) and raised events without a type (dropped). (Ported from expr_literal.json by port-js.mjs: JavaScript code nodes.)",
+  "logic": [
+    {
+      "name": "q",
+      "machine": {
+        "id": "q",
+        "context": {
+          "count": 1,
+          "items": [
+            "x"
+          ]
+        },
+        "initial": "a",
+        "states": {
+          "a": {
+            "on": {
+              "STRING": {
+                "context": {
+                  "@code": "({ event }) => event.value",
+                  "@lang": "js"
+                }
+              },
+              "ARRAY": {
+                "actions": [
+                  {
+                    "type": "@xstate.assign",
+                    "context": {
+                      "@code": "({ context, event }) => [...context.items, event.item]",
+                      "@lang": "js"
+                    }
+                  }
+                ]
+              },
+              "MATCH": [
+                {
+                  "matches": {
+                    "value": {
+                      "@code": "({ event }) => event.value",
+                      "@lang": "js"
+                    }
+                  },
+                  "actions": [
+                    {
+                      "type": "@xstate.emit",
+                      "event": {
+                        "type": "matched"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "actions": [
+                    {
+                      "type": "@xstate.emit",
+                      "event": {
+                        "type": "unmatched"
+                      }
+                    }
+                  ]
+                }
+              ],
+              "LOG": {
+                "actions": [
+                  {
+                    "type": "@xstate.log",
+                    "args": [
+                      {
+                        "@code": "({ context }) => context.count + 1",
+                        "@lang": "js"
+                      },
+                      "x"
+                    ]
+                  }
+                ]
+              },
+              "RAISE": {
+                "actions": [
+                  {
+                    "type": "@xstate.raise",
+                    "event": {
+                      "value": {
+                        "@code": "({ context }) => context.count + 1",
+                        "@lang": "js"
+                      }
+                    }
+                  },
+                  {
+                    "type": "@xstate.raise",
+                    "event": {
+                      "@code": "({ context }) => context.count + 1",
+                      "@lang": "js"
+                    }
+                  },
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "raised"
+                    }
+                  }
+                ]
+              },
+              "IN": [
+                {
+                  "guard": {
+                    "type": "@xstate.stateIn",
+                    "params": {
+                      "stateId": {
+                        "@code": "({ event }) => event.value",
+                        "@lang": "js"
+                      }
+                    }
+                  },
+                  "actions": [
+                    {
+                      "type": "@xstate.emit",
+                      "event": {
+                        "type": "in"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "actions": [
+                    {
+                      "type": "@xstate.emit",
+                      "event": {
+                        "type": "not.in"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          },
+          "b": {}
+        }
+      }
+    }
+  ],
+  "root": "q",
+  "init": {},
+  "steps": [
+    {
+      "send": "q",
+      "event": {
+        "type": "STRING",
+        "value": "ab"
+      }
+    },
+    {
+      "send": "q",
+      "event": {
+        "type": "ARRAY",
+        "item": "y"
+      }
+    },
+    {
+      "send": "q",
+      "event": {
+        "type": "MATCH",
+        "value": "v"
+      }
+    },
+    {
+      "send": "q",
+      "event": {
+        "type": "LOG"
+      }
+    },
+    {
+      "send": "q",
+      "event": {
+        "type": "RAISE"
+      }
+    },
+    {
+      "send": "q",
+      "event": {
+        "type": "IN",
+        "value": "#q.a"
+      }
+    },
+    {
+      "send": "q",
+      "event": {
+        "type": "IN",
+        "value": "q.b"
+      }
+    },
+    {
+      "send": "q",
+      "event": {
+        "type": "IN",
+        "value": "zz"
+      }
+    }
+  ],
+  "languages": [
+    "js"
+  ]
+}

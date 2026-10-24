@@ -1,0 +1,172 @@
+[
+  {
+    "label": "start",
+    "value": "idle",
+    "context": {
+      "count": 0,
+      "attempts": 0
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 0",
+    "value": "idle",
+    "context": {
+      "count": 1,
+      "attempts": 0
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "even"
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "value": "idle",
+    "context": {
+      "count": 2,
+      "attempts": 0
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "odd"
+      }
+    ]
+  },
+  {
+    "label": "step 2",
+    "value": "idle",
+    "context": {
+      "count": 3,
+      "attempts": 0
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "even"
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "value": "idle",
+    "context": {
+      "count": 3,
+      "attempts": 0
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "matched"
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "value": "idle",
+    "context": {
+      "count": 3,
+      "attempts": 0
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "unmatched"
+      }
+    ]
+  },
+  {
+    "label": "step 5",
+    "value": "waiting",
+    "context": {
+      "count": 3,
+      "attempts": 0
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 6",
+    "value": "waiting",
+    "context": {
+      "count": 3,
+      "attempts": 1
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "retried",
+        "attempts": 2
+      }
+    ]
+  },
+  {
+    "label": "step 7",
+    "value": "waiting",
+    "context": {
+      "count": 3,
+      "attempts": 1
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 8",
+    "value": "waiting",
+    "context": {
+      "count": 3,
+      "attempts": 2
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "retried",
+        "attempts": 3
+      }
+    ]
+  },
+  {
+    "label": "step 9",
+    "value": "waiting",
+    "context": {
+      "count": 3,
+      "attempts": 3
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "retried",
+        "attempts": 4
+      }
+    ]
+  },
+  {
+    "label": "step 10",
+    "value": "waiting",
+    "context": {
+      "count": 3,
+      "attempts": 4
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "retried",
+        "attempts": 5
+      }
+    ]
+  },
+  {
+    "label": "step 11",
+    "value": "idle",
+    "context": {
+      "count": 3,
+      "attempts": 4
+    },
+    "status": "active",
+    "emitted": []
+  }
+]

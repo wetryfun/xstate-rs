@@ -1,0 +1,248 @@
+{
+  "notes": "Inline guard expressions (also under @xstate.not and in named guards), computed guard params, named guards whose params their expressions read, and computed delays and timeouts. (Ported from expr_guards_delays.json by port-js.mjs: JavaScript code nodes.)",
+  "machine": {
+    "id": "retry",
+    "@exprLang": "js",
+    "context": {
+      "count": 0,
+      "attempts": 0
+    },
+    "guards": {
+      "even": {
+        "when": {
+          "@code": "({ context }) => context.count % 2 === 0",
+          "@lang": "js"
+        }
+      },
+      "atParam": {
+        "when": {
+          "type": "ctxEquals",
+          "params": {
+            "key": "count",
+            "value": {
+              "@code": "({ params }) => params.value",
+              "@lang": "js"
+            }
+          }
+        }
+      }
+    },
+    "delays": {
+      "retry": {
+        "duration": {
+          "@code": "({ context }) => 100 * 2 ** context.attempts",
+          "@lang": "js"
+        }
+      }
+    },
+    "initial": "idle",
+    "states": {
+      "idle": {
+        "on": {
+          "TICK": [
+            {
+              "guard": {
+                "type": "even"
+              },
+              "context": {
+                "count": {
+                  "@code": "({ context }) => context.count + 1",
+                  "@lang": "js"
+                }
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "even"
+                  }
+                }
+              ]
+            },
+            {
+              "guard": {
+                "type": "@xstate.not",
+                "params": {
+                  "guard": {
+                    "@code": "({ context }) => context.count % 2 === 0",
+                    "@lang": "js"
+                  }
+                }
+              },
+              "context": {
+                "count": {
+                  "@code": "({ context }) => context.count + 1",
+                  "@lang": "js"
+                }
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "odd"
+                  }
+                }
+              ]
+            }
+          ],
+          "CHECK": [
+            {
+              "guard": {
+                "type": "atParam",
+                "params": {
+                  "value": {
+                    "@code": "({ event }) => event.value",
+                    "@lang": "js"
+                  }
+                }
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "matched"
+                  }
+                }
+              ]
+            },
+            {
+              "guard": {
+                "type": "ctxEquals",
+                "params": {
+                  "key": "count",
+                  "value": {
+                    "@code": "({ event }) => event.value",
+                    "@lang": "js"
+                  }
+                }
+              },
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "never"
+                  }
+                }
+              ]
+            },
+            {
+              "actions": [
+                {
+                  "type": "@xstate.emit",
+                  "event": {
+                    "type": "unmatched"
+                  }
+                }
+              ]
+            }
+          ],
+          "START": {
+            "target": "waiting"
+          }
+        }
+      },
+      "waiting": {
+        "after": {
+          "retry": {
+            "target": "waiting",
+            "reenter": true,
+            "context": {
+              "attempts": {
+                "@code": "({ context }) => context.attempts + 1",
+                "@lang": "js"
+              }
+            },
+            "actions": [
+              {
+                "type": "@xstate.emit",
+                "event": {
+                  "type": "retried",
+                  "attempts": {
+                    "@code": "({ context }) => context.attempts + 1",
+                    "@lang": "js"
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "timeout": {
+          "@code": "({ context }) => 100 * 2 ** context.attempts",
+          "@lang": "js"
+        },
+        "onTimeout": {
+          "target": "idle"
+        },
+        "on": {
+          "STOP": {
+            "target": "idle"
+          }
+        }
+      }
+    }
+  },
+  "steps": [
+    {
+      "at": 0,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "TICK"
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "CHECK",
+        "value": 3
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "CHECK",
+        "value": 2
+      }
+    },
+    {
+      "at": 0,
+      "send": {
+        "type": "START"
+      }
+    },
+    {
+      "at": 100
+    },
+    {
+      "at": 299
+    },
+    {
+      "at": 300
+    },
+    {
+      "at": 700
+    },
+    {
+      "at": 1500
+    },
+    {
+      "at": 1500,
+      "send": {
+        "type": "STOP"
+      }
+    }
+  ],
+  "languages": [
+    "js"
+  ]
+}

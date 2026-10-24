@@ -1,0 +1,322 @@
+[
+  {
+    "label": "start",
+    "value": "a",
+    "context": {
+      "count": 0
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.a"
+      }
+    ]
+  },
+  {
+    "label": "step 0",
+    "value": "a",
+    "context": {
+      "count": 0
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "fallback"
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "value": "positive",
+    "context": {
+      "count": 1
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.positive"
+      }
+    ]
+  },
+  {
+    "label": "step 2",
+    "value": "a",
+    "context": {
+      "count": 1
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.a"
+      }
+    ]
+  },
+  {
+    "label": "step 3",
+    "value": "negative",
+    "context": {
+      "count": 2
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.negative"
+      }
+    ]
+  },
+  {
+    "label": "step 4",
+    "value": "a",
+    "context": {
+      "count": 2
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.a"
+      }
+    ]
+  },
+  {
+    "label": "step 5",
+    "value": "a",
+    "context": {
+      "count": 2
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enqueued",
+        "count": 2
+      }
+    ]
+  },
+  {
+    "label": "step 6",
+    "value": "a",
+    "context": {
+      "count": 102
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "now"
+      }
+    ]
+  },
+  {
+    "label": "step 7",
+    "value": "a",
+    "context": {
+      "count": 102
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 8",
+    "value": "a",
+    "context": {
+      "count": 102
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 9",
+    "value": "a",
+    "context": {
+      "count": 202
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "now"
+      }
+    ]
+  },
+  {
+    "label": "step 10",
+    "value": "a",
+    "context": {
+      "count": 202
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "later",
+        "value": 102
+      }
+    ]
+  },
+  {
+    "label": "step 11",
+    "value": "a",
+    "context": {
+      "count": 212
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "one"
+      },
+      {
+        "type": "two",
+        "count": 202
+      },
+      {
+        "type": "after",
+        "count": 213
+      }
+    ]
+  },
+  {
+    "label": "step 12",
+    "value": {
+      "nest": "inner"
+    },
+    "context": {
+      "count": 212
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.nest"
+      },
+      {
+        "type": "enter.inner"
+      }
+    ]
+  },
+  {
+    "label": "step 13",
+    "value": {
+      "nest": "inner"
+    },
+    "context": {
+      "count": 212
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "exit.inner"
+      },
+      {
+        "type": "exit.nest"
+      },
+      {
+        "type": "enter.nest"
+      },
+      {
+        "type": "enter.inner"
+      }
+    ]
+  },
+  {
+    "label": "step 14",
+    "value": "a",
+    "context": {
+      "count": 212
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "exit.inner"
+      },
+      {
+        "type": "exit.nest"
+      },
+      {
+        "type": "enter.a"
+      }
+    ]
+  },
+  {
+    "label": "step 15",
+    "value": "routed",
+    "context": {
+      "count": 212,
+      "routed": 212
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.routed"
+      }
+    ]
+  },
+  {
+    "label": "step 16",
+    "value": "routed",
+    "context": {
+      "count": 212,
+      "routed": 212
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 17",
+    "value": "a",
+    "context": {
+      "count": 212,
+      "routed": 212
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.a"
+      }
+    ]
+  },
+  {
+    "label": "step 18",
+    "value": "a",
+    "context": {
+      "count": 222,
+      "routed": 212
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "one"
+      },
+      {
+        "type": "two",
+        "count": 212
+      },
+      {
+        "type": "after",
+        "count": 223
+      }
+    ]
+  },
+  {
+    "label": "step 19",
+    "value": "routed",
+    "context": {
+      "count": 222,
+      "routed": 222
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.routed"
+      }
+    ]
+  },
+  {
+    "label": "step 20",
+    "value": "free",
+    "context": {
+      "count": 222,
+      "routed": 222
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "enter.free"
+      }
+    ]
+  }
+]

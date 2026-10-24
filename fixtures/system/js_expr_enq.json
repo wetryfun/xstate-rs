@@ -1,0 +1,118 @@
+{
+  "notes": "enq.log and enq(actions.x) effects from an action expression, an eventless transition function, and a transition function as an invoke completion (its timeout is still cancelled). (Ported from expr_enq.json by port-js.mjs: JavaScript code nodes.)",
+  "logic": [
+    {
+      "name": "job",
+      "async": {}
+    },
+    {
+      "name": "p",
+      "machine": {
+        "id": "p",
+        "context": {
+          "count": 1
+        },
+        "initial": "idle",
+        "states": {
+          "idle": {
+            "on": {
+              "LOG": {
+                "actions": [
+                  {
+                    "@code": "({ context, enq, actions }) => {\n    enq.log('count', context.count);\n    enq(actions.noop, { value: context.count });\n  }",
+                    "@lang": "js"
+                  }
+                ]
+              },
+              "WORK": {
+                "target": "working"
+              },
+              "BUMP": {
+                "context": {
+                  "count": {
+                    "@code": "({ context }) => context.count + 1",
+                    "@lang": "js"
+                  }
+                }
+              }
+            },
+            "always": {
+              "@code": "({ context }) => (context.count % 2 === 0 ? { target: 'even' } : undefined)",
+              "@lang": "js"
+            }
+          },
+          "even": {
+            "on": {
+              "BACK": {
+                "target": "idle"
+              },
+              "WORK": {
+                "target": "working"
+              }
+            }
+          },
+          "working": {
+            "invoke": {
+              "id": "job",
+              "src": "job",
+              "timeout": 1000,
+              "onTimeout": {
+                "target": "idle"
+              },
+              "onDone": {
+                "@code": "({ event }) => ({ target: 'even', context: { result: event.output } })",
+                "@lang": "js"
+              }
+            }
+          }
+        }
+      },
+      "actors": [
+        "job"
+      ]
+    }
+  ],
+  "root": "p",
+  "init": {},
+  "steps": [
+    {
+      "send": "p",
+      "event": {
+        "type": "LOG"
+      }
+    },
+    {
+      "send": "p",
+      "event": {
+        "type": "BUMP"
+      }
+    },
+    {
+      "send": "p",
+      "event": {
+        "type": "WORK"
+      }
+    },
+    {
+      "resolve": 2,
+      "event": {
+        "type": "xstate.async.resolve",
+        "data": {
+          "ok": true
+        }
+      }
+    },
+    {
+      "send": "p",
+      "event": {
+        "type": "WORK"
+      }
+    },
+    {
+      "advance": 2000
+    }
+  ],
+  "languages": [
+    "js"
+  ]
+}

@@ -1,0 +1,57 @@
+[
+  {
+    "label": "start",
+    "value": "a",
+    "context": {
+      "count": 1,
+      "total": 0
+    },
+    "status": "active",
+    "emitted": []
+  },
+  {
+    "label": "step 0",
+    "value": "a",
+    "context": {
+      "count": 2,
+      "total": 0
+    },
+    "status": "active",
+    "emitted": [
+      {
+        "type": "report",
+        "value": "x",
+        "count": 2
+      },
+      {
+        "type": "report",
+        "value": 2,
+        "count": 3
+      },
+      {
+        "type": "outer",
+        "value": 2
+      },
+      {
+        "type": "plain"
+      }
+    ]
+  },
+  {
+    "label": "step 1",
+    "value": "b",
+    "context": {
+      "count": 2,
+      "total": 0
+    },
+    "status": "done",
+    "emitted": [],
+    "output": {
+      "kind": "xstate.done.state",
+      "summary": {
+        "count": 2,
+        "total": 0
+      }
+    }
+  }
+]
