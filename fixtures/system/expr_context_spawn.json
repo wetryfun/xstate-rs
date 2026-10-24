@@ -1,0 +1,168 @@
+{
+  "notes": "A root context code node that spawns (XState's context factory spawn): children allocated during the initial transition, before the initial state's invoke; their references kept in the context and used to send to them (now, delayed, after one finished); generated ids and _nextActorIds.",
+  "logic": [
+    {
+      "name": "kid",
+      "machine": {
+        "id": "kid",
+        "context": {
+          "@code": "contextFromInput",
+          "@lang": "rust"
+        },
+        "initial": "on",
+        "states": {
+          "on": {
+            "on": {
+              "PING": {
+                "context": {
+                  "count": {
+                    "@code": "countPlusOne",
+                    "@lang": "rust"
+                  }
+                },
+                "actions": [
+                  {
+                    "@code": "replyParent",
+                    "@lang": "rust"
+                  }
+                ]
+              },
+              "STOP": {
+                "target": "off"
+              }
+            }
+          },
+          "off": {
+            "type": "final",
+            "output": {
+              "@code": "summary",
+              "@lang": "rust"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "boss",
+      "machine": {
+        "id": "boss",
+        "context": {
+          "@code": "contextSpawning",
+          "@lang": "rust"
+        },
+        "initial": "idle",
+        "states": {
+          "idle": {
+            "invoke": {
+              "src": "kid",
+              "id": "invoked",
+              "input": {
+                "start": 50
+              }
+            },
+            "on": {
+              "PING_FIRST": {
+                "actions": [
+                  {
+                    "@code": "pingFirst",
+                    "@lang": "rust"
+                  }
+                ]
+              },
+              "PING_SECOND": {
+                "actions": [
+                  {
+                    "@code": "pingSecondLater",
+                    "@lang": "rust"
+                  }
+                ]
+              },
+              "FINISH": {
+                "actions": [
+                  {
+                    "@code": "finishFirst",
+                    "@lang": "rust"
+                  }
+                ]
+              },
+              "PONG": {
+                "context": {
+                  "pongs": {
+                    "@code": "pongsPlusOne",
+                    "@lang": "rust"
+                  }
+                },
+                "actions": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "ponged"
+                    }
+                  }
+                ]
+              },
+              "xstate.done.actor": {
+                "actions": [
+                  {
+                    "type": "@xstate.emit",
+                    "event": {
+                      "type": "child.done",
+                      "output": {
+                        "@code": "eventOutput",
+                        "@lang": "rust"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "actors": [
+        "kid"
+      ]
+    }
+  ],
+  "root": "boss",
+  "init": {
+    "input": {
+      "start": 7
+    }
+  },
+  "steps": [
+    {
+      "send": "boss",
+      "event": {
+        "type": "PING_FIRST"
+      }
+    },
+    {
+      "send": "boss",
+      "event": {
+        "type": "PING_SECOND"
+      }
+    },
+    {
+      "advance": 150
+    },
+    {
+      "send": "boss",
+      "event": {
+        "type": "FINISH"
+      }
+    },
+    {
+      "send": "boss",
+      "event": {
+        "type": "PING_FIRST"
+      }
+    },
+    {
+      "send": "boss",
+      "event": {
+        "type": "PING_SECOND"
+      }
+    }
+  ]
+}

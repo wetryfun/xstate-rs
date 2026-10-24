@@ -707,3 +707,33 @@ fn transition_functions_run_typed_with_enq() {
     actor.send(Event::Inc { by: 0 }, 0).unwrap();
     assert!(actor.matches("zero"));
 }
+
+#[test]
+fn context_expressions_spawn_children_or_fail_the_start() {
+    let kid = json!({ "id": "kid", "initial": "on", "states": { "on": {} } });
+    let mut r: Registry<Value, Value> = Registry::new();
+    r.context_with(
+        "two",
+        |a| json!({ "a": a.spawn("kid", SpawnOptions::default()), "b": a.spawn("kid", SpawnOptions::default()) }),
+    )
+    .context_with("unknown", |a| json!({ "a": a.spawn("nope", SpawnOptions::default()) }))
+    .context_with("twice", |a| {
+        let id = || SpawnOptions { id: Some("x".into()), ..Default::default() };
+        json!({ "a": a.spawn("kid", id()), "b": a.spawn("kid", id()) })
+    });
+    let kid: Arc<dyn Logic> = Arc::new(Machine::<Value, Value>::from_json(&kid, &Registry::new()).unwrap());
+    r.actor("kid", kid);
+    let start = |context: &str| {
+        let def = json!({ "id": "p", "context": { "@code": context, "@lang": "rust" }, "initial": "a", "states": { "a": {} } });
+        Actor::start(Arc::new(Machine::from_json(&def, &r).unwrap()), 0)
+    };
+    let actor = start("two").unwrap();
+    assert_eq!(
+        actor.context(),
+        &json!({ "a": { "$actor": "p/kid:0", "incarnation": "1" }, "b": { "$actor": "p/kid:1", "incarnation": "2" } })
+    );
+    let e = start("unknown").err().unwrap().to_string();
+    assert!(e.contains("Actor source 'nope' is not provided"), "{e}");
+    let e = start("twice").err().unwrap().to_string();
+    assert!(e.contains("Child actor id 'x' is already in use"), "{e}");
+}

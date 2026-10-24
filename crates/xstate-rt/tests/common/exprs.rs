@@ -187,6 +187,29 @@ pub fn register(r: &mut Registry<Value, Value>) {
         .context("retryContext", |input| {
             json!({ "name": input.and_then(|i| i.get("name")).cloned(), "attempts": 0, "recordId": null, "error": null })
         })
+        .context_with("contextSpawning", |a| {
+            let start = a.input.and_then(|i| i.get("start")).cloned().unwrap_or(json!(3));
+            let first = SpawnOptions { id: Some("first".into()), input: Some(json!({ "start": start })), ..Default::default() };
+            let third = SpawnOptions { input: Some(json!({ "start": 100 })), ..Default::default() };
+            json!({
+                "first": a.spawn("kid", first),
+                "second": a.spawn("kid", SpawnOptions::default()),
+                "third": a.spawn("kid", third),
+                "pongs": 0
+            })
+        })
+        .expr("pingFirst", |a| {
+            a.enq().unwrap().send_to_ref(&a.context["first"], json!({ "type": "PING" }));
+            Value::Null
+        })
+        .expr("pingSecondLater", |a| {
+            a.enq().unwrap().send_to_ref_delayed(&a.context["second"], json!({ "type": "PING" }), 100, Some("later"));
+            Value::Null
+        })
+        .expr("finishFirst", |a| {
+            a.enq().unwrap().send_to_ref(&a.context["first"], json!({ "type": "STOP" }));
+            Value::Null
+        })
         .context("contextFromInput", |input| {
             let start = input.and_then(|i| i.get("start")).cloned().unwrap_or(json!(0));
             json!({ "count": start, "total": 0, "attempts": 0, "items": [] })

@@ -99,7 +99,24 @@ export const exprs = {
   gaveUpOutput: ({ context }) => ({ ok: false, attempts: context.attempts }),
   retryContext: ({ input }) => ({ name: input.name, attempts: 0, recordId: null, error: null }),
   // Root `context` (scope: the actor's input).
-  contextFromInput: ({ input }) => ({ count: input?.start ?? 0, total: 0, attempts: 0, items: [] })
+  contextFromInput: ({ input }) => ({ count: input?.start ?? 0, total: 0, attempts: 0, items: [] }),
+  // Root `context` that spawns (XState's context factory scope: spawn, input,
+  // actors); references in the context, and sending to them.
+  contextSpawning: ({ spawn, actors, input }) => ({
+    first: spawn(actors.kid, { id: 'first', input: { start: input?.start ?? 3 } }),
+    second: spawn(actors.kid),
+    third: spawn(actors.kid, { input: { start: 100 } }),
+    pongs: 0
+  }),
+  pingFirst: ({ enq, context }) => {
+    enq.sendTo(context.first, { type: 'PING' });
+  },
+  pingSecondLater: ({ enq, context }) => {
+    enq.sendTo(context.second, { type: 'PING' }, { delay: 100, id: 'later' });
+  },
+  finishFirst: ({ enq, context }) => {
+    enq.sendTo(context.first, { type: 'STOP' });
+  }
 };
 
 export const evaluators = {

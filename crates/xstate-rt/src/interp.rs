@@ -28,7 +28,7 @@ use serde_json::{json, Map, Value};
 use crate::core::{self, Host, MicrostepResult, Nid, RegionOutput, Resolved, Resolver, TRef, Tid};
 use crate::event::{Ev, EventType, AFTER, DONE_STATE};
 use crate::machine::*;
-use crate::registry::{ActionFn, ChildIds, Enq, EnqOp, ExprArgs, GuardArgs, SendTarget, SpawnOptions};
+use crate::registry::{ActionFn, ChildIds, ContextArgs, Enq, EnqOp, ExprArgs, GuardArgs, SendTarget, SpawnOptions};
 use crate::system::{
     has_builtin_timer_identity, ActorRef, AfterDelay, AllocateOptions, AnySnapshot, Context, Effect, EffectKind,
     EffectType, ExternalSpec, Logic, Status, SystemError, TimerKey, Transition,
@@ -479,6 +479,81 @@ struct SpawnOp {
 struct SpawnAlloc {
     counters: Vec<(String, u64)>,
     explicit: Vec<String>,
+}
+
+/// `spawn` for a root context expression: XState's `createSpawner` in its
+/// context factory, which allocates each child at once (its id from the
+/// transaction's counters, as `allocateChildId`; an explicit id must be
+/// free, as `assertChildIdFree`).
+struct ContextSpawner<'a, 'c> {
+    actors: &'a [(String, Arc<dyn Logic>)],
+    cx: RefCell<&'a mut (dyn Context + 'c)>,
+    spawned: RefCell<Vec<(String, ActorRef)>>,
+    /// Generated ids' next index, by prefix (`_nextActorIds`).
+    counters: RefCell<Vec<(String, u64)>>,
+    error: RefCell<Option<SystemError>>,
+}
+
+impl ContextSpawner<'_, '_> {
+    fn fail(&self, message: String) -> Option<ActorRef> {
+        self.error.borrow_mut().get_or_insert(SystemError::Failed(message));
+        None
+    }
+}
+
+impl crate::registry::Spawner for ContextSpawner<'_, '_> {
+    fn spawn(&self, src: &str, options: SpawnOptions) -> Option<ActorRef> {
+        if self.error.borrow().is_some() {
+            return None;
+        }
+        let Some(logic) = self.actors.iter().find(|(name, _)| name == src).map(|(_, l)| l.clone()) else {
+            return self.fail(format!("Actor source '{src}' is not provided"));
+        };
+        let in_use = |id: &str| self.spawned.borrow().iter().any(|(taken, _)| taken == id);
+        let id = match &options.id {
+            Some(id) if in_use(id) => return self.fail(format!("Child actor id '{id}' is already in use")),
+            Some(id) => id.clone(),
+            None => {
+                let mut counters = self.counters.borrow_mut();
+                let entry = match counters.iter().position(|(p, _)| p == src) {
+                    Some(i) => &mut counters[i],
+                    None => {
+                        counters.push((src.to_owned(), 0));
+                        counters.last_mut().expect("pushed")
+                    }
+                };
+                let mut n = entry.1;
+                while in_use(&format!("{src}:{n}")) {
+                    n += 1;
+                }
+                entry.1 = n + 1;
+                format!("{src}:{n}")
+            }
+        };
+        let mut cx = self.cx.borrow_mut();
+        let parent = Some(cx.self_ref());
+        let allocated = cx.allocate(
+            &logic,
+            AllocateOptions {
+                id: id.clone(),
+                input: options.input,
+                parent,
+                registry_key: options.system_id,
+                sync_snapshot: options.sync_snapshot,
+            },
+        );
+        drop(cx);
+        match allocated {
+            Ok(child) => {
+                self.spawned.borrow_mut().push((id, child.clone()));
+                Some(child)
+            }
+            Err(e) => {
+                self.error.borrow_mut().get_or_insert(e);
+                None
+            }
+        }
+    }
 }
 
 /// The prefix of a generated child id (`<prefix>:<n>`), as XState's
@@ -1337,7 +1412,9 @@ where
                     }
                     let target = match &to {
                         SendTarget::Child(id) => self.st.children.get(id).cloned(),
+                        SendTarget::Ref(r) => Some(r.clone()),
                         SendTarget::Parent => self.cx.parent_ref(),
+                        SendTarget::Nowhere => None,
                     };
                     match (target, delay) {
                         (None, _) => out.ops.push(Op::DeadLetter(event)),
@@ -2536,17 +2613,58 @@ where
         if let Some(e) = &self.start_error {
             return Err(SystemError::Failed(e.clone()));
         }
+        let mut spawned = Vec::new();
+        let mut actor_ids = Vec::new();
         let context = match &self.initial_context {
             InitialContext::Value(c) => c.clone(),
             InitialContext::Template(t) => {
-                let value = t.eval(&mut |i| (self.context_exprs[i as usize])(input));
+                let spawner = ContextSpawner {
+                    actors: &self.actors,
+                    cx: RefCell::new(&mut *cx),
+                    spawned: RefCell::new(Vec::new()),
+                    counters: RefCell::new(Vec::new()),
+                    error: RefCell::new(None),
+                };
+                let args = ContextArgs { input, spawner: Some(&spawner) };
+                let value = t.eval(&mut |i| (self.context_exprs[i as usize])(&args));
+                if let Some(e) = spawner.error.into_inner() {
+                    return Err(e);
+                }
+                spawned = spawner.spawned.into_inner();
+                actor_ids = spawner.counters.into_inner();
                 C::deserialize(&value).map_err(|e| {
                     SystemError::Failed(format!("the computed context does not fit the context type: {e}"))
                 })?
             }
         };
         let mut st = State::new(context, &self.empty);
-        let effects = self.run_macrostep(&mut st, cx, MacroEvent::Init)?;
+        // Children the context factory spawned: allocated already, started
+        // with the actor, before anything its initial states invoke.
+        let mut effects = Vec::with_capacity(spawned.len());
+        if !spawned.is_empty() {
+            let children = Arc::make_mut(&mut st.children);
+            for (id, child) in spawned {
+                children.insert(id, child.clone());
+                effects.push(Effect::Spawn(child));
+            }
+        }
+        if !actor_ids.is_empty() {
+            st.actor_ids = Some(Box::new(actor_ids));
+        }
+        let rest = self.run_macrostep(&mut st, cx, MacroEvent::Init)?;
+        // They start first too, in the order of `children`.
+        let starts: Vec<Effect> = effects
+            .iter()
+            .filter_map(|e| match e {
+                Effect::Spawn(r) => Some(Effect::Start(r.clone())),
+                _ => None,
+            })
+            .collect();
+        let at = rest.iter().position(|e| matches!(e, Effect::Start(_))).unwrap_or(rest.len());
+        let mut rest = rest.into_iter();
+        effects.extend(rest.by_ref().take(at));
+        effects.extend(starts);
+        effects.extend(rest);
         Ok(Transition { snapshot: Box::new(st), effects })
     }
 

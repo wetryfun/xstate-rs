@@ -30,12 +30,13 @@ use serde_json::Value;
 use crate::core::Nid;
 use crate::event::Ev;
 use crate::machine::Machine;
+use crate::system::ActorRef;
 
 pub(crate) type GuardFn<C, E> = Box<dyn Fn(&GuardArgs<'_, C, E>) -> bool + Send + Sync>;
 pub(crate) type ActionFn = crate::system::EffectExec;
 pub(crate) type DelayFn<C, E> = Box<dyn Fn(&C, &Ev<E>) -> u64 + Send + Sync>;
 pub(crate) type ExprFn<C, E> = Arc<dyn Fn(&ExprArgs<'_, C, E>) -> Value + Send + Sync>;
-pub(crate) type ContextFn = Arc<dyn Fn(Option<&Value>) -> Value + Send + Sync>;
+pub(crate) type ContextFn = Arc<dyn Fn(&ContextArgs<'_>) -> Value + Send + Sync>;
 
 pub(crate) type Factory<T> = Arc<dyn Fn(&Value) -> Result<T, String> + Send + Sync>;
 
@@ -158,6 +159,10 @@ pub(crate) enum EnqOp {
 pub(crate) enum SendTarget {
     /// A child, by id (resolved when the operation runs).
     Child(String),
+    /// An actor by reference (a stopped one's events are dropped).
+    Ref(ActorRef),
+    /// Not an actor: the event is a dead letter.
+    Nowhere,
     /// The actor's parent (none for the root).
     Parent,
 }
@@ -210,6 +215,25 @@ impl Enq<'_> {
     /// with the child as its target, cancellable by `id`.
     pub fn send_to_delayed(&self, child: &str, event: Value, delay_ms: u64, id: Option<&str>) {
         self.push_send(SendTarget::Child(child.to_owned()), event, Some(delay_ms), id);
+    }
+
+    /// `enq.sendTo(ref, event)` with a reference kept in the context
+    /// ([`ContextArgs::spawn`]'s `{ "$actor", "incarnation" }`), or a child
+    /// id as a string; anything else makes the event a dead letter.
+    pub fn send_to_ref(&self, actor: &Value, event: Value) {
+        self.push_send(Self::target(actor), event, None, None);
+    }
+
+    /// [`Enq::send_to_ref`] after `delay_ms`, cancellable by `id`.
+    pub fn send_to_ref_delayed(&self, actor: &Value, event: Value, delay_ms: u64, id: Option<&str>) {
+        self.push_send(Self::target(actor), event, Some(delay_ms), id);
+    }
+
+    fn target(actor: &Value) -> SendTarget {
+        match actor {
+            Value::String(child) => SendTarget::Child(child.clone()),
+            other => ActorRef::from_json(other).map_or(SendTarget::Nowhere, SendTarget::Ref),
+        }
     }
 
     /// `enq.sendTo(self._parent, event)` (a dead letter from the root).
@@ -424,7 +448,46 @@ impl<C: 'static, E: 'static> Registry<C, E> {
         name: impl Into<String>,
         f: impl Fn(Option<&Value>) -> Value + Send + Sync + 'static,
     ) -> &mut Self {
+        self.contexts.insert(name.into(), Arc::new(move |args: &ContextArgs<'_>| f(args.input)));
+        self
+    }
+
+    /// [`Registry::context`] with XState's whole context factory scope:
+    /// the input and `spawn` ([`ContextArgs`]).
+    pub fn context_with(
+        &mut self,
+        name: impl Into<String>,
+        f: impl Fn(&ContextArgs<'_>) -> Value + Send + Sync + 'static,
+    ) -> &mut Self {
         self.contexts.insert(name.into(), Arc::new(f));
         self
+    }
+}
+
+/// Spawns children for a context factory (the machine's initial transition).
+pub(crate) trait Spawner {
+    fn spawn(&self, src: &str, options: SpawnOptions) -> Option<ActorRef>;
+}
+
+/// What a root `context` expression sees: XState's context factory
+/// arguments, the actor's input and `spawn`.
+pub struct ContextArgs<'a> {
+    pub input: Option<&'a Value>,
+    pub(crate) spawner: Option<&'a dyn Spawner>,
+}
+
+impl ContextArgs<'_> {
+    /// XState's context factory `spawn(src, options)`: a child running the
+    /// registered actor logic `src` (an invoke source of this machine),
+    /// allocated now and started with the actor. Returns its reference as
+    /// XState persists it, `{ "$actor": address, "incarnation": "<n>" }`:
+    /// keep it in the context to send to the child ([`Enq::send_to_ref`]).
+    /// An unknown source or an explicit id in use fails the actor's start
+    /// (and this returns `null`).
+    pub fn spawn(&self, src: &str, options: SpawnOptions) -> Value {
+        match self.spawner.and_then(|s| s.spawn(src, options)) {
+            Some(r) => r.to_json(),
+            None => Value::Null,
+        }
     }
 }
