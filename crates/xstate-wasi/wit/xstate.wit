@@ -25,6 +25,20 @@ interface implementations {
   /// An expression in the root `context`, computed from the actor's input
   /// (absent without one) when it starts. The result is JSON.
   context-expr: func(name: string, input: option<string>) -> string;
+
+  /// A code node in a language other than `rust`, as XState hands it to
+  /// `sources.evaluators[lang]`: `code` is `{ "id", "lang", "source",
+  /// "kind" ("code" | "expr"), "slot", "path" }`, `scope` XState's scope
+  /// (`{ "context", "event", "input"?, "params"?, "self", "parent"?,
+  /// "children"?, "enq" }`, `enq` telling whether XState's scope has it; for
+  /// the root context `{ "input"?, "self" }`), actor references as
+  /// `{ "$actor", "incarnation" }`. Returns `{ "value"?, "enq"?, "error"? }`:
+  /// the result (absent for `undefined`), the `enq` calls made, in order, as
+  /// `[op, ...args]` (`raise`, `emit`, `cancel`, `log`, `sendTo`, `stop`,
+  /// `action` for `enq(actions.name, params)`; not `spawn`), or the message
+  /// of an exception, which fails the step. Only called for definitions
+  /// with such code nodes.
+  evaluate: func(code: string, scope: string) -> string;
 }
 
 /// Machines as actors. The runtime never reads a clock: every call that can

@@ -2,8 +2,8 @@
 //! definitions with `xstate-rt`. See `wit/xstate.wit` for the interface.
 //!
 //! The component is generic: it loads any `MachineJSON` at run time. Custom
-//! guards, actions, named delays and expressions are imports the host
-//! implements; child
+//! guards, actions, named delays, expressions and the evaluators of code
+//! nodes in other languages (`evaluate`) are imports the host implements; child
 //! machines for `invoke` come with the start options, and any other invoke
 //! source is async work the host completes through `resolve-effect`.
 //!
@@ -15,7 +15,7 @@ use std::sync::Arc;
 
 use serde_json::{json, Map, Value};
 use xstate_rt::step::async_logic;
-use xstate_rt::{Actor as RtActor, InitOptions, Logic, Machine, Registry, Status};
+use xstate_rt::{Actor as RtActor, HostEvaluator, InitOptions, Logic, Machine, Registry, Status};
 
 wit_bindgen::generate!({ world: "runtime", path: "wit" });
 
@@ -135,6 +135,9 @@ fn compile(definition: &Value, children: &Map<String, Value>, depth: usize) -> R
             let input = input.map(Value::to_string);
             serde_json::from_str(&host::context_expr(&name, input.as_deref())).unwrap_or(Value::Null)
         });
+    }
+    for r in &refs.languages {
+        registry.evaluator(r.name.clone(), HostEvaluator(|code: &str, scope: &str| host::evaluate(code, scope)));
     }
     for r in &refs.actors {
         if seen.insert(("actor", r.name.clone())) {

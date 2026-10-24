@@ -60,7 +60,11 @@ A run is one execution lineage of a machine, driven only by ordered events.
 - **Engines.** `xstateEngine()`, `nativeEngine({ addon })` and
   `wasiEngine({ actors })` all implement XState's pure system semantics and
   persist XState's `SystemSnapshot` JSON, so a run's state moves between
-  engines (tested in every direction).
+  engines (tested in every direction). JavaScript code nodes (`@lang` `js`,
+  or `ts` as `machineToJSON` writes inline functions) run on all three as
+  XState's own evaluators run them (`jsEvaluators()` for the XState engine,
+  `jsEvaluate()` for the others, both defaults); on the native and WASI
+  engines `enq.spawn` is not available to them.
 - **Async work.** An invoked async actor's work waits as an external
   effect, listed in `snapshot.work` (`{ id, actor, src, input }`), and
   completes through an input event: `resolved(id, data)` / `rejected(id,

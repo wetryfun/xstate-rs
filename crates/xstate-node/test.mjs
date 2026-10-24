@@ -174,7 +174,7 @@ test('errors carry the same messages as the WASI component', () => {
   assert.throws(() => Actor.start('{', '', 0), /^Error: invalid definition JSON: /);
   assert.throws(() => Actor.restore(json(plain()), '', 'nope'), /^Error: invalid snapshot JSON: /);
   const ts = { id: 'x', initial: 'a', states: { a: { entry: { '@code': '() => {}', '@lang': 'ts' } } } };
-  assert.throws(() => Actor.start(json(ts), '', 0), /@code/);
+  assert.throws(() => Actor.start(json(ts), '', 0), /implementations\.evaluate is missing/);
 
   const looping = {
     id: 'loop',
@@ -357,4 +357,33 @@ test('a callback cannot re-enter its own actor, but may use another', () => {
   a.send(json({ type: 'car', n: 1 }), 1);
   assert.equal(seen, 'waiting / the actor is busy: an implementation called back into it');
   assert.equal(parse(a.snapshot()).value, 'yellow');
+});
+
+test('code nodes in other languages go to evaluate, with enq calls replayed', () => {
+  const seen = [];
+  const evaluate = (code, scope) => {
+    const { source, slot, path } = JSON.parse(code);
+    const s = JSON.parse(scope);
+    seen.push([slot, path, s.enq ?? null]);
+    if (source === 'next') return json({ value: s.context.n + 1 });
+    if (source === 'announce') return json({ enq: [['emit', { type: 'n', n: s.context.n }]] });
+    return json({ error: `no ${source}` });
+  };
+  const definition = {
+    id: 'calc',
+    '@exprLang': 'calc',
+    context: { n: 0 },
+    initial: 'a',
+    states: { a: { on: { inc: { context: { n: { '@expr': 'next' } }, actions: [{ '@code': 'announce' }] }, bad: { guard: { '@expr': 'nope' } } } } },
+  };
+  const a = Actor.start(json(definition), '', 0, { evaluate });
+  a.send(json({ type: 'inc' }), 0);
+  assert.equal(JSON.parse(a.snapshot()).context.n, 1);
+  assert.deepEqual(a.takeEmitted().map((e) => JSON.parse(e)), [{ type: 'n', n: 1 }]);
+  assert.deepEqual(seen, [
+    ['transitionContext', '$.states.a.on.inc.context.n', false],
+    ['action', '$.states.a.on.inc.actions[0]', true],
+  ]);
+  // What the code throws fails the step (the actor stays usable, in error).
+  assert.throws(() => a.send(json({ type: 'bad' }), 0), { message: 'no nope' });
 });

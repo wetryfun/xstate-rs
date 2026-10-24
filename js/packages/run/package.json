@@ -8,7 +8,8 @@
     ".": { "source": "./src/index.ts", "types": "./dist/index.d.ts", "default": "./dist/index.js" },
     "./xstate": { "source": "./src/engines/xstate.ts", "types": "./dist/engines/xstate.d.ts", "default": "./dist/engines/xstate.js" },
     "./native": { "source": "./src/engines/native.ts", "types": "./dist/engines/native.d.ts", "default": "./dist/engines/native.js" },
-    "./wasi": { "source": "./src/engines/wasi.ts", "types": "./dist/engines/wasi.d.ts", "default": "./dist/engines/wasi.js" }
+    "./wasi": { "source": "./src/engines/wasi.ts", "types": "./dist/engines/wasi.d.ts", "default": "./dist/engines/wasi.js" },
+    "./evaluate": { "source": "./src/engines/evaluate.ts", "types": "./dist/engines/evaluate.d.ts", "default": "./dist/engines/evaluate.js" }
   },
   "files": ["dist", "src"],
   "dependencies": { "@xmachines/streams": "0.1.0" },

@@ -7,6 +7,9 @@
  */
 import type { Engine } from '../engine.ts';
 import { runtimeMachine, type RuntimeActor } from './component.ts';
+import { jsEvaluate } from './evaluate.ts';
+
+export { jsEvaluate } from './evaluate.ts';
 
 /** The component's `actors` export, as jco's `instantiate` returns it. */
 export interface ComponentActors {
@@ -23,6 +26,8 @@ export interface Implementations {
   delay?(name: string, context: string, event: string): bigint;
   expr?(name: string, scope: string): string;
   contextExpr?(name: string, input: string | undefined): string;
+  /** Code nodes in languages other than `rust` (default: `js` and `ts`, see `jsEvaluate`). */
+  evaluate?(code: string, scope: string): string;
 }
 
 /** The parts of `@bytecodealliance/preview2-shim` the component imports. */
@@ -66,6 +71,7 @@ export function componentImports(shim: Preview2Shim, implementations: Implementa
       delay: implementations.delay ?? missing('delay'),
       expr: implementations.expr ?? missing('expression'),
       contextExpr: implementations.contextExpr ?? missing('context expression'),
+      evaluate: implementations.evaluate ?? jsEvaluate(),
     },
   };
 }

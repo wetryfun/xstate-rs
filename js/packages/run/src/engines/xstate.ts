@@ -20,11 +20,16 @@ import {
   type AnyStateMachine,
 } from 'xstate';
 import type { Engine, EngineInstance, EngineMachine, Event, RootState, StartOptions, Step } from '../engine.ts';
+import { jsEvaluators } from './evaluate.ts';
 
 type Sources = Parameters<typeof machineFromJSON>[1];
 
 export interface XStateEngineOptions {
-  /** What `machineFromJSON` needs for names the definition does not define (guards, delays, actors, evaluators). */
+  /**
+   * What `machineFromJSON` needs for names the definition does not define
+   * (guards, delays, actors, evaluators). Evaluators for `js` and `ts` are
+   * there unless given: XState's own convention (`jsEvaluators`).
+   */
   readonly sources?: Sources;
   /** Custom actions, by name: called with the action's params when the effect runs. */
   readonly actions?: Readonly<Record<string, (params: unknown) => void>>;
@@ -74,9 +79,10 @@ function invokeSources(node: unknown, out = new Set<string>()): Set<string> {
  * machine.
  */
 function withWork(definition: object, sources: Sources): Sources {
-  const actors: Record<string, unknown> = { ...(sources as { actors?: Record<string, unknown> } | undefined)?.actors };
+  const given = sources as { actors?: Record<string, unknown>; evaluators?: Record<string, unknown> } | undefined;
+  const actors: Record<string, unknown> = { ...given?.actors };
   for (const src of invokeSources(definition)) actors[src] ??= createAsyncLogic({ run: async () => undefined });
-  return { ...sources, actors } as Sources;
+  return { ...sources, actors, evaluators: { ...jsEvaluators(), ...given?.evaluators } } as Sources;
 }
 
 const isMachine = (m: object): m is AnyStateMachine => typeof (m as { transition?: unknown }).transition === 'function';

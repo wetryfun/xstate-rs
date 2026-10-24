@@ -35,6 +35,8 @@ struct Host {
     table: ResourceTable,
     actions: Vec<(String, Option<Value>)>,
     guard_calls: Vec<(String, Option<Value>, Value, Value)>,
+    /// Code nodes the host evaluated: `(slot, path, scope)`.
+    evaluated: Vec<(String, String, Value)>,
 }
 
 impl WasiView for Host {
@@ -76,6 +78,27 @@ impl xstate::runtime::implementations::Host for Host {
         .to_string()
     }
 
+    /// The `calc` language: a few named sources.
+    fn evaluate(&mut self, code: String, scope: String) -> String {
+        let code: Value = serde_json::from_str(&code).unwrap();
+        let scope: Value = serde_json::from_str(&scope).unwrap();
+        assert_eq!(code["lang"], "calc");
+        self.evaluated.push((
+            code["slot"].as_str().unwrap().into(),
+            code["path"].as_str().unwrap().into(),
+            scope.clone(),
+        ));
+        match code["source"].as_str().unwrap() {
+            "start" => json!({ "value": { "n": scope["input"]["n"], "me": scope["self"]["$actor"] } }),
+            "small" => json!({ "value": scope["context"]["n"].as_u64() < Some(3) }),
+            "next" => json!({ "value": scope["context"]["n"].as_u64().unwrap() + 1 }),
+            "announce" => json!({ "enq": [["emit", { "type": "n", "n": scope["context"]["n"] }], ["raise", { "type": "later" }, { "delay": 10, "id": "l" }]] }),
+            "boom" => json!({ "error": "boom" }),
+            other => panic!("unexpected source {other}"),
+        }
+        .to_string()
+    }
+
     fn context_expr(&mut self, name: String, input: Option<String>) -> String {
         assert_eq!(name, "fromInput");
         let input: Value = input.map_or(Value::Null, |i| serde_json::from_str(&i).unwrap());
@@ -107,6 +130,7 @@ impl Rt {
             table: ResourceTable::new(),
             actions: Vec::new(),
             guard_calls: Vec::new(),
+            evaluated: Vec::new(),
         };
         let mut store = Store::new(engine, host);
         let world = Runtime::instantiate(&mut store, &component, &linker).expect("instantiates");
@@ -268,6 +292,44 @@ fn expressions_come_from_the_host() {
 }
 
 #[test]
+fn code_nodes_in_other_languages_go_to_the_host_evaluator() {
+    let definition = json!({
+        "id": "calc", "@exprLang": "calc",
+        "context": { "@code": "start" },
+        "initial": "a",
+        "states": { "a": { "on": {
+            "inc": { "guard": { "@expr": "small" }, "context": { "n": { "@expr": "next" } }, "actions": [{ "@code": "announce" }] },
+            "bad": { "guard": { "@expr": "boom" } }
+        } } }
+    });
+    let mut rt = Rt::new();
+    let a = rt.start(&definition, &json!({ "input": { "n": 2 } }), 0).unwrap();
+    assert_eq!(rt.snapshot(a)["context"], json!({ "n": 2, "me": "calc" }));
+    rt.send(a, json!({ "type": "inc" }), 0).unwrap();
+    assert_eq!(rt.snapshot(a)["context"]["n"], 3);
+    assert_eq!(rt.take_emitted(a), vec![json!({ "type": "n", "n": 3 })]);
+    assert_eq!(rt.next_deadline(a), Some(10));
+    let seen: Vec<(String, String)> =
+        rt.store.data().evaluated.iter().map(|(s, p, _)| (s.clone(), p.clone())).collect();
+    assert_eq!(
+        seen,
+        [
+            ("context", "$.context"),
+            ("guard", "$.states.a.on.inc.guard"),
+            ("transitionContext", "$.states.a.on.inc.context.n"),
+            ("action", "$.states.a.on.inc.actions[0]"),
+        ]
+        .map(|(s, p)| (s.to_owned(), p.to_owned()))
+    );
+    let scopes = &rt.store.data().evaluated;
+    assert_eq!(scopes[1].2["enq"], false);
+    assert_eq!(scopes[3].2["enq"], true);
+    assert_eq!(scopes[3].2["event"], json!({ "type": "inc" }));
+    // What the evaluator throws fails the step.
+    assert_eq!(rt.send(a, json!({ "type": "bad" }), 0), Err("boom".into()));
+}
+
+#[test]
 fn persist_and_restore_across_instances() {
     let mut rt = Rt::new();
     let a = rt.start(&light(), &json!({}), 0).unwrap();
@@ -344,10 +406,10 @@ fn invoked_work_is_done_by_the_host_or_by_child_machines() {
 #[test]
 fn errors_are_reported_as_strings() {
     let mut rt = Rt::new();
-    let code =
-        json!({ "id": "x", "initial": "a", "states": { "a": { "entry": { "@code": "() => {}", "@lang": "ts" } } } });
+    // A code node needs a language.
+    let code = json!({ "id": "x", "initial": "a", "states": { "a": { "entry": { "@code": "() => {}" } } } });
     let err = rt.start(&code, &json!({}), 0).unwrap_err();
-    assert!(err.contains("@code"), "{err}");
+    assert!(err.contains("@exprLang"), "{err}");
     let err = rt.start(&light(), &json!({ "bogus": 1 }), 0).unwrap_err();
     assert!(err.contains("unknown option"), "{err}");
 

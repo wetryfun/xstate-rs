@@ -24,12 +24,14 @@
 //!   delay?(name: string, context: string, event: string): number
 //!   expr?(name: string, scope: string): string
 //!   contextExpr?(name: string, input: string | undefined): string
+//!   evaluate?(code: string, scope: string): string
 //! }
 //! ```
 //!
 //! Like the component, the addon is generic: it loads any `MachineJSON` at run
-//! time. Custom guards, actions, named delays and expressions are the
-//! `implementations` callbacks, which receive and return JSON text exactly as
+//! time. Custom guards, actions, named delays, expressions and the evaluator
+//! of code nodes in other languages (`evaluate`, see `xstate_rt::HostEvaluator`)
+//! are the `implementations` callbacks, which receive and return JSON text exactly as
 //! the WIT `implementations` interface does; child machines for `invoke` come
 //! with the start options, and any other invoke source is async work the
 //! caller completes through `resolveEffect`.
@@ -55,7 +57,7 @@ use napi::{sys, Env, JsValue, ValueType};
 use napi_derive::napi;
 use serde_json::{json, Map, Value};
 use xstate_rt::step::async_logic;
-use xstate_rt::{Actor as RtActor, InitOptions, Logic, Machine, Registry, Status};
+use xstate_rt::{Actor as RtActor, HostEvaluator, InitOptions, Logic, Machine, Registry, Status};
 
 /// Children may invoke children; a cycle of child definitions is an error.
 const MAX_CHILD_DEPTH: usize = 32;
@@ -124,6 +126,7 @@ type ActionRef = FunctionRef<FnArgs<(String, Either<String, Undefined>)>, Unknow
 type DelayRef = FunctionRef<FnArgs<(String, String, String)>, Unknown<'static>>;
 type ExprRef = FunctionRef<FnArgs<(String, String)>, Unknown<'static>>;
 type ContextExprRef = FunctionRef<FnArgs<(String, Either<String, Undefined>)>, Unknown<'static>>;
+type EvaluateRef = FunctionRef<FnArgs<(String, String)>, Unknown<'static>>;
 
 /// The `implementations` callbacks of one actor, each bound to the object it
 /// came from (so they may use `this`). The registry closures share them.
@@ -134,6 +137,7 @@ struct Callbacks {
     delay: Option<DelayRef>,
     expr: Option<ExprRef>,
     context_expr: Option<ContextExprRef>,
+    evaluate: Option<EvaluateRef>,
 }
 
 /// One callback of `implementations`, bound to it: `None` when absent
@@ -164,6 +168,7 @@ impl Callbacks {
             delay: callback(&o, "delay")?,
             expr: callback(&o, "expr")?,
             context_expr: callback(&o, "contextExpr")?,
+            evaluate: callback(&o, "evaluate")?,
         })
     }
 }
@@ -303,6 +308,26 @@ fn compile(
                 json_result("contextExpr", &name, result)
             })
         });
+    }
+    for r in &refs.languages {
+        if callbacks.evaluate.is_none() {
+            return Err(missing("code in language", &r.name, "evaluate"));
+        }
+        let cb = callbacks.clone();
+        registry.evaluator(
+            r.name.clone(),
+            HostEvaluator(move |code: &str, scope: &str| {
+                let args = (code.to_owned(), scope.to_owned());
+                call_js(|env| {
+                    let result = cb.evaluate.as_ref().unwrap().borrow_back(env)?.call(args.into())?;
+                    if result.get_type()? != ValueType::String {
+                        return Err(napi::Error::from_reason("evaluate must return a JSON string"));
+                    }
+                    // SAFETY: the value was just checked to be a string.
+                    unsafe { result.cast::<String>() }
+                })
+            }),
+        );
     }
     for r in &refs.actors {
         if seen.insert(("actor", r.name.clone())) {

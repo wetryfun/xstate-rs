@@ -5,6 +5,9 @@
  */
 import type { Engine } from '../engine.ts';
 import { runtimeMachine, type RuntimeActor } from './component.ts';
+import { jsEvaluate } from './evaluate.ts';
+
+export { jsEvaluate } from './evaluate.ts';
 
 /** What the machine's named references call (values as JSON text), like the WASI component's imports. */
 export interface NativeImplementations {
@@ -13,6 +16,8 @@ export interface NativeImplementations {
   delay?(name: string, context: string, event: string): number;
   expr?(name: string, scope: string): string;
   contextExpr?(name: string, input: string | undefined): string;
+  /** Code nodes in languages other than `rust` (default: `js` and `ts`, see `jsEvaluate`). */
+  evaluate?(code: string, scope: string): string;
 }
 
 /** The addon's exports. */
@@ -34,10 +39,10 @@ export interface NativeEngineOptions {
 /** The xstate-rs runtime, natively, as an engine. */
 export function nativeEngine(options: NativeEngineOptions): Engine {
   const { Actor } = options.addon;
-  const impl = options.implementations;
+  const impl: NativeImplementations = { evaluate: jsEvaluate(), ...options.implementations };
   const binding = {
-    start: (d: string, o: string, now: number) => (impl ? Actor.start(d, o, now, impl) : Actor.start(d, o, now)),
-    restore: (d: string, o: string, s: string) => (impl ? Actor.restore(d, o, s, impl) : Actor.restore(d, o, s)),
+    start: (d: string, o: string, now: number) => Actor.start(d, o, now, impl),
+    restore: (d: string, o: string, s: string) => Actor.restore(d, o, s, impl),
     time: (ms: number) => Math.floor(ms),
   };
   return { name: 'native', load: (definition) => runtimeMachine(binding, definition, options.options) };

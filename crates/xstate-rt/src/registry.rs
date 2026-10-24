@@ -83,6 +83,33 @@ pub struct ExprArgs<'a, C, E> {
     pub(crate) error: &'a RefCell<Option<String>>,
 }
 
+impl<C: serde::Serialize, E: crate::event::EventType> ExprArgs<'_, C, E> {
+    /// XState's evaluator scope as JSON, for evaluators in other runtimes:
+    /// `{ "context", "event", "input"?, "params"?, "self", "parent"?,
+    /// "children"? }` (actor references as `{ "$actor", "incarnation" }`).
+    pub fn scope_json(&self) -> Result<Value, String> {
+        let mut scope = serde_json::Map::new();
+        let context = serde_json::to_value(self.context).map_err(|e| format!("the context does not serialize: {e}"))?;
+        scope.insert("context".into(), context);
+        scope.insert("event".into(), self.event.to_json());
+        if let Some(input) = self.input {
+            scope.insert("input".into(), input.clone());
+        }
+        if let Some(params) = self.params {
+            scope.insert("params".into(), params.clone());
+        }
+        scope.insert("self".into(), self.self_ref().to_json());
+        if let Some(parent) = self.parent_ref() {
+            scope.insert("parent".into(), parent.to_json());
+        }
+        if !self.children.is_empty() {
+            let children = self.children.iter().map(|(id, r)| (id.clone(), r.to_json())).collect();
+            scope.insert("children".into(), Value::Object(children));
+        }
+        Ok(Value::Object(scope))
+    }
+}
+
 impl<C, E> ExprArgs<'_, C, E> {
     /// The actor's children by id (XState's `children`).
     pub fn children(&self) -> &IndexMap<String, ActorRef> {
@@ -314,6 +341,84 @@ impl Enq<'_> {
 
     pub(crate) fn take(&self) -> Vec<EnqOp> {
         std::mem::take(&mut self.ops.borrow_mut())
+    }
+
+    /// An `enq` call as JSON, as a JavaScript evaluator makes it: `op` names
+    /// the method (`raise`, `emit`, `cancel`, `log`, `sendTo`, `stop`,
+    /// `spawn`, and `action` for `enq(actions.name, params)`) and `args` are
+    /// its arguments (`log`'s as one array). A target is a child's id, a
+    /// reference (`{ "$actor", "incarnation" }`) or `{ "id" }`; options are
+    /// XState's (`{ delay, id }`, spawn's `{ id, input, systemId,
+    /// syncSnapshot }`). Returns what the call returns (`spawn`: the id).
+    pub fn call(&self, op: &str, args: &[Value]) -> Result<Option<Value>, String> {
+        let arg = |i: usize| args.get(i).cloned().unwrap_or(Value::Null);
+        let delay = |options: &Value| {
+            let ms = options.get("delay")?.as_f64()?;
+            Some(if ms > 0.0 { ms.ceil() as u64 } else { 0 })
+        };
+        match op {
+            "action" => {
+                let name = arg(0);
+                let name = name.as_str().ok_or("enq(action, params): name the action as actions.<name>")?;
+                self.action(name, arg(1));
+            }
+            "raise" => {
+                let options = arg(1);
+                match delay(&options) {
+                    Some(ms) => self.raise_delayed(arg(0), ms, options.get("id").and_then(Value::as_str)),
+                    None => self.raise(arg(0)),
+                }
+            }
+            "emit" => self.emit(arg(0)),
+            "cancel" => self.cancel(arg(0).as_str().unwrap_or_default()),
+            "log" => self.log(match arg(0) {
+                Value::Array(items) => items,
+                other => vec![other],
+            }),
+            "sendTo" => {
+                // A reference (`$actor`), or a child by id (a string or `{ id }`).
+                let target = match arg(0) {
+                    Value::Object(o) if !o.contains_key("$actor") => o.get("id").cloned().unwrap_or(Value::Null),
+                    Value::Object(mut o) => {
+                        o.remove("id");
+                        Value::Object(o)
+                    }
+                    other => other,
+                };
+                let options = arg(2);
+                match delay(&options) {
+                    Some(ms) => {
+                        self.send_to_ref_delayed(&target, arg(1), ms, options.get("id").and_then(Value::as_str))
+                    }
+                    None => self.send_to_ref(&target, arg(1)),
+                }
+            }
+            "stop" => {
+                let target = arg(0);
+                if let Some(id) = target.as_str().or_else(|| target.get("id").and_then(Value::as_str)) {
+                    self.stop(id);
+                }
+            }
+            "spawn" => {
+                let src = arg(0);
+                let src = src.as_str().ok_or("enq.spawn: the source must be a string (actors.<name>)")?;
+                return Ok(Some(Value::String(self.spawn(src, SpawnOptions::from_json(&arg(1))))));
+            }
+            other => return Err(format!("enq.{other} is not supported")),
+        }
+        Ok(None)
+    }
+}
+
+impl SpawnOptions {
+    /// XState's spawn options as JSON: `{ id, input, systemId, syncSnapshot }`.
+    pub fn from_json(options: &Value) -> Self {
+        Self {
+            id: options.get("id").and_then(Value::as_str).map(str::to_owned),
+            input: options.get("input").cloned(),
+            system_id: options.get("systemId").and_then(Value::as_str).map(str::to_owned),
+            sync_snapshot: options.get("syncSnapshot").and_then(Value::as_bool),
+        }
     }
 }
 
@@ -654,5 +759,73 @@ where
 impl<C, E> Evaluator<C, E> for Arc<dyn Evaluator<C, E>> {
     fn eval(&self, code: &Code, scope: Scope<'_, '_, C, E>) -> Result<Value, String> {
         (**self).eval(code, scope)
+    }
+}
+
+/// An evaluator in another runtime, reached through JSON text (the WASI
+/// component's `evaluate` import, the Node addon's `evaluate` callback):
+/// `f(code, scope)` gets the code node (`{ "id", "lang", "source", "kind",
+/// "slot", "path" }`) and XState's scope (see [`ExprArgs::scope_json`], with
+/// `"enq": true` where XState's scope has `enq`; for the root `context`,
+/// `{ "input"?, "self"? }`), and returns `{ "value"?, "enq"?: [[op,
+/// ...args], ...], "error"? }`: the result (absent for `undefined`), the
+/// `enq` calls it made, in order ([`Enq::call`]), or the message of what it
+/// threw. `spawn` (in `enq` and in the root `context`) needs ids from this
+/// runtime while the code runs, so such evaluators cannot offer it.
+pub struct HostEvaluator<F>(pub F);
+
+impl<F> HostEvaluator<F> {
+    fn code_json(code: &Code) -> String {
+        serde_json::json!({
+            "id": code.id,
+            "lang": code.lang,
+            "source": code.source,
+            "kind": code.kind.as_str(),
+            "slot": code.slot.as_str(),
+            "path": code.path,
+        })
+        .to_string()
+    }
+}
+
+impl<C, E, F> Evaluator<C, E> for HostEvaluator<F>
+where
+    C: serde::Serialize,
+    E: crate::event::EventType,
+    F: Fn(&str, &str) -> String + Send + Sync,
+{
+    fn eval(&self, code: &Code, scope: Scope<'_, '_, C, E>) -> Result<Value, String> {
+        let (scope, enq) = match scope {
+            Scope::Expr(a) => {
+                let mut json = a.scope_json()?;
+                json["enq"] = Value::Bool(a.enq.is_some());
+                (json, a.enq)
+            }
+            Scope::Context(a) => {
+                let mut json = serde_json::Map::new();
+                if let Some(input) = a.input {
+                    json.insert("input".into(), input.clone());
+                }
+                if let Some(r) = a.self_ref() {
+                    json.insert("self".into(), r.to_json());
+                }
+                (Value::Object(json), None)
+            }
+        };
+        let out = (self.0)(&Self::code_json(code), &scope.to_string());
+        let mut out: Value =
+            serde_json::from_str(&out).map_err(|e| format!("the evaluator's result is not JSON: {e}"))?;
+        if let Some(error) = out.get("error") {
+            return Err(error.as_str().map_or_else(|| error.to_string(), str::to_owned));
+        }
+        if let Some(Value::Array(calls)) = out.get("enq") {
+            let enq = enq.filter(|_| !calls.is_empty()).ok_or("enq is not available here");
+            for call in calls {
+                let parts = call.as_array().ok_or("an enq call is [op, ...args]")?;
+                let op = parts.first().and_then(Value::as_str).ok_or("an enq call is [op, ...args]")?;
+                enq?.call(op, &parts[1..])?;
+            }
+        }
+        Ok(out.get_mut("value").map(Value::take).unwrap_or(Value::Null))
     }
 }

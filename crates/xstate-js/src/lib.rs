@@ -310,76 +310,17 @@ fn bridge<'js>(ctx: Ctx<'js>, op: String, args: String) -> rquickjs::Result<Opti
     }
 }
 
-fn apply(live: &Live<'_>, op: &str, mut args: Vec<Value>) -> Result<Option<Value>, String> {
-    args.resize(3, Value::Null);
-    let mut args = args.into_iter();
-    let (a, b, c) = (args.next().unwrap_or_default(), args.next().unwrap_or_default(), args.next().unwrap_or_default());
+fn apply(live: &Live<'_>, op: &str, args: Vec<Value>) -> Result<Option<Value>, String> {
     if op == "refs" {
         return Ok(live.refs.map(|refs| refs()));
     }
     if op == "spawnContext" {
         let cx = live.context.ok_or("spawn is only available in the root context")?;
-        let src = a.as_str().ok_or("spawn: the source must be a string (actors.<name>)")?;
-        return Ok(Some(cx.spawn(src, spawn_options(&b))));
+        let src = args.first().and_then(Value::as_str).ok_or("spawn: the source must be a string (actors.<name>)")?;
+        let options = args.get(1).map(SpawnOptions::from_json).unwrap_or_default();
+        return Ok(Some(cx.spawn(src, options)));
     }
-    let enq = live.enq.ok_or_else(|| format!("enq.{op} is not available here"))?;
-    match op {
-        "action" => {
-            let name = a.as_str().ok_or("enq(action): name the action as actions.<name>")?;
-            enq.action(name, b);
-        }
-        "raise" => match delay(&b) {
-            Some(ms) => enq.raise_delayed(a, ms, b.get("id").and_then(Value::as_str)),
-            None => enq.raise(a),
-        },
-        "emit" => enq.emit(a),
-        "cancel" => enq.cancel(a.as_str().unwrap_or_default()),
-        "log" => enq.log(match a {
-            Value::Array(items) => items,
-            other => vec![other],
-        }),
-        "sendTo" => {
-            // A ref (`$actor`), or a child by id (a string or `{ id }`).
-            let target = match &a {
-                Value::Object(o) if !o.contains_key("$actor") => o.get("id").cloned().unwrap_or(Value::Null),
-                Value::Object(o) => {
-                    let mut r = o.clone();
-                    r.remove("id");
-                    Value::Object(r)
-                }
-                other => other.clone(),
-            };
-            match delay(&c) {
-                Some(ms) => enq.send_to_ref_delayed(&target, b, ms, c.get("id").and_then(Value::as_str)),
-                None => enq.send_to_ref(&target, b),
-            }
-        }
-        "stop" => {
-            if let Some(id) = a.as_str().or_else(|| a.get("id").and_then(Value::as_str)) {
-                enq.stop(id);
-            }
-        }
-        "spawn" => {
-            let src = a.as_str().ok_or("enq.spawn: the source must be a string (actors.<name>)")?;
-            return Ok(Some(Value::String(enq.spawn(src, spawn_options(&b)))));
-        }
-        other => return Err(format!("enq.{other} is not supported")),
-    }
-    Ok(None)
-}
-
-fn delay(options: &Value) -> Option<u64> {
-    let ms = options.get("delay")?.as_f64()?;
-    Some(if ms > 0.0 { ms.ceil() as u64 } else { 0 })
-}
-
-fn spawn_options(options: &Value) -> SpawnOptions {
-    SpawnOptions {
-        id: options.get("id").and_then(Value::as_str).map(str::to_owned),
-        input: options.get("input").cloned(),
-        system_id: options.get("systemId").and_then(Value::as_str).map(str::to_owned),
-        sync_snapshot: options.get("syncSnapshot").and_then(Value::as_bool),
-    }
+    live.enq.ok_or_else(|| format!("enq.{op} is not available here"))?.call(op, &args)
 }
 
 impl<C: Serialize, E: EventType> Evaluator<C, E> for JsEvaluator {

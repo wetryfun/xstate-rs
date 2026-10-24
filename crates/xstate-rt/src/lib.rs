@@ -48,7 +48,8 @@ pub use load::{Reference, References};
 pub use machine::{Machine, MachineOptions, NodeId};
 pub use migrate::Migration;
 pub use registry::{
-    Code, CodeKind, ContextArgs, Enq, Evaluator, ExprArgs, GuardArgs, Registry, Scope, Slot, SpawnOptions,
+    Code, CodeKind, ContextArgs, Enq, Evaluator, ExprArgs, GuardArgs, HostEvaluator, Registry, Scope, Slot,
+    SpawnOptions,
 };
 pub use system::{
     ActorRef, Effect, EffectKind, ExternalEffect, InitOptions, Logic, Status, System, SystemError, SystemLogic,
