@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Extracts machine bundles for xstate-codegen from TypeScript machine modules.
 //
-//   node tools/extract/extract.mjs [--check] [--out-dir <dir>] <module.ts>...
+//   node tools/extract/extract.mjs [--check] [--out-dir <dir>] [--globals a,b] <module.ts>...
 //
 // Each module exports
 //
@@ -20,7 +20,10 @@
 //
 // `machine` is the JSON-portable definition (transitions as objects, guards
 // and actions referenced by name). A machine built with createMachine() is
-// accepted too and serialized with machineToJSON().
+// accepted too and serialized with machineToJSON(); what that loses is
+// reported (lint.mjs): invokes of inline logic and JavaScript code reading
+// names from its module (errors), setup() implementations the host must
+// supply (warnings). --globals allows names the host's evaluator provides.
 //
 // The script converts the schemas with Zod's JSON Schema converter, checks
 // the definition with XState's own machineFromJSON (with stub sources), and
@@ -35,6 +38,7 @@ import { pathToFileURL } from 'node:url';
 import { registerHooks, stripTypeScriptTypes } from 'node:module';
 import { machineFromJSON, machineToJSON, createAsyncLogic } from 'xstate';
 import { z } from 'zod';
+import { lintCode, lintMachine } from './lint.mjs';
 
 // Machine modules import `zod` and `xstate`; resolve those to this tool's
 // copies so modules need no node_modules of their own and share one Zod.
@@ -178,12 +182,18 @@ function checkWithXState(machine) {
   }
 }
 
-async function extract(modulePath) {
+async function extract(modulePath, { globals }) {
   const mod = await import(pathToFileURL(resolve(modulePath)).href);
   if (!mod.machine) fail('the module must export `machine` (a MachineJSON definition)');
-  let machine = typeof mod.machine.getInitialSnapshot === 'function' ? machineToJSON(mod.machine) : mod.machine;
+  const built = typeof mod.machine.getInitialSnapshot === 'function';
+  let machine = built ? machineToJSON(mod.machine) : mod.machine;
   machine = JSON.parse(JSON.stringify(machine));
   machine = prepareCode(machine, '$', machine['@exprLang']);
+  // What serialization lost: fail now rather than at run time.
+  const { errors, warnings } = built ? lintMachine(mod.machine, machine) : { errors: [], warnings: [] };
+  errors.push(...lintCode(machine, { globals }));
+  for (const w of warnings) console.error(`${modulePath}: warning: ${w}`);
+  if (errors.length) fail(errors.length === 1 ? errors[0] : `\n  ${errors.join('\n  ')}`);
   const schemas = convertSchemas(mod.schemas);
   const internal = Object.keys(schemas.internalEvents ?? {});
   if (internal.length && machine.internalEvents === undefined) machine.internalEvents = internal;
@@ -194,14 +204,16 @@ async function extract(modulePath) {
 const args = process.argv.slice(2);
 let check = false;
 let outDir;
+const globals = [];
 const modules = [];
 for (let i = 0; i < args.length; i++) {
   if (args[i] === '--check') check = true;
   else if (args[i] === '--out-dir') outDir = args[++i];
+  else if (args[i] === '--globals') globals.push(...args[++i].split(','));
   else modules.push(args[i]);
 }
 if (!modules.length) {
-  console.error('usage: extract.mjs [--check] [--out-dir <dir>] <module.ts>...');
+  console.error('usage: extract.mjs [--check] [--out-dir <dir>] [--globals a,b] <module.ts>...');
   process.exit(2);
 }
 
@@ -211,7 +223,7 @@ for (const modulePath of modules) {
   const out = join(outDir ?? dirname(modulePath), `${name}.xstate.json`);
   let text;
   try {
-    text = JSON.stringify(await extract(modulePath), null, 2) + '\n';
+    text = JSON.stringify(await extract(modulePath, { globals }), null, 2) + '\n';
   } catch (e) {
     console.error(`${modulePath}: ${e.message}`);
     process.exit(1);

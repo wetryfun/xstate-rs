@@ -3,9 +3,15 @@
   "private": true,
   "type": "module",
   "description": "Extracts MachineJSON and JSON Schemas from TypeScript machine modules for xstate-codegen",
-  "bin": { "xstate-rs-extract": "./extract.mjs" },
+  "bin": {
+    "xstate-rs-extract": "./extract.mjs"
+  },
   "dependencies": {
+    "acorn": "8.19.0",
     "xstate": "6.0.0-alpha.70",
     "zod": "4.6.7"
+  },
+  "scripts": {
+    "test": "node --test lint.test.mjs"
   }
 }
