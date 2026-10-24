@@ -145,6 +145,7 @@ fn failures_in_functions_actions_and_the_context_fail_the_step() {
     let definition =
         json!({ "@exprLang": "js", "context": { "@code": "() => missing" }, "initial": "a", "states": { "a": {} } });
     let machine = Arc::new(Machine::from_json(&definition, &r).unwrap());
-    let e = Actor::start(machine, 0).err().expect("the start fails").to_string();
+    let Err(e) = Actor::start(machine, 0) else { panic!("the start fails") };
+    let e = e.to_string();
     assert!(e.contains("missing"), "{e}");
 }
