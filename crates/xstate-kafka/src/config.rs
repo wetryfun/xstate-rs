@@ -22,7 +22,7 @@
 //!     { "version": "0", "migrate": { "states": {} } }
 //!   ],
 //!   "onRestoreError": "deadLetter",
-//!   "rebalance": "cooperative", "statsIntervalMs": 5000,
+//!   "rebalance": "cooperative", "statsIntervalMs": 5000, "pauseAfterMs": 1000,
 //!   "outputs": "json",
 //!   "schemaRegistry": { "url": "http://localhost:8081", "username": "u", "password": { "env": "SR_PASSWORD" } },
 //!   "client": {
@@ -213,6 +213,9 @@ pub struct FileConfig {
     pub rebalance: Option<String>,
     #[serde(default)]
     pub stats_interval_ms: Option<u64>,
+    /// How long a busy worker waits before pausing its partitions.
+    #[serde(default)]
+    pub pause_after_ms: Option<u64>,
     #[serde(default)]
     pub client: serde_json::Map<String, Value>,
     #[serde(default)]
@@ -297,6 +300,9 @@ impl FileConfig {
         };
         if let Some(v) = self.stats_interval_ms {
             c.stats_interval = ms(v);
+        }
+        if let Some(v) = self.pause_after_ms {
+            c.pause_after = ms(v);
         }
         if let Some(v) = self.checkpoint_interval_ms {
             c.checkpoint_interval = ms(v);
@@ -598,7 +604,7 @@ mod tests {
             "c.json",
             r#"{ "machine": "m.json", "bootstrapServers": "b:9092", "groupId": "g",
                  "topics": { "input": "i", "output": "o", "changelog": "c" },
-                 "workers": 3, "codec": "json", "batchLingerMs": 5,
+                 "workers": 3, "codec": "json", "batchLingerMs": 5, "pauseAfterMs": 250,
                  "client": { "linger.ms": 7, "sasl.password": { "file": "secret.txt" }, "sasl.username": { "env": "HOME" } },
                  "stateDir": "state", "checkpointIntervalMs": 1000, "snapshots": "compact",
                  "checkpoints": [{ "git": "archive.git", "prefix": "refs/archive", "intervalMs": 3600000 }],
@@ -612,6 +618,7 @@ mod tests {
         assert_eq!(service.engine.snapshots, SnapshotFormat::Compact);
         assert_eq!(service.engine.dedupe, Some(Dedupe { sequence: "seq".into(), epoch: None, retain_ms: None }));
         assert_eq!(service.batch_linger, Duration::from_millis(5));
+        assert_eq!(service.pause_after, Duration::from_millis(250));
         assert_eq!(service.state_dir, Some(dir.join("state")));
         assert_eq!(service.checkpoint_interval, Duration::from_secs(1));
         let stores = service.checkpoint_targets();

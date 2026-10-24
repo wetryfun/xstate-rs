@@ -35,6 +35,8 @@ pub struct Metrics {
     restored_actors: AtomicU64,
     restored_records: AtomicU64,
     checkpoints: AtomicU64,
+    pauses: AtomicU64,
+    paused_micros: AtomicU64,
     commit_micros_total: AtomicU64,
     commit_micros_max: AtomicU64,
     /// Live actors, per worker.
@@ -51,6 +53,8 @@ struct WorkerState {
     joined: AtomicBool,
     /// Restoring newly assigned partitions.
     restoring: AtomicBool,
+    /// Its partitions are paused while it is busy.
+    paused: AtomicBool,
     /// Consumer lag per input partition, from the latest statistics.
     lag: Mutex<Vec<(i32, i64)>>,
 }
@@ -72,6 +76,11 @@ pub struct MetricsSnapshot {
     pub restored_actors: u64,
     pub restored_records: u64,
     pub checkpoints: u64,
+    /// Times a busy worker paused its partitions, and for how long in all.
+    pub pauses: u64,
+    pub paused_micros: u64,
+    /// Workers whose partitions are paused now.
+    pub paused_workers: u64,
     pub commit_micros_total: u64,
     pub commit_micros_max: u64,
     pub actors: u64,
@@ -99,6 +108,8 @@ impl Metrics {
             restored_actors: zero(),
             restored_records: zero(),
             checkpoints: zero(),
+            pauses: zero(),
+            paused_micros: zero(),
             commit_micros_total: zero(),
             commit_micros_max: zero(),
             actors: (0..workers.max(1)).map(|_| zero()).collect(),
@@ -134,6 +145,22 @@ impl Metrics {
 
     pub fn checkpointed(&self) {
         self.checkpoints.fetch_add(1, Ordering::Relaxed);
+    }
+
+    /// A worker paused its partitions while busy.
+    pub fn paused(&self, worker: usize) {
+        self.pauses.fetch_add(1, Ordering::Relaxed);
+        if let Some(w) = self.workers.get(worker) {
+            w.paused.store(true, Ordering::Relaxed);
+        }
+    }
+
+    /// A worker resumed its partitions after `micros` paused.
+    pub fn resumed(&self, worker: usize, micros: u64) {
+        self.paused_micros.fetch_add(micros, Ordering::Relaxed);
+        if let Some(w) = self.workers.get(worker) {
+            w.paused.store(false, Ordering::Relaxed);
+        }
     }
 
     pub fn set_alive(&self, worker: usize, alive: bool) {
@@ -196,6 +223,9 @@ impl Metrics {
             restored_actors: get(&self.restored_actors),
             restored_records: get(&self.restored_records),
             checkpoints: get(&self.checkpoints),
+            pauses: get(&self.pauses),
+            paused_micros: get(&self.paused_micros),
+            paused_workers: self.workers.iter().filter(|w| w.paused.load(Ordering::Relaxed)).count() as u64,
             commit_micros_total: get(&self.commit_micros_total),
             commit_micros_max: get(&self.commit_micros_max),
             actors: self.actors.iter().map(get).sum(),
@@ -241,7 +271,15 @@ impl MetricsSnapshot {
         );
         metric("restored_actors_total", "counter", "Actors restored from the changelog.", self.restored_actors);
         metric("restored_records_total", "counter", "Changelog records read while restoring.", self.restored_records);
-        metric("checkpoints_total", "counter", "Local partition checkpoints written.", self.checkpoints);
+        metric("checkpoints_total", "counter", "Partition checkpoints written (to any store).", self.checkpoints);
+        metric(
+            "pauses_total",
+            "counter",
+            "Times a busy worker paused fetching its partitions (kept polling to stay in the group).",
+            self.pauses,
+        );
+        metric("paused_micros_total", "counter", "Time workers' partitions were paused.", self.paused_micros);
+        metric("paused_workers", "gauge", "Workers whose partitions are paused now.", self.paused_workers);
         metric("commit_micros_total", "counter", "Time spent committing transactions.", self.commit_micros_total);
         metric("commit_micros_max", "gauge", "Longest transaction commit.", self.commit_micros_max);
         metric("actors", "gauge", "Live actors.", self.actors);

@@ -43,11 +43,23 @@
 //! archive, [`crate::git::GitStore`]), each with its own interval; a restore
 //! uses the first store, in order, with a usable checkpoint.
 //!
+//! Backpressure: a worker takes records only as fast as it runs and commits
+//! them. While it cannot take any (waiting for a commit with a full batch,
+//! restoring partitions, saving checkpoints) it stops polling, and
+//! librdkafka prefetches up to its queue limits (`queued.max.messages.kbytes`,
+//! `queued.min.messages`). Once that lasts `pause_after`, the worker pauses
+//! fetching its partitions and polls its consumer again until it is done, so
+//! it stays in the group (`max.poll.interval.ms`) and serves rebalances
+//! while the broker sends it nothing; records that still arrive (fetched
+//! before the pause, or of partitions assigned meanwhile) are kept and
+//! handled first. Short waits do not pause, which would drop the prefetched
+//! records.
+//!
 //! Set `rack` (librdkafka `client.rack`) to the broker node's rack to read
 //! from the local replica (follower fetching, `enable_rack_awareness` on the
 //! cluster).
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -59,7 +71,7 @@ use rdkafka::client::ClientContext;
 use rdkafka::config::ClientConfig;
 use rdkafka::consumer::{BaseConsumer, Consumer, ConsumerContext, Rebalance};
 use rdkafka::error::{KafkaError, RDKafkaErrorCode};
-use rdkafka::message::{Header, Headers, Message, OwnedHeaders};
+use rdkafka::message::{BorrowedMessage, Header, Headers, Message, OwnedHeaders, OwnedMessage};
 use rdkafka::producer::{BaseProducer, BaseRecord, Producer};
 use rdkafka::statistics::Statistics;
 use rdkafka::{Offset, TopicPartitionList};
@@ -144,6 +156,10 @@ pub struct ServiceConfig {
     /// How often librdkafka reports statistics (consumer lag for the
     /// metrics); zero turns them off.
     pub stats_interval: Duration,
+    /// How long a worker may be busy without taking records (waiting for a
+    /// commit, restoring, saving checkpoints) before it pauses fetching its
+    /// partitions and keeps polling its consumer until it is done.
+    pub pause_after: Duration,
 }
 
 impl ServiceConfig {
@@ -177,6 +193,7 @@ impl ServiceConfig {
             checkpoint_stores: Vec::new(),
             cooperative: true,
             stats_interval: Duration::from_secs(5),
+            pause_after: Duration::from_secs(1),
         }
     }
 
@@ -313,6 +330,140 @@ struct Worker<C, E> {
     partitions: HashMap<i32, Partition<C, E>>,
     /// One per checkpoint store.
     checkpoints: Vec<Checkpoints>,
+    gate: Gate,
+}
+
+/// A busy worker's backpressure (see the module documentation).
+struct Gate {
+    /// Since when the worker has not taken records.
+    busy_since: Option<Instant>,
+    /// Since when its partitions are paused.
+    paused_at: Option<Instant>,
+    last_poll: Instant,
+    /// Records polled while paused, handled first.
+    stash: VecDeque<OwnedMessage>,
+}
+
+impl Gate {
+    fn new() -> Self {
+        Self { busy_since: None, paused_at: None, last_poll: Instant::now(), stash: VecDeque::new() }
+    }
+}
+
+/// What a busy worker needs to keep its consumer polled (disjoint from the
+/// worker's other fields, so it works while a polled record borrows the
+/// consumer).
+struct Keep<'a> {
+    consumer: &'a BaseConsumer<WorkerContext>,
+    gate: &'a mut Gate,
+    config: &'a ServiceConfig,
+    metrics: &'a Metrics,
+    index: usize,
+}
+
+impl Keep<'_> {
+    /// Called repeatedly while the worker is busy: once that has lasted
+    /// `pause_after`, pauses its partitions and polls the consumer (at most
+    /// every 100 ms), keeping what arrives.
+    fn tick(&mut self) {
+        let since = *self.gate.busy_since.get_or_insert_with(Instant::now);
+        if since.elapsed() < self.config.pause_after {
+            return;
+        }
+        if self.gate.paused_at.is_none() {
+            match self.consumer.assignment() {
+                Ok(tpl) => {
+                    if let Err(e) = self.consumer.pause(&tpl) {
+                        debug(|| format!("pausing failed: {e}"));
+                    }
+                }
+                Err(e) => debug(|| format!("no assignment to pause: {e}")),
+            }
+            self.gate.paused_at = Some(Instant::now());
+            self.metrics.paused(self.index);
+            debug(|| format!("busy for {:?}: partitions paused", since.elapsed()));
+        }
+        if self.gate.last_poll.elapsed() < Duration::from_millis(100) {
+            return;
+        }
+        self.gate.last_poll = Instant::now();
+        match self.consumer.poll(Duration::ZERO) {
+            Some(Ok(m)) => self.gate.stash.push_back(m.detach()),
+            Some(Err(e)) => debug(|| format!("polling while paused: {e}")),
+            None => {}
+        }
+    }
+
+    /// The worker takes records again: resumes its partitions if paused.
+    fn done(&mut self) {
+        self.gate.busy_since = None;
+        if let Some(at) = self.gate.paused_at.take() {
+            match self.consumer.assignment() {
+                Ok(tpl) => {
+                    if let Err(e) = self.consumer.resume(&tpl) {
+                        debug(|| format!("resuming failed: {e}"));
+                    }
+                }
+                Err(e) => debug(|| format!("no assignment to resume: {e}")),
+            }
+            self.metrics.resumed(self.index, at.elapsed().as_micros() as u64);
+            debug(|| format!("partitions resumed after {:?}", at.elapsed()));
+        }
+    }
+
+    /// Waits for the committer's result, keeping the consumer polled.
+    fn wait_commit(&mut self, committer: &Committer) -> Result<u64> {
+        loop {
+            if let Some(r) = committer.wait_result_timeout(Duration::from_millis(50)) {
+                return r;
+            }
+            self.tick();
+        }
+    }
+}
+
+/// A record from the consumer, or one kept while the partitions were
+/// paused.
+enum Polled<'a> {
+    Borrowed(BorrowedMessage<'a>),
+    Owned(OwnedMessage),
+}
+
+impl Polled<'_> {
+    fn partition(&self) -> i32 {
+        match self {
+            Polled::Borrowed(m) => m.partition(),
+            Polled::Owned(m) => m.partition(),
+        }
+    }
+
+    fn offset(&self) -> i64 {
+        match self {
+            Polled::Borrowed(m) => m.offset(),
+            Polled::Owned(m) => m.offset(),
+        }
+    }
+
+    fn key(&self) -> Option<&[u8]> {
+        match self {
+            Polled::Borrowed(m) => m.key(),
+            Polled::Owned(m) => m.key(),
+        }
+    }
+
+    fn payload(&self) -> Option<&[u8]> {
+        match self {
+            Polled::Borrowed(m) => m.payload(),
+            Polled::Owned(m) => m.payload(),
+        }
+    }
+
+    fn content_type(&self) -> Option<&str> {
+        match self {
+            Polled::Borrowed(m) => content_type(m),
+            Polled::Owned(m) => content_type(m),
+        }
+    }
 }
 
 /// The worker consumer's context: reports joining the group (readiness) and
@@ -416,6 +567,7 @@ where
                 .into_iter()
                 .map(|target| Checkpoints { target, checkpointed: HashMap::new(), changed: HashSet::new() })
                 .collect(),
+            gate: Gate::new(),
             config,
         })
     }
@@ -433,6 +585,7 @@ where
                 abort(&self.producer, &self.config)?;
                 self.forget(|_| false);
                 self.rewind()?;
+                self.keep().done();
                 if is_fatal(&e) {
                     return Err(e);
                 }
@@ -473,6 +626,7 @@ where
             self.restore(&missing)?;
             self.metrics.set_restoring(self.index, false);
         }
+        self.keep().done();
         let mut offsets: HashMap<i32, i64> = HashMap::new();
         let now = clock_ms();
         let next_timer = self.partitions.values_mut().filter_map(|p| p.next_deadline()).min();
@@ -499,24 +653,36 @@ where
             let waiting_for_commit = self.in_flight.is_some() && committed.is_none();
             let poll_timeout = if waiting_for_commit { Duration::from_millis(2) } else { timeout };
             let poll_started = Instant::now();
-            let Some(message) = self.consumer.poll(poll_timeout) else {
-                if waiting_for_commit {
-                    continue;
+            let message = match self.gate.stash.pop_front() {
+                Some(m) => Polled::Owned(m),
+                None => {
+                    let Some(message) = self.consumer.poll(poll_timeout) else {
+                        if waiting_for_commit {
+                            continue;
+                        }
+                        break;
+                    };
+                    Polled::Borrowed(message?)
                 }
-                break;
             };
             polling += poll_started.elapsed();
             polled += 1;
             let first = *first.get_or_insert_with(Instant::now);
             timeout = config.batch_linger.saturating_sub(first.elapsed());
-            let message = message?;
             let partition = message.partition();
             if !self.partitions.contains_key(&partition) {
+                let mut keep = Keep {
+                    consumer: &self.consumer,
+                    gate: &mut self.gate,
+                    config,
+                    metrics: &self.metrics,
+                    index: self.index,
+                };
                 // Restore what is committed, including the batch in flight.
                 if self.in_flight.is_some() {
                     let result = match committed.take() {
                         Some(r) => r,
-                        None => self.committer.wait_result(),
+                        None => keep.wait_commit(&self.committer),
                     };
                     finish_in_flight(&mut self.in_flight, &self.metrics, result)?;
                 }
@@ -529,13 +695,15 @@ where
                     &mut self.partitions,
                     &mut self.checkpoints,
                     &[partition],
+                    &mut || keep.tick(),
                 )?;
+                keep.done();
             }
             let handle_started = Instant::now();
             let key = message.key().map(String::from_utf8_lossy);
             let p = self.partitions.get_mut(&partition).expect("restored");
             let payload = message.payload().unwrap_or_default();
-            match content_type(&message) {
+            match message.content_type() {
                 None => p.handle(key.as_deref(), payload, clock_ms()),
                 Some(ct) => match EventFormat::from_content_type(ct) {
                     Some(format) => p.handle_as(key.as_deref(), payload, format, clock_ms()),
@@ -571,7 +739,7 @@ where
         if self.in_flight.is_some() {
             let result = match committed.take() {
                 Some(r) => r,
-                None => self.committer.wait_result(),
+                None => self.wait_commit(),
             };
             self.complete_in_flight(result)?;
         }
@@ -579,6 +747,7 @@ where
             // Everything is committed: checkpoints now cover the whole changelog.
             let due = self.checkpoints_due(false);
             self.write_checkpoints(due, &HashSet::new());
+            self.keep().done();
             return Ok(());
         }
         let processed = started.elapsed();
@@ -616,7 +785,18 @@ where
             self.settle()?;
             self.write_checkpoints(checkpoints, &touched);
         }
+        self.keep().done();
         Ok(())
+    }
+
+    fn keep(&mut self) -> Keep<'_> {
+        Keep {
+            consumer: &self.consumer,
+            gate: &mut self.gate,
+            config: &self.config,
+            metrics: &self.metrics,
+            index: self.index,
+        }
     }
 
     /// Waits for the batch in flight, if any, to commit.
@@ -624,8 +804,21 @@ where
         if self.in_flight.is_none() {
             return Ok(());
         }
-        let result = self.committer.wait_result();
+        let result = self.wait_commit();
         self.complete_in_flight(result)
+    }
+
+    /// Waits for the batch in flight's commit result, keeping the consumer
+    /// polled.
+    fn wait_commit(&mut self) -> Result<u64> {
+        Keep {
+            consumer: &self.consumer,
+            gate: &mut self.gate,
+            config: &self.config,
+            metrics: &self.metrics,
+            index: self.index,
+        }
+        .wait_commit(&self.committer)
     }
 
     /// Counts the batch in flight once its commit result is known.
@@ -658,6 +851,13 @@ where
     }
 
     fn restore(&mut self, partitions: &[i32]) -> Result<()> {
+        let mut keep = Keep {
+            consumer: &self.consumer,
+            gate: &mut self.gate,
+            config: &self.config,
+            metrics: &self.metrics,
+            index: self.index,
+        };
         restore_into(
             &self.restorer,
             &self.config,
@@ -666,12 +866,14 @@ where
             &mut self.partitions,
             &mut self.checkpoints,
             partitions,
+            &mut || keep.tick(),
         )
     }
 
     /// Drops the partitions `keep` rejects.
     fn forget(&mut self, keep: impl Fn(i32) -> bool) {
         self.partitions.retain(|&p, _| keep(p));
+        self.gate.stash.retain(|m| keep(m.partition()));
         for c in &mut self.checkpoints {
             c.checkpointed.retain(|&p, _| keep(p));
             c.changed.retain(|&p| keep(p));
@@ -725,7 +927,29 @@ where
             for i in stores {
                 let state = &mut self.checkpoints[i];
                 let store = &state.target.store;
-                match store.save(topic, p, &c) {
+                let mut keep = Keep {
+                    consumer: &self.consumer,
+                    gate: &mut self.gate,
+                    config: &self.config,
+                    metrics: &self.metrics,
+                    index: self.index,
+                };
+                // A save can take long (a Git archive): the consumer stays polled.
+                let saved = std::thread::scope(|scope| {
+                    let (tx, rx) = std::sync::mpsc::channel();
+                    let c = &c;
+                    scope.spawn(move || tx.send(store.save(topic, p, c)));
+                    loop {
+                        match rx.recv_timeout(Duration::from_millis(50)) {
+                            Ok(r) => return r,
+                            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => keep.tick(),
+                            Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
+                                return Err(std::io::Error::other("the checkpoint save panicked"))
+                            }
+                        }
+                    }
+                });
+                match saved {
                     Ok(()) => {
                         if !touched.contains(&p) {
                             state.changed.remove(&p);
@@ -872,6 +1096,17 @@ impl Committer {
     fn wait_result(&self) -> Result<u64> {
         self.results.recv().unwrap_or_else(|_| Err(ServiceError("the committer stopped".into())))
     }
+
+    /// Waits at most `timeout` for the result of the transaction in flight.
+    fn wait_result_timeout(&self, timeout: Duration) -> Option<Result<u64>> {
+        match self.results.recv_timeout(timeout) {
+            Ok(r) => Some(r),
+            Err(std::sync::mpsc::RecvTimeoutError::Timeout) => None,
+            Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
+                Some(Err(ServiceError("the committer stopped".into())))
+            }
+        }
+    }
 }
 
 impl Drop for Committer {
@@ -938,6 +1173,7 @@ fn commit_transaction(producer: &BaseProducer, config: &ServiceConfig, job: Job)
 /// Restores `partitions` into a worker's partition map (a function of the
 /// worker's fields, so it can run while a polled message borrows the
 /// consumer).
+#[allow(clippy::too_many_arguments)] // The worker's fields, borrowed separately.
 fn restore_into<C, E>(
     restorer: &BaseConsumer,
     config: &ServiceConfig,
@@ -946,13 +1182,14 @@ fn restore_into<C, E>(
     into: &mut HashMap<i32, Partition<C, E>>,
     checkpoints: &mut [Checkpoints],
     partitions: &[i32],
+    keep_alive: &mut dyn FnMut(),
 ) -> Result<()>
 where
     C: Serialize + DeserializeOwned + Clone + Send + Sync + 'static,
     E: EventType + Send + Sync,
 {
     let started = Instant::now();
-    let (restored, replayed) = restore_with(restorer, config, machine, partitions)?;
+    let (restored, replayed) = restore_with(restorer, config, machine, partitions, keep_alive)?;
     let actors: usize = restored.values().map(Partition::len).sum();
     metrics.restored(partitions.len() as u64, actors as u64, replayed);
     debug(|| {
@@ -1031,7 +1268,7 @@ where
     E: EventType + Send + Sync,
 {
     let consumer = restore_consumer(config)?;
-    let (mut restored, _) = restore_with(&consumer, config, machine, &[partition])?;
+    let (mut restored, _) = restore_with(&consumer, config, machine, &[partition], &mut || {})?;
     Ok(restored.remove(&partition).expect("restored"))
 }
 
@@ -1045,6 +1282,7 @@ fn restore_with<C, E>(
     config: &ServiceConfig,
     machine: &Arc<MachineSet<C, E>>,
     partitions: &[i32],
+    keep_alive: &mut dyn FnMut(),
 ) -> Result<(Partitions<C, E>, u64)>
 where
     C: Serialize + DeserializeOwned + Clone + Send + Sync + 'static,
@@ -1072,6 +1310,7 @@ where
     let mut replayed = 0;
     let mut pending: HashSet<i32> = partitions.iter().copied().collect();
     while !pending.is_empty() {
+        keep_alive();
         match consumer.poll(config.request_timeout) {
             Some(Ok(m)) => {
                 replayed += 1;

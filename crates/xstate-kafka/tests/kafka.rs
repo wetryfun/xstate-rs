@@ -373,6 +373,62 @@ fn restores_from_a_git_archive() {
     std::fs::remove_dir_all(&dir).ok();
 }
 
+/// A checkpoint store whose first save takes longer than
+/// `max.poll.interval.ms`.
+#[derive(Debug)]
+struct SlowStore(Duration, std::sync::atomic::AtomicBool);
+
+impl xstate_kafka::checkpoint::Store for SlowStore {
+    fn save(&self, _: &str, _: i32, _: &xstate_kafka::checkpoint::Checkpoint) -> std::io::Result<()> {
+        if !self.1.swap(true, std::sync::atomic::Ordering::Relaxed) {
+            std::thread::sleep(self.0);
+        }
+        Ok(())
+    }
+    fn load(&self, _: &str, _: i32) -> std::io::Result<Option<xstate_kafka::checkpoint::Checkpoint>> {
+        Ok(None)
+    }
+    fn location(&self, _: &str, partition: i32) -> String {
+        format!("slow store, partition {partition}")
+    }
+}
+
+#[test]
+fn a_busy_worker_pauses_and_stays_in_the_group() {
+    use xstate_kafka::service::CheckpointStore;
+    let cluster = MockCluster::new(1).unwrap();
+    for topic in ["input", "output", "changelog", "dead"] {
+        cluster.create_topic(topic, PARTITIONS, 1).unwrap();
+    }
+    let bootstrap = cluster.bootstrap_servers();
+    let mut c = config(&bootstrap);
+    c.workers = 1;
+    // Every batch saves a checkpoint that outlasts the poll interval.
+    // (The mock's shortest session timeout is 6 s, and the poll interval
+    // cannot be shorter.)
+    c.checkpoint_stores =
+        vec![CheckpointStore::new(SlowStore(Duration::from_secs(7), Default::default()), Duration::ZERO)];
+    c.pause_after = Duration::from_millis(200);
+    c.client_config.push(("max.poll.interval.ms".to_owned(), "6000".to_owned()));
+    let next = r#"{"type":"next"}"#;
+    let service = Service::start(c, machine()).unwrap();
+    for round in 1..=2 {
+        let keys: Vec<String> = (0..8).map(|i| format!("k{i}")).collect();
+        let records: Vec<(Option<&str>, &str)> = keys.iter().map(|k| (Some(k.as_str()), next)).collect();
+        produce(&bootstrap, &records);
+        assert_eq!(read(&bootstrap, "output", 8 * round).len(), 8 * round);
+    }
+    let output = read(&bootstrap, "output", 16);
+    let metrics = service.metrics();
+    service.stop().unwrap();
+    assert_eq!(output.len(), 16, "exactly once: {output:?}");
+    assert_eq!(states(&output)["k0"], vec!["s1", "s2"]);
+    assert!(metrics.pauses >= 1, "{metrics:?}");
+    // Never left the group, so never restored a partition again.
+    assert_eq!(metrics.restored_partitions, PARTITIONS as u64, "{metrics:?}");
+    assert_eq!(metrics.aborted_transactions, 0, "{metrics:?}");
+}
+
 #[test]
 fn a_failed_commit_discards_the_batch_behind_it() {
     use rdkafka::types::{RDKafkaApiKey, RDKafkaRespErr};
