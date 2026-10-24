@@ -2,14 +2,16 @@
  * Hosting a run live: the host owns the clock and durability. Every input
  * chunk is stamped with the time (a leading time event, in the same atomic
  * batch), appended to the run's journal, then applied; when a timer is due,
- * the host sends a time event the same way. The journal therefore holds
- * every input the run consumed, and replaying it reproduces the run.
+ * the host sends a time event the same way, and when registered work (an
+ * invoked async actor's) completes, its effect result. The journal
+ * therefore holds every input the run consumed, and replaying it reproduces
+ * the run.
  */
 import type { Engine, EngineMachine, Event } from './engine.ts';
 import { forkObjects, machineObjects, type ForkOptions } from './ids.ts';
 import { chunks } from '@xmachines/streams';
 import { Latest } from './ports.ts';
-import { createRun, time, type Input, type Run, type RunSnapshot } from './run.ts';
+import { createRun, rejected, resolved, time, type Input, type Run, type RunSnapshot } from './run.ts';
 
 /** A run's durability backend: its input batches and snapshots, append-only. */
 export interface Journal {
@@ -77,8 +79,31 @@ export interface HostOptions {
   readonly snapshotEvery?: number;
   /** Outputs and errors buffered before writes wait (default 64). */
   readonly highWaterMark?: number;
+  /** Implementations of external work, by invoke `src` (see `Work`). */
+  readonly work?: Readonly<Record<string, Work>>;
   log?(args: readonly unknown[]): void;
 }
+
+/** What a `Work` implementation gets besides the actor's input. */
+export interface WorkContext {
+  /** The effect's id: work with side effects should be idempotent by it (work restarts after a restore). */
+  readonly id: string;
+  /** The address of the actor whose work it is. */
+  readonly actor: string;
+  /** Aborted when the work is no longer wanted (its invoking state was left) or the run closes. */
+  readonly signal: AbortSignal;
+}
+
+/**
+ * An invoked async actor's work, run by the host: its result (or what it
+ * throws) completes the actor as `xstate.async.resolve` (or `reject`), sent
+ * to the run as an effect result, journaled like any input. It runs again
+ * when a run is restored with it still pending (at least once).
+ */
+export type Work = (input: unknown, context: WorkContext) => unknown;
+
+/** What a rejection carries: an error's name and message, or the thrown value. */
+const rejection = (error: unknown) => (error instanceof Error ? { name: error.name, message: error.message } : error);
 
 /** A live run. Its `in` takes events (or batches) without time events: the host stamps them. */
 export interface HostedRun extends Run {
@@ -107,11 +132,16 @@ export async function host(options: HostOptions): Promise<HostedRun> {
   let closed = false;
   let timer: ReturnType<typeof setTimeout> | undefined;
 
-  /** Stamps, journals and applies a batch, after everything submitted before it. */
-  const submit = (events: readonly Event[]) => {
+  /**
+   * Stamps, journals and applies a batch, after everything submitted before
+   * it; `events` may be computed then (nothing is applied when it gives none).
+   */
+  const submit = (events: readonly Event[] | (() => Promise<readonly Event[] | undefined>)) => {
     const done = chain.then(async () => {
+      const content = typeof events === 'function' ? await events() : events;
+      if (!content) return;
       last = Math.max(last, clock());
-      const batch = [time(last), ...events];
+      const batch = [time(last), ...content];
       await journal?.append(batch);
       await writer.write(batch);
     });
@@ -119,14 +149,49 @@ export async function host(options: HostOptions): Promise<HostedRun> {
     return done;
   };
 
-  // Follow the snapshots: schedule the next timer, journal snapshots, and
-  // pass them on (latest only).
+  /** Work in progress (or whose result is submitted), by effect id, until its effect is gone. */
+  const running = new Map<string, { readonly abort: AbortController }>();
+
+  /** Starts registered work that is pending, and aborts work that no longer is. */
+  const reconcile = (s: RunSnapshot) => {
+    const pending = new Set((s.work ?? []).map((w) => w.id));
+    for (const [id, job] of running) {
+      if (pending.has(id)) continue;
+      job.abort.abort(new Error('the work is no longer pending'));
+      running.delete(id);
+    }
+    if (closed) return;
+    for (const w of s.work ?? []) {
+      const work = options.work?.[w.src];
+      if (!work || running.has(w.id)) continue;
+      const job = { abort: new AbortController() };
+      running.set(w.id, job);
+      const finish = (result: Event) =>
+        submit(async () => {
+          // Let the snapshots of what was applied meanwhile be followed: the
+          // work may have been cancelled.
+          await new Promise((r) => setTimeout(r, 0));
+          if (closed || job.abort.signal.aborted || running.get(w.id) !== job) return undefined;
+          return [result];
+        }).catch(() => {});
+      Promise.resolve()
+        .then(() => work(w.input, { id: w.id, actor: w.actor, signal: job.abort.signal }))
+        .then(
+          (data) => finish(resolved(w.id, data)),
+          (error: unknown) => finish(rejected(w.id, rejection(error))),
+        );
+    }
+  };
+
+  // Follow the snapshots: schedule the next timer, run work, journal
+  // snapshots, and pass them on (latest only).
   let latest: RunSnapshot | undefined;
   let journaled = restored?.snapshot?.seq ?? -1;
   const snapshots = new Latest<RunSnapshot>();
   const followed = (async () => {
     for await (const s of chunks(run.snapshot)) {
       latest = s;
+      reconcile(s);
       clearTimeout(timer);
       timer = undefined;
       if (s.deadline !== undefined && !closed) {
@@ -150,6 +215,7 @@ export async function host(options: HostOptions): Promise<HostedRun> {
     ended ??= (async () => {
       closed = true;
       clearTimeout(timer);
+      for (const job of running.values()) job.abort.abort(new Error('the run closed'));
       await chain;
       await writer.close().catch(() => {});
       await followed;
@@ -177,6 +243,8 @@ export interface RunnerOptions {
   readonly clock?: () => number;
   readonly snapshotEvery?: number;
   readonly highWaterMark?: number;
+  /** Implementations of external work, by invoke `src`. */
+  readonly work?: Readonly<Record<string, Work>>;
 }
 
 /**
@@ -200,6 +268,7 @@ export function runner(options: RunnerOptions): (name: string) => Promise<Hosted
       ...(options.clock && { clock: options.clock }),
       ...(options.snapshotEvery !== undefined && { snapshotEvery: options.snapshotEvery }),
       ...(options.highWaterMark !== undefined && { highWaterMark: options.highWaterMark }),
+      ...(options.work && { work: options.work }),
     });
   };
 }

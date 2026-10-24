@@ -8,7 +8,17 @@
  * applies at the current clock. Given the same machine and the same inputs,
  * a run always ends in the same state with the same outputs.
  */
-import { errorMessage, type EngineInstance, type EngineMachine, type Event, type RootState, type Step } from './engine.ts';
+import {
+  EFFECT_RESULT,
+  errorMessage,
+  pendingWork,
+  type EngineInstance,
+  type EngineMachine,
+  type Event,
+  type PendingWork,
+  type RootState,
+  type Step,
+} from './engine.ts';
 import { chunks } from '@xmachines/streams';
 import { Latest, Port } from './ports.ts';
 
@@ -21,6 +31,33 @@ export interface TimeEvent extends Event {
 }
 
 export const time = (now: number): TimeEvent => ({ type: TIME, now });
+
+/**
+ * Completes pending external work (see `RunSnapshot.work`): XState's
+ * `xstate.system.effect.result`, with the work's result as `event`
+ * (`{ type: "xstate.async.resolve", data }` or `"xstate.async.reject"`).
+ * Like any input it is journaled, so replays complete the work the same way;
+ * a result for work that is not pending is rejected.
+ */
+export interface EffectResult extends Event {
+  readonly type: typeof EFFECT_RESULT;
+  readonly effectId: string;
+  readonly event?: Event;
+}
+
+/** The effect result that resolves work `effectId` with `data`. */
+export const resolved = (effectId: string, data?: unknown): EffectResult => ({
+  type: EFFECT_RESULT,
+  effectId,
+  event: { type: 'xstate.async.resolve', ...(data !== undefined && { data }) },
+});
+
+/** The effect result that rejects work `effectId` with `data`. */
+export const rejected = (effectId: string, data?: unknown): EffectResult => ({
+  type: EFFECT_RESULT,
+  effectId,
+  event: { type: 'xstate.async.reject', ...(data !== undefined && { data }) },
+});
 
 /** An input chunk: one event, or a batch applied atomically (all or nothing). */
 export type Input = Event | readonly Event[];
@@ -42,6 +79,8 @@ export interface RunSnapshot {
   readonly error?: unknown;
   /** When the next timer is due: write a time event then. */
   readonly deadline?: number;
+  /** External work the run waits for (invoked async actors): complete it with an effect result. */
+  readonly work?: readonly PendingWork[];
   /** The engine's persisted state (XState's `SystemSnapshot` JSON), for restoring on any engine. */
   readonly state?: unknown;
 }
@@ -119,6 +158,7 @@ export function createRun(options: RunOptions): Run {
     if (!instance) return { run: id, seq, time: clock, status: 'pending' };
     const root = instance.root();
     const deadline = instance.deadline();
+    const work = pendingWork(state);
     return {
       run: id,
       seq,
@@ -129,6 +169,7 @@ export function createRun(options: RunOptions): Run {
       ...(root.output !== undefined && { output: root.output }),
       ...(root.error !== undefined && { error: root.error }),
       ...(deadline !== undefined && { deadline }),
+      ...(work.length > 0 && { work }),
       state,
     };
   };
@@ -154,6 +195,10 @@ export function createRun(options: RunOptions): Run {
           if (!(at > now)) continue;
           current.advance(at);
           now = at;
+        } else if (event.type === EFFECT_RESULT) {
+          const { effectId, event: result } = event as EffectResult;
+          if (typeof effectId !== 'string') throw new Error('an effect result needs an "effectId"');
+          current.resolve(effectId, result, now);
         } else {
           current.send(event, now);
         }
@@ -189,10 +234,12 @@ export function createRun(options: RunOptions): Run {
     } catch (error) {
       if (!quiet) err.push({ run: id, seq, batch, message: errorMessage(error) });
     }
-    snapshots.publish(snapshot());
+    // Replayed states are history: only where the replay ends is published.
+    if (!quiet) snapshots.publish(snapshot());
   };
 
-  snapshots.publish(snapshot());
+  // With a replay, the state it ends in is the first one published.
+  if (!options.replay) snapshots.publish(snapshot());
 
   const replay = async () => {
     const source = options.replay;
@@ -202,6 +249,7 @@ export function createRun(options: RunOptions): Run {
     } else {
       for (const chunk of source) consume(chunk, true);
     }
+    snapshots.publish(snapshot());
   };
 
   const end = () => {

@@ -7,9 +7,18 @@
  * External effects are handled the way the Rust runtime's `Actor` does: the
  * root's emits are collected, `@xstate.log` arguments too, custom actions run
  * through `actions`, and all of these (with cancellations and cleanups) are
- * acknowledged at once. Async work (`@xstate.effect`) stays pending.
+ * acknowledged at once. Async work (`@xstate.effect`) stays pending until an
+ * effect result completes it (`resolve`); invoked sources the definition's
+ * `sources` do not provide are async logic whose work is that external work.
  */
-import { advanceSystemTime, initialSystemTransition, machineFromJSON, systemTransition, type AnyStateMachine } from 'xstate';
+import {
+  advanceSystemTime,
+  createAsyncLogic,
+  initialSystemTransition,
+  machineFromJSON,
+  systemTransition,
+  type AnyStateMachine,
+} from 'xstate';
 import type { Engine, EngineInstance, EngineMachine, Event, RootState, StartOptions, Step } from '../engine.ts';
 
 type Sources = Parameters<typeof machineFromJSON>[1];
@@ -40,6 +49,35 @@ interface SystemSnapshot {
 
 type System = { root: AnyStateMachine };
 type Transition = readonly [unknown, readonly unknown[]];
+
+/** Every `invoke.src` a definition names. */
+function invokeSources(node: unknown, out = new Set<string>()): Set<string> {
+  if (Array.isArray(node)) for (const n of node) invokeSources(n, out);
+  else if (node && typeof node === 'object') {
+    for (const [key, value] of Object.entries(node)) {
+      if (key === 'invoke') {
+        for (const invoke of Array.isArray(value) ? value : [value]) {
+          const src = (invoke as { src?: unknown } | null)?.src;
+          if (typeof src === 'string') out.add(src);
+        }
+      }
+      invokeSources(value, out);
+    }
+  }
+  return out;
+}
+
+/**
+ * The sources with async logic for every invoked source they lack: its work
+ * is external (`@xstate.effect`), done by the host and completed with an
+ * effect result, as the xstate-rs runtime does for sources without a child
+ * machine.
+ */
+function withWork(definition: object, sources: Sources): Sources {
+  const actors: Record<string, unknown> = { ...(sources as { actors?: Record<string, unknown> } | undefined)?.actors };
+  for (const src of invokeSources(definition)) actors[src] ??= createAsyncLogic({ run: async () => undefined });
+  return { ...sources, actors } as Sources;
+}
 
 const isMachine = (m: object): m is AnyStateMachine => typeof (m as { transition?: unknown }).transition === 'function';
 
@@ -97,6 +135,20 @@ class XStateInstance implements EngineInstance {
     this.#apply(systemTransition(this.#system, this.#snapshot as never, this.#snapshot.root, event as never) as unknown as Transition);
   }
 
+  resolve(effectId: string, event: Event | undefined, time: number): void {
+    this.advance(time);
+    const effects = (this.#snapshot as unknown as { externalEffects?: Record<string, Effect> }).externalEffects ?? {};
+    const effect = effects[effectId];
+    if (!effect) throw new Error(`Unknown external effect '${effectId}'.`);
+    this.#apply(
+      systemTransition(this.#system, this.#snapshot as never, effect.source.$actor, {
+        type: 'xstate.system.effect.result',
+        effectId,
+        ...(event && { event }),
+      } as never) as unknown as Transition,
+    );
+  }
+
   take(): Step {
     const step = { emitted: this.#emitted, logs: this.#logs };
     this.#emitted = [];
@@ -133,7 +185,7 @@ export function xstateEngine(options: XStateEngineOptions = {}): Engine {
   return {
     name: 'xstate',
     load(definition: object): EngineMachine {
-      const machine = isMachine(definition) ? definition : machineFromJSON(definition as never, options.sources);
+      const machine = isMachine(definition) ? definition : machineFromJSON(definition as never, withWork(definition, options.sources));
       const system: System = { root: machine };
       return {
         start: ({ id, input, time }: StartOptions) => {

@@ -61,6 +61,13 @@ A run is one execution lineage of a machine, driven only by ordered events.
   `wasiEngine({ actors })` all implement XState's pure system semantics and
   persist XState's `SystemSnapshot` JSON, so a run's state moves between
   engines (tested in every direction).
+- **Async work.** An invoked async actor's work waits as an external
+  effect, listed in `snapshot.work` (`{ id, actor, src, input }`), and
+  completes through an input event: `resolved(id, data)` / `rejected(id,
+  data)` (XState's `xstate.system.effect.result`), journaled and replayed
+  like any input. `host({ work: { fetchUser: (input, { signal }) => ... } })`
+  runs it, aborts it when the invoking state is left, and runs it again after
+  a restore if it is still pending (make side effects idempotent by `id`).
 - **Hosting.** `host` stamps each input with the time (a leading time event
   in the same batch), appends it to the run's `Journal`, applies it, sends
   time events when timers are due, and journals snapshots. `runner` opens
@@ -115,8 +122,9 @@ A server on another origin needs CORS: `smartHttp({ ..., cors: 'https://app.exam
 
 `serve` maps each record key to a run (`open(key)`), writes a partition's
 records in order, produces `out` to the output topic, `err` and unprocessable
-records to the dead-letter topic (`reason` header), and snapshots to a
-compacted snapshot topic. A run that falls behind stops its partition's
+records to the dead-letter topic (`reason` header), snapshots to a
+compacted snapshot topic, and pending work to a work topic for workers that
+answer with effect results on the input topic. A run that falls behind stops its partition's
 reading, and the lease pauses fetching. Offsets are committed at least once:
 after every record up to them was applied and the outputs enqueued by then
 were acknowledged.

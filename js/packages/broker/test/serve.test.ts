@@ -250,3 +250,57 @@ for (const [name, journals] of [
     assert.equal(latest.get('y').value, 'red');
   });
 }
+
+const profile = {
+  id: 'profile',
+  initial: 'idle',
+  states: {
+    idle: { on: { load: { target: 'loading' } } },
+    loading: {
+      invoke: {
+        src: 'fetchUser',
+        id: 'fetch',
+        input: { id: 7 },
+        onDone: { target: 'loaded', actions: [{ type: '@xstate.emit', event: { type: 'loaded' } }] },
+      },
+    },
+    loaded: {},
+  },
+};
+
+test('runs do their async work: in their host, or through a work topic and the input topic', async () => {
+  // In the host.
+  let broker = new MemoryBroker({ in: 1, out: 1, dead: 1 });
+  let serving = serve({
+    consumer: broker.consumer('g'),
+    producer: broker.producer(),
+    topics,
+    open: runner({ engine: xstateEngine(), machine: profile, work: { fetchUser: async (input) => ({ input }) } }),
+  });
+  send(broker, 'p', { type: 'load' });
+  await until(() => broker.records('out').length === 1);
+  await serving.close();
+  assert.equal(json(broker.records('out')[0]!).type, 'loaded');
+
+  // Through a work topic, by a worker that answers on the input topic.
+  broker = new MemoryBroker({ in: 1, out: 1, dead: 1, work: 1 });
+  serving = serve({
+    consumer: broker.consumer('g'),
+    producer: broker.producer(),
+    topics: { ...topics, work: 'work' },
+    open: runner({ engine: xstateEngine(), machine: profile }),
+  });
+  send(broker, 'p', { type: 'load' });
+  await until(() => broker.records('work').length === 1);
+  const work = broker.records('work')[0]!;
+  assert.equal(work.key, 'p');
+  const request = json(work);
+  assert.deepEqual({ src: request.src, input: request.input, actor: typeof request.actor }, { src: 'fetchUser', input: { id: 7 }, actor: 'string' });
+  send(broker, 'p', { type: 'xstate.system.effect.result', effectId: request.id, event: { type: 'xstate.async.resolve', data: {} } });
+  await until(() => broker.records('out').length === 1);
+  await new Promise((r) => setTimeout(r, 20));
+  await serving.close();
+  assert.equal(json(broker.records('out')[0]!).type, 'loaded');
+  assert.equal(broker.records('work').length, 1, 'published once');
+  assert.equal(broker.records('dead').length, 0);
+});

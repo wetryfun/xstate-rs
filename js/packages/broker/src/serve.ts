@@ -27,6 +27,13 @@ export interface Topics {
   readonly deadLetter?: string;
   /** Run snapshots, keyed by record key: a compacted topic of every run's latest state. */
   readonly snapshots?: string;
+  /**
+   * External work runs wait for (invoked async actors their host does not run
+   * itself), each published once, keyed by record key, as `PendingWork` plus
+   * `run`. Whoever does it sends the result to the input topic under the same
+   * key: `{ "type": "xstate.system.effect.result", "effectId", "event" }`.
+   */
+  readonly work?: string;
 }
 
 export interface ServeOptions {
@@ -226,7 +233,25 @@ export function serve(options: ServeOptions): Serving {
     async open(key: string): Promise<RunState> {
       const run = await options.open(key, this.lease);
       const state: RunState = { key, run, writer: run.in.getWriter(), busy: 0, pumped: Promise.resolve() };
-      const snapshots = options.topics.snapshots;
+      const { snapshots, work } = options.topics;
+      // Work published and still pending.
+      const published = new Set<string>();
+      const fromSnapshot = (s: RunSnapshot): OutboundRecord[] => {
+        const records: OutboundRecord[] = [];
+        const headers = { 'content-type': 'application/json' };
+        if (snapshots) records.push({ topic: snapshots, key, value: JSON.stringify(s), headers });
+        if (work) {
+          const pending = new Set<string>();
+          for (const w of s.work ?? []) {
+            pending.add(w.id);
+            if (published.has(w.id)) continue;
+            published.add(w.id);
+            records.push({ topic: work, key, value: JSON.stringify({ ...w, run: s.run }), headers });
+          }
+          for (const id of published) if (!pending.has(id)) published.delete(id);
+        }
+        return records;
+      };
       (state as { pumped: Promise<unknown> }).pumped = Promise.all([
         this.pump(state, run.out, (output) => ({ topic: options.topics.output, key, ...encode(output, key) })),
         this.pump(state, run.err, (error) => ({
@@ -235,22 +260,19 @@ export function serve(options: ServeOptions): Serving {
           value: JSON.stringify(error),
           headers: { 'content-type': 'application/json', reason: error.message },
         }), !options.topics.deadLetter),
-        run.snapshot &&
-          (snapshots
-            ? this.pump(state, run.snapshot, (s) => ({
-                topic: snapshots,
-                key,
-                value: JSON.stringify(s),
-                headers: { 'content-type': 'application/json' },
-              }))
-            : run.snapshot.cancel()),
+        run.snapshot && (snapshots || work ? this.pump(state, run.snapshot, fromSnapshot) : run.snapshot.cancel()),
       ]);
       this.runs.set(key, state);
       return state;
     }
 
     /** Produces what a port gives (or reports it, when it has no topic). */
-    async pump<T>(state: RunState, port: ReadableStream<T>, record: (chunk: T) => OutboundRecord, report_ = false) {
+    async pump<T>(
+      state: RunState,
+      port: ReadableStream<T>,
+      record: (chunk: T) => OutboundRecord | readonly OutboundRecord[],
+      report_ = false,
+    ) {
       const reader = port.getReader();
       try {
         for (;;) {
@@ -259,7 +281,10 @@ export function serve(options: ServeOptions): Serving {
           state.busy++;
           try {
             if (report_) report(new Error(`run ${state.key}: ${(next.value as RunError).message}`));
-            else await writer.write(record(next.value));
+            else {
+              const records = record(next.value);
+              for (const r of Array.isArray(records) ? records : [records]) await writer.write(r);
+            }
           } finally {
             state.busy--;
           }

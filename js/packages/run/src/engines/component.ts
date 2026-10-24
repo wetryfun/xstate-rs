@@ -8,6 +8,7 @@ import { errorMessage, type EngineInstance, type EngineMachine, type Event, type
 export interface RuntimeActor<T> {
   send(event: string, now: T): void;
   advance(now: T): void;
+  resolveEffect(id: string, event?: string): void;
   nextDeadline(): T | undefined | null;
   snapshot(): string;
   persist(): string;
@@ -45,6 +46,12 @@ class RuntimeInstance<T> implements EngineInstance {
 
   advance(time: number): void {
     call(() => this.#actor.advance(this.#time(time)));
+  }
+
+  resolve(effectId: string, event: Event | undefined, time: number): void {
+    // The runtime's resolve takes no time: move the clock first.
+    this.advance(time);
+    call(() => (event ? this.#actor.resolveEffect(effectId, JSON.stringify(event)) : this.#actor.resolveEffect(effectId)));
   }
 
   take(): Step {
