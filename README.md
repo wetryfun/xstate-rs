@@ -4,6 +4,8 @@ A Rust runtime for [XState v6](https://stately.ai/docs/xstate/v6/) machine defin
 
 This is an independent project, not an official Stately package. It targets `xstate@6.0.0-alpha.70`.
 
+For how everything here fits together (runtime, code in machines, authoring pipeline, deployment targets, TypeScript packages and testing), see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
 ## Status
 
 The statechart algorithm is a port of XState's own (`crates/xstate-rt/src/core.rs`), shared by the native interpreter and by XState's JavaScript runtime through WebAssembly: XState's core test suite runs on it (`tools/xstate-suite/run.sh`). Milestone 1 (`xstate-rt` core) is in place: loading and validating `MachineJSON`, compound, parallel, final and history states, guards (including `@xstate.not` and `@xstate.stateIn`), built-in and custom actions, `always`, `after`, delayed `@xstate.raise` and `@xstate.cancel`, `@xstate.emit`, host-driven timers, and persist/restore.
